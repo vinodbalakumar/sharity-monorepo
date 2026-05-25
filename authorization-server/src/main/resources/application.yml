@@ -1,0 +1,74 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: authorization-server
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:authorization_server}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:auth_user}
+    password: ${DB_PASSWORD:auth_password}
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT_MS:5000}
+          timeout: ${MAIL_READ_TIMEOUT_MS:5000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT_MS:5000}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+
+app:
+  jwt:
+    private-key-base64: ${JWT_PRIVATE_KEY_BASE64:}
+    public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:}
+    public-key-path: ${JWT_PUBLIC_KEY_PATH:}
+    issuer: ${JWT_ISSUER:authorization-server}
+    audience: ${JWT_AUDIENCE:auth-clients}
+    access-token-expiration: PT15M
+  refresh-token:
+    expiration: P7D
+  email:
+    delivery-enabled: ${EMAIL_DELIVERY_ENABLED:false}
+    max-attempts: ${EMAIL_MAX_ATTEMPTS:3}
+    from: ${MAIL_FROM:no-reply@vinodbalakumar.com}
+    from-name: ${MAIL_FROM_NAME:Authorization Server}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:8083}
+    verification-path: ${EMAIL_VERIFICATION_PATH:/verify-email}
+    password-reset-path: ${PASSWORD_RESET_PATH:/reset-password}
+  registration-cleanup:
+    enabled: ${REGISTRATION_CLEANUP_ENABLED:true}
+    pending-retention: ${REGISTRATION_PENDING_RETENTION:P1D}
+    initial-delay-ms: ${REGISTRATION_CLEANUP_INITIAL_DELAY_MS:300000}
+    fixed-delay-ms: ${REGISTRATION_CLEANUP_FIXED_DELAY_MS:3600000}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.springframework.web: info
+    org.springframework.security: info

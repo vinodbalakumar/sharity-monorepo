@@ -1,0 +1,20 @@
+CREATE TABLE email_delivery_log (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    message_group_id CHAR(36) NOT NULL,
+    user_id BIGINT NULL,
+    email_type VARCHAR(100) NOT NULL,
+    recipient_email VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    attempt_number INT NOT NULL,
+    max_attempts INT NOT NULL,
+    error_message VARCHAR(1000) NULL,
+    created_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_email_delivery_log_user FOREIGN KEY (user_id) REFERENCES app_user (id),
+    INDEX idx_email_delivery_log_group (message_group_id),
+    INDEX idx_email_delivery_log_recipient_time (recipient_email, created_at),
+    INDEX idx_email_delivery_log_status_time (status, created_at),
+    INDEX idx_email_delivery_log_type_time (email_type, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
