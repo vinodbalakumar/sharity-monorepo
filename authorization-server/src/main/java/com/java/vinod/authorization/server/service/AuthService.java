@@ -99,13 +99,26 @@ public class AuthService {
     @Transactional
     public AuthDtos.RegisterResponse register(AuthDtos.RegisterRequest request, HttpServletRequest httpRequest) {
         String normalizedEmail = normalize(request.email());
-        if (appUserRepository.findByNormalizedEmail(normalizedEmail).isPresent()) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email is already registered");
+        var existingEmailUser = appUserRepository.findByNormalizedEmail(normalizedEmail);
+        if (existingEmailUser.isPresent()) {
+            AppUser existing = existingEmailUser.get();
+            if (!isDeleted(existing)) {
+                throw new ApiException(HttpStatus.CONFLICT, "Email is already registered");
+            }
+            releaseDeletedIdentity(existing);
         }
         String normalizedUsername = request.username() == null || request.username().isBlank() ? null : normalize(request.username());
-        if (normalizedUsername != null && appUserRepository.findByNormalizedUsername(normalizedUsername).isPresent()) {
-            throw new ApiException(HttpStatus.CONFLICT, "Username is already registered");
+        if (normalizedUsername != null) {
+            var existingUsernameUser = appUserRepository.findByNormalizedUsername(normalizedUsername);
+            if (existingUsernameUser.isPresent()) {
+                AppUser existing = existingUsernameUser.get();
+                if (!isDeleted(existing)) {
+                    throw new ApiException(HttpStatus.CONFLICT, "Username is already registered");
+                }
+                releaseDeletedIdentity(existing);
+            }
         }
+        appUserRepository.flush();
 
         LocalDateTime now = LocalDateTime.now();
         AppUser user = new AppUser();
@@ -183,7 +196,6 @@ public class AuthService {
         String rawRefreshToken = createRefreshToken(user, request.deviceName(), httpRequest, UUID.randomUUID().toString());
         AuthDtos.UserSummary userSummary = userMapper.authSummary(user);
         String accessToken = jwtService.createAccessToken(user, userSummary);
-        emailService.sendNewLoginNotification(user, ip(httpRequest), truncate(httpRequest.getHeader("User-Agent"), 500));
         auditService.record(user, user, "USER_LOGIN", "app_user", user.getPublicId(), ip(httpRequest));
         return new AuthDtos.TokenResponse(accessToken, rawRefreshToken, "Bearer", jwtService.accessTokenExpiresInSeconds());
     }
@@ -328,6 +340,23 @@ public class AuthService {
         attempt.setFailureReason(failureReason);
         attempt.setAttemptedAt(LocalDateTime.now());
         loginAttemptRepository.save(attempt);
+    }
+
+    private boolean isDeleted(AppUser user) {
+        return user.getStatus() == UserStatus.DELETED || user.getDeletedAt() != null;
+    }
+
+    private void releaseDeletedIdentity(AppUser user) {
+        if (!isDeleted(user)) {
+            return;
+        }
+        String releasedEmail = "deleted+" + user.getPublicId() + "@deleted.local";
+        String releasedUsername = "deleted_" + user.getId();
+        user.setEmail(releasedEmail);
+        user.setNormalizedEmail(releasedEmail);
+        user.setUsername(releasedUsername);
+        user.setNormalizedUsername(releasedUsername);
+        user.setUpdatedAt(LocalDateTime.now());
     }
 
     private String normalize(String value) {

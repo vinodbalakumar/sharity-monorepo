@@ -123,6 +123,9 @@ public class UserMapper {
     }
 
     public AdminDtos.AdminUserResponse adminUser(AppUser user) {
+        AdminDtos.ProfileSummary profile = userProfileRepository.findByUser_Id(user.getId())
+                .map(this::adminProfile)
+                .orElse(new AdminDtos.ProfileSummary(null, null, null, null));
         return new AdminDtos.AdminUserResponse(
                 user.getPublicId(),
                 user.getEmail(),
@@ -130,19 +133,46 @@ public class UserMapper {
                 user.getStatus().name(),
                 user.isEmailVerified(),
                 user.getCreatedAt(),
+                profile,
                 roles(user),
                 apps(user));
+    }
+
+    public AdminDtos.ProfileSummary adminProfile(UserProfile profile) {
+        return new AdminDtos.ProfileSummary(
+                profile.getFirstName(),
+                profile.getLastName(),
+                profile.getPhoneNumber(),
+                profile.getProfileImageUrl());
     }
 
     public AdminDtos.AuditLogResponse auditLog(AuditLog log) {
         return new AdminDtos.AuditLogResponse(
                 log.getId(),
                 log.getActorUser() == null ? null : log.getActorUser().getPublicId(),
+                displayName(log.getActorUser()),
+                log.getActorUser() == null ? null : log.getActorUser().getEmail(),
                 log.getTargetUser() == null ? null : log.getTargetUser().getPublicId(),
+                displayName(log.getTargetUser()),
+                log.getTargetUser() == null ? null : log.getTargetUser().getEmail(),
                 log.getAction(),
                 log.getEntityType(),
                 log.getEntityId(),
                 log.getIpAddress(),
                 log.getCreatedAt());
+    }
+
+    private String displayName(AppUser user) {
+        if (user == null) {
+            return null;
+        }
+        return userProfileRepository.findByUser_Id(user.getId())
+                .map(profile -> {
+                    String firstName = profile.getFirstName() == null ? "" : profile.getFirstName().trim();
+                    String lastName = profile.getLastName() == null ? "" : profile.getLastName().trim();
+                    String name = (firstName + " " + lastName).trim();
+                    return name.isBlank() ? user.getUsername() : name;
+                })
+                .orElse(user.getUsername());
     }
 }

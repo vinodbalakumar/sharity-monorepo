@@ -19,8 +19,53 @@ public final class AdminDtos {
             String status,
             boolean emailVerified,
             LocalDateTime createdAt,
+            ProfileSummary profile,
             List<String> roles,
             List<String> apps
+    ) {
+    }
+
+    public record PageResponse<T>(
+            List<T> content,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages
+    ) {
+    }
+
+    public record ProfileSummary(String firstName, String lastName, String phoneNumber, String profileImageUrl) {
+    }
+
+    public record CreateUserRequest(
+            @NotBlank(message = ValidationMessages.EMAIL_REQUIRED)
+            @jakarta.validation.constraints.Email(message = ValidationMessages.EMAIL_INVALID)
+            String email,
+            @Size(max = 100, message = ValidationMessages.USERNAME_SIZE)
+            String username,
+            @NotBlank(message = ValidationMessages.PASSWORD_REQUIRED)
+            @Size(min = 8, max = 100, message = ValidationMessages.PASSWORD_SIZE)
+            @Pattern(regexp = ValidationMessages.PASSWORD_PATTERN, message = ValidationMessages.PASSWORD_COMPLEXITY)
+            String password,
+            @Size(max = 100, message = ValidationMessages.NAME_SIZE)
+            String firstName,
+            @Size(max = 100, message = ValidationMessages.NAME_SIZE)
+            String lastName,
+            Boolean emailVerified,
+            String status,
+            List<String> roles
+    ) {
+    }
+
+    public record UpdateProfileRequest(
+            @Size(max = 100, message = ValidationMessages.NAME_SIZE)
+            String firstName,
+            @Size(max = 100, message = ValidationMessages.NAME_SIZE)
+            String lastName,
+            @Size(max = 30, message = ValidationMessages.PHONE_SIZE)
+            String phoneNumber,
+            @Size(max = 500, message = ValidationMessages.PROFILE_IMAGE_URL_SIZE)
+            String profileImageUrl
     ) {
     }
 
@@ -61,15 +106,46 @@ public final class AdminDtos {
     public record ApplicationResponse(String appCode, String appName, String description, boolean active) {
     }
 
+    public record RoleResponse(String roleName, String description, LocalDateTime createdAt) {
+    }
+
     public record AuditLogResponse(
             Long id,
             String actorPublicId,
+            String actorName,
+            String actorEmail,
             String targetPublicId,
+            String targetName,
+            String targetEmail,
             String action,
             String entityType,
             String entityId,
             String ipAddress,
             LocalDateTime createdAt
+    ) {
+    }
+
+    public record DashboardSummaryResponse(
+            long totalUsers,
+            long activeUsers,
+            long pendingUsers,
+            long lockedUsers,
+            long suspendedUsers,
+            long deletedUsers,
+            long applications,
+            long activeSessions,
+            long auditEvents
+    ) {
+    }
+
+    public record AdminSessionResponse(
+            Long id,
+            String deviceName,
+            String ipAddress,
+            String userAgent,
+            LocalDateTime issuedAt,
+            LocalDateTime expiresAt,
+            LocalDateTime lastUsedAt
     ) {
     }
 }

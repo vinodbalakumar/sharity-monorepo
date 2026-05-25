@@ -194,8 +194,12 @@ Transactional email events:
 | Email verification | `POST /api/v1/auth/register` |
 | Password reset | `POST /api/v1/auth/forgot-password` |
 | Password changed notification | `POST /api/v1/auth/reset-password`, `PUT /api/v1/users/me/password` |
-| New login notification | `POST /api/v1/auth/login` |
+| Admin-created user email | `POST /api/v1/admin/users` |
 | Super-admin security alert | Assigning `SUPER_ADMIN` role |
+
+When an admin creates a user, the system never emails the password. If the user is created with `emailVerified=false`, the user receives an email verification link. If the user is created with `emailVerified=true`, the user receives a password setup/reset link.
+
+Users are not emailed on successful login. Login activity is stored in `login_attempt` and `audit_log`.
 
 Every email attempt is persisted in `email_delivery_log`.
 
@@ -348,16 +352,66 @@ curl.exe -X GET "http://localhost:8083/api/v1/users/me" `
 
 | Method | API | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/v1/admin/users` | List users |
+| `GET` | `/api/v1/admin/users?search=&status=&role=&app=&page=&size=` | Search, filter, and paginate users |
+| `POST` | `/api/v1/admin/users` | Create a user from the admin UI |
 | `GET` | `/api/v1/admin/users/{publicId}` | Get one user |
 | `PUT` | `/api/v1/admin/users/{publicId}/status` | Change user status |
+| `PUT` | `/api/v1/admin/users/{publicId}/profile` | Edit user profile fields |
+| `DELETE` | `/api/v1/admin/users/{publicId}` | Soft delete user by setting status `DELETED` |
 | `POST` | `/api/v1/admin/users/{publicId}/roles` | Assign role |
 | `DELETE` | `/api/v1/admin/users/{publicId}/roles/{role}` | Remove role |
+| `GET` | `/api/v1/admin/roles` | List roles dynamically |
 | `GET` | `/api/v1/admin/applications` | List active apps |
 | `POST` | `/api/v1/admin/applications` | Create app |
 | `POST` | `/api/v1/admin/users/{publicId}/applications` | Assign app access |
 | `DELETE` | `/api/v1/admin/users/{publicId}/applications/{appCode}` | Remove app access |
-| `GET` | `/api/v1/admin/audit-logs` | List audit logs |
+| `GET` | `/api/v1/admin/audit-logs?actor=&target=&action=&from=&to=&page=&size=` | Search and paginate audit logs |
+| `GET` | `/api/v1/admin/dashboard/summary` | Counts for users, apps, sessions, and audit events |
+| `GET` | `/api/v1/admin/users/{publicId}/sessions` | Inspect a user's active sessions |
+| `DELETE` | `/api/v1/admin/users/{publicId}/sessions/{sessionId}` | Revoke a user's session |
+
+When a user is deleted, the account is closed, active refresh tokens are revoked, and login identifiers are released. The old row remains for audit history, but its email and username are anonymized, so the same email can register again. Use `SUSPENDED` or `LOCKED` instead of `DELETED` when the account should be blocked but the email must remain reserved.
+
+Admin list responses use a standard page shape:
+
+```json
+{
+  "content": [],
+  "page": 0,
+  "size": 20,
+  "totalElements": 0,
+  "totalPages": 0
+}
+```
+
+Audit-log responses include joined display data so the frontend does not need to manually look up users:
+
+```json
+{
+  "id": 1,
+  "actorPublicId": "actor-uuid",
+  "actorName": "Admin User",
+  "actorEmail": "admin@example.com",
+  "targetPublicId": "target-uuid",
+  "targetName": "Customer User",
+  "targetEmail": "customer@example.com",
+  "action": "USER_STATUS_CHANGED",
+  "entityType": "app_user",
+  "entityId": "target-uuid",
+  "ipAddress": "127.0.0.1",
+  "createdAt": "2026-05-25T10:30:00"
+}
+```
+
+Example admin calls:
+
+```powershell
+curl.exe -X GET "http://localhost:8083/api/v1/admin/users?search=vinod&status=ACTIVE&role=USER&page=0&size=20" `
+  -H "Authorization: Bearer <adminAccessToken>"
+
+curl.exe -X GET "http://localhost:8083/api/v1/admin/dashboard/summary" `
+  -H "Authorization: Bearer <adminAccessToken>"
+```
 
 ## Registration Flow
 
