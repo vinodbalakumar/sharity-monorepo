@@ -1,0 +1,116 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      sharity-admin-portal:
+        condition: service_started
+      tesla-dashboard-ui:
+        condition: service_started
+      authorization-server:
+        condition: service_started
+      tesla-dashboard-services:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 256m
+
+  sharity-admin-portal:
+    build:
+      context: ../webapps/sharity-admin-portal
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-admin-portal.Dockerfile
+      args:
+        SHARITY_VITE_API_BASE_URL: ""
+        SHARITY_VITE_TESLA_APP_URL: /tesla/
+        SHARITY_VITE_COMPANY_NAME: ${SHARITY_COMPANY_NAME:-Sharity}
+        SHARITY_VITE_COMPANY_TAGLINE: ${SHARITY_COMPANY_TAGLINE:-Smart business. shared rewards}
+    image: sharity-admin-portal:latest
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 256m
+
+  tesla-dashboard-ui:
+    build:
+      context: ../webapps/tesla-dashboard-react
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/tesla-dashboard-ui.Dockerfile
+      args:
+        TESLA_VITE_API_BASE_URL: ""
+    image: tesla-dashboard-ui:latest
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 256m
+
+  authorization-server:
+    build:
+      context: ../springbootrestdemo/authorization-server
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/authorization-server.Dockerfile
+    image: authorization-server:latest
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: host.docker.internal
+      DB_PORT: ${PC_MYSQL_PORT:-3306}
+      DB_NAME: ${AUTH_DB_NAME:-auth}
+      DB_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
+      JWT_PRIVATE_KEY_PATH: /keys/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-auth-clients}
+      FRONTEND_BASE_URL: /authorization-server/api
+      EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-true}
+      MAIL_HOST: ${MAIL_HOST:-mail.smtp2go.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:?Set MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?Set MAIL_PASSWORD}
+    volumes:
+      - C:/Users/HP/projects/certs:/keys:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 768m
+
+  tesla-dashboard-services:
+    build:
+      context: ../springbootrestdemo/tesla-dashboard-services
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/tesla-dashboard-services.Dockerfile
+    image: tesla-dashboard-services:latest
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: host.docker.internal
+      DB_PORT: ${PC_MYSQL_PORT:-3306}
+      DB_NAME: ${TESLA_DB_NAME:-tesla}
+      DB_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+      JWT_AUDIENCES: ${JWT_AUDIENCES:-auth-clients}
+      TESLA_PROXY_BASE: ${TESLA_PROXY_BASE:-https://host.docker.internal:4443}
+    volumes:
+      - C:/Users/HP/projects/certs:/keys:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 768m
