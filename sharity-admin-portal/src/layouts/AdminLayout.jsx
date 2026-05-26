@@ -6,10 +6,12 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
+  Menu,
   PanelsTopLeft,
   Settings,
   Shield,
   ChevronDown,
+  X,
   Users,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/AuthContext.jsx';
@@ -33,6 +35,7 @@ export function AdminLayout() {
   const location = useLocation();
   const [userMenuExpanded, setUserMenuExpanded] = useState(location.pathname.startsWith('/users'));
   const [accountOpen, setAccountOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const accountRef = useRef(null);
   const visibleItems = navItems.filter((item) => !item.roles || hasRole(...item.roles));
   const accountName = displayAccountName(user);
@@ -47,6 +50,10 @@ export function AdminLayout() {
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
   const onLogout = async () => {
     try {
       await logout();
@@ -57,13 +64,22 @@ export function AdminLayout() {
 
   return (
     <div className="shell">
-      <aside className="sidebar">
+      <aside className={`sidebar ${mobileNavOpen ? 'mobile-open' : ''}`}>
         <div className="brand">
           <div className="brand-mark">S</div>
           <div>
             <strong>{appConfig.companyName}</strong>
             <span>{appConfig.tagline}</span>
           </div>
+          <button
+            className="mobile-menu-toggle"
+            type="button"
+            onClick={() => setMobileNavOpen((value) => !value)}
+            aria-expanded={mobileNavOpen}
+            aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+          >
+            {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
         <nav>
           {visibleItems.map((item) => {

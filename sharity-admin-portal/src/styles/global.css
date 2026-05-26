@@ -31,6 +31,8 @@ a { color: inherit; text-decoration: none; }
 .brand strong, .brand span { display: block; }
 .brand strong { font-size: 1.18rem; letter-spacing: 0; font-weight: 650; }
 .brand span { color: #cbd5e1; font-size: 0.78rem; line-height: 1.25; }
+.mobile-menu-toggle { display: none; margin-left: auto; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.08); color: #f8fafc; align-items: center; justify-content: center; cursor: pointer; }
+.mobile-menu-toggle:hover { background: rgba(255,255,255,.14); }
 .sidebar nav { background: rgba(255, 255, 255, .035); border: 1px solid rgba(255, 255, 255, .07); border-radius: 8px; padding: 8px; display: grid; gap: 4px; overflow-y: auto; min-height: 0; }
 .sidebar a, .logout { border: 0; border-radius: 6px; color: #d7dee8; background: transparent; display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; font-weight: 600; }
 .sidebar a.active, .sidebar a:hover, .logout:hover { background: rgba(255, 255, 255, .1); color: #fff; }
@@ -265,9 +267,27 @@ td strong { display: block; margin-bottom: 2px; font-weight: 600; }
 }
 
 @media (max-width: 920px) {
-  .shell { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; overflow: visible; }
-  .sidebar nav { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  body { font-size: 14px; }
+  .shell { display: block; min-height: 100vh; }
+  .sidebar { position: sticky; top: 0; z-index: 30; height: auto; overflow: visible; padding: 12px 14px; gap: 10px; box-shadow: 0 8px 24px rgba(15, 23, 42, .16); }
+  .brand-mark { width: 48px; height: 48px; font-size: 1.35rem; }
+  .brand strong { font-size: 1.08rem; }
+  .brand span { font-size: .76rem; }
+  .mobile-menu-toggle { display: inline-flex; }
+  .sidebar nav { display: none; max-height: calc(100vh - 142px); overflow-y: auto; grid-template-columns: 1fr; padding: 8px; }
+  .sidebar.mobile-open nav { display: grid; }
+  .sidebar a, .logout, .nav-group-trigger { min-height: 42px; padding: 10px 12px; }
+  .nav-submenu { padding-left: 28px; }
+  .logout { display: none; margin-top: 0; }
+  .sidebar.mobile-open .logout { display: flex; }
+  .content { min-width: 0; }
+  .topbar { position: static; min-height: auto; margin-bottom: 14px; padding: 16px; gap: 14px; }
+  .topbar h1 { font-size: 1.35rem; }
+  .account-wrap { width: 100%; }
+  .account-menu { width: 100%; max-width: none; justify-content: flex-start; }
+  .account-menu strong { max-width: min(260px, 55vw); }
+  .account-popover { width: min(360px, calc(100vw - 32px)); left: 0; right: auto; }
+  .page-grid, .detail-grid, .users-grid, .page-stack, .form-page, .profile-grid, .standard-grid { padding: 0 16px 18px; }
   .module-header { flex-direction: column; align-items: stretch; }
   .module-tabs { justify-content: flex-start; }
   .page-grid, .detail-grid, .stat-strip, .form-grid, .info-grid { grid-template-columns: 1fr; }
