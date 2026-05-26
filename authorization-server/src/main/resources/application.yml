@@ -1,5 +1,8 @@
 server:
   port: ${SERVER_PORT:8083}
+  forward-headers-strategy: framework
+  servlet:
+    context-path: /authorization-server/api
 
 spring:
   application:
@@ -28,12 +31,14 @@ spring:
     enabled: true
     locations: classpath:db/migration
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
+        use_sql_comments: true
         jdbc:
           time_zone: UTC
 
@@ -72,3 +77,6 @@ logging:
   level:
     org.springframework.web: info
     org.springframework.security: info
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
+

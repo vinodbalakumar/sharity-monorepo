@@ -25,7 +25,7 @@ import java.util.List;
 
 @RestController
 @Validated
-@RequestMapping("/api/v1/admin")
+@RequestMapping("/v1/admin")
 public class AdminController {
     private final AdminService adminService;
 
