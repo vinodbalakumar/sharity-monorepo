@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.java.vinod.platform.web.bff.controller.BffControllerTest
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.748 s -- in com.java.vinod.platform.web.bff.controller.BffControllerTest
