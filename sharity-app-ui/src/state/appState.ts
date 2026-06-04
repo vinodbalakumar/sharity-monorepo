@@ -62,5 +62,83 @@ export const appState$ = observable({
     receiptModalOpen: false,
     retryLoading: false,
     status: 'IDLE'
+  },
+  notifications: {
+    archiveError: '',
+    lastDeepLink: '',
+    selectedFilter: 'All',
+    selectedNotificationId: ''
+  },
+  profilePrivacy: {
+    deleteConfirmation: '',
+    realNameWarningOpen: false,
+    saveStatus: 'SAVED',
+    selectedSection: 'Identity'
+  },
+  accountSwitcher: {
+    currentMode: 'BUYER',
+    selectedMarketplace: 'DIGITAL',
+    sheetOpen: false,
+    switchLoading: false,
+    selectedTab: 'Modes'
+  },
+  multiSellerCart: {
+    couponCode: '',
+    digitalTermsAccepted: false,
+    lastExpandedSellerGroup: 'seller-gamecodehub',
+    checkoutLoading: false,
+    lastMessage: ''
+  },
+  paymentAuthorization: {
+    selectedProvider: 'PAYPAL',
+    authorizationStatus: 'READY',
+    retryLoading: false,
+    lastExpandedSellerOrder: 'seller-order-a'
+  },
+  pricingPromotions: {
+    selectedTab: 'Rules',
+    selectedRuleId: '',
+    simulatorMode: 'Admin',
+    saveStatus: 'IDLE'
+  },
+  rewards: {
+    selectedTab: 'Buyer',
+    creditApplied: false,
+    selectedCampaignId: '',
+    claimLoading: false
+  },
+  sellerOrderRefund: {
+    selectedSellerOrderId: 'seller-order-a',
+    selectedItemId: 'item-a-1',
+    selectedReasonCode: 'DIGITAL_CODE_NOT_WORKING',
+    requestedAmount: '18.00',
+    submitLoading: false
+  },
+  marketplaceConfig: {
+    selectedTab: 'Countries',
+    selectedCountry: 'USA',
+    selectedMarketplace: 'DIGITAL',
+    saveStatus: 'IDLE'
+  },
+  sellerVerification: {
+    selectedTab: 'Checklist',
+    paypalStatus: 'NOT_CONNECTED',
+    documentUploadStatus: 'IDLE',
+    reviewStatus: 'REQUIRED'
+  },
+  policies: {
+    selectedTab: 'Required',
+    selectedPolicyId: 'policy-seller-terms',
+    acceptLoading: false,
+    acceptedCount: 0
+  },
+  support: {
+    selectedTab: 'Dashboard',
+    searchQuery: '',
+    selectedFilter: 'All tickets',
+    selectedCategory: 'DIGITAL_CODE_ACCESS_ISSUE',
+    selectedTicketId: 'ticket-001',
+    unsafeWarningVisible: false,
+    createLoading: false
   }
 });

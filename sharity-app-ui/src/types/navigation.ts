@@ -21,4 +21,14 @@ export type AppRoute =
   | 'secureDownload'
   | 'paymentSuccess'
   | 'paymentFailed'
-  | 'paymentCancelled';
+  | 'paymentCancelled'
+  | 'notifications'
+  | 'profilePrivacy'
+  | 'accountSwitcher'
+  | 'paymentAuthorization'
+  | 'pricingPromotions'
+  | 'rewards'
+  | 'marketplaceConfig'
+  | 'sellerVerification'
+  | 'policies'
+  | 'support';

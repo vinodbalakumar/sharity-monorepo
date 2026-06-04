@@ -33,6 +33,254 @@ Validation:
 - `npm run lint`
 - Docker build and HTTP check passed for `sharity-app`
 
+## Story 032: Notifications Center Screen
+
+Status: Done
+
+Goal:
+- Add a premium Notification Center for buyer, seller, and system alerts.
+- Support grouped Today/Yesterday/This Week/Earlier feed, filters, summary counts, read/unread, mark-all-read, archive-only behavior, critical non-dismissible alerts, and deep-link mock behavior.
+
+Mock API Contracts:
+- `GET /api/notifications`
+- `GET /api/notifications/summary-counts`
+- `POST /api/notifications/{notificationId}/read`
+- `POST /api/notifications/{notificationId}/unread`
+- `POST /api/notifications/read-all`
+- `POST /api/notifications/{notificationId}/archive`
+- `GET /api/notifications/{notificationId}`
+- `POST /api/notifications/{notificationId}/resolve-action`
+- `GET /api/notifications/preferences-route`
+
+Security:
+- Digital codes, raw download URLs, provider payloads, internal risk score, admin private notes, and private contact details are not exposed.
+- Critical notifications are blocked from archive until resolved.
+
+Validation:
+- `npm run typecheck`
+
+## Story 033: Buyer/Seller Profile & Privacy Settings Screen
+
+Status: Done
+
+Goal:
+- Add Profile & Privacy for buyer and seller identity in one screen.
+- Support separate buyer/seller aliases, store name, avatar, privacy controls, real-name warning, digital privacy, message privacy, blocked users, trust badges, data export, and protected delete account mock state.
+
+Mock API Contracts:
+- `GET /api/profile/privacy`
+- `PATCH /api/profile`
+- `PATCH /api/profile/buyer-alias`
+- `PATCH /api/profile/seller-alias`
+- `PATCH /api/profile/store-name`
+- `GET /api/profile/aliases/check`
+- `POST /api/profile/photo`
+- `PATCH /api/profile/privacy`
+- `PATCH /api/profile/message-privacy`
+- `GET /api/profile/blocked-users`
+- `POST /api/profile/blocked-users`
+- `DELETE /api/profile/blocked-users/{blockedUserId}`
+- `POST /api/profile/reports`
+- `GET /api/profile/verification-badges`
+- `POST /api/profile/data-export`
+- `GET /api/profile/data-export`
+- `GET /api/profile/delete-account/eligibility`
+- `POST /api/profile/delete-account`
+
+Security:
+- Real name is hidden by default.
+- DOB, gender, phone/email, identity documents, tax/KYC data, payout secrets, bank details, internal risk score, admin notes, report evidence, and delete confirmation data are not stored in local UI preferences.
+
+Validation:
+- `npm run typecheck`
+
+## Story 034: Account Switcher / Buyer-Seller Mode Switch Screen
+
+Status: Done
+
+Goal:
+- Add Account Switcher for buyer mode, seller mode, and marketplace modules.
+- Show buyer/seller identities separately, country/admin marketplace availability, unavailable reasons, seller eligibility, and remembered safe mode/marketplace preferences.
+
+Mock API Contracts:
+- `GET /api/account/switcher`
+- `POST /api/account/switch-mode`
+- `POST /api/account/switch-marketplace`
+- `GET /api/account/marketplace-preferences`
+- `PATCH /api/account/marketplace-preferences`
+- `GET /api/account/seller-mode-eligibility`
+- `GET /api/account/marketplace-availability`
+
+Security:
+- Legal identity, DOB/gender, phone/email, payout provider secrets, provider tokens, bank/tax/KYC data, internal risk score, admin notes, and unsafe admin config payloads are not stored locally.
+- Local preference does not override backend permission.
+
+Validation:
+- `npm run typecheck`
+
+## Story 035: Multi-Seller Cart & Checkout Review Screen
+
+Status: Done
+
+Goal:
+- Replace Cart with a premium multi-seller Cart & Checkout review surface.
+- Support seller-grouped cart sections, buyer service fee, seller/platform coupon states, digital terms acceptance, validation issues, authorize-first payment notice, and parent/seller order preview.
+
+Mock API Contracts:
+- `GET /api/cart`
+- `POST /api/cart/items`
+- `PATCH /api/cart/items/{cartItemId}`
+- `DELETE /api/cart/items/{cartItemId}`
+- `POST /api/cart/items/{cartItemId}/save-for-later`
+- `POST /api/cart/items/{cartItemId}/move-to-cart`
+- `POST /api/cart/coupons/apply`
+- `POST /api/cart/coupons/remove`
+- `POST /api/cart/validate`
+- `POST /api/cart/pricing/refresh`
+- `POST /api/cart/digital-terms/accept`
+- `GET /api/checkout/preview`
+- `POST /api/checkout/session`
+- `POST /api/checkout/payment-authorization/start`
+
+Security:
+- Buyer-safe pricing only.
+- Seller commission, internal fee waiver rules, internal risk score, admin pricing config, digital codes, raw URLs, and payment provider payloads are not exposed in cart.
+
+Validation:
+- `npm run typecheck`
+
+## Story 036: Payment Authorization & Seller Acceptance Flow Screen
+
+Status: Done
+
+Goal:
+- Add PayPal-first Payment Authorization status screen for multi-seller checkout.
+- Show provider-decided auth model, buyer-safe pricing, authorization-first notice, seller acceptance before capture, partial acceptance, capture/release state, and digital delivery eligibility.
+
+Mock API Contracts:
+- `GET /api/checkout/sessions/{checkoutSessionId}/payment-authorization`
+- `POST /api/checkout/sessions/{checkoutSessionId}/paypal/authorize`
+- `POST /api/checkout/sessions/{checkoutSessionId}/paypal/confirm`
+- `POST /api/checkout/sessions/{checkoutSessionId}/stripe/authorize`
+- `GET /api/checkout/sessions/{checkoutSessionId}/authorization-status`
+- `GET /api/checkout/sessions/{checkoutSessionId}/timeline`
+- `POST /api/checkout/sessions/{checkoutSessionId}/authorization/retry`
+- `POST /api/checkout/sessions/{checkoutSessionId}/authorization/cancel`
+- Seller order accept/reject/request-more-time/status APIs
+
+Security:
+- Provider payloads/tokens/card data, seller commission, internal capture rules, internal risk score, digital codes, and raw URLs are not exposed or stored locally.
+
+Validation:
+- `npm run typecheck`
+
+## Story 037: Pricing, Fees, Coupons & Promotions Engine / Admin Config
+
+Status: Done
+
+Goal:
+- Add admin Pricing, Fees & Promotions control screen plus seller-safe pricing view.
+- Support mock pricing rules, coupon manager, fee waivers, free product rules, simulator output, conflicts, audit log, buyer-safe pricing DTO, seller-safe pricing DTO, and pricing snapshots.
+
+Mock API Contracts:
+- Admin pricing rules, coupons, fee waivers, free product rules, simulation, conflicts, and audit log APIs
+- Seller pricing summary, seller coupons, seller receives simulation, buyer display, checkout calculation, and seller order pricing snapshot APIs
+
+Security:
+- Buyer-safe pricing only for buyer surfaces.
+- Seller-safe fee/coupon/payout impact only for seller surfaces.
+- Admin-only full rule logic; no provider payloads, internal risk, admin notes, buyer private data, seller payout account data, tax/KYC data, or raw audit-sensitive payloads are stored locally.
+
+Validation:
+- `npm run typecheck`
+
+## Story 038: Sharity Credit, Rewards & Giveaway Flow
+
+Status: Done
+
+Goal:
+- Add later-phase Sharity Credit & Rewards architecture with buyer credit balance/history, giveaways, checkout credit allocation, seller-safe promotion impact, admin campaigns, abuse review, simulator, and audit logs.
+
+Mock API Contracts:
+- Rewards dashboard, credit balance/history, available rewards, giveaway claim, checkout credit apply/remove/allocation, seller promotion impact, admin campaigns, manual credit, issuance/redemption, giveaway claims, abuse review, simulator, audit log.
+
+Security:
+- Buyer credit data is buyer-scoped.
+- Seller view is seller-safe only.
+- Internal risk/IP/device/provider/wallet secrets and admin private notes are not shown or stored locally.
+
+Validation:
+- `npm run typecheck`
+- `npm run lint`
+- `mvn -q -DskipTests compile`
+
+## Story 039: Buyer Refund Per Seller Order Flow
+
+Status: Done
+
+Goal:
+- Add Request Refund for multi-seller parent orders where refunds target a selected seller order or seller order item, with digital eligibility, evidence, refund estimate, payout hold, escalation, cancellation, timeline, and physical/electronics placeholders.
+
+Mock API Contracts:
+- Parent order refund summary, seller order/item eligibility, refund reasons, estimate, evidence, submit refund, refund detail, timeline, cancel, escalate, breakdown.
+
+Security:
+- Buyer-owned seller-order refund only.
+- Digital codes, raw/signed download URLs, evidence storage keys, provider payloads, internal risk, admin private notes, and seller payout data are not exposed.
+
+Validation:
+- `npm run typecheck`
+- `npm run lint`
+- `mvn -q -DskipTests compile`
+
+## Story 040: Admin Marketplace & Country Configuration Screen
+
+Status: Done
+
+Goal:
+- Add Country & Marketplace Settings for admin country marketplace config, buyer/seller availability, statuses, eligibility, feature flags, display order, simulation, audit, and existing-order snapshot warnings.
+
+Validation:
+- `npm run typecheck`
+- `npm run lint`
+- `mvn -q -DskipTests compile`
+
+## Story 041: Seller Verification / KYC / Payout Eligibility Screen
+
+Status: Done
+
+Goal:
+- Add Verification & Payout Eligibility for seller checklist, PayPal-first payout setup, payout blockers, marketplace/category eligibility, seller-safe limits, document requirements, admin review, badges, and timeline.
+
+Validation:
+- `npm run typecheck`
+- `npm run lint`
+- `mvn -q -DskipTests compile`
+
+## Story 042: Policies & Terms Acceptance Screen
+
+Status: Done
+
+Goal:
+- Add Policies & Terms with versioned buyer/seller/digital/refund/payout policy acceptance, re-acceptance, blockers, what-changed summaries, acceptance history, digital checkout snapshot placeholder, and admin preview.
+
+Validation:
+- `npm run typecheck`
+- `npm run lint`
+- `mvn -q -DskipTests compile`
+
+## Story 043: Help & Support Center / Ticket Flow Screen
+
+Status: Done
+
+Goal:
+- Add Help & Support with help search, guided troubleshooting, ticket creation, related entity linking, evidence upload, Sharity-only replies, ticket timeline, escalation, close/reopen, and admin/support queue placeholder.
+
+Validation:
+- `npm run typecheck`
+- `npm run lint`
+- `mvn -q -DskipTests compile`
+
 ## Story 027: View Receipt Screen
 
 Status: Done

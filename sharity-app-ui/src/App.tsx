@@ -4,6 +4,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 
+import { AccountSwitcherScreen } from './features/accountSwitcher/AccountSwitcherScreen';
 import { CartScreen } from './features/cart/CartScreen';
 import { CheckoutScreen } from './features/checkout/CheckoutScreen';
 import { DigitalProductDetailsScreen } from './features/digital/DigitalProductDetailsScreen';
@@ -13,17 +14,26 @@ import { HomeScreen } from './features/home/HomeScreen';
 import { BuyerLibraryScreen } from './features/library/BuyerLibraryScreen';
 import { CodeRevealScreen, SecureDownloadScreen } from './features/library/SecureAccessScreens';
 import { MarketplaceSwitcherScreen } from './features/marketplace/MarketplaceSwitcherScreen';
+import { MarketplaceConfigScreen } from './features/marketplaceConfig/MarketplaceConfigScreen';
+import { NotificationCenterScreen } from './features/notifications/NotificationCenterScreen';
 import { DisputeStatusScreen } from './features/orders/DisputeStatusScreen';
 import { OpenDisputeScreen } from './features/orders/OpenDisputeScreen';
 import { OrderDetailsScreen } from './features/orders/OrderDetailsScreen';
 import { OrderReceiptScreen } from './features/orders/OrderReceiptScreen';
 import { OrdersScreen } from './features/orders/OrdersScreen';
-import { RefundReturnRequestScreen } from './features/orders/RefundReturnRequestScreen';
 import { RefundReturnStatusScreen } from './features/orders/RefundReturnStatusScreen';
+import { SellerOrderRefundScreen } from './features/refunds/SellerOrderRefundScreen';
+import { RewardsScreen } from './features/rewards/RewardsScreen';
 import { TrackingScreen } from './features/orders/TrackingScreen';
 import { PaymentFailedScreen } from './features/payment/PaymentFailedScreen';
+import { PaymentAuthorizationScreen } from './features/paymentAuthorization/PaymentAuthorizationScreen';
 import { PaymentSuccessScreen } from './features/payment/PaymentSuccessScreen';
+import { PoliciesScreen } from './features/policies/PoliciesScreen';
+import { PricingPromotionsScreen } from './features/pricingPromotions/PricingPromotionsScreen';
+import { ProfilePrivacyScreen } from './features/profilePrivacy/ProfilePrivacyScreen';
 import { ProductDetailsScreen } from './features/products/ProductDetailsScreen';
+import { SellerVerificationScreen } from './features/sellerVerification/SellerVerificationScreen';
+import { SupportScreen } from './features/support/SupportScreen';
 import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { checkSession } from './services/sessionService';
 import { paperTheme } from './theme';
@@ -185,11 +195,11 @@ export default function App() {
             />
           ) : null}
           {route === 'refundRequest' ? (
-            <RefundReturnRequestScreen
+            <SellerOrderRefundScreen
               onNavigate={setRoute}
               onOpenRefundStatus={(nextRefundRequestId, nextOrderId) => {
                 setRefundRequestId(nextRefundRequestId);
-                setOrderId(nextOrderId);
+                if (nextOrderId) setOrderId(nextOrderId);
                 setRoute('refundStatus');
               }}
               orderId={orderId}
@@ -223,6 +233,16 @@ export default function App() {
           {route === 'paymentSuccess' ? <PaymentSuccessScreen onNavigate={setRoute} /> : null}
           {route === 'paymentFailed' ? <PaymentFailedScreen onNavigate={setRoute} status="PAYMENT_FAILED" /> : null}
           {route === 'paymentCancelled' ? <PaymentFailedScreen onNavigate={setRoute} status="PAYMENT_CANCELLED" /> : null}
+          {route === 'notifications' ? <NotificationCenterScreen onNavigate={setRoute} /> : null}
+          {route === 'profilePrivacy' ? <ProfilePrivacyScreen onNavigate={setRoute} /> : null}
+          {route === 'accountSwitcher' ? <AccountSwitcherScreen onNavigate={setRoute} /> : null}
+          {route === 'paymentAuthorization' ? <PaymentAuthorizationScreen onNavigate={setRoute} /> : null}
+          {route === 'pricingPromotions' ? <PricingPromotionsScreen onNavigate={setRoute} /> : null}
+          {route === 'rewards' ? <RewardsScreen onNavigate={setRoute} /> : null}
+          {route === 'marketplaceConfig' ? <MarketplaceConfigScreen onNavigate={setRoute} /> : null}
+          {route === 'sellerVerification' ? <SellerVerificationScreen onNavigate={setRoute} /> : null}
+          {route === 'policies' ? <PoliciesScreen onNavigate={setRoute} /> : null}
+          {route === 'support' ? <SupportScreen onNavigate={setRoute} /> : null}
         </SafeAreaProvider>
       </PaperProvider>
     </TamaguiProvider>
