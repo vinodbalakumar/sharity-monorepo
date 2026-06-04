@@ -4,11 +4,17 @@ services:
     depends_on:
       sharity-admin-portal:
         condition: service_started
-      tesla-dashboard-ui:
+      sharity-app:
         condition: service_started
       authorization-server:
         condition: service_started
-      tesla-dashboard-services:
+      platform-web-bff:
+        condition: service_started
+      marketplace-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      wallet-service:
         condition: service_started
     ports:
       - "8080:8080"
@@ -40,7 +46,23 @@ services:
           cpus: "0.75"
           memory: 256m
 
+  sharity-app:
+    build:
+      context: ../webapps/sharity-app
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-app.Dockerfile
+    image: sharity-app:latest
+    expose:
+      - "80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 256m
+
   tesla-dashboard-ui:
+    profiles:
+      - disabled-tesla
     build:
       context: ../webapps/tesla-dashboard-react
       dockerfile: C:/Users/HP/projects/deployments/dockerfiles/tesla-dashboard-ui.Dockerfile
@@ -72,12 +94,17 @@ services:
       JWT_PRIVATE_KEY_PATH: /keys/jwt-private.pem
       JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
       JWT_AUDIENCE: ${JWT_AUDIENCE:-auth-clients}
+      JWT_ISSUER: ${JWT_ISSUER:-https://vinodbalakumar.com/authorization-server/api}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
       FRONTEND_BASE_URL: /authorization-server/api
-      EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-true}
+      SHARITY_WEB_BFF_CLIENT_ID: ${SHARITY_WEB_BFF_CLIENT_ID:-sharity-web-bff}
+      SHARITY_WEB_BFF_CLIENT_SECRET: ${SHARITY_WEB_BFF_CLIENT_SECRET:-change-me-local-only}
+      SHARITY_BFF_PUBLIC_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-http://localhost:8080}
+      EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-false}
       MAIL_HOST: ${MAIL_HOST:-mail.smtp2go.com}
       MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME:?Set MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:?Set MAIL_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     volumes:
       - C:/Users/HP/projects/certs:/keys:ro
     expose:
@@ -89,7 +116,124 @@ services:
           cpus: "1.50"
           memory: 768m
 
+  platform-web-bff:
+    build:
+      context: ../springbootrestdemo/platform-web-bff
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/platform-web-bff.Dockerfile
+    image: platform-web-bff:latest
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: prod
+      AUTH_SERVER_PUBLIC_BASE_URL: ${AUTH_SERVER_PUBLIC_BASE_URL:-https://vinodbalakumar.com/authorization-server/api}
+      AUTH_SERVER_BASE_URL: http://authorization-server:8080/authorization-server/api
+      SHARITY_WEB_BFF_CLIENT_ID: ${SHARITY_WEB_BFF_CLIENT_ID:-sharity-web-bff}
+      SHARITY_WEB_BFF_CLIENT_SECRET: ${SHARITY_WEB_BFF_CLIENT_SECRET:-change-me-local-only}
+      SHARITY_BFF_PUBLIC_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-http://localhost:8080}
+      SHARITY_WEB_BASE_URL: ${SHARITY_WEB_BASE_URL:-http://localhost:8080/app/}
+      SHARITY_WEB_ALLOWED_ORIGIN: ${SHARITY_WEB_ALLOWED_ORIGIN:-http://localhost:8080}
+      BFF_SESSION_COOKIE_SECURE: ${BFF_SESSION_COOKIE_SECURE:-true}
+      AUTHORIZATION_SERVER_BACKEND_URL: http://authorization-server:8080/authorization-server
+      MARKETPLACE_SERVICE_BACKEND_URL: http://marketplace-service:8080/marketplace-service
+      PAYMENT_SERVICE_BACKEND_URL: http://payment-service:8080/payment-service
+      WALLET_SERVICE_BACKEND_URL: http://wallet-service:8080/wallet-service
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512m
+
+  marketplace-service:
+    build:
+      context: ../springbootrestdemo/marketplace-service
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/marketplace-service.Dockerfile
+    image: marketplace-service:latest
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: host.docker.internal
+      DB_PORT: ${PC_MYSQL_PORT:-3306}
+      MARKETPLACE_DB_NAME: ${MARKETPLACE_DB_NAME:-marketplace_db}
+      DB_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+      JWT_AUDIENCE: ${RESOURCE_JWT_AUDIENCE:-auth-clients}
+      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-https://vinodbalakumar.com/authorization-server/api}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
+      AUTH_PROVIDER_ELIGIBILITY_INTERNAL_URL: http://authorization-server:8080/authorization-server/api/internal/api/v1
+      PAYMENT_SERVICE_INTERNAL_URL: http://payment-service:8080/payment-service/internal/api/v1
+    volumes:
+      - C:/Users/HP/projects/certs:/keys:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.25"
+          memory: 640m
+
+  payment-service:
+    build:
+      context: ../springbootrestdemo/payment-service
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/payment-service.Dockerfile
+    image: payment-service:latest
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: host.docker.internal
+      DB_PORT: ${PC_MYSQL_PORT:-3306}
+      PAYMENT_DB_NAME: ${PAYMENT_DB_NAME:-payment_db}
+      DB_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+      JWT_AUDIENCE: ${RESOURCE_JWT_AUDIENCE:-auth-clients}
+      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-https://vinodbalakumar.com/authorization-server/api}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
+      PAYMENT_GATEWAY_MODE: ${PAYMENT_GATEWAY_MODE:-mock}
+      AUTH_PROVIDER_ELIGIBILITY_INTERNAL_URL: http://authorization-server:8080/authorization-server/api/internal/api/v1
+      WALLET_SERVICE_INTERNAL_URL: http://wallet-service:8080/wallet-service/internal/api/v1
+    volumes:
+      - C:/Users/HP/projects/certs:/keys:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.25"
+          memory: 640m
+
+  wallet-service:
+    build:
+      context: ../springbootrestdemo/wallet-service
+      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/wallet-service.Dockerfile
+    image: wallet-service:latest
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: host.docker.internal
+      DB_PORT: ${PC_MYSQL_PORT:-3306}
+      WALLET_DB_NAME: ${WALLET_DB_NAME:-wallet_db}
+      DB_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+      JWT_AUDIENCE: ${RESOURCE_JWT_AUDIENCE:-auth-clients}
+      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-https://vinodbalakumar.com/authorization-server/api}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
+    volumes:
+      - C:/Users/HP/projects/certs:/keys:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.25"
+          memory: 640m
+
   tesla-dashboard-services:
+    profiles:
+      - disabled-tesla
     build:
       context: ../springbootrestdemo/tesla-dashboard-services
       dockerfile: C:/Users/HP/projects/deployments/dockerfiles/tesla-dashboard-services.Dockerfile

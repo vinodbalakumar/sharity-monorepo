@@ -1,0 +1,25 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+certs/
+keys/
+
+# Generated deployment/runtime data
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.bak
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
