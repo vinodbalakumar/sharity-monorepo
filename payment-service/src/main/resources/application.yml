@@ -1,0 +1,41 @@
+server:
+  port: ${SERVER_PORT:8085}
+  forward-headers-strategy: framework
+  servlet:
+    context-path: /payment-service
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:mysql://${PAYMENT_DB_HOST:${DB_HOST:localhost}}:${PAYMENT_DB_PORT:${DB_PORT:3306}}/${PAYMENT_DB_NAME:payment_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${PAYMENT_DB_USERNAME:${DB_USERNAME:root}}
+    password: ${PAYMENT_DB_PASSWORD:${DB_PASSWORD:root}}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+app:
+  jwt:
+    public-key-path: ${JWT_PUBLIC_KEY_PATH:}
+    issuer: ${AUTH_ISSUER_URL:authorization-server}
+    audience: ${JWT_AUDIENCE:PAYMENT_API}
+  internal:
+    service-token: ${INTERNAL_SERVICE_TOKEN:local-dev-internal-token}
+  payment:
+    gateway-mode: ${PAYMENT_GATEWAY_MODE:mock}
+    stripe:
+      secret-key: ${STRIPE_SECRET_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  services:
+    authorization-provider-eligibility-url: ${AUTH_PROVIDER_ELIGIBILITY_INTERNAL_URL:http://authorization-server:8080/authorization-server/api/internal/api/v1}
+    wallet-internal-url: ${WALLET_SERVICE_INTERNAL_URL:http://wallet-service:8080/wallet-service/internal/api/v1}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
