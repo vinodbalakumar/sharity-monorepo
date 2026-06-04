@@ -127,11 +127,18 @@ a { color: inherit; text-decoration: none; }
 .module-tile.elevated { box-shadow: 0 8px 18px rgba(15, 23, 42, .06); }
 .module-tile p { margin: 0; color: var(--muted); line-height: 1.35; }
 .module-tile span, table span { color: var(--muted); font-size: .9rem; display: block; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.metric-card { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 16px; display: grid; gap: 8px; box-shadow: 0 8px 18px rgba(15, 23, 42, .035); }
+.metric-card span { color: var(--muted); font-weight: 650; }
+.metric-card strong { color: #17212f; font-size: 1.65rem; line-height: 1; }
 .service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; padding: 18px; }
 .service-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 16px; display: grid; gap: 14px; align-content: start; }
 .service-card h3 { margin: 0; font-size: 1.05rem; }
 .service-card p { margin: 0; line-height: 1.45; }
 .service-card span { color: var(--muted); font-size: .78rem; font-weight: 850; }
+.service-card small { color: #64748b; font-weight: 750; }
+.service-card.is-disabled { background: #f8fafc; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
 .service-icon { width: 42px; height: 42px; border-radius: 8px; display: grid; place-items: center; background: #eef7f6; color: var(--blue); }
 
 .stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }

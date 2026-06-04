@@ -4,6 +4,7 @@ import { AdminLayout } from '../layouts/AdminLayout.jsx';
 import { LoginPage } from '../features/auth/LoginPage.jsx';
 import { DashboardPage } from '../features/dashboard/DashboardPage.jsx';
 import { ServiceModulesPage } from '../features/services/ServiceModulesPage.jsx';
+import { CommercePage } from '../features/commerce/CommercePage.jsx';
 import { UsersPage } from '../features/users/UsersPage.jsx';
 import { UserDetailsPage } from '../features/users/UserDetailsPage.jsx';
 import { CreateUserPage } from '../features/users/CreateUserPage.jsx';
@@ -40,6 +41,7 @@ export function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="services" element={<ServiceModulesPage />} />
+        <Route path="commerce" element={<CommercePage />} />
         <Route path="users" element={<SuperAdminOnly><UserManagementShell /></SuperAdminOnly>}>
           <Route index element={<UsersPage />} />
           <Route path="new" element={<CreateUserPage />} />
