@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Sharity",
+    "slug": "sharity-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "sharity",
+    "userInterfaceStyle": "light",
+    "web": {
+      "bundler": "metro",
+      "publicPath": "/app/"
+    }
+  }
+}

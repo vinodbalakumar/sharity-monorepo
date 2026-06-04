@@ -1,0 +1,31 @@
+export const colors = {
+  accent: '#38bdf8',
+  active: '#16a34a',
+  background: '#f8fafc',
+  black: '#000000',
+  border: '#e2e8f0',
+  comingSoon: '#f59e0b',
+  disabled: '#94a3b8',
+  electric: '#38bdf8',
+  error: '#dc2626',
+  gray700: '#334155',
+  info: '#2563eb',
+  ink: '#ffffff',
+  midnight: '#111827',
+  mutedText: '#94a3b8',
+  overlay: 'rgba(15,23,42,0.62)',
+  panel: '#ffffff',
+  primary: '#7c3aed',
+  ruby: '#dc2626',
+  secondary: '#4f46e5',
+  softText: '#64748b',
+  success: '#16a34a',
+  surface: '#ffffff',
+  surfaceVariant: '#f1f5f9',
+  textPrimary: '#111827',
+  textSecondary: '#64748b',
+  warning: '#f59e0b',
+  white: '#ffffff'
+};
+
+export type AppColorName = keyof typeof colors;
