@@ -17,6 +17,17 @@ public final class ValidationMessages {
     public static final String NAME_SIZE = "Name must be at most 100 characters";
     public static final String DEVICE_NAME_SIZE = "Device name must be at most 150 characters";
     public static final String PHONE_SIZE = "Phone number must be at most 30 characters";
+    public static final String PHONE_REQUIRED = "Phone number is required";
+    public static final String COUNTRY_CODE_REQUIRED = "Country code is required";
+    public static final String COUNTRY_CODE_SIZE = "Country code must be at most 3 characters";
+    public static final String COUNTRY_NAME_REQUIRED = "Country name is required";
+    public static final String COUNTRY_NAME_SIZE = "Country name must be at most 100 characters";
+    public static final String PHONE_DIAL_CODE_REQUIRED = "Phone dial code is required";
+    public static final String PHONE_DIAL_CODE_SIZE = "Phone dial code must be at most 10 characters";
+    public static final String DATE_OF_BIRTH_REQUIRED = "Date of birth is required";
+    public static final String DATE_OF_BIRTH_PAST_OR_PRESENT = "Date of birth cannot be in the future";
+    public static final String GENDER_REQUIRED = "Gender is required";
+    public static final String GENDER_INVALID = "Gender must be one of MALE, FEMALE, OTHER, or PREFER_NOT_TO_SAY";
     public static final String PROFILE_IMAGE_URL_SIZE = "Profile image URL must be at most 500 characters";
     public static final String STATUS_REQUIRED = "Status is required";
     public static final String STATUS_INVALID = "Status must be one of PENDING_VERIFICATION, ACTIVE, LOCKED, SUSPENDED, or DELETED";
@@ -33,6 +44,7 @@ public final class ValidationMessages {
     public static final String PASSWORD_PATTERN = "^$|^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).+$";
     public static final String STATUS_PATTERN = "^$|(?i:^(PENDING_VERIFICATION|ACTIVE|LOCKED|SUSPENDED|DELETED)$)";
     public static final String UPPER_CODE_PATTERN = "^$|^[A-Z0-9_]+$";
+    public static final String GENDER_PATTERN = "^$|^(MALE|FEMALE|OTHER|PREFER_NOT_TO_SAY)$";
     public static final String UUID_PATTERN = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
     private ValidationMessages() {

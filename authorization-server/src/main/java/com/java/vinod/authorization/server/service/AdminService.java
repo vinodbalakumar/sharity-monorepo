@@ -14,6 +14,8 @@ import com.java.vinod.authorization.server.entity.UserCredential;
 import com.java.vinod.authorization.server.entity.UserProfile;
 import com.java.vinod.authorization.server.entity.UserRole;
 import com.java.vinod.authorization.server.entity.UserRoleId;
+import com.java.vinod.authorization.server.enums.Gender;
+import com.java.vinod.authorization.server.enums.ProfileCompletionStatus;
 import com.java.vinod.authorization.server.enums.UserStatus;
 import com.java.vinod.authorization.server.exception.ApiException;
 import com.java.vinod.authorization.server.repository.AppUserRepository;
@@ -150,6 +152,14 @@ public class AdminService {
         user.setNormalizedUsername(normalizedUsername);
         user.setEmailVerified(Boolean.TRUE.equals(request.emailVerified()));
         user.setStatus(parseStatus(request.status(), user.isEmailVerified() ? UserStatus.ACTIVE : UserStatus.PENDING_VERIFICATION));
+        user.setProfileCompletionStatus(profileCompletionStatus(
+                request.phoneNumber(),
+                request.countryCode(),
+                request.dateOfBirth(),
+                request.gender()));
+        if (user.getProfileCompletionStatus() == ProfileCompletionStatus.COMPLETE) {
+            user.setProfileCompletedAt(now);
+        }
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         appUserRepository.save(user);
@@ -166,11 +176,20 @@ public class AdminService {
         profile.setUser(user);
         profile.setFirstName(blankToNull(request.firstName()));
         profile.setLastName(blankToNull(request.lastName()));
+        profile.setPhoneNumber(blankToNull(request.phoneNumber()));
+        profile.setCountryCode(normalizeCountryCode(request.countryCode()));
+        profile.setCountryName(blankToNull(request.countryName()));
+        profile.setPhoneDialCode(blankToNull(request.phoneDialCode()));
+        profile.setDateOfBirth(request.dateOfBirth());
+        profile.setGender(parseOptionalGender(request.gender()));
         profile.setCreatedAt(now);
         profile.setUpdatedAt(now);
         userProfileRepository.save(profile);
 
         assignRole(user, "USER", actor);
+        if (user.isEmailVerified()) {
+            assignRole(user, "CUSTOMER", actor);
+        }
         if (request.roles() != null) {
             request.roles().forEach(roleName -> assignRole(user, roleName, actor));
         }
@@ -188,8 +207,21 @@ public class AdminService {
         profile.setFirstName(blankToNull(request.firstName()));
         profile.setLastName(blankToNull(request.lastName()));
         profile.setPhoneNumber(blankToNull(request.phoneNumber()));
+        profile.setCountryCode(normalizeCountryCode(request.countryCode()));
+        profile.setCountryName(blankToNull(request.countryName()));
+        profile.setPhoneDialCode(blankToNull(request.phoneDialCode()));
+        profile.setDateOfBirth(request.dateOfBirth());
+        profile.setGender(parseOptionalGender(request.gender()));
         profile.setProfileImageUrl(blankToNull(request.profileImageUrl()));
         profile.setUpdatedAt(LocalDateTime.now());
+        target.setProfileCompletionStatus(profileCompletionStatus(
+                profile.getPhoneNumber(),
+                profile.getCountryCode(),
+                profile.getDateOfBirth(),
+                profile.getGender() == null ? null : profile.getGender().name()));
+        target.setProfileCompletedAt(target.getProfileCompletionStatus() == ProfileCompletionStatus.COMPLETE
+                ? LocalDateTime.now()
+                : null);
         target.setUpdatedAt(LocalDateTime.now());
         auditService.record(actor, target, "ADMIN_USER_PROFILE_UPDATED", "user_profile", String.valueOf(profile.getId()), null);
         return userMapper.adminUser(target);
@@ -453,6 +485,30 @@ public class AdminService {
 
     private String normalize(String value) {
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeCountryCode(String value) {
+        return blankToNull(value) == null ? null : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private Gender parseOptionalGender(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Gender.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid gender");
+        }
+    }
+
+    private ProfileCompletionStatus profileCompletionStatus(String phoneNumber, String countryCode, java.time.LocalDate dateOfBirth, String gender) {
+        return blankToNull(phoneNumber) != null
+                && blankToNull(countryCode) != null
+                && dateOfBirth != null
+                && blankToNull(gender) != null
+                ? ProfileCompletionStatus.COMPLETE
+                : ProfileCompletionStatus.INCOMPLETE;
     }
 
     private boolean isDeleted(AppUser user) {

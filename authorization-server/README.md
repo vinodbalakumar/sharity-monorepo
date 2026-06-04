@@ -1,6 +1,6 @@
 # Authorization Server
 
-Spring Boot identity service for Sharity and connected service modules.
+Spring Boot authorization service for Sharity and connected service modules.
 
 ## Tech Stack
 
@@ -24,10 +24,64 @@ This service handles user authentication and administration:
 - Forgot password and reset password
 - Current user profile and sessions
 - Admin user management
-- Roles, applications, application access, and audit logs
+- Roles, legacy applications, service-module catalog, provider access, restrictions, and audit logs
 - JWT access-token creation
 
 The service signs JWTs with the private key. Other backend services validate those JWTs with the public key.
+
+## Issuer
+
+Production and deployed OAuth/OIDC tokens should use the public issuer URL that matches the Nginx route:
+
+```text
+https://vinodbalakumar.com/authorization-server/api
+```
+
+The deployed issuer value comes from `JWT_ISSUER`. Do not leave the production deployment on the default logical issuer string.
+
+## V3 OAuth/OIDC And BFF Support
+
+The service now also owns the OAuth/OIDC foundation used by `platform-web-bff`.
+
+- Authorization code flow and OIDC are enabled for the BFF client path.
+- The confidential web client is `sharity-web-bff`.
+- The BFF redirect base comes from `SHARITY_BFF_PUBLIC_BASE_URL`.
+- The confidential client secret must be provided only through environment or deployment configuration.
+- The existing email/password JWT login flow remains available for the current service APIs.
+- Native/mobile/desktop PKCE remains partial because verified Flutter platform folders and identifiers are still missing in this workspace.
+
+### BFF Client Configuration
+
+| Variable | Purpose | Secret? |
+| --- | --- | --- |
+| `SHARITY_WEB_BFF_CLIENT_ID` | OAuth/OIDC client ID for the web BFF | No |
+| `SHARITY_WEB_BFF_CLIENT_SECRET` | Confidential client secret for the web BFF | Yes |
+| `SHARITY_BFF_PUBLIC_BASE_URL` | Public callback base URL used by the BFF client registration | No |
+
+## V3.1 Platform Authorization
+
+V3 keeps one central account and password in `authorization-server`.
+
+- Verified users receive `USER` and `CUSTOMER`.
+- `CUSTOMER` access opens active customer-enabled service modules.
+- Provider access is granted per module using `provider_account`, `provider_module_enrollment`, and `user_module_access`.
+- A provider remains a customer and can still use customer screens.
+- Country configuration controls registration, purchasing, onboarding, and payout enablement. It is not the normal login boundary.
+- Admin and internal APIs must not expose payment account references, KYC data, payout data, or restriction reasons to ordinary frontend clients.
+
+Flow and sequence diagrams are available in:
+
+```text
+docs/v3-authorization-flow-diagrams.md
+```
+
+Seeded V3 modules:
+
+- `MARKETPLACE` active customer/provider module
+- `WALLET` active customer financial activity module
+- `PAYMENTS` active internal service module
+- `GROCERY`, `MEAT_SHOP`, `PHARMACY`, `LOGISTICS`, `AUTOMOTIVE`, `GIFT_CARDS` as coming-soon catalog modules
+- `TESLA_DASHBOARD` remains visible as an active connected integration module
 
 ## Local Run
 
@@ -138,8 +192,18 @@ All URLs below include the servlet context path.
 | `POST` | `/authorization-server/api/v1/auth/forgot-password` | Public |
 | `POST` | `/authorization-server/api/v1/auth/reset-password` | Public |
 | `GET` | `/authorization-server/api/v1/users/me` | JWT required |
+| `GET` | `/authorization-server/api/v1/users/me/modules` | JWT required |
+| `GET` | `/authorization-server/api/v1/users/me/capabilities` | JWT required |
+| `GET` | `/authorization-server/api/v1/users/me/provider-accounts` | JWT required |
+| `POST` | `/authorization-server/api/v1/users/me/provider-accounts` | JWT required |
+| `POST` | `/authorization-server/api/v1/users/me/provider-accounts/{providerPublicId}/modules/{moduleCode}/enroll` | JWT required |
 | `GET` | `/authorization-server/api/v1/admin/users` | `ADMIN` or `SUPER_ADMIN` |
 | `GET` | `/authorization-server/api/v1/admin/applications` | `ADMIN` or `SUPER_ADMIN` |
+| `GET` | `/authorization-server/api/v1/admin/modules` | Admin role |
+| `GET` | `/authorization-server/api/v1/admin/providers/pending` | Admin role |
+| `PUT` | `/authorization-server/api/v1/admin/providers/{providerPublicId}/modules/{moduleCode}/status` | Admin role |
+| `GET` | `/authorization-server/api/v1/admin/supported-countries` | Admin role |
+| `POST` | `/authorization-server/api/v1/admin/users/{publicId}/restrictions` | Admin role |
 | `GET` | `/authorization-server/api/v1/admin/audit-logs` | `ADMIN` or `SUPER_ADMIN` |
 
 Login example:
@@ -177,9 +241,27 @@ client_id/client_secret/scope -> machine token
 
 Use this service's current login flow for browser users. Add client credentials later only for service-to-service or partner integrations.
 
+## Internal Service Calls
+
+V3.1 internal endpoints use a configured shared internal token for local development:
+
+```text
+INTERNAL_SERVICE_TOKEN=local-dev-internal-token
+X-Internal-Service-Token: <token>
+```
+
+Internal endpoints:
+
+```text
+GET /authorization-server/api/internal/api/v1/providers/{providerPublicId}/modules/{moduleCode}/eligibility
+GET /authorization-server/api/internal/api/v1/users/{userPublicId}/restrictions/active
+```
+
+This is intentionally simple for local V3. Later phases should move internal calls to client credentials, mTLS, or private-network-only service access before production exposure.
+
 ## Database
 
-MySQL runs on the PC, not in Docker.
+MySQL runs on the PC for the current deployment setup.
 
 Docker containers connect to PC MySQL using:
 

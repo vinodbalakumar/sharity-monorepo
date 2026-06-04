@@ -1,6 +1,7 @@
 package com.java.vinod.authorization.server.entity;
 
 import com.java.vinod.authorization.server.enums.UserStatus;
+import com.java.vinod.authorization.server.enums.ProfileCompletionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -50,6 +51,13 @@ public class AppUser {
 
     @Column(name = "phone_verified", nullable = false)
     private boolean phoneVerified;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "profile_completion_status", nullable = false, length = 32)
+    private ProfileCompletionStatus profileCompletionStatus = ProfileCompletionStatus.INCOMPLETE;
+
+    @Column(name = "profile_completed_at")
+    private LocalDateTime profileCompletedAt;
 
     @Column(name = "failed_login_count", nullable = false)
     private int failedLoginCount;

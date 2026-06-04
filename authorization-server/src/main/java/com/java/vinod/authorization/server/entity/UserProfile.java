@@ -1,7 +1,10 @@
 package com.java.vinod.authorization.server.entity;
 
+import com.java.vinod.authorization.server.enums.Gender;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,6 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -41,6 +45,31 @@ public class UserProfile {
 
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
+
+    @Column(name = "country_code", length = 3)
+    private String countryCode;
+
+    @Column(name = "country_name", length = 100)
+    private String countryName;
+
+    @Column(name = "phone_dial_code", length = 10)
+    private String phoneDialCode;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 32)
+    private Gender gender;
+
+    @Column(name = "preferred_currency", length = 3)
+    private String preferredCurrency;
+
+    @Column(name = "preferred_timezone", length = 100)
+    private String preferredTimezone;
+
+    @Column(length = 20)
+    private String locale;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

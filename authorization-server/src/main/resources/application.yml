@@ -3,6 +3,12 @@ server:
   forward-headers-strategy: framework
   servlet:
     context-path: /authorization-server/api
+    session:
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        secure: true
+        same-site: Lax
 
 spring:
   application:
@@ -43,6 +49,26 @@ spring:
           time_zone: UTC
 
 app:
+  internal:
+    service-token: ${INTERNAL_SERVICE_TOKEN:local-dev-internal-token}
+  oauth2:
+    web-bff:
+      client-id: ${SHARITY_WEB_BFF_CLIENT_ID:sharity-web-bff}
+      client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:change-me-local-only}
+      redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8080}/login/oauth2/code/sharity-web-bff
+    native-clients:
+      android:
+        client-id: ${SHARITY_ANDROID_CLIENT_ID:sharity-android}
+        redirect-uri: ${SHARITY_ANDROID_REDIRECT_URI:com.vinod.sharity://oauth2redirect/android}
+      ios:
+        client-id: ${SHARITY_IOS_CLIENT_ID:sharity-ios}
+        redirect-uri: ${SHARITY_IOS_REDIRECT_URI:com.vinod.sharity://oauth2redirect/ios}
+      windows:
+        client-id: ${SHARITY_WINDOWS_CLIENT_ID:sharity-desktop-windows}
+        redirect-uri: ${SHARITY_WINDOWS_REDIRECT_URI:http://127.0.0.1:53682/sharity/windows-callback}
+      macos:
+        client-id: ${SHARITY_MACOS_CLIENT_ID:sharity-desktop-macos}
+        redirect-uri: ${SHARITY_MACOS_REDIRECT_URI:http://127.0.0.1:53682/sharity/macos-callback}
   jwt:
     private-key-base64: ${JWT_PRIVATE_KEY_BASE64:}
     public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
@@ -77,6 +103,5 @@ logging:
   level:
     org.springframework.web: info
     org.springframework.security: info
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
-
+    org.hibernate.SQL: info
+    org.hibernate.orm.jdbc.bind: warn

@@ -22,24 +22,42 @@ import java.util.List;
 @RestController
 @Validated
 @RequestMapping("/v1/users/me")
+/**
+ * Exposes self-service account APIs for the authenticated identity.
+ *
+ * <p>The endpoints here are intentionally protected and cover profile,
+ * password, and session-management actions for the current user only.</p>
+ */
 public class UserController {
     private final UserService userService;
 
+    /**
+     * Creates the self-service controller backed by the user profile service.
+     */
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
+    /**
+     * Returns the authenticated user's profile summary.
+     */
     @GetMapping
     public UserDtos.MeResponse me(@AuthenticationPrincipal AuthenticatedUser user) {
         return userService.me(user.id());
     }
 
+    /**
+     * Updates the authenticated user's profile fields.
+     */
     @PutMapping("/profile")
     public UserDtos.ProfileResponse updateProfile(@AuthenticationPrincipal AuthenticatedUser user,
                                                   @Valid @RequestBody UserDtos.UpdateProfileRequest request) {
         return userService.updateProfile(user.id(), request);
     }
 
+    /**
+     * Changes the authenticated user's password.
+     */
     @PutMapping("/password")
     public AuthDtos.MessageResponse changePassword(@AuthenticationPrincipal AuthenticatedUser user,
                                                    @Valid @RequestBody UserDtos.ChangePasswordRequest request) {
@@ -47,11 +65,17 @@ public class UserController {
         return new AuthDtos.MessageResponse("Password changed");
     }
 
+    /**
+     * Lists the authenticated user's active sessions.
+     */
     @GetMapping("/sessions")
     public List<UserDtos.SessionResponse> sessions(@AuthenticationPrincipal AuthenticatedUser user) {
         return userService.sessions(user.id());
     }
 
+    /**
+     * Revokes one session by id for the authenticated user.
+     */
     @DeleteMapping("/sessions/{id}")
     public AuthDtos.MessageResponse revokeSession(@AuthenticationPrincipal AuthenticatedUser user,
                                                   @PathVariable @Positive(message = ValidationMessages.SESSION_ID_INVALID) Long id) {
@@ -59,6 +83,9 @@ public class UserController {
         return new AuthDtos.MessageResponse("Session revoked");
     }
 
+    /**
+     * Revokes every active session for the authenticated user.
+     */
     @DeleteMapping("/sessions")
     public AuthDtos.MessageResponse revokeAllSessions(@AuthenticationPrincipal AuthenticatedUser user) {
         userService.revokeAllSessions(user.id());

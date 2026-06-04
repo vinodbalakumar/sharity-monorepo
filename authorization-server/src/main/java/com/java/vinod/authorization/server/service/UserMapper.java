@@ -34,21 +34,18 @@ public class UserMapper {
     }
 
     public List<String> roles(AppUser user) {
-        return userRoleRepository.findByUser_Id(user.getId()).stream()
-                .map(userRole -> userRole.getRole().getRoleName())
-                .sorted()
-                .toList();
+        return userRoleRepository.findRoleNamesByUserId(user.getId());
     }
 
     public List<String> apps(AppUser user) {
-        List<String> roles = roles(user);
+        return apps(user, roles(user));
+    }
+
+    private List<String> apps(AppUser user, List<String> roles) {
         if (roles.contains("SUPER_ADMIN")) {
             return List.of("*");
         }
-        return userApplicationAccessRepository.findByUser_Id(user.getId()).stream()
-                .map(access -> access.getApplication().getAppCode())
-                .sorted()
-                .toList();
+        return userApplicationAccessRepository.findAppCodesByUserId(user.getId());
     }
 
     public List<AdminDtos.ApplicationResponse> applications() {
@@ -68,16 +65,18 @@ public class UserMapper {
     public AuthDtos.UserSummary authSummary(AppUser user) {
         AuthDtos.ProfileSummary profile = userProfileRepository.findByUser_Id(user.getId())
                 .map(this::authProfile)
-                .orElse(new AuthDtos.ProfileSummary(null, null, null, null));
+                .orElse(new AuthDtos.ProfileSummary(null, null, null, null, null, null, null, null, null));
+        List<String> roles = roles(user);
         return new AuthDtos.UserSummary(
                 user.getPublicId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getStatus().name(),
                 user.isEmailVerified(),
+                user.getProfileCompletionStatus().name(),
                 profile,
-                roles(user),
-                apps(user));
+                roles,
+                apps(user, roles));
     }
 
     public AuthDtos.ProfileSummary authProfile(UserProfile profile) {
@@ -85,22 +84,29 @@ public class UserMapper {
                 profile.getFirstName(),
                 profile.getLastName(),
                 profile.getPhoneNumber(),
+                profile.getPhoneDialCode(),
+                profile.getCountryCode(),
+                profile.getCountryName(),
+                profile.getDateOfBirth() == null ? null : profile.getDateOfBirth().toString(),
+                profile.getGender() == null ? null : profile.getGender().name(),
                 profile.getProfileImageUrl());
     }
 
     public UserDtos.MeResponse me(AppUser user) {
         UserDtos.ProfileResponse profile = userProfileRepository.findByUser_Id(user.getId())
                 .map(this::profile)
-                .orElse(new UserDtos.ProfileResponse(null, null, null, null));
+                .orElse(new UserDtos.ProfileResponse(null, null, null, null, null, null, null, null, null));
+        List<String> roles = roles(user);
         return new UserDtos.MeResponse(
                 user.getPublicId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getStatus().name(),
+                user.getProfileCompletionStatus().name(),
                 user.isEmailVerified(),
                 profile,
-                roles(user),
-                apps(user));
+                roles,
+                apps(user, roles));
     }
 
     public UserDtos.ProfileResponse profile(UserProfile profile) {
@@ -108,6 +114,11 @@ public class UserMapper {
                 profile.getFirstName(),
                 profile.getLastName(),
                 profile.getPhoneNumber(),
+                profile.getPhoneDialCode(),
+                profile.getCountryCode(),
+                profile.getCountryName(),
+                profile.getDateOfBirth() == null ? null : profile.getDateOfBirth().toString(),
+                profile.getGender() == null ? null : profile.getGender().name(),
                 profile.getProfileImageUrl());
     }
 
@@ -125,17 +136,19 @@ public class UserMapper {
     public AdminDtos.AdminUserResponse adminUser(AppUser user) {
         AdminDtos.ProfileSummary profile = userProfileRepository.findByUser_Id(user.getId())
                 .map(this::adminProfile)
-                .orElse(new AdminDtos.ProfileSummary(null, null, null, null));
+                .orElse(new AdminDtos.ProfileSummary(null, null, null, null, null, null, null, null, null));
+        List<String> roles = roles(user);
         return new AdminDtos.AdminUserResponse(
                 user.getPublicId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getStatus().name(),
+                user.getProfileCompletionStatus().name(),
                 user.isEmailVerified(),
                 user.getCreatedAt(),
                 profile,
-                roles(user),
-                apps(user));
+                roles,
+                apps(user, roles));
     }
 
     public AdminDtos.ProfileSummary adminProfile(UserProfile profile) {
@@ -143,6 +156,11 @@ public class UserMapper {
                 profile.getFirstName(),
                 profile.getLastName(),
                 profile.getPhoneNumber(),
+                profile.getPhoneDialCode(),
+                profile.getCountryCode(),
+                profile.getCountryName(),
+                profile.getDateOfBirth() == null ? null : profile.getDateOfBirth().toString(),
+                profile.getGender() == null ? null : profile.getGender().name(),
                 profile.getProfileImageUrl());
     }
 

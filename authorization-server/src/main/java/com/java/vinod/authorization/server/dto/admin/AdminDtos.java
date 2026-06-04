@@ -2,9 +2,11 @@ package com.java.vinod.authorization.server.dto.admin;
 
 import com.java.vinod.authorization.server.util.ValidationMessages;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,6 +19,7 @@ public final class AdminDtos {
             String email,
             String username,
             String status,
+            String profileCompletionStatus,
             boolean emailVerified,
             LocalDateTime createdAt,
             ProfileSummary profile,
@@ -34,13 +37,24 @@ public final class AdminDtos {
     ) {
     }
 
-    public record ProfileSummary(String firstName, String lastName, String phoneNumber, String profileImageUrl) {
+    public record ProfileSummary(
+            String firstName,
+            String lastName,
+            String phoneNumber,
+            String phoneDialCode,
+            String countryCode,
+            String countryName,
+            String dateOfBirth,
+            String gender,
+            String profileImageUrl
+    ) {
     }
 
     public record CreateUserRequest(
             @NotBlank(message = ValidationMessages.EMAIL_REQUIRED)
             @jakarta.validation.constraints.Email(message = ValidationMessages.EMAIL_INVALID)
             String email,
+            @NotBlank(message = ValidationMessages.REQUIRED)
             @Size(max = 100, message = ValidationMessages.USERNAME_SIZE)
             String username,
             @NotBlank(message = ValidationMessages.PASSWORD_REQUIRED)
@@ -51,6 +65,20 @@ public final class AdminDtos {
             String firstName,
             @Size(max = 100, message = ValidationMessages.NAME_SIZE)
             String lastName,
+            @NotBlank(message = ValidationMessages.PHONE_REQUIRED)
+            @Size(max = 30, message = ValidationMessages.PHONE_SIZE)
+            String phoneNumber,
+            @NotBlank(message = ValidationMessages.COUNTRY_CODE_REQUIRED)
+            @Size(max = 3, message = ValidationMessages.COUNTRY_CODE_SIZE)
+            String countryCode,
+            @Size(max = 100, message = ValidationMessages.COUNTRY_NAME_SIZE)
+            String countryName,
+            @Size(max = 10, message = ValidationMessages.PHONE_DIAL_CODE_SIZE)
+            String phoneDialCode,
+            @PastOrPresent(message = ValidationMessages.DATE_OF_BIRTH_PAST_OR_PRESENT)
+            LocalDate dateOfBirth,
+            @Pattern(regexp = ValidationMessages.GENDER_PATTERN, message = ValidationMessages.GENDER_INVALID)
+            String gender,
             Boolean emailVerified,
             String status,
             List<String> roles
@@ -64,6 +92,16 @@ public final class AdminDtos {
             String lastName,
             @Size(max = 30, message = ValidationMessages.PHONE_SIZE)
             String phoneNumber,
+            @Size(max = 3, message = ValidationMessages.COUNTRY_CODE_SIZE)
+            String countryCode,
+            @Size(max = 100, message = ValidationMessages.COUNTRY_NAME_SIZE)
+            String countryName,
+            @Size(max = 10, message = ValidationMessages.PHONE_DIAL_CODE_SIZE)
+            String phoneDialCode,
+            @PastOrPresent(message = ValidationMessages.DATE_OF_BIRTH_PAST_OR_PRESENT)
+            LocalDate dateOfBirth,
+            @Pattern(regexp = ValidationMessages.GENDER_PATTERN, message = ValidationMessages.GENDER_INVALID)
+            String gender,
             @Size(max = 500, message = ValidationMessages.PROFILE_IMAGE_URL_SIZE)
             String profileImageUrl
     ) {

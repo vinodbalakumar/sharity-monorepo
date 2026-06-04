@@ -1,5 +1,6 @@
 package com.java.vinod.authorization.server.exception;
 
+import com.java.vinod.authorization.server.config.RequestCorrelationLoggingFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -130,6 +131,22 @@ public class GlobalExceptionHandler {
         detail.setProperty("errorCode", errorCode);
         detail.setProperty("path", request.getRequestURI());
         detail.setProperty("timestamp", Instant.now().toString());
+        String correlationId = correlationId(request);
+        if (correlationId != null) {
+            detail.setProperty("correlationId", correlationId);
+        }
         return detail;
+    }
+
+    /**
+     * Reads the safe request correlation identifier from the request attribute or header.
+     */
+    private String correlationId(HttpServletRequest request) {
+        Object attribute = request.getAttribute(RequestCorrelationLoggingFilter.CORRELATION_ID_ATTRIBUTE);
+        if (attribute != null && !attribute.toString().isBlank()) {
+            return attribute.toString();
+        }
+        String header = request.getHeader(RequestCorrelationLoggingFilter.CORRELATION_ID_ATTRIBUTE);
+        return header == null || header.isBlank() ? null : header.trim();
     }
 }
