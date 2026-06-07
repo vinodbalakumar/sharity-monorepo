@@ -15,10 +15,13 @@ import com.java.vinod.authorization.server.repository.UserProfileRepository;
 import com.java.vinod.authorization.server.repository.UserSocialIdentityRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +42,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 public class UserService {
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private static final int MINIMUM_REGISTRATION_AGE = 13;
     private final AppUserRepository appUserRepository;
     private final UserProfileRepository userProfileRepository;
@@ -144,6 +148,9 @@ public class UserService {
                 safeFileName(file.getOriginalFilename(), contentType(file))
         );
         String publicUrl = profileImageStoragePublicBaseUrl.stripTrailing() + "/" + objectKey;
+        if (publicUrl.length() > 500) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image URL is too long");
+        }
 
         try (S3Client s3Client = s3Client()) {
             s3Client.putObject(PutObjectRequest.builder()
@@ -154,15 +161,22 @@ public class UserService {
                             .cacheControl("public, max-age=31536000, immutable")
                             .build(),
                     RequestBody.fromBytes(bytes));
+            profile.setProfileImageUrl(publicUrl);
+            profile.setUpdatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+            userProfileRepository.saveAndFlush(profile);
+            auditService.record(user, user, "PROFILE_IMAGE_UPDATED", "user_profile", String.valueOf(profile.getId()), null);
+            return userMapper.profile(profile);
         } catch (S3Exception exception) {
+            log.error("Profile image upload failed for userId={} objectKey={}", userId, objectKey, exception);
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to upload profile picture");
+        } catch (DataIntegrityViolationException exception) {
+            log.error("Profile image profile update failed for userId={} objectKey={}", userId, objectKey, exception);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image details could not be saved");
+        } catch (Exception exception) {
+            log.error("Profile image upload failed for userId={} objectKey={}", userId, objectKey, exception);
             throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to upload profile picture");
         }
-
-        profile.setProfileImageUrl(publicUrl);
-        profile.setUpdatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        auditService.record(user, user, "PROFILE_IMAGE_UPDATED", "user_profile", String.valueOf(profile.getId()), null);
-        return userMapper.profile(profile);
     }
 
     @Transactional
