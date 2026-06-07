@@ -32,6 +32,9 @@ public class SupportedCountry {
     @Column(name = "default_currency_code", nullable = false, length = 3)
     private String defaultCurrencyCode;
 
+    @Column(name = "phone_dial_code", nullable = false, length = 10)
+    private String phoneDialCode;
+
     @Column(name = "registration_enabled", nullable = false)
     private boolean registrationEnabled;
 

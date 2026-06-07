@@ -68,6 +68,9 @@ public class UserProfile {
     @Column(name = "preferred_timezone", length = 100)
     private String preferredTimezone;
 
+    @Column(name = "privacy_setting", length = 40)
+    private String privacySetting;
+
     @Column(length = 20)
     private String locale;
 

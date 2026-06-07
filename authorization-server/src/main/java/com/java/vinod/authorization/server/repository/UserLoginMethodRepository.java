@@ -12,4 +12,6 @@ public interface UserLoginMethodRepository extends JpaRepository<UserLoginMethod
     Optional<UserLoginMethod> findByProviderAndProviderSubject(LoginProvider provider, String providerSubject);
 
     boolean existsByUser_IdAndProviderAndEnabledTrue(Long userId, LoginProvider provider);
+
+    long countByUser_IdAndEnabledTrue(Long userId);
 }

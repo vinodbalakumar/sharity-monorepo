@@ -188,7 +188,7 @@ public class AuthService {
         profile.setCountryName(blankToNull(request.countryName()));
         profile.setPhoneDialCode(blankToNull(request.phoneDialCode()));
         profile.setDateOfBirth(request.dateOfBirth());
-        profile.setGender(parseGender(request.gender()));
+        profile.setGender(parseOptionalGender(request.gender()));
         profile.setLocale(blankToNull(request.locale()));
         profile.setPreferredTimezone(blankToNull(request.timezone()));
         profile.setCreatedAt(now);
@@ -437,17 +437,16 @@ public class AuthService {
     }
 
     private void validateRegistrationProfile(AuthDtos.RegisterRequest request) {
-        if (request.dateOfBirth() == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Date of birth is required");
+        if (request.dateOfBirth() != null) {
+            LocalDate today = LocalDate.now();
+            if (request.dateOfBirth().isAfter(today)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Date of birth cannot be in the future");
+            }
+            if (Period.between(request.dateOfBirth(), today).getYears() < MINIMUM_REGISTRATION_AGE) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "User must be at least 13 years old");
+            }
         }
-        LocalDate today = LocalDate.now();
-        if (request.dateOfBirth().isAfter(today)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Date of birth cannot be in the future");
-        }
-        if (Period.between(request.dateOfBirth(), today).getYears() < MINIMUM_REGISTRATION_AGE) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "User must be at least 13 years old");
-        }
-        parseGender(request.gender());
+        parseOptionalGender(request.gender());
     }
 
     private Gender parseGender(String value) {
@@ -459,6 +458,13 @@ public class AuthService {
         } catch (IllegalArgumentException exception) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid gender");
         }
+    }
+
+    private Gender parseOptionalGender(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return parseGender(value);
     }
 
     private String normalizeCountryCode(String value) {

@@ -65,7 +65,7 @@ public class UserMapper {
     public AuthDtos.UserSummary authSummary(AppUser user) {
         AuthDtos.ProfileSummary profile = userProfileRepository.findByUser_Id(user.getId())
                 .map(this::authProfile)
-                .orElse(new AuthDtos.ProfileSummary(null, null, null, null, null, null, null, null, null));
+                .orElse(new AuthDtos.ProfileSummary(null, null, null, null, null, null, null, null, null, null));
         List<String> roles = roles(user);
         return new AuthDtos.UserSummary(
                 user.getPublicId(),
@@ -89,13 +89,14 @@ public class UserMapper {
                 profile.getCountryName(),
                 profile.getDateOfBirth() == null ? null : profile.getDateOfBirth().toString(),
                 profile.getGender() == null ? null : profile.getGender().name(),
-                profile.getProfileImageUrl());
+                profile.getProfileImageUrl(),
+                profile.getPrivacySetting());
     }
 
     public UserDtos.MeResponse me(AppUser user) {
         UserDtos.ProfileResponse profile = userProfileRepository.findByUser_Id(user.getId())
                 .map(this::profile)
-                .orElse(new UserDtos.ProfileResponse(null, null, null, null, null, null, null, null, null));
+                .orElse(new UserDtos.ProfileResponse(null, null, null, null, null, null, null, null, null, null));
         List<String> roles = roles(user);
         return new UserDtos.MeResponse(
                 user.getPublicId(),
@@ -119,7 +120,8 @@ public class UserMapper {
                 profile.getCountryName(),
                 profile.getDateOfBirth() == null ? null : profile.getDateOfBirth().toString(),
                 profile.getGender() == null ? null : profile.getGender().name(),
-                profile.getProfileImageUrl());
+                profile.getProfileImageUrl(),
+                profile.getPrivacySetting());
     }
 
     public UserDtos.SessionResponse session(RefreshToken token) {

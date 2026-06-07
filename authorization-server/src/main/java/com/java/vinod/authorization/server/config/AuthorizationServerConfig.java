@@ -66,7 +66,9 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -408,12 +410,15 @@ public class AuthorizationServerConfig {
     }
 
     static RegisteredClient webBffClient(String clientId, String clientSecret, String redirectUri) {
-        return RegisteredClient.withId(UUID.randomUUID().toString())
+        Set<String> redirectUris = new LinkedHashSet<>();
+        redirectUris.add(redirectUri);
+        redirectUris.add("https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff");
+
+        RegisteredClient.Builder builder = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId(clientId)
                 .clientSecret("{noop}" + clientSecret)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(redirectUri)
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .clientSettings(ClientSettings.builder()
@@ -423,8 +428,9 @@ public class AuthorizationServerConfig {
                 .tokenSettings(TokenSettings.builder()
                         .accessTokenTimeToLive(Duration.ofMinutes(15))
                         .reuseRefreshTokens(false)
-                        .build())
-                .build();
+                        .build());
+        redirectUris.forEach(builder::redirectUri);
+        return builder.build();
     }
 
     private RSAKey rsaJwk(String privateKeyBase64,

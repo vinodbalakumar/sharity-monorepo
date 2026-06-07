@@ -264,6 +264,7 @@ public class PlatformAuthorizationService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Country not found"));
         country.setCountryName(request.countryName());
         country.setDefaultCurrencyCode(request.defaultCurrencyCode());
+        country.setPhoneDialCode(request.phoneDialCode());
         country.setRegistrationEnabled(request.registrationEnabled());
         country.setPurchasingEnabled(request.purchasingEnabled());
         country.setProviderOnboardingEnabled(request.providerOnboardingEnabled());
@@ -440,6 +441,7 @@ public class PlatformAuthorizationService {
                 country.getCountryCode(),
                 country.getCountryName(),
                 country.getDefaultCurrencyCode(),
+                country.getPhoneDialCode(),
                 country.isRegistrationEnabled(),
                 country.isPurchasingEnabled(),
                 country.isProviderOnboardingEnabled(),

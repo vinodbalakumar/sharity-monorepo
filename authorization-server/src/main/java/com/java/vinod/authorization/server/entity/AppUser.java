@@ -59,6 +59,9 @@ public class AppUser {
     @Column(name = "profile_completed_at")
     private LocalDateTime profileCompletedAt;
 
+    @Column(name = "terms_accepted_at")
+    private LocalDateTime termsAcceptedAt;
+
     @Column(name = "failed_login_count", nullable = false)
     private int failedLoginCount;
 

@@ -19,7 +19,7 @@ class PageControllerTest {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/authorization-server/api/login");
         request.setContextPath("/authorization-server/api");
 
-        var response = pageController.login(request, "error", null);
+        var response = pageController.login(request, "error", null, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("text/html");
@@ -32,7 +32,7 @@ class PageControllerTest {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/authorization-server/api/login");
         request.setContextPath("/authorization-server/api");
 
-        var response = pageController.login(request, null, null);
+        var response = pageController.login(request, null, null, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).doesNotContain("Invalid credentials.");
@@ -46,10 +46,26 @@ class PageControllerTest {
         var response = pageController.login(
                 request,
                 null,
+                null,
                 "/authorization-server/api/oauth2/authorize?response_type=code&client_id=sharity-web-bff");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains(
                 "value=\"/authorization-server/api/oauth2/authorize?response_type=code&amp;client_id=sharity-web-bff\"");
+    }
+
+    @Test
+    void loginPageRendersSocialErrorBanner() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/authorization-server/api/login");
+        request.setContextPath("/authorization-server/api");
+
+        var response = pageController.login(
+                request,
+                null,
+                "Email is already registered. Login and link Google from account settings.",
+                null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("Email is already registered. Login and link Google from account settings.");
     }
 }

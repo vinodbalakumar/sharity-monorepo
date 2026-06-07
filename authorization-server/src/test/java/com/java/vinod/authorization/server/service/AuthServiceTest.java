@@ -196,6 +196,93 @@ class AuthServiceTest {
     }
 
     @Test
+    void registerAllowsDateOfBirthAndGenderToBeOmittedForMvpRegistration() {
+        AppUserRepository appUserRepository = mock(AppUserRepository.class);
+        UserCredentialRepository userCredentialRepository = mock(UserCredentialRepository.class);
+        UserLoginMethodRepository userLoginMethodRepository = mock(UserLoginMethodRepository.class);
+        UserProfileRepository userProfileRepository = mock(UserProfileRepository.class);
+        RoleRepository roleRepository = mock(RoleRepository.class);
+        UserRoleRepository userRoleRepository = mock(UserRoleRepository.class);
+        EmailVerificationTokenRepository emailVerificationTokenRepository = mock(EmailVerificationTokenRepository.class);
+        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+        HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+        Role userRole = new Role();
+        ReflectionTestUtils.setField(userRole, "id", 7L);
+        userRole.setRoleName("USER");
+        userRole.setCreatedAt(LocalDateTime.now());
+
+        when(appUserRepository.findByNormalizedEmail("person@example.com")).thenReturn(Optional.empty());
+        when(appUserRepository.findByNormalizedUsername("person")).thenReturn(Optional.empty());
+        when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> {
+            AppUser user = invocation.getArgument(0);
+            ReflectionTestUtils.setField(user, "id", 42L);
+            return user;
+        });
+        when(userCredentialRepository.save(any(UserCredential.class))).thenAnswer(invocation -> {
+            UserCredential credential = invocation.getArgument(0);
+            ReflectionTestUtils.setField(credential, "id", 91L);
+            return credential;
+        });
+        when(passwordEncoder.encode("Str0ngPass!")).thenReturn("encoded-password");
+        when(userRoleRepository.existsByUser_IdAndRole_RoleName(42L, "USER")).thenReturn(false);
+        when(roleRepository.findByRoleName("USER")).thenReturn(Optional.of(userRole));
+        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+
+        AuthService authService = new AuthService(
+                appUserRepository,
+                userCredentialRepository,
+                userLoginMethodRepository,
+                userProfileRepository,
+                roleRepository,
+                userRoleRepository,
+                mock(RefreshTokenRepository.class),
+                emailVerificationTokenRepository,
+                mock(PasswordResetTokenRepository.class),
+                mock(LoginAttemptRepository.class),
+                passwordEncoder,
+                mock(DaoAuthenticationProvider.class),
+                mock(JwtService.class),
+                new TokenHashing(),
+                mock(UserMapper.class),
+                mock(AuditService.class),
+                mock(EmailService.class),
+                Duration.ofDays(7),
+                true
+        );
+        AuthDtos.RegisterRequest request = new AuthDtos.RegisterRequest(
+                " Person@Example.com ",
+                "Person",
+                "Str0ngPass!",
+                "4805550100",
+                "us",
+                "United States",
+                "+1",
+                null,
+                null,
+                "Pat",
+                "Example",
+                "US",
+                "United States",
+                "web",
+                "Chrome",
+                "1.0.0",
+                "en-US",
+                "America/Phoenix",
+                "installation-123"
+        );
+
+        AuthDtos.RegisterResponse response = authService.register(request, httpRequest);
+
+        ArgumentCaptor<UserProfile> profileCaptor = ArgumentCaptor.forClass(UserProfile.class);
+        verify(userProfileRepository).save(profileCaptor.capture());
+        UserProfile profile = profileCaptor.getValue();
+
+        assertThat(response.email()).isEqualTo("Person@Example.com");
+        assertThat(profile.getDateOfBirth()).isNull();
+        assertThat(profile.getGender()).isNull();
+    }
+
+    @Test
     void registerEnforcesMinimumAge() {
         AuthService authService = authServiceWithMinimalMocks();
 

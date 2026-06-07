@@ -36,7 +36,8 @@ public final class UserDtos {
             String countryName,
             String dateOfBirth,
             String gender,
-            String profileImageUrl
+            String profileImageUrl,
+            String privacySetting
     ) {
     }
 
@@ -58,7 +59,9 @@ public final class UserDtos {
             @Pattern(regexp = ValidationMessages.GENDER_PATTERN, message = ValidationMessages.GENDER_INVALID)
             String gender,
             @Size(max = 500, message = ValidationMessages.PROFILE_IMAGE_URL_SIZE)
-            String profileImageUrl
+            String profileImageUrl,
+            @Size(max = 40, message = ValidationMessages.DESCRIPTION_SIZE)
+            String privacySetting
     ) {
     }
 
@@ -87,6 +90,12 @@ public final class UserDtos {
             LocalDateTime issuedAt,
             LocalDateTime expiresAt,
             LocalDateTime lastUsedAt
+    ) {
+    }
+
+    public record SocialLinkResponse(
+            String provider,
+            String displayName
     ) {
     }
 }

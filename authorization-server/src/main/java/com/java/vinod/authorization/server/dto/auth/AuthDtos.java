@@ -3,7 +3,6 @@ package com.java.vinod.authorization.server.dto.auth;
 import com.java.vinod.authorization.server.util.ValidationMessages;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -40,10 +39,8 @@ public final class AuthDtos {
             @NotBlank(message = ValidationMessages.PHONE_DIAL_CODE_REQUIRED)
             @Size(max = 10, message = ValidationMessages.PHONE_DIAL_CODE_SIZE)
             String phoneDialCode,
-            @NotNull(message = ValidationMessages.DATE_OF_BIRTH_REQUIRED)
             @PastOrPresent(message = ValidationMessages.DATE_OF_BIRTH_PAST_OR_PRESENT)
             LocalDate dateOfBirth,
-            @NotBlank(message = ValidationMessages.GENDER_REQUIRED)
             @Pattern(regexp = ValidationMessages.GENDER_PATTERN, message = ValidationMessages.GENDER_INVALID)
             String gender,
             @Size(max = 100, message = ValidationMessages.NAME_SIZE)
@@ -118,7 +115,8 @@ public final class AuthDtos {
             String countryName,
             String dateOfBirth,
             String gender,
-            String profileImageUrl
+            String profileImageUrl,
+            String privacySetting
     ) {
     }
 
@@ -179,5 +177,73 @@ public final class AuthDtos {
     }
 
     public record RegisterResponse(String publicId, String email, String status, String verificationToken) {
+    }
+
+    public record SocialRegistrationSessionResponse(
+            String provider,
+            String email,
+            String firstName,
+            String lastName,
+            String displayName
+    ) {
+    }
+
+    public record RegistrationCountryOption(
+            String countryCode,
+            String countryName,
+            String phoneDialCode,
+            String defaultCurrencyCode
+    ) {
+    }
+
+    public record RegistrationGenderOption(
+            String code,
+            String label
+    ) {
+    }
+
+    public record RegistrationOptionsResponse(
+            List<RegistrationCountryOption> countries,
+            List<RegistrationGenderOption> genders
+    ) {
+    }
+
+    public record SocialRegistrationCompletionRequest(
+            @NotBlank(message = ValidationMessages.COUNTRY_CODE_REQUIRED)
+            @Size(max = 3, message = ValidationMessages.COUNTRY_CODE_SIZE)
+            String countryCode,
+            @NotBlank(message = ValidationMessages.COUNTRY_NAME_REQUIRED)
+            @Size(max = 100, message = ValidationMessages.COUNTRY_NAME_SIZE)
+            String countryName,
+            @NotBlank(message = ValidationMessages.PHONE_DIAL_CODE_REQUIRED)
+            @Size(max = 10, message = ValidationMessages.PHONE_DIAL_CODE_SIZE)
+            String phoneDialCode,
+            @NotBlank(message = ValidationMessages.PHONE_REQUIRED)
+            @Size(max = 30, message = ValidationMessages.PHONE_SIZE)
+            String phoneNumber,
+            @PastOrPresent(message = ValidationMessages.DATE_OF_BIRTH_PAST_OR_PRESENT)
+            LocalDate dateOfBirth,
+            @NotBlank(message = "Gender is required")
+            @Pattern(regexp = ValidationMessages.GENDER_PATTERN, message = ValidationMessages.GENDER_INVALID)
+            String gender,
+            @NotBlank(message = "Username is required")
+            @Size(max = 100, message = ValidationMessages.USERNAME_SIZE)
+            String username,
+            @NotBlank(message = "Privacy setting is required")
+            @Size(max = 40, message = ValidationMessages.DESCRIPTION_SIZE)
+            String privacySetting,
+            @Size(max = 500, message = ValidationMessages.DESCRIPTION_SIZE)
+            String profileImageUrl,
+            boolean termsAccepted,
+            @Size(max = 20, message = ValidationMessages.DESCRIPTION_SIZE)
+            String locale,
+            @Size(max = 100, message = ValidationMessages.DESCRIPTION_SIZE)
+            String timezone
+    ) {
+    }
+
+    public record ProfileImageUploadResponse(
+            String profileImageUrl
+    ) {
     }
 }

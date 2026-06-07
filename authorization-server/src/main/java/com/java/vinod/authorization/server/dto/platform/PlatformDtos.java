@@ -98,6 +98,7 @@ public final class PlatformDtos {
             String countryCode,
             String countryName,
             String defaultCurrencyCode,
+            String phoneDialCode,
             boolean registrationEnabled,
             boolean purchasingEnabled,
             boolean providerOnboardingEnabled,
@@ -109,6 +110,7 @@ public final class PlatformDtos {
     public record SupportedCountryUpdateRequest(
             @NotBlank @Size(max = 100) String countryName,
             @NotBlank @Pattern(regexp = "[A-Z]{3}") String defaultCurrencyCode,
+            @NotBlank @Size(max = 10) String phoneDialCode,
             boolean registrationEnabled,
             boolean purchasingEnabled,
             boolean providerOnboardingEnabled,

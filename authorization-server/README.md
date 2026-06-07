@@ -27,6 +27,12 @@ This service handles user authentication and administration:
 - Roles, legacy applications, service-module catalog, provider access, restrictions, and audit logs
 - JWT access-token creation
 
+## MVP Auth Screen Priority
+
+`STORY-AUTH-001` covers Sign In, Create Account, Forgot Password, Reset Password, Verify Email, email verification result, social login callback handling, and auth loading/error states.
+
+This is a high-priority frontend integration story and must be completed before cart, checkout, payment, order, refund, payout, and seller flows. The email/password, forgot/reset, and verify-email backend APIs listed below are already available. Apple and Google buttons need social provider wiring in the frontend/BFF path.
+
 The service signs JWTs with the private key. Other backend services validate those JWTs with the public key.
 
 ## Issuer
