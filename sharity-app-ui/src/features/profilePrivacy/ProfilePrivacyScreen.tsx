@@ -2,7 +2,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Input, Paragraph, YStack, XStack } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
@@ -118,6 +118,10 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
     if (uploadingImage) {
       return;
     }
+    const confirmed = await confirmProfileImageUpload();
+    if (!confirmed) {
+      return;
+    }
     setUploadingImage(true);
     setError('');
     setMessage('');
@@ -173,6 +177,11 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
       setForm((current) => ({ ...current, profileImageUrl: updated.profileImageUrl }));
       setUser((current) => current ? { ...current, profile: { ...current.profile, profileImageUrl: updated.profileImageUrl } } : current);
       setMessage('Profile image updated.');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.reload();
+        return;
+      }
+      await load();
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Unable to upload profile image');
     } finally {
@@ -223,6 +232,23 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
       ...current,
       phoneNumber: value.replace(/\D/g, '').slice(0, 10)
     }));
+  }
+
+  function confirmProfileImageUpload(): Promise<boolean> {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return Promise.resolve(window.confirm('Upload this photo to your profile?'));
+    }
+    return new Promise((resolve) => {
+      Alert.alert(
+        'Upload profile photo',
+        'Do you want to upload this photo to your profile now?',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Upload', style: 'default', onPress: () => resolve(true) }
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) }
+      );
+    });
   }
 
   const displayName = useMemo(() => {
