@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { appState$ } from '../../state/appState';
@@ -62,35 +62,15 @@ export function LoginSecurityScreen({ onNavigate }: Props) {
     setMessage(result.message);
   }
 
-  if (!data) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading login and security settings..." /></YStack>;
+  if (!data) return <InteriorShell onNavigate={onNavigate} title="Login & Security" subtitle="Please wait..." scrollable={false}><Centered title="Loading login and security settings..." /></InteriorShell>;
 
   const filterNeedle = selectedFilter.toLowerCase().split(' ')[0] ?? '';
   const filteredEvents = data.events.filter((event) => selectedFilter === 'All' || event.eventType.replaceAll('_', ' ').toLowerCase().includes(filterNeedle));
 
   return (
-    <InteriorShell activeLabel="Profile" onNavigate={onNavigate} scrollable={false} subtitle="Manage login methods, active devices, security alerts, recovery options, and suspicious activity reports." title="Login & Security">
-      <ScrollView contentContainerStyle={{ paddingBottom: 108 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Account protection center</Text>
-              <H1>Login & Security</H1>
-              <Paragraph color="$gray10">Manage login methods, active devices, security alerts, recovery options, and suspicious activity reports.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="shield-checkmark" size={18} />} theme="purple" onPress={() => runAction('CHANGE_PASSWORD')}>Change Password</Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger><Button icon={<Ionicons name="ellipsis-horizontal" size={18} />}>More</Button></DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item key="google" onSelect={() => runAction('ADD_GOOGLE_LOGIN')}>Add Google Login</DropdownMenu.Item>
-                  <DropdownMenu.Item key="password" onSelect={() => runAction('ADD_PASSWORD_LOGIN')}>Add Password Login</DropdownMenu.Item>
-                  <DropdownMenu.Item key="everywhere" onSelect={() => runAction('SIGN_OUT_EVERYWHERE')}>Sign Out Everywhere</DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          <XStack $sm={{ flexDirection: 'column' }} gap="$3">
+    <InteriorShell activeLabel="Profile" onNavigate={onNavigate} scrollable={true} subtitle="Manage login methods, active devices, security alerts, and recovery options" title="Login & Security">
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack $sm={{ flexDirection: 'column' }} gap="$3">
             <Metric label="Security status" value={data.dashboard.securityStatus.replace('_', ' ')} tone={data.dashboard.securityStatus === 'RISK_DETECTED' ? 'critical' : data.dashboard.securityStatus === 'ACTION_RECOMMENDED' ? 'warning' : 'success'} />
             <Metric label="Login methods" value={data.dashboard.loginMethods} tone="success" />
             <Metric label="Active sessions" value={data.dashboard.activeDeviceCount} tone="info" />
@@ -116,8 +96,7 @@ export function LoginSecurityScreen({ onNavigate }: Props) {
               {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
           </XStack>
-        </YStack>
-      </ScrollView>
+      </YStack>
     </InteriorShell>
   );
 }
@@ -143,11 +122,11 @@ function RecoveryRow({ item, index }: { item: RecoveryOptionItem; index: number 
 function AdminRow({ item, index }: { item: AdminSecurityReviewQueueItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={`${item.userSafeIdentifier} / ${item.eventType}`} meta={`${item.assignedTo} / ${item.createdAt} / placeholder only`} badge={item.status} tone={toneFromSeverity(item.severity)} /></Animated.View>; }
 function ReportPanel({ onAction }: { onAction: (action: string) => void }) { return <Panel title="Report Suspicious Activity"><YStack gap="$3"><DropdownMenu.Root><DropdownMenu.Trigger><Button>Reason: I do not recognize this login</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="login">I do not recognize this login</DropdownMenu.Item><DropdownMenu.Item key="password">I did not change my password</DropdownMenu.Item><DropdownMenu.Item key="payout">I did not change payout method</DropdownMenu.Item><DropdownMenu.Item key="other">Other suspicious account activity</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root><Input bg="$background" borderColor="$borderColor" value="Unknown device activity from approximate Denver region. Please review and sign out other devices." /><Button theme="purple" onPress={() => onAction('REPORT_SUSPICIOUS_ACTIVITY')}>Submit Suspicious Activity Report</Button></YStack></Panel>; }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
 function Row({ title, meta, badge, tone, actionLabel, action }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success'; actionLabel?: string; action?: () => void }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1} minWidth={0}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} />{actionLabel && action ? <Button onPress={action}>{actionLabel}</Button> : null}</XStack>; }
 function Metric({ label, value, tone }: { label: string; value: string | number; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <PremiumCard flex={1} minWidth={160} p="$4"><Text color={toneColor(tone)} fontSize="$8" fontWeight="900">{value}</Text><Text color="$gray10">{label}</Text></PremiumCard>; }
 function IconCircle({ name, tone }: { name: ComponentProps<typeof Ionicons>['name']; tone: 'info' | 'success' }) { return <YStack ai="center" bg={tone === 'success' ? '$green3' : '$blue3'} br="$6" h={42} jc="center" w={42}><Ionicons color={tone === 'success' ? colors.success : colors.info} name={name} size={22} /></YStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <Text bg={toneBg(tone)} br="$6" color={toneColor(tone)} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function toneFromSeverity(severity: SecuritySeverity) { return severity === 'CRITICAL' ? 'critical' : severity === 'WARNING' ? 'warning' : severity === 'SUCCESS' ? 'success' : 'info'; }

@@ -5,7 +5,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -48,24 +50,11 @@ export function AppSettingsScreen({ onNavigate }: Props) {
     setMessage(result.message);
   }
 
-  if (!data) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading app settings..." /></YStack>;
+  if (!data) return <InteriorShell onNavigate={onNavigate} title="App Settings" subtitle="Please wait..." scrollable={false}><Centered title="Loading app settings..." /></InteriorShell>;
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 108 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Preferences and local app controls</Text>
-              <H1>App Settings</H1>
-              <Paragraph color="$gray10">Manage theme, language, region display, currency display, marketplaces, notifications, accessibility, cache, and app information.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('home')}>Back</Button>
-              <Button icon={<Ionicons name="shield-checkmark-outline" size={18} />} onPress={() => onNavigate('loginSecurity')}>Login & Security</Button>
-              <Button icon={<Ionicons name="help-circle-outline" size={18} />} theme="purple" onPress={() => onNavigate('support')}>Help & Support</Button>
-            </XStack>
-          </XStack>
+    <InteriorShell onNavigate={onNavigate} title="App Settings" subtitle="Manage preferences and local app controls" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
 
           <XStack $sm={{ flexDirection: 'column' }} gap="$3">
             <Metric label="Mode" value={data.currentMode.replace('_', ' / ')} tone="info" />
@@ -92,9 +81,8 @@ export function AppSettingsScreen({ onNavigate }: Props) {
               {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
           </XStack>
-        </YStack>
-      </ScrollView>
-    </YStack>
+      </YStack>
+    </InteriorShell>
   );
 }
 
@@ -112,10 +100,10 @@ function Storage({ run }: { run: (action: string) => void }) { return <Panel tit
 function About({ about }: { about: AppAboutInfo }) { const rows = [{ id: 'name', label: 'App', value: about.appName }, { id: 'version', label: 'Version', value: about.appVersion }, { id: 'build', label: 'Build', value: about.buildNumber }, { id: 'platform', label: 'Platform', value: about.platform }, { id: 'env', label: 'Environment', value: about.environmentLabelSafe }, { id: 'debug', label: 'Debug info', value: about.debugInfoAvailableInDevOnly ? 'Available in dev builds only' : 'Hidden' }]; return <Panel title="App Version / About"><AboutList data={rows} estimatedItemSize={74} keyExtractor={(item) => item.id} renderItem={({ item, index }) => <AnimatedRow index={index} title={item.label} meta={item.value} />} /></Panel>; }
 function AnimatedRow({ index, title, meta }: { index: number; title: string; meta: string }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={title} meta={meta} badge="About" tone="info" /></Animated.View>; }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
 function Row({ title, meta, badge, tone, actionLabel, action }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success'; actionLabel?: string; action?: () => void }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1} minWidth={0}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} />{actionLabel && action ? <Button onPress={action}>{actionLabel}</Button> : null}</XStack>; }
 function Metric({ label, value, tone }: { label: string; value: string | number; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <PremiumCard flex={1} minWidth={160} p="$4"><Text color={toneColor(tone)} fontSize="$7" fontWeight="900">{value}</Text><Text color="$gray10">{label}</Text></PremiumCard>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <Text bg={toneBg(tone)} br="$6" color={toneColor(tone)} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function toneBg(tone: 'info' | 'warning' | 'critical' | 'success') { return tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; }
