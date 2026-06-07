@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, H2, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';

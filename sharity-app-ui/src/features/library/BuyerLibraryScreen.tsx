@@ -6,7 +6,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import { Button, Card, H1, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';

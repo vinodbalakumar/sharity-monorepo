@@ -3,14 +3,13 @@ import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
-  Share,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
   useWindowDimensions
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppLoadingIndicator } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell';
@@ -190,7 +189,6 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
 
       {!state.loading && !state.error && state.product ? (
         <>
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={[styles.topLayout, !isDesktop && styles.topLayoutMobile]}>
               <ProductImageGallery isDesktop={isDesktop} product={state.product} />
               <ProductSummaryCard
@@ -212,7 +210,6 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
 
             <ReviewsSection averageRating={averageRating} product={state.product} />
             <RelatedProductsSection products={state.related} />
-          </ScrollView>
           {!isDesktop ? <ProductActionBar onAction={handleAction} /> : null}
         </>
       ) : null}
