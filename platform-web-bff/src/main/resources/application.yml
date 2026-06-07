@@ -13,6 +13,16 @@ server:
 spring:
   application:
     name: platform-web-bff
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${BFF_DB_NAME:platform_web_bff}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    table: platform_web_bff_flyway_schema_history
+    baseline-on-migrate: true
+    baseline-version: 0
   security:
     oauth2:
       client:
@@ -22,7 +32,7 @@ spring:
             client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:change-me-local-only}
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_basic
-            redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8080}/login/oauth2/code/sharity-web-bff
+            redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:https://vinodbalakumar.com}/login/oauth2/code/sharity-web-bff
             scope:
               - openid
               - profile
@@ -40,7 +50,7 @@ app:
   oauth2:
     client-id: ${SHARITY_WEB_BFF_CLIENT_ID:sharity-web-bff}
     client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:change-me-local-only}
-    redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8080}/login/oauth2/code/sharity-web-bff
+    redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:https://vinodbalakumar.com}/login/oauth2/code/sharity-web-bff
     authorization-server-public-base-url: ${AUTH_SERVER_PUBLIC_BASE_URL:https://vinodbalakumar.com/authorization-server/api}
     authorization-server-base-url: ${AUTH_SERVER_BASE_URL:http://localhost:8083/authorization-server/api}
   backends:

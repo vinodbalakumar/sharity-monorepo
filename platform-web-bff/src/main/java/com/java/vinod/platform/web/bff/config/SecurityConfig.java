@@ -22,25 +22,35 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.client.RestTemplate;
+
 import java.util.List;
+
+import com.java.vinod.platform.web.bff.security.SharityAccessTokenAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
     private static final String REGISTRATION_ID = "sharity-web-bff";
     private static final String FORCE_REAUTH_COOKIE = "sharity-force-login";
+    private static final String PUBLIC_AUTH_SERVER_BASE_URL = "https://vinodbalakumar.com/authorization-server/api";
+    private static final String PUBLIC_BFF_REDIRECT_URI = "https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    BffProperties properties,
                                                    OAuth2AuthorizationRequestResolver authorizationRequestResolver,
+                                                   SharityAccessTokenAuthenticationFilter sharityAccessTokenAuthenticationFilter,
                                                    CorsConfigurationSource corsConfigurationSource) throws Exception {
         return http
+                .addFilterBefore(sharityAccessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .csrf(csrf -> csrf.csrfTokenRepository(new HttpSessionCsrfTokenRepository()))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -50,7 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/bff/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/login/oauth2/code/" + REGISTRATION_ID).permitAll()
                         .requestMatchers(HttpMethod.GET, "/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/bff/session").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/bff/session").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/bff/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/bff/logout").authenticated()
                         .requestMatchers("/bff/api/**").authenticated()
                         .anyRequest().denyAll())
@@ -60,6 +72,11 @@ public class SecurityConfig {
                         .defaultSuccessUrl(properties.web().redirectUri(), true))
                 .oauth2Client(Customizer.withDefaults())
                 .build();
+    }
+
+    @Bean
+    public JwtDecoder sharityAccessTokenJwtDecoder(BffProperties properties) {
+        return NimbusJwtDecoder.withJwkSetUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/jwks").build();
     }
 
     @Bean
@@ -97,9 +114,9 @@ public class SecurityConfig {
                 .clientSecret(properties.oauth2().clientSecret())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(properties.oauth2().redirectUri())
+                .redirectUri(browserRedirectUri(properties))
                 .scope("openid", "profile")
-                .authorizationUri(properties.oauth2().authorizationServerPublicBaseUrl() + "/oauth2/authorize")
+                .authorizationUri(browserAuthorizationServerBaseUrl(properties) + "/oauth2/authorize")
                 .tokenUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/token")
                 .userInfoUri(properties.oauth2().authorizationServerBaseUrl() + "/userinfo")
                 .jwkSetUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/jwks")
@@ -115,35 +132,72 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OAuth2AuthorizationRequestResolver authorizationRequestResolver(ClientRegistrationRepository registrations) {
+    public OAuth2AuthorizationRequestResolver authorizationRequestResolver(ClientRegistrationRepository registrations,
+                                                                           BffProperties properties) {
         DefaultOAuth2AuthorizationRequestResolver resolver =
                 new DefaultOAuth2AuthorizationRequestResolver(registrations, "/oauth2/authorization");
         resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
         return new OAuth2AuthorizationRequestResolver() {
             @Override
             public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request) {
-                return customOrDefault(resolver.resolve(request), request);
+                return customOrDefault(resolver.resolve(request), request, properties);
             }
 
             @Override
             public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request,
                                                      String clientRegistrationId) {
-                return customOrDefault(resolver.resolve(request, clientRegistrationId), request);
+                return customOrDefault(resolver.resolve(request, clientRegistrationId), request, properties);
             }
         };
     }
 
     private OAuth2AuthorizationRequest customOrDefault(OAuth2AuthorizationRequest authorizationRequest,
-                                                       jakarta.servlet.http.HttpServletRequest request) {
+                                                       jakarta.servlet.http.HttpServletRequest request,
+                                                       BffProperties properties) {
         if (authorizationRequest == null) {
             return null;
         }
+        OAuth2AuthorizationRequest.Builder builder = OAuth2AuthorizationRequest.from(authorizationRequest)
+                .authorizationUri(browserAuthorizationServerBaseUrl(properties) + "/oauth2/authorize")
+                .redirectUri(browserRedirectUri(properties));
         if (hasForceReauthenticationCookie(request)) {
-            return OAuth2AuthorizationRequest.from(authorizationRequest)
-                    .additionalParameters(parameters -> parameters.put("prompt", "login"))
-                    .build();
+            builder.additionalParameters(parameters -> parameters.put("prompt", "login"));
         }
-        return authorizationRequest;
+        return builder.build();
+    }
+
+    private String browserAuthorizationServerBaseUrl(BffProperties properties) {
+        String configured = properties.oauth2().authorizationServerPublicBaseUrl();
+        if (isLocalhostUrl(configured)) {
+            return PUBLIC_AUTH_SERVER_BASE_URL;
+        }
+        return trimTrailingSlash(configured);
+    }
+
+    private String browserRedirectUri(BffProperties properties) {
+        String configured = properties.oauth2().redirectUri();
+        if (isLocalhostUrl(configured)) {
+            return PUBLIC_BFF_REDIRECT_URI;
+        }
+        return configured;
+    }
+
+    private boolean isLocalhostUrl(String value) {
+        if (value == null || value.isBlank()) {
+            return true;
+        }
+        String lower = value.toLowerCase();
+        return lower.contains("://localhost")
+                || lower.contains("://127.0.0.1")
+                || lower.contains("://[::1]");
+    }
+
+    private String trimTrailingSlash(String value) {
+        String trimmed = value.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 
     /**

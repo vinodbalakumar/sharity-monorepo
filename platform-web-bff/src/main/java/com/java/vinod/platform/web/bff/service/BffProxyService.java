@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.DefaultResponseErrorHandler;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -30,6 +32,17 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @Service
 public class BffProxyService {
     private static final String REGISTRATION_ID = "sharity-web-bff";
+    private static final Set<String> HOP_BY_HOP_HEADERS = Set.of(
+            HttpHeaders.CONNECTION,
+            "Keep-Alive",
+            HttpHeaders.PROXY_AUTHENTICATE,
+            HttpHeaders.PROXY_AUTHORIZATION,
+            HttpHeaders.TE,
+            HttpHeaders.TRAILER,
+            HttpHeaders.TRANSFER_ENCODING,
+            HttpHeaders.UPGRADE,
+            HttpHeaders.CONTENT_LENGTH
+    );
 
     private final BffProperties properties;
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
@@ -47,7 +60,7 @@ public class BffProxyService {
     public ResponseEntity<byte[]> proxy(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) {
-        OAuth2AuthorizedClient authorizedClient = loadAuthorizedClient(request, response, authentication);
+        String bearerToken = bearerToken(request, response, authentication);
         String path = request.getRequestURI().substring("/bff/api/".length());
         int slash = path.indexOf('/');
         if (slash < 0) {
@@ -61,14 +74,14 @@ public class BffProxyService {
 
         HttpHeaders headers = new HttpHeaders();
         request.getHeaderNames().asIterator().forEachRemaining(header -> {
-            if (!HttpHeaders.AUTHORIZATION.equalsIgnoreCase(header)
-                    && !HttpHeaders.COOKIE.equalsIgnoreCase(header)
-                    && !HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(header)
-                    && !HttpHeaders.HOST.equalsIgnoreCase(header)) {
+                if (!HttpHeaders.AUTHORIZATION.equalsIgnoreCase(header)
+                        && !HttpHeaders.COOKIE.equalsIgnoreCase(header)
+                        && !HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(header)
+                        && !HttpHeaders.HOST.equalsIgnoreCase(header)) {
                 headers.add(header, request.getHeader(header));
             }
         });
-        headers.setBearerAuth(accessToken(authorizedClient));
+        headers.setBearerAuth(bearerToken);
         if (headers.get(HttpHeaders.ACCEPT) == null) {
             headers.setAccept(MediaType.parseMediaTypes(MediaType.APPLICATION_JSON_VALUE));
         }
@@ -80,33 +93,36 @@ public class BffProxyService {
         ResponseEntity<byte[]> backendResponse = restTemplate.exchange(target, method, entity, byte[].class);
         return ResponseEntity.status(backendResponse.getStatusCode())
                 .headers(responseHeaders -> backendResponse.getHeaders().forEach((key, values) -> {
-                    if (!HttpHeaders.SET_COOKIE.equalsIgnoreCase(key)) {
+                    if (!HttpHeaders.SET_COOKIE.equalsIgnoreCase(key)
+                            && HOP_BY_HOP_HEADERS.stream().noneMatch(header -> header.equalsIgnoreCase(key))) {
                         responseHeaders.put(key, values);
                     }
                 }))
                 .body(backendResponse.getBody());
     }
 
-    private OAuth2AuthorizedClient loadAuthorizedClient(HttpServletRequest request,
-                                                        HttpServletResponse response,
-                                                        Authentication authentication) {
-        if (!(authentication instanceof OAuth2AuthenticationToken oauth2Token)) {
-            throw new ResponseStatusException(UNAUTHORIZED, "Login required");
+    private String bearerToken(HttpServletRequest request,
+                               HttpServletResponse response,
+                               Authentication authentication) {
+        if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
+            OAuth2AuthorizedClient client = authorizedClientRepository.loadAuthorizedClient(
+                    REGISTRATION_ID, oauth2Token, request);
+            if (client == null || client.getAccessToken() == null) {
+                throw new ResponseStatusException(UNAUTHORIZED, "Login required");
+            }
+            OAuth2AccessToken token = client.getAccessToken();
+            if (token.getTokenValue() == null || token.getTokenValue().isBlank()) {
+                throw new ResponseStatusException(UNAUTHORIZED, "Login required");
+            }
+            return token.getTokenValue();
         }
-        OAuth2AuthorizedClient client = authorizedClientRepository.loadAuthorizedClient(
-                REGISTRATION_ID, oauth2Token, request);
-        if (client == null || client.getAccessToken() == null) {
-            throw new ResponseStatusException(UNAUTHORIZED, "Login required");
+        if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof Jwt jwt) {
+            if (jwt.getTokenValue() == null || jwt.getTokenValue().isBlank()) {
+                throw new ResponseStatusException(UNAUTHORIZED, "Login required");
+            }
+            return jwt.getTokenValue();
         }
-        return client;
-    }
-
-    private String accessToken(OAuth2AuthorizedClient authorizedClient) {
-        OAuth2AccessToken token = authorizedClient.getAccessToken();
-        if (token == null || token.getTokenValue() == null || token.getTokenValue().isBlank()) {
-            throw new ResponseStatusException(UNAUTHORIZED, "Login required");
-        }
-        return token.getTokenValue();
+        throw new ResponseStatusException(UNAUTHORIZED, "Login required");
     }
 
     private String backendBase(String serviceKey) {

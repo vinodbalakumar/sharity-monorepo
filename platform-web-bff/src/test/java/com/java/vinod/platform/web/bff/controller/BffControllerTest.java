@@ -41,10 +41,14 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @SpringBootTest(classes = PlatformWebBffApplication.class, properties = {
         "server.port=0",
         "spring.main.allow-bean-definition-overriding=true",
+        "spring.datasource.url=jdbc:h2:mem:bfftest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.flyway.table=platform_web_bff_flyway_schema_history",
         "app.security.allowed-origin=https://vinodbalakumar.com",
         "app.oauth2.client-id=sharity-web-bff",
         "app.oauth2.client-secret=test-secret",
-        "app.oauth2.redirect-uri=http://localhost:8080/login/oauth2/code/sharity-web-bff",
+        "app.oauth2.redirect-uri=https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff",
         "app.oauth2.authorization-server-public-base-url=https://vinodbalakumar.com/authorization-server/api",
         "app.oauth2.authorization-server-base-url=http://localhost:8083/authorization-server/api",
         "app.backends.authorization-server=http://authorization-server:8080/authorization-server",
@@ -78,10 +82,50 @@ class BffControllerTest {
     }
 
     @Test
-    void sessionWithoutAuthenticationIsRejected() throws Exception {
+    void sessionWithoutAuthenticationReturnsAnonymousSummary() throws Exception {
         mockMvc.perform(get("/bff/session"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(false))
+                .andExpect(jsonPath("$.publicId").doesNotExist())
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.applications").isArray())
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
         assertThat(((TestOverrides.ProxyServiceStub) proxyService).calls.get()).isZero();
+    }
+
+    @Test
+    void publicContextResolvesCountryFromTrustedEdgeHeader() throws Exception {
+        mockMvc.perform(get("/bff/public/context")
+                        .header("CF-IPCountry", "IN")
+                        .header("Accept-Language", "en-US,en;q=0.9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.countryCode").value("IN"))
+                .andExpect(jsonPath("$.countryName").value("India"))
+                .andExpect(jsonPath("$.detectionSource").value("header:CF-IPCountry"))
+                .andExpect(jsonPath("$.availablePolicyCodes[0]").value("privacy"));
+    }
+
+    @Test
+    void publicLegalPolicyUsesCountrySpecificVersion() throws Exception {
+        mockMvc.perform(get("/api/public/legal/policies/terms")
+                        .param("countryCode", "CA")
+                        .param("locale", "en-CA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.policyCode").value("terms"))
+                .andExpect(jsonPath("$.countryCode").value("CA"))
+                .andExpect(jsonPath("$.locale").value("en-CA"))
+                .andExpect(jsonPath("$.version").value("ca-terms-2026.1"));
+    }
+
+    @Test
+    void publicFooterContentIsAnonymous() throws Exception {
+        mockMvc.perform(get("/bff/public/content/pages/privacy")
+                        .header("X-Vercel-IP-Country", "US"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("privacy"))
+                .andExpect(jsonPath("$.title").value("Privacy Policy"))
+                .andExpect(jsonPath("$.sections").isArray());
     }
 
     @Test
@@ -150,7 +194,19 @@ class BffControllerTest {
         mockMvc.perform(get("/oauth2/authorization/sharity-web-bff")
                         .cookie(new MockCookie("sharity-force-login", "1")))
                 .andExpect(status().isFound())
+                .andExpect(header().string("Location", containsString("https://vinodbalakumar.com/authorization-server/api/oauth2/authorize")))
+                .andExpect(header().string("Location", containsString("redirect_uri=https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff")))
                 .andExpect(header().string("Location", containsString("prompt=login")));
+    }
+
+    @Test
+    void authorizationStartUsesConfiguredPublicDomainEvenWhenRequestHostIsLocalhost() throws Exception {
+        mockMvc.perform(get("/oauth2/authorization/sharity-web-bff")
+                        .header("Host", "localhost")
+                        .header("X-Forwarded-Host", "localhost"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", containsString("https://vinodbalakumar.com/authorization-server/api/oauth2/authorize")))
+                .andExpect(header().string("Location", containsString("redirect_uri=https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff")));
     }
 
     @Configuration
@@ -163,7 +219,7 @@ class BffControllerTest {
                     proxyCalls,
                     new BffProperties(
                             new BffProperties.Security("https://vinodbalakumar.com"),
-                            new BffProperties.OAuth2("sharity-web-bff", "test-secret", "http://localhost:8080/login/oauth2/code/sharity-web-bff", "https://vinodbalakumar.com/authorization-server/api", "http://localhost:8083/authorization-server/api"),
+                            new BffProperties.OAuth2("sharity-web-bff", "test-secret", "https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff", "https://vinodbalakumar.com/authorization-server/api", "http://localhost:8083/authorization-server/api"),
                             new BffProperties.Backends("http://authorization-server:8080/authorization-server", "http://marketplace-service:8080/marketplace-service", "http://payment-service:8080/payment-service", "http://wallet-service:8080/wallet-service"),
                             new BffProperties.Web("https://vinodbalakumar.com/app/")
                     ),

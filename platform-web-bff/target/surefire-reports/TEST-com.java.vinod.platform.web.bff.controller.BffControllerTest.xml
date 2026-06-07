@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="9.748" tests="7" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="15.706" tests="11" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
     <property name="sun.jnu.encoding" value="Cp1252"/>
-    <property name="java.class.path" value="C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\test-classes;C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\classes;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-web\4.0.6\spring-boot-starter-web-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.6\spring-boot-starter-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.6\spring-boot-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-databind\3.1.2\jackson-databind-3.1.2.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-core\3.1.2\jackson-core-3.1.2.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.6\spring-boot-starter-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.6\spring-boot-starter-tomcat-runtime-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.6\spring-boot-web-server-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.21\tomcat-embed-core-11.0.21.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.21\tomcat-embed-websocket-11.0.21.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.6\spring-boot-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.6\spring-boot-http-converter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-web\7.0.7\spring-web-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.6\spring-boot-webmvc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.6\spring-boot-servlet-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-webmvc\7.0.7\spring-webmvc-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.6\spring-boot-starter-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.6\spring-boot-starter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.6\spring-boot-starter-logging-4.0.6.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.4\log4j-to-slf4j-2.25.4.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.4\log4j-api-2.25.4.jar;C:\Users\HP\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.6\spring-boot-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\HP\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security\4.0.6\spring-boot-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-config\7.0.5\spring-security-config-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-aop\7.0.7\spring-aop-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\spring-beans\7.0.7\spring-beans-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-client\4.0.6\spring-boot-starter-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-client\4.0.6\spring-boot-security-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-client\7.0.5\spring-security-oauth2-client-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\oauth2-oidc-sdk\11.26.1\oauth2-oidc-sdk-11.26.1.jar;C:\Users\HP\.m2\repository\com\github\stephenc\jcip\jcip-annotations\1.0-1\jcip-annotations-1.0-1.jar;C:\Users\HP\.m2\repository\com\nimbusds\content-type\2.3\content-type-2.3.jar;C:\Users\HP\.m2\repository\com\nimbusds\lang-tag\1.7\lang-tag-1.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.5\spring-security-oauth2-jose-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.5\spring-security-oauth2-core-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.6\spring-boot-starter-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.6\spring-boot-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.21\tomcat-embed-el-11.0.21.jar;C:\Users\HP\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\HP\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\HP\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\HP\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.6\spring-boot-starter-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.6\spring-boot-starter-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.6\spring-boot-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.6\spring-boot-micrometer-observation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.6\spring-boot-actuator-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.6\spring-boot-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-health\4.0.6\spring-boot-health-4.0.6.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-observation\1.16.5\micrometer-observation-1.16.5.jar;C:\Users\HP\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-commons\1.16.5\micrometer-commons-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.5\micrometer-jakarta9-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-core\1.16.5\micrometer-core-1.16.5.jar;C:\Users\HP\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\HP\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.6\spring-boot-starter-test-4.0.6.jar;C:\Users\HP\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\HP\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\HP\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\HP\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\HP\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\HP\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\HP\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\HP\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\HP\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\HP\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\HP\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\HP\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\HP\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\HP\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\HP\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\HP\.m2\repository\org\springframework\spring-core\7.0.7\spring-core-7.0.7.jar;C:\Users\HP\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-test\7.0.7\spring-test-7.0.7.jar;C:\Users\HP\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test\4.0.6\spring-boot-test-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot\4.0.6\spring-boot-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-context\7.0.7\spring-context-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.6\spring-boot-test-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-test\7.0.5\spring-security-test-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-core\7.0.5\spring-security-core-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-crypto\7.0.5\spring-security-crypto-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-expression\7.0.7\spring-expression-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-web\7.0.5\spring-security-web-7.0.5.jar;"/>
+    <property name="java.class.path" value="C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\test-classes;C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\classes;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-web\4.0.6\spring-boot-starter-web-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.6\spring-boot-starter-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.6\spring-boot-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-databind\3.1.2\jackson-databind-3.1.2.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-core\3.1.2\jackson-core-3.1.2.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.6\spring-boot-starter-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.6\spring-boot-starter-tomcat-runtime-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.6\spring-boot-web-server-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.21\tomcat-embed-core-11.0.21.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.21\tomcat-embed-websocket-11.0.21.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.6\spring-boot-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.6\spring-boot-http-converter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-web\7.0.7\spring-web-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.6\spring-boot-webmvc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.6\spring-boot-servlet-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-webmvc\7.0.7\spring-webmvc-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.6\spring-boot-starter-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.6\spring-boot-starter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.6\spring-boot-starter-logging-4.0.6.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.4\log4j-to-slf4j-2.25.4.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.4\log4j-api-2.25.4.jar;C:\Users\HP\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.6\spring-boot-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\HP\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security\4.0.6\spring-boot-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-config\7.0.5\spring-security-config-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-aop\7.0.7\spring-aop-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\spring-beans\7.0.7\spring-beans-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-client\4.0.6\spring-boot-starter-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-client\4.0.6\spring-boot-security-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-client\7.0.5\spring-security-oauth2-client-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\oauth2-oidc-sdk\11.26.1\oauth2-oidc-sdk-11.26.1.jar;C:\Users\HP\.m2\repository\com\github\stephenc\jcip\jcip-annotations\1.0-1\jcip-annotations-1.0-1.jar;C:\Users\HP\.m2\repository\com\nimbusds\content-type\2.3\content-type-2.3.jar;C:\Users\HP\.m2\repository\com\nimbusds\lang-tag\1.7\lang-tag-1.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.5\spring-security-oauth2-jose-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.5\spring-security-oauth2-core-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.6\spring-boot-starter-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.6\spring-boot-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.21\tomcat-embed-el-11.0.21.jar;C:\Users\HP\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\HP\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\HP\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\HP\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.6\spring-boot-starter-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.6\spring-boot-starter-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.6\spring-boot-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.6\spring-boot-micrometer-observation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.6\spring-boot-actuator-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.6\spring-boot-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-health\4.0.6\spring-boot-health-4.0.6.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-observation\1.16.5\micrometer-observation-1.16.5.jar;C:\Users\HP\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-commons\1.16.5\micrometer-commons-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.5\micrometer-jakarta9-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-core\1.16.5\micrometer-core-1.16.5.jar;C:\Users\HP\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\HP\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.6\spring-boot-starter-jdbc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.6\spring-boot-jdbc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.6\spring-boot-sql-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.6\spring-boot-transaction-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.6\spring-boot-persistence-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-tx\7.0.7\spring-tx-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\spring-jdbc\7.0.7\spring-jdbc-7.0.7.jar;C:\Users\HP\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\HP\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.6\spring-boot-starter-flyway-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.6\spring-boot-flyway-4.0.6.jar;C:\Users\HP\.m2\repository\org\flywaydb\flyway-mysql\11.14.1\flyway-mysql-11.14.1.jar;C:\Users\HP\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar;C:\Users\HP\.m2\repository\com\mysql\mysql-connector-j\9.7.0\mysql-connector-j-9.7.0.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.6\spring-boot-starter-test-4.0.6.jar;C:\Users\HP\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\HP\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\HP\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\HP\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\HP\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\HP\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\HP\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\HP\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\HP\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\HP\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\HP\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\HP\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\HP\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\HP\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\HP\.m2\repository\org\springframework\spring-core\7.0.7\spring-core-7.0.7.jar;C:\Users\HP\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-test\7.0.7\spring-test-7.0.7.jar;C:\Users\HP\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test\4.0.6\spring-boot-test-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot\4.0.6\spring-boot-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-context\7.0.7\spring-context-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.6\spring-boot-test-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-test\7.0.5\spring-security-test-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-core\7.0.5\spring-security-core-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-crypto\7.0.5\spring-security-crypto-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-expression\7.0.7\spring-expression-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-web\7.0.5\spring-security-web-7.0.5.jar;C:\Users\HP\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;"/>
     <property name="java.vm.vendor" value="Oracle Corporation"/>
     <property name="sun.arch.data.model" value="64"/>
     <property name="user.variant" value=""/>
@@ -17,10 +17,9 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="C:\Program Files\Java\jdk-21\bin"/>
-    <property name="sun.java.command" value="C:\Users\HP\AppData\Local\Temp\surefire10820549927343413755\surefirebooter-20260531013304098_3.jar C:\Users\HP\AppData\Local\Temp\surefire10820549927343413755 2026-05-31T01-33-03_885-jvmRun1 surefire-20260531013304098_1tmp surefire_0-20260531013304098_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\HP\AppData\Local\Temp\surefire8382743904853735506\surefirebooter-20260606111532972_3.jar C:\Users\HP\AppData\Local\Temp\surefire8382743904853735506 2026-06-06T11-15-32_640-jvmRun1 surefire-20260606111532972_1tmp surefire_0-20260606111532972_2tmp"/>
     <property name="jdk.debug" value="release"/>
-    <property name="test" value="BffControllerTest"/>
-    <property name="surefire.test.class.path" value="C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\test-classes;C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\classes;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-web\4.0.6\spring-boot-starter-web-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.6\spring-boot-starter-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.6\spring-boot-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-databind\3.1.2\jackson-databind-3.1.2.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-core\3.1.2\jackson-core-3.1.2.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.6\spring-boot-starter-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.6\spring-boot-starter-tomcat-runtime-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.6\spring-boot-web-server-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.21\tomcat-embed-core-11.0.21.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.21\tomcat-embed-websocket-11.0.21.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.6\spring-boot-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.6\spring-boot-http-converter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-web\7.0.7\spring-web-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.6\spring-boot-webmvc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.6\spring-boot-servlet-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-webmvc\7.0.7\spring-webmvc-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.6\spring-boot-starter-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.6\spring-boot-starter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.6\spring-boot-starter-logging-4.0.6.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.4\log4j-to-slf4j-2.25.4.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.4\log4j-api-2.25.4.jar;C:\Users\HP\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.6\spring-boot-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\HP\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security\4.0.6\spring-boot-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-config\7.0.5\spring-security-config-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-aop\7.0.7\spring-aop-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\spring-beans\7.0.7\spring-beans-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-client\4.0.6\spring-boot-starter-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-client\4.0.6\spring-boot-security-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-client\7.0.5\spring-security-oauth2-client-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\oauth2-oidc-sdk\11.26.1\oauth2-oidc-sdk-11.26.1.jar;C:\Users\HP\.m2\repository\com\github\stephenc\jcip\jcip-annotations\1.0-1\jcip-annotations-1.0-1.jar;C:\Users\HP\.m2\repository\com\nimbusds\content-type\2.3\content-type-2.3.jar;C:\Users\HP\.m2\repository\com\nimbusds\lang-tag\1.7\lang-tag-1.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.5\spring-security-oauth2-jose-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.5\spring-security-oauth2-core-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.6\spring-boot-starter-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.6\spring-boot-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.21\tomcat-embed-el-11.0.21.jar;C:\Users\HP\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\HP\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\HP\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\HP\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.6\spring-boot-starter-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.6\spring-boot-starter-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.6\spring-boot-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.6\spring-boot-micrometer-observation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.6\spring-boot-actuator-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.6\spring-boot-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-health\4.0.6\spring-boot-health-4.0.6.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-observation\1.16.5\micrometer-observation-1.16.5.jar;C:\Users\HP\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-commons\1.16.5\micrometer-commons-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.5\micrometer-jakarta9-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-core\1.16.5\micrometer-core-1.16.5.jar;C:\Users\HP\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\HP\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.6\spring-boot-starter-test-4.0.6.jar;C:\Users\HP\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\HP\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\HP\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\HP\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\HP\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\HP\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\HP\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\HP\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\HP\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\HP\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\HP\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\HP\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\HP\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\HP\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\HP\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\HP\.m2\repository\org\springframework\spring-core\7.0.7\spring-core-7.0.7.jar;C:\Users\HP\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-test\7.0.7\spring-test-7.0.7.jar;C:\Users\HP\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test\4.0.6\spring-boot-test-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot\4.0.6\spring-boot-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-context\7.0.7\spring-context-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.6\spring-boot-test-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-test\7.0.5\spring-security-test-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-core\7.0.5\spring-security-core-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-crypto\7.0.5\spring-security-crypto-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-expression\7.0.7\spring-expression-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-web\7.0.5\spring-security-web-7.0.5.jar;"/>
+    <property name="surefire.test.class.path" value="C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\test-classes;C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\classes;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-web\4.0.6\spring-boot-starter-web-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.6\spring-boot-starter-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.6\spring-boot-jackson-4.0.6.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-databind\3.1.2\jackson-databind-3.1.2.jar;C:\Users\HP\.m2\repository\tools\jackson\core\jackson-core\3.1.2\jackson-core-3.1.2.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.6\spring-boot-starter-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.6\spring-boot-starter-tomcat-runtime-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.6\spring-boot-web-server-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.21\tomcat-embed-core-11.0.21.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.21\tomcat-embed-websocket-11.0.21.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.6\spring-boot-tomcat-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.6\spring-boot-http-converter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-web\7.0.7\spring-web-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.6\spring-boot-webmvc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.6\spring-boot-servlet-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-webmvc\7.0.7\spring-webmvc-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.6\spring-boot-starter-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.6\spring-boot-starter-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.6\spring-boot-starter-logging-4.0.6.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\HP\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.4\log4j-to-slf4j-2.25.4.jar;C:\Users\HP\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.4\log4j-api-2.25.4.jar;C:\Users\HP\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.6\spring-boot-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\HP\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security\4.0.6\spring-boot-security-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-config\7.0.5\spring-security-config-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-aop\7.0.7\spring-aop-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\spring-beans\7.0.7\spring-beans-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-client\4.0.6\spring-boot-starter-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-client\4.0.6\spring-boot-security-oauth2-client-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-client\7.0.5\spring-security-oauth2-client-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\oauth2-oidc-sdk\11.26.1\oauth2-oidc-sdk-11.26.1.jar;C:\Users\HP\.m2\repository\com\github\stephenc\jcip\jcip-annotations\1.0-1\jcip-annotations-1.0-1.jar;C:\Users\HP\.m2\repository\com\nimbusds\content-type\2.3\content-type-2.3.jar;C:\Users\HP\.m2\repository\com\nimbusds\lang-tag\1.7\lang-tag-1.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.5\spring-security-oauth2-jose-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.5\spring-security-oauth2-core-7.0.5.jar;C:\Users\HP\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-validation\4.0.6\spring-boot-starter-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-validation\4.0.6\spring-boot-validation-4.0.6.jar;C:\Users\HP\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.21\tomcat-embed-el-11.0.21.jar;C:\Users\HP\.m2\repository\org\hibernate\validator\hibernate-validator\9.0.1.Final\hibernate-validator-9.0.1.Final.jar;C:\Users\HP\.m2\repository\jakarta\validation\jakarta.validation-api\3.1.1\jakarta.validation-api-3.1.1.jar;C:\Users\HP\.m2\repository\org\jboss\logging\jboss-logging\3.6.3.Final\jboss-logging-3.6.3.Final.jar;C:\Users\HP\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\4.0.6\spring-boot-starter-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-micrometer-metrics\4.0.6\spring-boot-starter-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-metrics\4.0.6\spring-boot-micrometer-metrics-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-micrometer-observation\4.0.6\spring-boot-micrometer-observation-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\4.0.6\spring-boot-actuator-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-actuator\4.0.6\spring-boot-actuator-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-health\4.0.6\spring-boot-health-4.0.6.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-observation\1.16.5\micrometer-observation-1.16.5.jar;C:\Users\HP\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-commons\1.16.5\micrometer-commons-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-jakarta9\1.16.5\micrometer-jakarta9-1.16.5.jar;C:\Users\HP\.m2\repository\io\micrometer\micrometer-core\1.16.5\micrometer-core-1.16.5.jar;C:\Users\HP\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\HP\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.6\spring-boot-starter-jdbc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.6\spring-boot-jdbc-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.6\spring-boot-sql-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.6\spring-boot-transaction-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.6\spring-boot-persistence-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-tx\7.0.7\spring-tx-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\spring-jdbc\7.0.7\spring-jdbc-7.0.7.jar;C:\Users\HP\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\HP\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.6\spring-boot-starter-flyway-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.6\spring-boot-flyway-4.0.6.jar;C:\Users\HP\.m2\repository\org\flywaydb\flyway-mysql\11.14.1\flyway-mysql-11.14.1.jar;C:\Users\HP\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.21.2\jackson-databind-2.21.2.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.21\jackson-annotations-2.21.jar;C:\Users\HP\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.21.2\jackson-core-2.21.2.jar;C:\Users\HP\.m2\repository\com\mysql\mysql-connector-j\9.7.0\mysql-connector-j-9.7.0.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.6\spring-boot-starter-test-4.0.6.jar;C:\Users\HP\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\HP\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\HP\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\HP\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\HP\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\HP\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\HP\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\HP\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\HP\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\HP\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\HP\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\HP\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\HP\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\HP\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\HP\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\HP\.m2\repository\org\springframework\spring-core\7.0.7\spring-core-7.0.7.jar;C:\Users\HP\.m2\repository\commons-logging\commons-logging\1.3.6\commons-logging-1.3.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-test\7.0.7\spring-test-7.0.7.jar;C:\Users\HP\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test\4.0.6\spring-boot-test-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot\4.0.6\spring-boot-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\spring-context\7.0.7\spring-context-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.6\spring-boot-test-autoconfigure-4.0.6.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-test\7.0.5\spring-security-test-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-core\7.0.5\spring-security-core-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-crypto\7.0.5\spring-security-crypto-7.0.5.jar;C:\Users\HP\.m2\repository\org\springframework\spring-expression\7.0.7\spring-expression-7.0.7.jar;C:\Users\HP\.m2\repository\org\springframework\security\spring-security-web\7.0.5\spring-security-web-7.0.5.jar;C:\Users\HP\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="user.home" value="C:\Users\HP"/>
     <property name="user.language" value="en"/>
@@ -35,8 +34,9 @@
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="C:\Users\HP\AppData\Local\Temp\surefire10820549927343413755\surefirebooter-20260531013304098_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\HP\AppData\Local\Temp\surefire8382743904853735506\surefirebooter-20260606111532972_3.jar"/>
     <property name="user.script" value=""/>
+    <property name="polyglot.engine.WarnInterpreterOnly" value="false"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="21.0.4+8-LTS-274"/>
     <property name="user.name" value="HP"/>
@@ -49,15 +49,16 @@
     <property name="localRepository" value="C:\Users\HP\.m2\repository"/>
     <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
     <property name="java.io.tmpdir" value="C:\Users\HP\AppData\Local\Temp\"/>
+    <property name="com.zaxxer.hikari.pool_number" value="1"/>
     <property name="java.version" value="21.0.4"/>
     <property name="user.dir" value="C:\Users\HP\projects\springbootrestdemo\platform-web-bff"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="55732"/>
+    <property name="PID" value="121280"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
     <property name="native.encoding" value="Cp1252"/>
-    <property name="java.library.path" value="C:\Program Files\Java\jdk-21\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\HP\.codex\tmp\arg0\codex-arg0VKCjqH;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\OpenLogic\jdk-8.0.372.07-hotspot\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\ProgramData\chocolatey\bin;C:\softwares\apache-maven-3.9.1-bin\apache-maven-3.9.1\bin;C:\Program Files\Amazon\AWSCLIV2\;C:\Users\HP\Downloads\terraform_1.9.7_windows_amd64;C:\Program Files\PuTTY\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Go\bin;C:\Program Files (x86)\cloudflared\;C:\Users\HP\AppData\Local\Programs\Python\Python37-32\Scripts\;C:\Users\HP\AppData\Local\Programs\Python\Python37-32\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Users\HP\AppData\Local\Microsoft\WindowsApps;C:\Users\HP\AppData\Roaming\npm;C:\Users\HP\AppData\Local\Programs\Microsoft VS Code\bin;;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2023.1.1\bin;;C:\Users\HP\.dotnet\tools;C:\Users\HP\go\bin;C:\Users\HP\projects\tools\flutter\bin;c:\Users\HP\.vscode\extensions\openai.chatgpt-26.519.32039-win32-x64\bin\windows-x86_64;."/>
+    <property name="java.library.path" value="C:\Program Files\Java\jdk-21\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\HP\.codex\tmp\arg0\codex-arg0cK1sGa;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\OpenLogic\jdk-8.0.372.07-hotspot\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\ProgramData\chocolatey\bin;C:\softwares\apache-maven-3.9.1-bin\apache-maven-3.9.1\bin;C:\Program Files\Amazon\AWSCLIV2\;C:\Users\HP\Downloads\terraform_1.9.7_windows_amd64;C:\Program Files\PuTTY\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Go\bin;C:\Program Files (x86)\cloudflared\;C:\Users\HP\AppData\Local\Programs\Python\Python37-32\Scripts\;C:\Users\HP\AppData\Local\Programs\Python\Python37-32\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Users\HP\AppData\Local\Microsoft\WindowsApps;C:\Users\HP\AppData\Roaming\npm;C:\Users\HP\AppData\Local\Programs\Microsoft VS Code\bin;;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2023.1.1\bin;;C:\Users\HP\.dotnet\tools;C:\Users\HP\go\bin;C:\Users\HP\projects\tools\flutter\bin;c:\Users\HP\.vscode\extensions\openai.chatgpt-26.601.21317-win32-x64\bin\windows-x86_64;."/>
     <property name="java.vm.info" value="mixed mode, sharing"/>
     <property name="stderr.encoding" value="Cp1252"/>
     <property name="java.vendor" value="Oracle Corporation"/>
@@ -66,7 +67,7 @@
     <property name="java.class.version" value="65.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[platform-web-bff] "/>
   </properties>
-  <testcase name="logoutRequiresCsrfAndInvalidatesTheSession" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="1.737">
+  <testcase name="logoutRequiresCsrfAndInvalidatesTheSession" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="1.796">
     <system-out><![CDATA[
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -77,18 +78,30 @@
 
  :: Spring Boot ::                (v4.0.6)
 
-2026-05-31T01:33:07.263-07:00  INFO 55732 --- [platform-web-bff] [           main] c.j.v.p.w.b.c.BffControllerTest          : Starting BffControllerTest using Java 21.0.4 with PID 55732 (started by HP in C:\Users\HP\projects\springbootrestdemo\platform-web-bff)
-2026-05-31T01:33:07.274-07:00  INFO 55732 --- [platform-web-bff] [           main] c.j.v.p.w.b.c.BffControllerTest          : No active profile set, falling back to 1 default profile: "default"
-2026-05-31T01:33:07.275-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.boot.SpringApplication               : Loading source class com.java.vinod.platform.web.bff.PlatformWebBffApplication
-2026-05-31T01:33:07.321-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.c.s.GenericWebApplicationContext   : Refreshing org.springframework.web.context.support.GenericWebApplicationContext@7c891ba7
-2026-05-31T01:33:08.771-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.f.s.DefaultListableBeanFactory     : Overriding bean definition for bean 'bffProxyService' with a different definition: replacing [Generic bean: class=com.java.vinod.platform.web.bff.service.BffProxyService; scope=singleton; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\classes\com\java\vinod\platform\web\bff\service\BffProxyService.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=com.java.vinod.platform.web.bff.controller.BffControllerTest$TestOverrides; factoryMethodName=proxyServiceStub; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/java/vinod/platform/web/bff/controller/BffControllerTest$TestOverrides.class]]
-2026-05-31T01:33:10.852-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.b.a.AutoConfigurationPackages        : @EnableAutoConfiguration was declared on a class in the package 'com.java.vinod.platform.web.bff'. Automatic @Repository and @Entity scanning is enabled.
-2026-05-31T01:33:11.918-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : 6 mappings in 'requestMappingHandlerMapping'
-2026-05-31T01:33:11.990-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
-2026-05-31T01:33:12.053-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 2 RequestBodyAdvice, 1 ResponseBodyAdvice
-2026-05-31T01:33:12.167-07:00 DEBUG 55732 --- [platform-web-bff] [           main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 0 @ExceptionHandler, 1 ResponseBodyAdvice
-2026-05-31T01:33:12.860-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
-2026-05-31T01:33:12.999-07:00 DEBUG 55732 --- [platform-web-bff] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+2026-06-06T11:15:38.109-07:00  INFO 121280 --- [platform-web-bff] [           main] c.j.v.p.w.b.c.BffControllerTest          : Starting BffControllerTest using Java 21.0.4 with PID 121280 (started by HP in C:\Users\HP\projects\springbootrestdemo\platform-web-bff)
+2026-06-06T11:15:38.114-07:00  INFO 121280 --- [platform-web-bff] [           main] c.j.v.p.w.b.c.BffControllerTest          : No active profile set, falling back to 1 default profile: "default"
+2026-06-06T11:15:38.116-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.boot.SpringApplication               : Loading source class com.java.vinod.platform.web.bff.PlatformWebBffApplication
+2026-06-06T11:15:38.184-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.c.s.GenericWebApplicationContext   : Refreshing org.springframework.web.context.support.GenericWebApplicationContext@5555ffcf
+2026-06-06T11:15:40.536-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.f.s.DefaultListableBeanFactory     : Overriding bean definition for bean 'bffProxyService' with a different definition: replacing [Generic bean: class=com.java.vinod.platform.web.bff.service.BffProxyService; scope=singleton; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=null; factoryMethodName=null; initMethodNames=null; destroyMethodNames=null; defined in file [C:\Users\HP\projects\springbootrestdemo\platform-web-bff\target\classes\com\java\vinod\platform\web\bff\service\BffProxyService.class]] with [Root bean: class=null; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; fallback=false; factoryBeanName=com.java.vinod.platform.web.bff.controller.BffControllerTest$TestOverrides; factoryMethodName=proxyServiceStub; initMethodNames=null; destroyMethodNames=[(inferred)]; defined in class path resource [com/java/vinod/platform/web/bff/controller/BffControllerTest$TestOverrides.class]]
+2026-06-06T11:15:43.996-07:00  INFO 121280 --- [platform-web-bff] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-06T11:15:44.717-07:00  INFO 121280 --- [platform-web-bff] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:bfftest user=SA
+2026-06-06T11:15:44.718-07:00  INFO 121280 --- [platform-web-bff] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-06T11:15:44.813-07:00  INFO 121280 --- [platform-web-bff] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:bfftest (H2 2.4)
+2026-06-06T11:15:44.829-07:00  WARN 121280 --- [platform-web-bff] [           main] o.f.c.internal.database.base.Database    : Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026-06-06T11:15:44.905-07:00  INFO 121280 --- [platform-web-bff] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."platform_web_bff_flyway_schema_history" does not exist yet
+2026-06-06T11:15:44.913-07:00  INFO 121280 --- [platform-web-bff] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.040s)
+2026-06-06T11:15:44.927-07:00  INFO 121280 --- [platform-web-bff] [           main] org.flywaydb.core.Flyway                 : All configured schemas are empty; baseline operation skipped. A baseline or migration script with a lower version than the baseline version may execute if available. Check the Schemas parameter if this is not intended.
+2026-06-06T11:15:44.931-07:00  INFO 121280 --- [platform-web-bff] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."platform_web_bff_flyway_schema_history" ...
+2026-06-06T11:15:45.046-07:00  INFO 121280 --- [platform-web-bff] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-06-06T11:15:45.120-07:00  INFO 121280 --- [platform-web-bff] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - create public content page"
+2026-06-06T11:15:45.183-07:00  INFO 121280 --- [platform-web-bff] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "public", now at version v1 (execution time 00:00.046s)
+2026-06-06T11:15:46.024-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.b.a.AutoConfigurationPackages        : @EnableAutoConfiguration was declared on a class in the package 'com.java.vinod.platform.web.bff'. Automatic @Repository and @Entity scanning is enabled.
+2026-06-06T11:15:47.651-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : 9 mappings in 'requestMappingHandlerMapping'
+2026-06-06T11:15:47.715-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2026-06-06T11:15:47.795-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 2 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-06-06T11:15:47.953-07:00 DEBUG 121280 --- [platform-web-bff] [           main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 0 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-06-06T11:15:49.145-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-06-06T11:15:49.410-07:00 DEBUG 121280 --- [platform-web-bff] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
 
 
 ============================
@@ -124,6 +137,57 @@ Positive matches:
 
    CompositeMeterRegistryAutoConfiguration matched:
       - @ConditionalOnClass found required class 'io.micrometer.core.instrument.composite.CompositeMeterRegistry' (OnClassCondition)
+
+   DataSourceAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'javax.sql.DataSource', 'org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType' (OnClassCondition)
+      - @ConditionalOnMissingBean (types: io.r2dbc.spi.ConnectionFactory; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   DataSourceAutoConfiguration.PooledDataSourceConfiguration matched:
+      - AnyNestedCondition 1 matched 1 did not; NestedCondition on DataSourceAutoConfiguration.PooledDataSourceCondition.PooledDataSourceAvailable PooledDataSource found supported DataSource; NestedCondition on DataSourceAutoConfiguration.PooledDataSourceCondition.ExplicitType @ConditionalOnProperty (spring.datasource.type) did not find property 'spring.datasource.type' (DataSourceAutoConfiguration.PooledDataSourceCondition)
+      - @ConditionalOnMissingBean (types: javax.sql.DataSource,javax.sql.XADataSource; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   DataSourceAutoConfiguration.PooledDataSourceConfiguration#jdbcConnectionDetails matched:
+      - @ConditionalOnMissingBean (types: org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   DataSourceConfiguration.Hikari matched:
+      - @ConditionalOnClass found required class 'com.zaxxer.hikari.HikariDataSource' (OnClassCondition)
+      - @ConditionalOnProperty (spring.datasource.type=com.zaxxer.hikari.HikariDataSource) matched (OnPropertyCondition)
+      - @ConditionalOnMissingBean (types: javax.sql.DataSource; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   DataSourceHealthContributorAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'org.springframework.jdbc.core.JdbcTemplate', 'org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource', 'org.springframework.boot.health.autoconfigure.contributor.ConditionalOnEnabledHealthIndicator' (OnClassCondition)
+      - @ConditionalOnEnabledHealthIndicator management.health.defaults.enabled is considered true (OnEnabledHealthIndicatorCondition)
+      - @ConditionalOnBean (types: javax.sql.DataSource; SearchStrategy: all) found bean 'dataSource' (OnBeanCondition)
+
+   DataSourceHealthContributorAutoConfiguration#dbHealthContributor matched:
+      - @ConditionalOnMissingBean (names: dbHealthIndicator,dbHealthContributor; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   DataSourceInitializationAutoConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.jdbc.datasource.init.DatabasePopulator' (OnClassCondition)
+      - SQL InitializationDatabase Initialization default value is EMBEDDED (OnSqlInitializationCondition)
+      - @ConditionalOnSingleCandidate (types: javax.sql.DataSource; SearchStrategy: all) found a single bean 'dataSource'; @ConditionalOnMissingBean (types: org.springframework.boot.sql.autoconfigure.init.ApplicationScriptDatabaseInitializer; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   DataSourcePoolMetadataProvidersConfiguration.HikariPoolDataSourceMetadataProviderConfiguration matched:
+      - @ConditionalOnClass found required class 'com.zaxxer.hikari.HikariDataSource' (OnClassCondition)
+
+   DataSourcePoolMetricsAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'javax.sql.DataSource', 'io.micrometer.core.instrument.MeterRegistry' (OnClassCondition)
+      - @ConditionalOnBean (types: javax.sql.DataSource,io.micrometer.core.instrument.MeterRegistry; SearchStrategy: all) found beans 'simpleMeterRegistry', 'dataSource' (OnBeanCondition)
+
+   DataSourcePoolMetricsAutoConfiguration.DataSourcePoolMetadataMetricsConfiguration matched:
+      - @ConditionalOnBean (types: org.springframework.boot.jdbc.metadata.DataSourcePoolMetadataProvider; SearchStrategy: all) found bean 'hikariPoolDataSourceMetadataProvider' (OnBeanCondition)
+
+   DataSourcePoolMetricsAutoConfiguration.HikariDataSourceMetricsConfiguration matched:
+      - @ConditionalOnClass found required class 'com.zaxxer.hikari.HikariDataSource' (OnClassCondition)
+
+   DataSourceTransactionManagerAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'javax.sql.DataSource', 'org.springframework.jdbc.core.JdbcTemplate', 'org.springframework.transaction.TransactionManager' (OnClassCondition)
+
+   DataSourceTransactionManagerAutoConfiguration.JdbcTransactionManagerConfiguration matched:
+      - @ConditionalOnSingleCandidate (types: javax.sql.DataSource; SearchStrategy: all) found a single bean 'dataSource' (OnBeanCondition)
+
+   DataSourceTransactionManagerAutoConfiguration.JdbcTransactionManagerConfiguration#transactionManager matched:
+      - @ConditionalOnMissingBean (types: org.springframework.transaction.TransactionManager; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
    DiskSpaceHealthContributorAutoConfiguration matched:
       - @ConditionalOnClass found required class 'org.springframework.boot.health.contributor.Health' (OnClassCondition)
@@ -179,6 +243,21 @@ Positive matches:
    ErrorMvcAutoConfiguration.WhitelabelErrorViewConfiguration#defaultErrorView matched:
       - @ConditionalOnMissingBean (names: error; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
+   FlywayAutoConfiguration matched:
+      - @ConditionalOnClass found required class 'org.flywaydb.core.Flyway' (OnClassCondition)
+      - @ConditionalOnBooleanProperty (spring.flyway.enabled=true) matched (OnPropertyCondition)
+      - AnyNestedCondition 2 matched 1 did not; NestedCondition on FlywayAutoConfiguration.FlywayDataSourceCondition.FlywayUrlCondition @ConditionalOnProperty (spring.flyway.url) did not find property 'spring.flyway.url'; NestedCondition on FlywayAutoConfiguration.FlywayDataSourceCondition.JdbcConnectionDetailsCondition @ConditionalOnBean (types: org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails; SearchStrategy: all) found bean 'jdbcConnectionDetails'; NestedCondition on FlywayAutoConfiguration.FlywayDataSourceCondition.DataSourceBeanCondition @ConditionalOnBean (types: javax.sql.DataSource; SearchStrategy: all) found bean 'dataSource' (FlywayAutoConfiguration.FlywayDataSourceCondition)
+
+   FlywayAutoConfiguration.FlywayConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.jdbc.support.JdbcUtils' (OnClassCondition)
+      - @ConditionalOnMissingBean (types: org.flywaydb.core.Flyway; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   FlywayAutoConfiguration.FlywayConfiguration#flywayConnectionDetails matched:
+      - @ConditionalOnMissingBean (types: org.springframework.boot.flyway.autoconfigure.FlywayConnectionDetails; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   FlywayAutoConfiguration.FlywayConfiguration#flywayInitializer matched:
+      - @ConditionalOnMissingBean (types: org.springframework.boot.flyway.autoconfigure.FlywayMigrationInitializer; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
    HealthContributorAutoConfiguration#pingHealthContributor matched:
       - @ConditionalOnEnabledHealthIndicator management.health.defaults.enabled is considered true (OnEnabledHealthIndicatorCondition)
 
@@ -228,6 +307,12 @@ Positive matches:
    HttpMessageConvertersAutoConfiguration.StringHttpMessageConverterConfiguration#stringHttpMessageConvertersCustomizer matched:
       - @ConditionalOnMissingBean (types: org.springframework.http.converter.StringHttpMessageConverter; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
+   Jackson2EndpointAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'com.fasterxml.jackson.databind.ObjectMapper', 'org.springframework.http.converter.json.Jackson2ObjectMapperBuilder' (OnClassCondition)
+
+   Jackson2EndpointAutoConfiguration#jackson2EndpointJsonMapper matched:
+      - @ConditionalOnBooleanProperty (management.endpoints.jackson2.isolated-object-mapper=true) matched (OnPropertyCondition)
+
    JacksonAutoConfiguration matched:
       - @ConditionalOnClass found required class 'tools.jackson.databind.json.JsonMapper' (OnClassCondition)
 
@@ -253,6 +338,16 @@ Positive matches:
 
    JacksonHttpMessageConvertersConfiguration.JacksonJsonHttpMessageConverterConfiguration#jacksonJsonHttpMessageConvertersCustomizer matched:
       - @ConditionalOnMissingBean (types: org.springframework.http.converter.json.JacksonJsonHttpMessageConverter ignored: org.springframework.hateoas.server.mvc.TypeConstrainedJacksonJsonHttpMessageConverter,org.springframework.data.rest.webmvc.alps.AlpsJacksonJsonHttpMessageConverter; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   JdbcClientAutoConfiguration matched:
+      - @ConditionalOnSingleCandidate (types: org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate; SearchStrategy: all) found a single bean 'namedParameterJdbcTemplate'; @ConditionalOnMissingBean (types: org.springframework.jdbc.core.simple.JdbcClient; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   JdbcTemplateAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'javax.sql.DataSource', 'org.springframework.jdbc.core.JdbcTemplate' (OnClassCondition)
+      - @ConditionalOnSingleCandidate (types: javax.sql.DataSource; SearchStrategy: all) found a single bean 'dataSource' (OnBeanCondition)
+
+   JdbcTemplateConfiguration matched:
+      - @ConditionalOnMissingBean (types: org.springframework.jdbc.core.JdbcOperations; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
    JvmMetricsAutoConfiguration matched:
       - @ConditionalOnClass found required class 'io.micrometer.core.instrument.MeterRegistry' (OnClassCondition)
@@ -310,6 +405,9 @@ Positive matches:
    MultipartAutoConfiguration#multipartResolver matched:
       - @ConditionalOnMissingBean (types: org.springframework.web.multipart.MultipartResolver; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
+   NamedParameterJdbcTemplateConfiguration matched:
+      - @ConditionalOnSingleCandidate (types: org.springframework.jdbc.core.JdbcTemplate; SearchStrategy: all) found a single bean 'jdbcTemplate'; @ConditionalOnMissingBean (types: org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
    OAuth2ClientAutoConfiguration matched:
       - @ConditionalOnClass found required class 'org.springframework.security.oauth2.client.registration.ClientRegistration' (OnClassCondition)
       - NoneNestedConditions 0 matched 1 did not; NestedCondition on OAuth2ClientAutoConfiguration.NonReactiveWebApplicationCondition.ReactiveWebApplicationCondition did not find reactive web application classes (OAuth2ClientAutoConfiguration.NonReactiveWebApplicationCondition)
@@ -333,6 +431,13 @@ Positive matches:
 
    ObservationAutoConfiguration#spelValueExpressionResolver matched:
       - @ConditionalOnMissingBean (types: io.micrometer.common.annotation.ValueExpressionResolver; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   PersistenceExceptionTranslationAutoConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor' (OnClassCondition)
+
+   PersistenceExceptionTranslationAutoConfiguration#persistenceExceptionTranslationPostProcessor matched:
+      - @ConditionalOnBooleanProperty (spring.persistence.exceptiontranslation.enabled=true) matched (OnPropertyCondition)
+      - @ConditionalOnMissingBean (types: org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor; SearchStrategy: all) did not find any beans (OnBeanCondition)
 
    PropertyPlaceholderAutoConfiguration#propertySourcesPlaceholderConfigurer matched:
       - @ConditionalOnMissingBean (types: org.springframework.context.support.PropertySourcesPlaceholderConfigurer; SearchStrategy: current) did not find any beans (OnBeanCondition)
@@ -488,6 +593,27 @@ Positive matches:
    TomcatServletWebServerAutoConfiguration#tomcatServletWebServerFactory matched:
       - @ConditionalOnMissingBean (types: org.springframework.boot.web.server.servlet.ServletWebServerFactory; SearchStrategy: current) did not find any beans (OnBeanCondition)
 
+   TransactionAutoConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.transaction.PlatformTransactionManager' (OnClassCondition)
+
+   TransactionAutoConfiguration.EnableTransactionManagementConfiguration matched:
+      - @ConditionalOnBean (types: org.springframework.transaction.TransactionManager; SearchStrategy: all) found bean 'transactionManager'; @ConditionalOnMissingBean (types: org.springframework.transaction.annotation.AbstractTransactionManagementConfiguration; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   TransactionAutoConfiguration.EnableTransactionManagementConfiguration.CglibAutoProxyConfiguration matched:
+      - @ConditionalOnBooleanProperty (spring.aop.proxy-target-class=true) matched (OnPropertyCondition)
+
+   TransactionAutoConfiguration.TransactionTemplateConfiguration matched:
+      - @ConditionalOnSingleCandidate (types: org.springframework.transaction.PlatformTransactionManager; SearchStrategy: all) found a single bean 'transactionManager' (OnBeanCondition)
+
+   TransactionAutoConfiguration.TransactionTemplateConfiguration#transactionTemplate matched:
+      - @ConditionalOnMissingBean (types: org.springframework.transaction.support.TransactionOperations; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   TransactionManagerCustomizationAutoConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.transaction.PlatformTransactionManager' (OnClassCondition)
+
+   TransactionManagerCustomizationAutoConfiguration#platformTransactionManagerCustomizers matched:
+      - @ConditionalOnMissingBean (types: org.springframework.boot.transaction.autoconfigure.TransactionManagerCustomizers; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
    ValidationAutoConfiguration matched:
       - @ConditionalOnClass found required class 'jakarta.validation.executable.ExecutableValidator' (OnClassCondition)
       - @ConditionalOnResource found location classpath:META-INF/services/jakarta.validation.spi.ValidationProvider (OnResourceCondition)
@@ -552,6 +678,9 @@ Positive matches:
 
    WebMvcEndpointManagementContextConfiguration#controllerEndpointHandlerMapping matched:
       - @ConditionalOnMissingBean (types: org.springframework.boot.webmvc.actuate.endpoint.web.ControllerEndpointHandlerMapping; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   WebMvcEndpointManagementContextConfiguration#endpointJackson2ObjectMapperWebMvcConfigurer matched:
+      - @ConditionalOnBean (types: org.springframework.boot.actuate.endpoint.jackson.EndpointJackson2ObjectMapper; SearchStrategy: all) found bean 'jackson2EndpointJsonMapper' (OnBeanCondition)
 
    WebMvcEndpointManagementContextConfiguration#endpointJsonMapperWebMvcConfigurer matched:
       - @ConditionalOnBean (types: org.springframework.boot.actuate.endpoint.jackson.EndpointJsonMapper; SearchStrategy: all) found bean 'endpointJsonMapper' (OnBeanCondition)
@@ -630,6 +759,46 @@ Negative matches:
       Did not match:
          - @ConditionalOnAvailableEndpoint not exposed (OnAvailableEndpointCondition)
 
+   DataSourceAutoConfiguration.EmbeddedDatabaseConfiguration:
+      Did not match:
+         - EmbeddedDataSource spring.datasource.url is set (DataSourceAutoConfiguration.EmbeddedDatabaseCondition)
+
+   DataSourceCheckpointRestoreConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.crac.Resource' (OnClassCondition)
+
+   DataSourceConfiguration.Dbcp2:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.apache.commons.dbcp2.BasicDataSource' (OnClassCondition)
+
+   DataSourceConfiguration.Generic:
+      Did not match:
+         - @ConditionalOnProperty (spring.datasource.type) did not find property 'spring.datasource.type' (OnPropertyCondition)
+
+   DataSourceConfiguration.OracleUcp:
+      Did not match:
+         - @ConditionalOnClass did not find required classes 'oracle.ucp.jdbc.PoolDataSourceImpl', 'oracle.jdbc.OracleConnection' (OnClassCondition)
+
+   DataSourceConfiguration.Tomcat:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.apache.tomcat.jdbc.pool.DataSource' (OnClassCondition)
+
+   DataSourceJmxConfiguration:
+      Did not match:
+         - @ConditionalOnBooleanProperty (spring.jmx.enabled=true) found different value in property 'spring.jmx.enabled' (OnPropertyCondition)
+
+   DataSourcePoolMetadataProvidersConfiguration.CommonsDbcp2PoolDataSourceMetadataProviderConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.apache.commons.dbcp2.BasicDataSource' (OnClassCondition)
+
+   DataSourcePoolMetadataProvidersConfiguration.OracleUcpPoolDataSourceMetadataProviderConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required classes 'oracle.ucp.jdbc.PoolDataSource', 'oracle.jdbc.OracleConnection' (OnClassCondition)
+
+   DataSourcePoolMetadataProvidersConfiguration.TomcatDataSourcePoolMetadataProviderConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.apache.tomcat.jdbc.pool.DataSource' (OnClassCondition)
+
    DatadogMetricsExportAutoConfiguration:
       Did not match:
          - @ConditionalOnClass did not find required class 'io.micrometer.datadog.DatadogMeterRegistry' (OnClassCondition)
@@ -649,6 +818,24 @@ Negative matches:
    EnvironmentEndpointAutoConfiguration:
       Did not match:
          - @ConditionalOnAvailableEndpoint not exposed (OnAvailableEndpointCondition)
+
+   FlywayAutoConfiguration.FlywayConfiguration.OracleConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.flywaydb.database.oracle.OracleConfigurationExtension' (OnClassCondition)
+
+   FlywayAutoConfiguration.FlywayConfiguration.PostgresqlConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.flywaydb.database.postgresql.PostgreSQLConfigurationExtension' (OnClassCondition)
+
+   FlywayAutoConfiguration.FlywayConfiguration.SqlServerConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'org.flywaydb.database.sqlserver.SQLServerConfigurationExtension' (OnClassCondition)
+
+   FlywayEndpointAutoConfiguration:
+      Did not match:
+         - @ConditionalOnAvailableEndpoint not exposed (OnAvailableEndpointCondition)
+      Matched:
+         - @ConditionalOnClass found required classes 'org.flywaydb.core.Flyway', 'org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint' (OnClassCondition)
 
    GangliaMetricsExportAutoConfiguration:
       Did not match:
@@ -728,13 +915,11 @@ Negative matches:
       Did not match:
          - @ConditionalOnAvailableEndpoint not exposed (OnAvailableEndpointCondition)
 
-   Jackson2EndpointAutoConfiguration:
-      Did not match:
-         - @ConditionalOnClass did not find required class 'com.fasterxml.jackson.databind.ObjectMapper' (OnClassCondition)
-
    Jackson2HttpMessageConvertersConfiguration.MappingJackson2HttpMessageConverterConfiguration:
       Did not match:
-         - @ConditionalOnClass did not find required class 'com.fasterxml.jackson.databind.ObjectMapper' (OnClassCondition)
+         - AnyNestedCondition 0 matched 2 did not; NestedCondition on Jackson2HttpMessageConvertersConfiguration.PreferJackson2OrJacksonUnavailableCondition.JacksonUnavailable @ConditionalOnMissingBean (types: org.springframework.boot.http.converter.autoconfigure.JacksonHttpMessageConvertersConfiguration$JacksonJsonHttpMessageConvertersCustomizer; SearchStrategy: all) found beans of type 'org.springframework.boot.http.converter.autoconfigure.JacksonHttpMessageConvertersConfiguration$JacksonJsonHttpMessageConvertersCustomizer' jacksonJsonHttpMessageConvertersCustomizer; NestedCondition on Jackson2HttpMessageConvertersConfiguration.PreferJackson2OrJacksonUnavailableCondition.Jackson2Preferred @ConditionalOnProperty (spring.http.converters.preferred-json-mapper=jackson2) did not find property 'spring.http.converters.preferred-json-mapper' (Jackson2HttpMessageConvertersConfiguration.PreferJackson2OrJacksonUnavailableCondition)
+      Matched:
+         - @ConditionalOnClass found required class 'com.fasterxml.jackson.databind.ObjectMapper' (OnClassCondition)
 
    Jackson2HttpMessageConvertersConfiguration.MappingJackson2XmlHttpMessageConverterConfiguration:
       Did not match:
@@ -766,9 +951,19 @@ Negative matches:
       Did not match:
          - @ConditionalOnClass did not find required class 'io.micrometer.jmx.JmxMeterRegistry' (OnClassCondition)
 
+   JndiDataSourceAutoConfiguration:
+      Did not match:
+         - @ConditionalOnProperty (spring.datasource.jndi-name) did not find property 'spring.datasource.jndi-name' (OnPropertyCondition)
+      Matched:
+         - @ConditionalOnClass found required classes 'javax.sql.DataSource', 'org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType' (OnClassCondition)
+
    JsonbHttpMessageConvertersConfiguration:
       Did not match:
          - @ConditionalOnClass did not find required class 'jakarta.json.bind.Jsonb' (OnClassCondition)
+
+   JtaAutoConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'jakarta.transaction.Transaction' (OnClassCondition)
 
    JvmMetricsAutoConfiguration.VirtualThreadMetricsConfiguration:
       Did not match:
@@ -996,6 +1191,19 @@ Negative matches:
       Did not match:
          - Application is deployed as a WAR file. (OnWarDeploymentCondition)
 
+   TransactionAutoConfiguration#transactionalOperator:
+      Did not match:
+         - @ConditionalOnSingleCandidate (types: org.springframework.transaction.ReactiveTransactionManager; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   TransactionAutoConfiguration.AspectJTransactionManagementConfiguration:
+      Did not match:
+         - @ConditionalOnBean did not find required type 'org.springframework.transaction.aspectj.AbstractTransactionAspect' (OnBeanCondition)
+         - @ConditionalOnBean (types: org.springframework.transaction.aspectj.AbstractTransactionAspect; SearchStrategy: all) did not find any beans of type org.springframework.transaction.aspectj.AbstractTransactionAspect (OnBeanCondition)
+
+   TransactionAutoConfiguration.EnableTransactionManagementConfiguration.JdkDynamicAutoProxyConfiguration:
+      Did not match:
+         - @ConditionalOnBooleanProperty (spring.aop.proxy-target-class=false) did not find property 'spring.aop.proxy-target-class' (OnPropertyCondition)
+
    UserDetailsServiceAutoConfiguration:
       Did not match:
          - AnyNestedCondition 0 matched 3 did not; NestedCondition on MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured.PasswordConfigured @ConditionalOnProperty (spring.security.user.password) did not find property 'spring.security.user.password'; NestedCondition on MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured.NameConfigured @ConditionalOnProperty (spring.security.user.name) did not find property 'spring.security.user.name'; NestedCondition on MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured.MissingAlternative @ConditionalOnMissingClass found unwanted class 'org.springframework.security.oauth2.client.registration.ClientRegistrationRepository' (MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured)
@@ -1019,10 +1227,6 @@ Negative matches:
       Did not match:
          - @ConditionalOnMissingBean (types: org.springframework.web.servlet.view.BeanNameViewResolver; SearchStrategy: all) found beans of type 'org.springframework.web.servlet.view.BeanNameViewResolver' beanNameViewResolver (OnBeanCondition)
 
-   WebMvcEndpointManagementContextConfiguration#endpointJackson2ObjectMapperWebMvcConfigurer:
-      Did not match:
-         - @ConditionalOnBean (types: org.springframework.boot.actuate.endpoint.jackson.EndpointJackson2ObjectMapper; SearchStrategy: all) did not find any beans of type org.springframework.boot.actuate.endpoint.jackson.EndpointJackson2ObjectMapper (OnBeanCondition)
-
    WebMvcEndpointManagementContextConfiguration.HealthConfiguration#managementHealthEndpointWebMvcHandlerMapping:
       Did not match:
          - Management Port actual port type (SAME) did not match required type (DIFFERENT) (OnManagementPortCondition)
@@ -1033,6 +1237,10 @@ Negative matches:
       Matched:
          - @ConditionalOnClass found required classes 'org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint', 'org.springframework.web.servlet.DispatcherServlet', 'org.springframework.boot.actuate.web.mappings.MappingsEndpoint' (OnClassCondition)
          - found 'session' scope (OnWebApplicationCondition)
+
+   XADataSourceAutoConfiguration:
+      Did not match:
+         - @ConditionalOnClass did not find required class 'jakarta.transaction.TransactionManager' (OnClassCondition)
 
 
 Exclusions:
@@ -1068,15 +1276,15 @@ Unconditional classes:
 
 
 
-2026-05-31T01:33:13.018-07:00  INFO 55732 --- [platform-web-bff] [           main] c.j.v.p.w.b.c.BffControllerTest          : Started BffControllerTest in 6.412 seconds (process running for 8.669)
-2026-05-31T01:33:13.199-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.b.a.ApplicationAvailabilityBean      : Application availability state LivenessState changed to CORRECT
-2026-05-31T01:33:13.204-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.b.a.ApplicationAvailabilityBean      : Application availability state ReadinessState changed to ACCEPTING_TRAFFIC
-2026-05-31T01:33:14.710-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:14.710-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:14.712-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
-2026-05-31T01:33:14.803-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#logout(HttpServletRequest, HttpServletResponse, Authentication)
-2026-05-31T01:33:14.852-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2026-05-31T01:33:14.853-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Nothing to write: null body
+2026-06-06T11:15:49.421-07:00  INFO 121280 --- [platform-web-bff] [           main] c.j.v.p.w.b.c.BffControllerTest          : Started BffControllerTest in 12.172 seconds (process running for 16.047)
+2026-06-06T11:15:49.626-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.b.a.ApplicationAvailabilityBean      : Application availability state LivenessState changed to CORRECT
+2026-06-06T11:15:49.632-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.b.a.ApplicationAvailabilityBean      : Application availability state ReadinessState changed to ACCEPTING_TRAFFIC
+2026-06-06T11:15:51.157-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.159-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.162-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 3 ms
+2026-06-06T11:15:51.359-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#logout(HttpServletRequest, HttpServletResponse, Authentication)
+2026-06-06T11:15:51.415-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:51.415-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Nothing to write: null body
 ]]></system-out>
     <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
 WARNING: A Java agent has been loaded dynamically (C:\Users\HP\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
@@ -1085,52 +1293,133 @@ WARNING: If a serviceability tool is not in use, please run with -Djdk.instrumen
 WARNING: Dynamic loading of agents will be disallowed by default in a future release
 ]]></system-err>
   </testcase>
-  <testcase name="authenticatedApiProxyRequiresSessionAndDelegates" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.024">
-    <system-out><![CDATA[2026-05-31T01:33:14.977-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:14.977-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:14.979-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
-2026-05-31T01:33:14.982-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#proxy(HttpServletRequest, HttpServletResponse, Authentication)
-2026-05-31T01:33:14.983-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/octet-stream', given [*/*] and supported [application/octet-stream, */*, application/json, application/*+json]
-2026-05-31T01:33:14.986-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{70726f78792d6f6b}]
+  <testcase name="authenticatedApiProxyRequiresSessionAndDelegates" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.027">
+    <system-out><![CDATA[2026-06-06T11:15:51.467-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.467-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.469-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-06-06T11:15:51.474-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#proxy(HttpServletRequest, HttpServletResponse, Authentication)
+2026-06-06T11:15:51.476-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/octet-stream', given [*/*] and supported [application/octet-stream, */*, application/json, application/*+json]
+2026-06-06T11:15:51.476-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{70726f78792d6f6b}]
 ]]></system-out>
   </testcase>
-  <testcase name="logoutAddsAForceReauthCookieAndLoginUsesPromptLoginWhenPresent" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.026">
-    <system-out><![CDATA[2026-05-31T01:33:15.001-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:15.002-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:15.003-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
-2026-05-31T01:33:15.006-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#logout(HttpServletRequest, HttpServletResponse, Authentication)
-2026-05-31T01:33:15.007-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2026-05-31T01:33:15.007-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Nothing to write: null body
+  <testcase name="logoutAddsAForceReauthCookieAndLoginUsesPromptLoginWhenPresent" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.047">
+    <system-out><![CDATA[2026-06-06T11:15:51.493-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.493-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.498-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 5 ms
+2026-06-06T11:15:51.502-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#logout(HttpServletRequest, HttpServletResponse, Authentication)
+2026-06-06T11:15:51.505-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:51.505-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Nothing to write: null body
 ]]></system-out>
   </testcase>
-  <testcase name="sessionResponseDoesNotExposeOauthTokens" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.234">
-    <system-out><![CDATA[2026-05-31T01:33:15.032-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:15.033-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:15.041-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 8 ms
-2026-05-31T01:33:15.045-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#session(Authentication, CsrfToken)
-2026-05-31T01:33:15.056-07:00 DEBUG 55732 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2026-05-31T01:33:15.069-07:00 DEBUG 55732 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Writing [BffSessionResponse[authenticated=true, publicId=user-123, email=user@example.com, name=User Example, (truncated)...]
+  <testcase name="sessionResponseDoesNotExposeOauthTokens" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.251">
+    <system-out><![CDATA[2026-06-06T11:15:51.548-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.548-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.551-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 3 ms
+2026-06-06T11:15:51.558-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#session(Authentication, CsrfToken)
+2026-06-06T11:15:51.565-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:51.582-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Writing [BffSessionResponse[authenticated=true, publicId=user-123, email=user@example.com, name=User Example, (truncated)...]
 ]]></system-out>
   </testcase>
-  <testcase name="loginRedirectsToAuthorizationStart" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.015">
-    <system-out><![CDATA[2026-05-31T01:33:15.267-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:15.267-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:15.269-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
-2026-05-31T01:33:15.273-07:00 DEBUG 55732 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#login()
-2026-05-31T01:33:15.275-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2026-05-31T01:33:15.276-07:00 DEBUG 55732 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Nothing to write: null body
+  <testcase name="publicFooterContentIsAnonymous" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.09">
+    <system-out><![CDATA[2026-06-06T11:15:51.800-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.802-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.802-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-06-06T11:15:51.810-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.PublicContentController#page(String, HttpServletRequest, String, String)
+2026-06-06T11:15:51.825-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL query
+2026-06-06T11:15:51.825-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [SELECT slug, title, category, country_code, version, effective_date, last_reviewed_at,
+       section_heading, section_body
+FROM public_content_page
+WHERE slug = ?
+  AND country_code = ?
+  AND locale = ?
+  AND approved = TRUE
+  AND enabled = TRUE
+ORDER BY section_order
+]
+2026-06-06T11:15:51.845-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:51.858-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Writing [PublicContentPageResponse[slug=privacy, title=Privacy Policy, category=Legal, countryCode=US, locale (truncated)...]
 ]]></system-out>
   </testcase>
-  <testcase name="sessionWithoutAuthenticationIsRejected" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.021">
-    <system-out><![CDATA[2026-05-31T01:33:15.286-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:15.286-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:15.287-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+  <testcase name="publicLegalPolicyUsesCountrySpecificVersion" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.029">
+    <system-out><![CDATA[2026-06-06T11:15:51.902-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.902-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.906-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 4 ms
+2026-06-06T11:15:51.906-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.PublicContentController#policy(String, HttpServletRequest, String, String)
+2026-06-06T11:15:51.906-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL query
+2026-06-06T11:15:51.906-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [SELECT slug, title, category, country_code, version, effective_date, last_reviewed_at,
+       section_heading, section_body
+FROM public_content_page
+WHERE slug = ?
+  AND country_code = ?
+  AND locale = ?
+  AND approved = TRUE
+  AND enabled = TRUE
+AND category = 'Legal' ORDER BY section_order
+]
+2026-06-06T11:15:51.912-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL query
+2026-06-06T11:15:51.913-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [SELECT slug, title, category, country_code, version, effective_date, last_reviewed_at,
+       section_heading, section_body
+FROM public_content_page
+WHERE slug = ?
+  AND country_code = ?
+  AND locale = ?
+  AND approved = TRUE
+  AND enabled = TRUE
+AND category = 'Legal' ORDER BY section_order
+]
+2026-06-06T11:15:51.915-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:51.915-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Writing [PublicLegalPolicyResponse[policyCode=terms, title=Terms of Service, countryCode=CA, locale=en-CA, ve (truncated)...]
 ]]></system-out>
   </testcase>
-  <testcase name="unauthenticatedApiProxyIsRejected" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.014">
-    <system-out><![CDATA[2026-05-31T01:33:15.307-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-05-31T01:33:15.307-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-05-31T01:33:15.309-07:00  INFO 55732 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+  <testcase name="loginRedirectsToAuthorizationStart" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.036">
+    <system-out><![CDATA[2026-06-06T11:15:51.940-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.940-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.942-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-06-06T11:15:51.946-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#login()
+2026-06-06T11:15:51.952-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:51.952-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Nothing to write: null body
+]]></system-out>
+  </testcase>
+  <testcase name="authorizationStartUsesConfiguredPublicDomainEvenWhenRequestHostIsLocalhost" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.033">
+    <system-out><![CDATA[2026-06-06T11:15:51.973-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:51.975-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:51.983-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 8 ms
+]]></system-out>
+  </testcase>
+  <testcase name="sessionWithoutAuthenticationReturnsAnonymousSummary" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.031">
+    <system-out><![CDATA[2026-06-06T11:15:52.010-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:52.010-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:52.014-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 4 ms
+2026-06-06T11:15:52.020-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.BffController#session(Authentication, CsrfToken)
+2026-06-06T11:15:52.023-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:52.023-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Writing [BffSessionResponse[authenticated=false, publicId=null, email=null, name=null, phone=null, roles=[],  (truncated)...]
+]]></system-out>
+  </testcase>
+  <testcase name="publicContextResolvesCountryFromTrustedEdgeHeader" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.074">
+    <system-out><![CDATA[2026-06-06T11:15:52.040-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:52.040-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:52.040-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-06-06T11:15:52.059-07:00 DEBUG 121280 --- [platform-web-bff] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.java.vinod.platform.web.bff.controller.PublicContentController#context(HttpServletRequest, String, String)
+2026-06-06T11:15:52.065-07:00 DEBUG 121280 --- [platform-web-bff] [           main] o.s.jdbc.core.JdbcTemplate               : Executing SQL query [SELECT DISTINCT slug
+FROM public_content_page
+WHERE category = 'Legal'
+  AND approved = TRUE
+  AND enabled = TRUE
+ORDER BY CASE slug
+    WHEN 'privacy' THEN 1
+    WHEN 'terms' THEN 2
+    WHEN 'guidelines' THEN 3
+    ELSE 4
+END, slug
+]
+2026-06-06T11:15:52.072-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-06T11:15:52.092-07:00 DEBUG 121280 --- [platform-web-bff] [           main] m.m.a.RequestResponseBodyMethodProcessor : Writing [VisitorContextResponse[countryCode=IN, countryName=India, detectionSource=header:CF-IPCountry, count (truncated)...]
+]]></system-out>
+  </testcase>
+  <testcase name="unauthenticatedApiProxyIsRejected" classname="com.java.vinod.platform.web.bff.controller.BffControllerTest" time="0.043">
+    <system-out><![CDATA[2026-06-06T11:15:52.122-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-06-06T11:15:52.122-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-06-06T11:15:52.124-07:00  INFO 121280 --- [platform-web-bff] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
 ]]></system-out>
   </testcase>
 </testsuite>

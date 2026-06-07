@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -55,28 +55,48 @@ public class BffController {
     }
 
     /**
-     * Returns the authenticated browser session summary or rejects anonymous callers.
+     * Returns the browser session summary for both guests and signed-in users.
      *
-     * <p>This endpoint stays protected so the public app can check session state
-     * without exposing tokens or private account details.</p>
+     * <p>Anonymous users receive a clean guest response so the public app can
+     * render without browser console auth errors.</p>
      */
     @GetMapping("/bff/session")
     public BffSessionResponse session(Authentication authentication, CsrfToken csrfToken) {
-        if (!(authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof OidcUser oidcUser)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return new BffSessionResponse(false, null, null, null, null,
+                    List.of(), List.of(), csrfToken == null ? null : csrfToken.getToken());
         }
-        return new BffSessionResponse(
-                true,
-                asString(oidcUser.getClaims().get("uid"), oidcUser.getSubject()),
-                asString(oidcUser.getClaims().get("email"), oidcUser.getEmail()),
-                firstNonBlank(
-                        asString(oidcUser.getClaims().get("name"), null),
-                        asString(oidcUser.getClaims().get("preferred_username"), null),
-                        oidcUser.getEmail()),
-                asString(oidcUser.getClaims().get("phone_number"), null),
-                list(oidcUser.getClaims().get("roles")),
-                list(oidcUser.getClaims().get("apps")),
-                csrfToken == null ? null : csrfToken.getToken());
+        if (authentication.getPrincipal() instanceof OidcUser oidcUser) {
+            return new BffSessionResponse(
+                    true,
+                    asString(oidcUser.getClaims().get("uid"), oidcUser.getSubject()),
+                    asString(oidcUser.getClaims().get("email"), oidcUser.getEmail()),
+                    firstNonBlank(
+                            asString(oidcUser.getClaims().get("name"), null),
+                            asString(oidcUser.getClaims().get("preferred_username"), null),
+                            oidcUser.getEmail()),
+                    asString(oidcUser.getClaims().get("phone_number"), null),
+                    list(oidcUser.getClaims().get("roles")),
+                    list(oidcUser.getClaims().get("apps")),
+                    csrfToken == null ? null : csrfToken.getToken());
+        }
+        if (authentication.getPrincipal() instanceof Jwt jwt) {
+            return new BffSessionResponse(
+                    true,
+                    asString(jwt.getClaims().get("uid"), jwt.getSubject()),
+                    asString(jwt.getClaims().get("email"), jwt.getSubject()),
+                    firstNonBlank(
+                            asString(jwt.getClaims().get("name"), null),
+                            asString(jwt.getClaims().get("preferred_username"), null),
+                            asString(jwt.getClaims().get("username"), null),
+                            asString(jwt.getClaims().get("email"), jwt.getSubject())),
+                    asString(jwt.getClaims().get("phone_number"), null),
+                    list(jwt.getClaims().get("roles")),
+                    list(jwt.getClaims().get("apps")),
+                    csrfToken == null ? null : csrfToken.getToken());
+        }
+        return new BffSessionResponse(false, null, null, null, null,
+                List.of(), List.of(), csrfToken == null ? null : csrfToken.getToken());
     }
 
     /**
