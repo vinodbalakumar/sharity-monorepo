@@ -4,28 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { mobileTabItems, sidebarItems } from '../../features/home/dashboardConfig';
-import { spacing } from '../../theme';
+import { colors, spacing } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
-
-type Props = {
-  activeLabel?: string;
-  children: ReactNode;
-  onNavigate: (route: AppRoute) => void;
-  subtitle?: string;
-  title: string;
-  scrollable?: boolean;
-};
-
-const surface = {
-  accent: '#7C5CFF',
-  border: '#DCE6F2',
-  card: '#FFFFFF',
-  muted: '#64748B',
-  navy: '#0F172A',
-  page: '#F6F9FC',
-  shadow: '#8EA4C2',
-  white: '#FFFFFF'
-};
 
 export function InteriorShell({ activeLabel, children, onNavigate, scrollable = true, subtitle, title }: Props) {
   const { width } = useWindowDimensions();
@@ -70,7 +50,7 @@ function Sidebar({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate
             onPress={() => onNavigate(routeForLabel(item.label))}
             style={[styles.sidebarItem, activeLabel === item.label && styles.sidebarItemActive]}
           >
-            <Ionicons color={activeLabel === item.label ? surface.white : surface.navy} name={item.icon} size={19} />
+            <Ionicons color={activeLabel === item.label ? colors.white : colors.textPrimary} name={item.icon} size={19} />
             <Text style={[styles.sidebarItemText, activeLabel === item.label && styles.sidebarItemTextActive]}>{item.label}</Text>
           </Pressable>
         ))}
@@ -93,13 +73,13 @@ function Header({ onNavigate, subtitle, title }: { onNavigate: (route: AppRoute)
       </Pressable>
       <View style={styles.headerActions}>
         <Pressable accessibilityLabel="Cart" onPress={() => onNavigate('cart')} style={styles.iconButton}>
-          <Ionicons color={surface.navy} name="cart-outline" size={20} />
+          <Ionicons color={colors.textPrimary} name="cart-outline" size={20} />
         </Pressable>
         <Pressable accessibilityLabel="Notifications" onPress={() => onNavigate('notifications')} style={styles.iconButton}>
-          <Ionicons color={surface.navy} name="notifications-outline" size={20} />
+          <Ionicons color={colors.textPrimary} name="notifications-outline" size={20} />
         </Pressable>
         <Pressable accessibilityLabel="Profile" onPress={() => onNavigate('profilePrivacy')} style={styles.iconButton}>
-          <Ionicons color={surface.navy} name="person-outline" size={20} />
+          <Ionicons color={colors.textPrimary} name="person-outline" size={20} />
         </Pressable>
       </View>
     </View>
@@ -111,7 +91,7 @@ function BottomTabs({ activeLabel, onNavigate }: { activeLabel?: string; onNavig
     <View style={styles.bottomTabs}>
       {mobileTabItems.map((item) => (
         <Pressable key={item.label} onPress={() => onNavigate(routeForLabel(item.label))} style={styles.bottomTab}>
-          <Ionicons color={activeLabel === item.label ? surface.accent : surface.muted} name={item.icon} size={19} />
+          <Ionicons color={activeLabel === item.label ? colors.primary : colors.textSecondary} name={item.icon} size={19} />
           <Text style={[styles.bottomTabText, activeLabel === item.label && styles.bottomTabTextActive]}>{item.label}</Text>
         </Pressable>
       ))}
@@ -141,19 +121,28 @@ function routeForLabel(label: string): AppRoute {
   }
 }
 
+type Props = {
+  activeLabel?: string;
+  children: ReactNode;
+  onNavigate: (route: AppRoute) => void;
+  subtitle?: string;
+  title: string;
+  scrollable?: boolean;
+};
+
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: surface.page,
+    backgroundColor: colors.background,
     flex: 1
   },
   shell: {
-    backgroundColor: surface.page,
+    backgroundColor: colors.background,
     flex: 1,
     flexDirection: 'row'
   },
   sidebar: {
-    backgroundColor: surface.card,
-    borderRightColor: surface.border,
+    backgroundColor: colors.surface,
+    borderRightColor: colors.border,
     borderRightWidth: 1,
     padding: spacing.lg,
     width: 260
@@ -167,11 +156,11 @@ const styles = StyleSheet.create({
   },
   brandMark: {
     alignItems: 'center',
-    backgroundColor: surface.accent,
+    backgroundColor: colors.primary,
     borderRadius: 14,
     height: 48,
     justifyContent: 'center',
-    shadowColor: surface.shadow,
+    shadowColor: colors.gray600,
     shadowOffset: { height: 8, width: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 14,
@@ -179,29 +168,29 @@ const styles = StyleSheet.create({
   },
   brandMarkSmall: {
     alignItems: 'center',
-    backgroundColor: surface.accent,
+    backgroundColor: colors.primary,
     borderRadius: 12,
     height: 40,
     justifyContent: 'center',
     width: 40
   },
   brandLetter: {
-    color: surface.white,
+    color: colors.white,
     fontSize: 20,
     fontWeight: '900'
   },
   brandLetterSmall: {
-    color: surface.white,
+    color: colors.white,
     fontSize: 18,
     fontWeight: '900'
   },
   sidebarTitle: {
-    color: surface.navy,
+    color: colors.textPrimary,
     fontSize: 21,
     fontWeight: '900'
   },
   sidebarSubcopy: {
-    color: surface.muted,
+    color: colors.textSecondary,
     fontSize: 12,
     marginTop: 2
   },
@@ -210,8 +199,8 @@ const styles = StyleSheet.create({
   },
   sidebarItem: {
     alignItems: 'center',
-    backgroundColor: surface.card,
-    borderColor: surface.border,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
@@ -220,24 +209,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14
   },
   sidebarItemActive: {
-    backgroundColor: surface.accent,
-    borderColor: surface.accent
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
   },
   sidebarItemText: {
-    color: surface.navy,
+    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '800'
   },
   sidebarItemTextActive: {
-    color: surface.white
+    color: colors.white
   },
   main: {
     flex: 1
   },
   header: {
     alignItems: 'center',
-    backgroundColor: surface.card,
-    borderBottomColor: surface.border,
+    backgroundColor: colors.surface,
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -250,12 +239,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   headerTitle: {
-    color: surface.navy,
+    color: colors.textPrimary,
     fontSize: 22,
     fontWeight: '900'
   },
   headerSubtitle: {
-    color: surface.muted,
+    color: colors.textSecondary,
     fontSize: 12,
     marginTop: 2
   },
@@ -265,8 +254,8 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: 'center',
-    backgroundColor: surface.card,
-    borderColor: surface.border,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     height: 44,
@@ -276,15 +265,15 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     padding: spacing.xl,
-    paddingBottom: spacing['6xl']
+    paddingBottom: spacing.lg * 3
   },
   contentNonScroll: {
     flex: 1,
     minHeight: 0
   },
   bottomTabs: {
-    backgroundColor: surface.card,
-    borderTopColor: surface.border,
+    backgroundColor: colors.surface,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -296,12 +285,12 @@ const styles = StyleSheet.create({
     minWidth: 58
   },
   bottomTabText: {
-    color: surface.muted,
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '700'
   },
   bottomTabTextActive: {
-    color: surface.accent,
+    color: colors.primary,
     fontWeight: '900'
   }
 });
