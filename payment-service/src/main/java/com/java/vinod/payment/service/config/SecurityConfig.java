@@ -40,8 +40,9 @@ public class SecurityConfig {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/internal/**", "/api/v1/payments/webhooks/stripe").permitAll()
-                        .requestMatchers("/api/v1/payments/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN")
+                        .requestMatchers("/internal/**", "/api/internal/**", "/api/v1/payments/webhooks/stripe",
+                                "/api/webhooks/stripe", "/api/webhooks/paypal").permitAll()
+                        .requestMatchers("/api/v1/payments/admin/**", "/api/admin/payments/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "FINANCE_ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .addFilterBefore(internalServiceTokenFilter, UsernamePasswordAuthenticationFilter.class)
