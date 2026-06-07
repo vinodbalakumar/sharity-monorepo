@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -44,18 +46,9 @@ export function PricingPromotionsScreen({ onNavigate }: Props) {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Admin pricing control center</Text>
-              <H1>Pricing, Fees & Promotions</H1>
-              <Paragraph color="$gray10">Configure buyer fees, seller commissions, coupons, fee waivers, free product rules, simulations, snapshots, and audit logs.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2"><Button onPress={() => onNavigate('home')}>Back</Button><Button theme="purple">Create Pricing Rule</Button><DropdownMenu.Root><DropdownMenu.Trigger><Button>More</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="coupon">Create Coupon</DropdownMenu.Item><DropdownMenu.Item key="audit">View Audit Log</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root></XStack>
-          </XStack>
-          <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.pricingPromotions.selectedTab.set(tab); appStorage.setString('pricingPromotionsLastTab', tab); }}>{tab}</Button>)}</XStack>
+    <InteriorShell onNavigate={onNavigate} title="Pricing, Fees & Promotions" subtitle="Configure buyer fees, seller commissions, coupons, fee waivers, free product rules, simulations, snapshots, and audit logs" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.pricingPromotions.selectedTab.set(tab); appStorage.setString('pricingPromotionsLastTab', tab); }}>{tab}</Button>)}</XStack>
           <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               {selectedTab === 'Rules' ? <Panel title="Pricing Rules"><RuleList data={rules} estimatedItemSize={132} keyExtractor={(item) => item.ruleId} renderItem={({ item, index }) => <RuleRow index={index} rule={item} />} /></Panel> : null}
@@ -67,17 +60,16 @@ export function PricingPromotionsScreen({ onNavigate }: Props) {
               {selectedTab === 'Seller View' && simulation ? <SellerSafeView simulation={simulation} /> : null}
             </YStack>
             <YStack gap="$4" width={360} $md={{ width: '100%' }}>
-              <PremiumCard p="$5"><YStack gap="$3"><H2>Summary</H2><Badge label={`${rules.filter((rule) => rule.status === 'ACTIVE').length} active rules`} tone="success" /><Badge label={`${rules.filter((rule) => rule.status === 'DRAFT').length} draft rules`} tone="warning" /><Badge label="1 conflict warning" tone="critical" /><Paragraph color="$gray10">Buyer-safe pricing is used in cart and payment screens. Seller commission is never shown to buyers.</Paragraph></YStack></PremiumCard>
-              <PremiumCard p="$5"><YStack gap="$3"><H2>Rule Editor</H2><Input bg="$background" borderColor="$borderColor" value="Buyer service fee fixed + percentage" /><Button theme="purple">Save Rule</Button><Button>Simulate Pricing</Button></YStack></PremiumCard>
+              <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Summary</Text><Badge label={`${rules.filter((rule) => rule.status === 'ACTIVE').length} active rules`} tone="success" /><Badge label={`${rules.filter((rule) => rule.status === 'DRAFT').length} draft rules`} tone="warning" /><Badge label="1 conflict warning" tone="critical" /><Paragraph color="$gray10">Buyer-safe pricing is used in cart and payment screens. Seller commission is never shown to buyers.</Paragraph></YStack></PremiumCard>
+              <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Rule Editor</Text><Input bg="$background" borderColor="$borderColor" value="Buyer service fee fixed + percentage" /><Button theme="purple">Save Rule</Button><Button>Simulate Pricing</Button></YStack></PremiumCard>
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
-    </YStack>
+    </InteriorShell>
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
+function Panel({ title, children }: { title: string; children: React.ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
 const RuleRow = memo(function RuleRow({ rule, index }: { rule: PricingRule; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={rule.ruleName} meta={`${rule.ruleType} • ${rule.scope} • ${rule.marketplaceCode}/${rule.categoryCode}/${rule.countryCode}`} badge={`${rule.feeModel} v${rule.version}`} tone={rule.status === 'ACTIVE' ? 'success' : 'warning'} /></Animated.View>; });
 function CouponRow({ coupon, index }: { coupon: CouponRule; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={coupon.couponCode} meta={`${coupon.couponType} • ${coupon.fundingSource} • Stackable: ${coupon.stackable ? 'Yes' : 'No'}`} badge={coupon.status} tone="success" /></Animated.View>; }
 function WaiverRow({ waiver, index }: { waiver: FeeWaiverSellerRule; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={waiver.storeName} meta={`${waiver.waiverType} • ${waiver.reason}`} badge={`${waiver.waiverPercentage}% waiver`} tone="info" /></Animated.View>; }

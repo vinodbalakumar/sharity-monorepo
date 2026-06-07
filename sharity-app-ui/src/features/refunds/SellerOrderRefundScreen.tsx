@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -87,30 +89,9 @@ export function SellerOrderRefundScreen({ onNavigate, onOpenRefundStatus, orderI
   }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Seller-order scoped refund</Text>
-              <H1>Request Refund</H1>
-              <Paragraph color="$gray10">Choose the seller order or item you need help with. Parent order context is display-only unless backend rules allow a broader action.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('orders')}>Back</Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger><Button>More</Button></DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item key="timeline">View Refund Timeline</DropdownMenu.Item>
-                  <DropdownMenu.Item key="message">Message Seller Safely</DropdownMenu.Item>
-                  <DropdownMenu.Item key="cancel">Cancel Refund Request</DropdownMenu.Item>
-                  <DropdownMenu.Item key="escalate">Escalate to Sharity Review</DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+    <InteriorShell onNavigate={onNavigate} title="Request Refund" subtitle="Choose the seller order or item you need help with. Parent order context is display-only unless backend rules allow a broader action" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack gap="$4" width={380} $md={{ width: '100%' }}>
               <ParentSummary summary={summary} />
               <Panel title="Select Seller Order">
@@ -154,10 +135,9 @@ export function SellerOrderRefundScreen({ onNavigate, onOpenRefundStatus, orderI
               <Button>Cancel Refund Request</Button>
               {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
-          </XStack>
-        </YStack>
-      </ScrollView>
-    </YStack>
+        </XStack>
+      </YStack>
+    </InteriorShell>
   );
 }
 
@@ -215,9 +195,9 @@ function TimelineRow({ event, index }: { event: RefundTimelineEvent; index: numb
   return <Animated.View style={style}><Row title={event.title} meta={`${event.actorType} / ${event.message}`} badge={event.status} tone={event.status === 'PENDING' ? 'warning' : 'info'} /></Animated.View>;
 }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
 function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function money(value: number) { const sign = value < 0 ? '-' : ''; return `${sign}$${Math.abs(value).toFixed(2)}`; }

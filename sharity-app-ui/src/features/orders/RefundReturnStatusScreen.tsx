@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, with
 import { Button, Card, H1, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
 import { colors } from '../../theme';
+import { InteriorShell } from '../../components/appShell';
 import type { AppRoute } from '../../types/navigation';
 import type { EvidenceUploadResponse } from './refundTypes';
 import {
@@ -104,22 +105,9 @@ export function RefundReturnStatusScreen({ onNavigate, onOpenDispute, orderId, r
   const isElectronics = status.refundRequest.marketplaceCode === 'ELECTRONICS';
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2">
-              <Text color="$blue10" fontWeight="800">Refund and return review</Text>
-              <H1>Return / Refund Status</H1>
-              <Paragraph color="$gray10">Request {status.refundRequest.refundRequestId}</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('orderDetails')}>Back to Order Details</Button>
-              <Button theme="purple" onPress={() => onNavigate('orders')}>View Orders</Button>
-            </XStack>
-          </XStack>
-
-          <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+    <InteriorShell onNavigate={onNavigate} title="Return / Refund Status" subtitle={`Request ${status.refundRequest.refundRequestId}`} scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               <StatusSummaryCard status={status} />
               <EstimatedRefundCard status={status} />
@@ -165,9 +153,8 @@ export function RefundReturnStatusScreen({ onNavigate, onOpenDispute, orderId, r
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
-    </YStack>
+    </InteriorShell>
   );
 }
 

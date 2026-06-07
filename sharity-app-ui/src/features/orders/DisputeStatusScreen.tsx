@@ -9,6 +9,7 @@ import { Button, Card, H1, Paragraph, ScrollView, Text, XStack, YStack } from 't
 
 import { appState$ } from '../../state/appState';
 import { colors } from '../../theme';
+import { InteriorShell } from '../../components/appShell';
 import type { AppRoute } from '../../types/navigation';
 import { closeDispute, getDisputeActions, getDisputeStatus, getDisputeTimeline, uploadRequestedDisputeEvidence } from './disputeStatusMockApi';
 import type {
@@ -166,24 +167,9 @@ export function DisputeStatusScreen({ disputeId, onNavigate, orderId }: DisputeS
   }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2">
-              <Text color="$blue10" fontWeight="800">Buyer dispute review</Text>
-              <H1>Sharity Review Status</H1>
-              <Paragraph color="$gray10">Track Sharity review, evidence requests, seller response, and final outcome.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('orderDetails')}>Back to Order Details</Button>
-              <Button theme="purple" onPress={() => setMessage('Support routing will open /support/disputes when backend routing is ready.')}>
-                Contact Support
-              </Button>
-            </XStack>
-          </XStack>
-
-          <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+    <InteriorShell onNavigate={onNavigate} title="Dispute Status" subtitle="Track Sharity review and outcome" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               <StatusSummaryCard status={status} tone={primaryTone} />
               <OutcomeCard finalOutcome={status.finalOutcome} outcomes={status.possibleOutcomes} />
@@ -250,7 +236,6 @@ export function DisputeStatusScreen({ disputeId, onNavigate, orderId }: DisputeS
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
 
       {closeConfirmationOpen ? (
         <YStack bottom={24} left={24} pos="absolute" right={24}>
@@ -268,7 +253,7 @@ export function DisputeStatusScreen({ disputeId, onNavigate, orderId }: DisputeS
       ) : null}
 
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
-    </YStack>
+    </InteriorShell>
   );
 }
 

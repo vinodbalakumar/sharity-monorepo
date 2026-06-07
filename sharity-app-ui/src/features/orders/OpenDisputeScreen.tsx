@@ -5,10 +5,11 @@ import { Image } from 'expo-image';
 import type { ReactElement, ReactNode } from 'react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import { Button, Card, H1, Paragraph, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, TextArea, XStack, YStack } from 'tamagui';
 
 import { appState$ } from '../../state/appState';
 import { colors } from '../../theme';
+import { InteriorShell } from '../../components/appShell';
 import type { AppRoute } from '../../types/navigation';
 import {
   createDispute,
@@ -152,23 +153,10 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
   }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2">
-              <Text color="$blue10" fontWeight="800">Serious issue escalation</Text>
-              <H1>Open Dispute</H1>
-              <Paragraph color="$gray10">Send an unresolved marketplace issue to Sharity Review.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('orderDetails')}>Back to Order Details</Button>
-              <Button theme="purple" onPress={() => onNavigate('orders')}>View Orders</Button>
-            </XStack>
-          </XStack>
-
-          <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
-            <YStack flex={1} gap="$4" minWidth={0}>
+    <InteriorShell onNavigate={onNavigate} title="Open Dispute" subtitle="Send an unresolved marketplace issue to Sharity Review" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+          <YStack flex={1} gap="$4" minWidth={0}>
               <ContextCard context={context} />
               <EligibilityCard eligibility={eligibility} />
               <HistoryCard context={context} />
@@ -243,9 +231,8 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
-    </YStack>
+    </InteriorShell>
   );
 }
 

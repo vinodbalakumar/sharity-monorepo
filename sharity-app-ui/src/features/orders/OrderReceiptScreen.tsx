@@ -5,7 +5,9 @@ import { Image } from 'expo-image';
 import type { ReactElement, ReactNode } from 'react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import { Button, Card, H1, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { colors } from '../../theme';
@@ -96,22 +98,9 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
   const actions = receipt.availableActions;
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2">
-              <Text color="$blue10" fontWeight="800">Buyer-safe marketplace receipt</Text>
-              <H1>Order Receipt</H1>
-              <Paragraph color="$gray10">Receipt {receipt.receipt.receiptNumber} - Order {receipt.receipt.orderReference}</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('orderDetails')}>Back to Order Details</Button>
-              <Button theme="purple" onPress={() => onNavigate('orders')}>View Orders</Button>
-            </XStack>
-          </XStack>
-
-          <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+    <InteriorShell onNavigate={onNavigate} title="Order Receipt" subtitle={`Receipt ${receipt.receipt.receiptNumber} - Order ${receipt.receipt.orderReference}`} scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               <ReceiptStatusCard receipt={receipt} />
               <SectionTitle title="Marketplace and seller groups" />
@@ -170,11 +159,10 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
                 </YStack>
               </PremiumCard>
             </YStack>
-          </XStack>
-        </YStack>
-      </ScrollView>
+        </XStack>
+      </YStack>
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
-    </YStack>
+    </InteriorShell>
   );
 }
 
