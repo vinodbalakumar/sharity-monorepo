@@ -112,14 +112,14 @@ public class SecurityConfig {
                                 "/marketplace-service/api/v1/marketplace/provider/listings",
                                 "/marketplace-service/api/v1/marketplace/provider/orders",
                                 "/marketplace-service/api/v1/marketplace/provider/orders/**").authenticated()
-                        .requestMatchers("/api/v1/marketplace/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODULE_ADMIN", "SUPPORT_AGENT")
+                        .requestMatchers("/api/admin/**", "/api/v1/marketplace/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODULE_ADMIN", "SUPPORT_AGENT")
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/marketplace/**",
                                 "/marketplace-service/api/v1/marketplace/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD,
                                 "/api/v1/marketplace/**",
                                 "/marketplace-service/api/v1/marketplace/**").permitAll()
-                        .requestMatchers("/internal/**").permitAll()
+                        .requestMatchers("/internal/**", "/api/internal/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .addFilterBefore(internalServiceTokenFilter, UsernamePasswordAuthenticationFilter.class)

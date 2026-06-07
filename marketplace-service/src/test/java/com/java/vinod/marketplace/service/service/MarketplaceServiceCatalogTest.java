@@ -35,7 +35,7 @@ class MarketplaceServiceCatalogTest {
         MarketplaceDtos.HomeResponse response = service.home();
 
         assertThat(response.verticals()).extracting(MarketplaceDtos.VerticalResponse::moduleCode)
-                .containsExactly("MARKETPLACE", "GROCERY", "MEAT_SHOP", "PHARMACY", "AUTOMOTIVE", "GIFT_CARDS");
+                .containsExactly("MARKETPLACE", "GROCERY", "MEAT_SHOP", "PHARMACY", "AUTOMOTIVE", "JEWELLERY", "GIFT_CARDS");
         assertThat(response.categories()).extracting(MarketplaceDtos.CategoryResponse::code)
                 .containsExactly("GROCERY");
         assertThat(response.featuredListings()).extracting(MarketplaceDtos.ListingResponse::publicId)

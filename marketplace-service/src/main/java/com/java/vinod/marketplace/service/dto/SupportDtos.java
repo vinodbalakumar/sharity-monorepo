@@ -11,6 +11,11 @@ public final class SupportDtos {
                                            int actionRequiredCount, int unreadCount,
                                            List<SupportTicketSummary> recentTickets,
                                            List<String> availableActions) {}
+    public record SupportHomeResponse(List<SupportCategoryItem> categories, List<SupportTopic> popularTopics,
+                                      List<ContextualSupportLink> contextualLinks,
+                                      List<SupportTicketSummary> tickets,
+                                      SupportActionEligibility actionEligibility,
+                                      String userSafeMessage, LocalDateTime updatedAt) {}
     public record SupportCategoryItem(String categoryCode, String label, String description,
                                       List<String> suggestedRelatedEntityTypes,
                                       List<String> evidenceRecommendations,
@@ -18,6 +23,9 @@ public final class SupportDtos {
                                       String defaultPriorityHint, boolean unsafeContentWarningRequired) {}
     public record HelpSearchResultItem(String resultId, String resultType, String title, String summary,
                                        String categoryCode, String route, String actionLabel) {}
+    public record SupportTopic(String topicId, String title, String shortDescription, String categoryCode,
+                               String relatedRoute, boolean articlePlaceholder,
+                               boolean contactSupportEligible, String userSafeMessage) {}
     public record GuidedHelpFlowResponse(String flowId, String categoryCode, String title,
                                          List<GuidedHelpStep> steps,
                                          List<SelfServiceSuggestionItem> suggestedActions,
@@ -31,8 +39,14 @@ public final class SupportDtos {
                                              String subject, String description, String priorityHint,
                                              List<String> attachmentIds,
                                              boolean userAcknowledgedSafeSupportRules) {}
+    public record SupportTicketCreateRequest(String categoryCode, String relatedOrderId,
+                                             String relatedSellerOrderId, String relatedRefundOrDisputeId,
+                                             String subject, String message,
+                                             boolean evidenceUploadPlaceholder) {}
     public record CreateSupportTicketResponse(String ticketId, String ticketReference, String status,
                                               String priority, String nextRoute, String message) {}
+    public record SupportTicketCreateResponse(String ticketId, String ticketReference, String status,
+                                              String nextRoute, String userSafeMessage) {}
     public record SupportTicketSummary(String ticketId, String ticketReference, String categoryCode, String subject,
                                        String relatedEntityType, String relatedEntityReference, String status,
                                        String priority, String severity, LocalDateTime lastUpdatedAt,
@@ -47,6 +61,8 @@ public final class SupportDtos {
     public record SupportRelatedEntity(String relatedEntityType, String relatedEntityId,
                                        String relatedEntityReference, String status, String summary,
                                        String route, boolean accessAllowed) {}
+    public record ContextualSupportLink(String contextType, String contextId, String title,
+                                        String route, String userSafeMessage) {}
     public record SupportTicketMessage(String messageId, String senderType, String senderDisplayName,
                                        String body, List<SupportAttachmentItem> attachments,
                                        LocalDateTime createdAt, boolean read, String moderationStatus,
@@ -68,11 +84,25 @@ public final class SupportDtos {
                                         String relatedEntityType, LocalDateTime createdAt,
                                         LocalDateTime updatedAt, String assignedTo,
                                         String escalationStatus) {}
+    public record SupportActionEligibility(boolean searchHelp, boolean openHelpTopic,
+                                           boolean createSupportTicketPlaceholder,
+                                           boolean viewMyTicketsPlaceholder,
+                                           boolean viewRelatedOrder, boolean viewRefundStatus,
+                                           boolean viewDispute, boolean viewDigitalDelivery,
+                                           boolean contactSupportPlaceholder,
+                                           List<String> disabledReasons) {}
 
     public static SupportDashboardResponse dashboard() {
         return new SupportDashboardResponse("Search orders, refunds, payouts, verification, policies, and app help",
                 suggestions(), categories(), 2, 1, 2, tickets(),
                 List.of("SEARCH_HELP", "START_GUIDED_HELP", "CREATE_SUPPORT_TICKET"));
+    }
+
+    public static SupportHomeResponse home() {
+        return new SupportHomeResponse(categories(), topics(), contextualLinks(), tickets(),
+                new SupportActionEligibility(true, true, true, true, true, true, true,
+                        true, true, List.of()),
+                "Support content is user-facing. Internal support/admin notes are hidden.", LocalDateTime.now());
     }
 
     public static List<SupportCategoryItem> categories() {
@@ -90,6 +120,32 @@ public final class SupportDtos {
         return List.of(new HelpSearchResultItem("result-payout", "SELF_SERVICE_ROUTE", "View Payout Eligibility",
                 "Check PayPal setup, payout blockers, and holds.", "PAYOUT_ISSUE", "/seller/payout-eligibility",
                 "Open payout eligibility"));
+    }
+
+    public static List<SupportTopic> topics() {
+        return List.of(new SupportTopic("topic-digital-delivery", "Digital delivery help",
+                        "Reveal, access, and report digital delivery issues.", "DIGITAL_CODE_ACCESS_ISSUE",
+                        "/support/digital-delivery", true, true,
+                        "Routes to Digital Delivery and Sharity Review when needed."),
+                new SupportTopic("topic-refunds", "Refund help",
+                        "Understand refund eligibility and status.", "REFUND_ISSUE",
+                        "/support/refunds", true, true, "Links to refund request/status flows."),
+                new SupportTopic("topic-seller-payouts", "Seller payout help",
+                        "Review payout method, holds, and payout eligibility.", "PAYOUT_ISSUE",
+                        "/support/seller", true, true, "Seller-safe payout help only."));
+    }
+
+    public static SupportTopic topic(String topicId) {
+        return topics().stream().filter(topic -> topic.topicId().equals(topicId)).findFirst().orElse(topics().get(0));
+    }
+
+    public static List<ContextualSupportLink> contextualLinks() {
+        return List.of(new ContextualSupportLink("ORDER", "order-085", "View related order",
+                        "/orders/order-085", "Order access is backend-checked."),
+                new ContextualSupportLink("REFUND", "refund-067", "View refund status",
+                        "/refunds/refund-067", "Refund access is backend-checked."),
+                new ContextualSupportLink("DIGITAL_DELIVERY", "order-065", "View digital delivery",
+                        "/orders/order-065/digital-delivery", "Digital delivery ownership is backend-checked."));
     }
 
     public static GuidedHelpFlowResponse guidedHelp() {

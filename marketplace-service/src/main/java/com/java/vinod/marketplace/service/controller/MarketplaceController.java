@@ -87,6 +87,9 @@ public class MarketplaceController {
      */
     @GetMapping("/categories")
     public List<MarketplaceDtos.CategoryResponse> categories(@RequestParam(required = false) String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return marketplaceService.activeCategories();
+        }
         return marketplaceService.activeCategories(null, countryCode);
     }
 
@@ -96,6 +99,9 @@ public class MarketplaceController {
     @GetMapping("/categories/by-vertical")
     public List<MarketplaceDtos.CategoryResponse> categoriesByVertical(@RequestParam String verticalCode,
                                                                        @RequestParam(required = false) String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return marketplaceService.activeCategories(verticalCode);
+        }
         return marketplaceService.activeCategories(verticalCode, countryCode);
     }
 

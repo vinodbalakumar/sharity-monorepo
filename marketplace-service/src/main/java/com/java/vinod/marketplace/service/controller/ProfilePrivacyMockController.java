@@ -1,6 +1,7 @@
 package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.ProfilePrivacyDtos;
+import com.java.vinod.marketplace.service.dto.ProfilePersonalInfoDtos;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,6 +20,106 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/profile")
 public class ProfilePrivacyMockController {
+
+    @GetMapping
+    public ProfilePersonalInfoDtos.ProfileDashboardResponse profileDashboard() {
+        return ProfilePersonalInfoDtos.dashboard();
+    }
+
+    @GetMapping({"/personal-info", "/edit"})
+    public ProfilePersonalInfoDtos.ProfileDashboardResponse personalInfo() {
+        return ProfilePersonalInfoDtos.dashboard();
+    }
+
+    @PatchMapping("/display-name")
+    public ProfilePersonalInfoDtos.ProfileActionResponse updateDisplayName(@RequestBody(required = false) Object request) {
+        return ProfilePersonalInfoDtos.action("OK", "Display name saved. Review may be required for seller-facing names.");
+    }
+
+    @GetMapping("/alias")
+    public ProfilePersonalInfoDtos.PublicDisplayInfo alias() {
+        return ProfilePersonalInfoDtos.publicDisplay();
+    }
+
+    @GetMapping("/email")
+    public ProfilePersonalInfoDtos.ContactInfo email() {
+        return ProfilePersonalInfoDtos.contactInfo();
+    }
+
+    @PostMapping("/email/change/start")
+    public ProfilePersonalInfoDtos.ProfileActionResponse startEmailChange(@RequestBody(required = false) Object request) {
+        return new ProfilePersonalInfoDtos.ProfileActionResponse(true, "VERIFICATION_REQUIRED",
+                "Email change started. Verification is required.", false, true, true, java.time.LocalDateTime.now());
+    }
+
+    @PostMapping("/email/change/confirm")
+    public ProfilePersonalInfoDtos.ProfileActionResponse confirmEmailChange(@RequestBody(required = false) Object request) {
+        return ProfilePersonalInfoDtos.action("OK", "Email change confirmed.");
+    }
+
+    @GetMapping("/phone")
+    public ProfilePersonalInfoDtos.ContactInfo phone() {
+        return ProfilePersonalInfoDtos.contactInfo();
+    }
+
+    @PostMapping("/phone/change/start")
+    public ProfilePersonalInfoDtos.ProfileActionResponse startPhoneChange(@RequestBody(required = false) Object request) {
+        return new ProfilePersonalInfoDtos.ProfileActionResponse(true, "VERIFICATION_REQUIRED",
+                "Phone change started. Verification is required.", false, true, true, java.time.LocalDateTime.now());
+    }
+
+    @PostMapping("/phone/change/confirm")
+    public ProfilePersonalInfoDtos.ProfileActionResponse confirmPhoneChange(@RequestBody(required = false) Object request) {
+        return ProfilePersonalInfoDtos.action("OK", "Phone change confirmed.");
+    }
+
+    @GetMapping("/country")
+    public ProfilePersonalInfoDtos.CountryRegionInfo country() {
+        return ProfilePersonalInfoDtos.country();
+    }
+
+    @PostMapping("/country/change/preview")
+    public ProfilePersonalInfoDtos.CountryChangeImpactPreviewResponse countryChangePreview(
+            @RequestBody(required = false) ProfilePersonalInfoDtos.CountryChangePreviewRequest request) {
+        return ProfilePersonalInfoDtos.countryPreview();
+    }
+
+    @PostMapping("/country/change")
+    public ProfilePersonalInfoDtos.SubmitCountryChangeResponse submitCountryChange(
+            @RequestBody(required = false) ProfilePersonalInfoDtos.SubmitCountryChangeRequest request) {
+        return ProfilePersonalInfoDtos.submittedCountryChange();
+    }
+
+    @GetMapping("/country/change/status")
+    public ProfilePersonalInfoDtos.SubmitCountryChangeResponse countryChangeStatus() {
+        return ProfilePersonalInfoDtos.submittedCountryChange();
+    }
+
+    @DeleteMapping("/photo")
+    public ProfilePersonalInfoDtos.ProfileActionResponse removeProfilePhoto() {
+        return ProfilePersonalInfoDtos.action("OK", "Profile photo removed.");
+    }
+
+    @GetMapping("/completion-checklist")
+    public List<ProfilePersonalInfoDtos.ProfileCompletionChecklistItem> completion() {
+        return ProfilePersonalInfoDtos.completion();
+    }
+
+    @GetMapping("/privacy-summary")
+    public ProfilePersonalInfoDtos.ProfilePrivacySummary privacySummary() {
+        return ProfilePersonalInfoDtos.privacy();
+    }
+
+    @GetMapping("/change-timeline")
+    public List<ProfilePersonalInfoDtos.ProfileChangeTimelineEvent> changeTimeline() {
+        return ProfilePersonalInfoDtos.timeline();
+    }
+
+    @PatchMapping("/seller-display-name")
+    public ProfilePersonalInfoDtos.ProfileActionResponse updateSellerDisplayName(@RequestBody(required = false) Object request) {
+        return new ProfilePersonalInfoDtos.ProfileActionResponse(true, "MODERATION_REQUIRED",
+                "Seller display name saved and queued for moderation.", true, false, true, java.time.LocalDateTime.now());
+    }
 
     @GetMapping("/privacy")
     public ProfilePrivacyDtos.ProfilePrivacySettingsResponse profilePrivacy() {

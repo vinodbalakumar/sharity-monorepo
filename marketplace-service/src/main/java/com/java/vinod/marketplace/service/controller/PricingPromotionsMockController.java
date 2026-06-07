@@ -51,11 +51,11 @@ public class PricingPromotionsMockController {
     public List<PricingPromotionsDtos.PricingAuditLogItem> audit() { return PricingPromotionsDtos.audit(); }
     @GetMapping("/api/seller/pricing/summary")
     public PricingPromotionsDtos.SellerPricingDisplay sellerSummary() { return PricingPromotionsDtos.simulation().sellerDisplay(); }
-    @GetMapping("/api/seller/coupons")
+    @GetMapping("/api/seller/pricing/coupons")
     public List<PricingPromotionsDtos.CouponRule> sellerCoupons() { return PricingPromotionsDtos.coupons(); }
-    @PostMapping("/api/seller/coupons")
+    @PostMapping("/api/seller/pricing/coupons")
     public PricingPromotionsDtos.CouponRule createSellerCoupon(@RequestBody(required = false) Object request) { return PricingPromotionsDtos.coupons().get(0); }
-    @PostMapping("/api/seller/coupons/{couponId}/disable")
+    @PostMapping("/api/seller/pricing/coupons/{couponId}/disable")
     public PricingPromotionsDtos.CouponRule disableSellerCoupon(@PathVariable String couponId) { return PricingPromotionsDtos.coupons().get(0); }
     @PostMapping("/api/seller/pricing/simulate-receives")
     public PricingPromotionsDtos.SellerPricingDisplay simulateReceives(@RequestBody(required = false) Object request) { return PricingPromotionsDtos.simulation().sellerDisplay(); }

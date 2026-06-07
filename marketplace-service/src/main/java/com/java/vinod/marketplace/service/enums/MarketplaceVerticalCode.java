@@ -14,7 +14,8 @@ public enum MarketplaceVerticalCode {
     MEAT_SHOP("MEAT_SHOP", "Meat Shop", "Cut-to-order meats and seafood", 30, "set_meal", "/meat-shop", "MEAT_SHOP_API", true, true, true),
     PHARMACY("PHARMACY", "Pharmacy", "OTC wellness and personal-care goods", 40, "medical_services", "/pharmacy", "PHARMACY_API", true, true, true),
     AUTOMOTIVE("AUTOMOTIVE", "Automotive", "Accessories and maintenance products", 50, "directions_car", "/automotive", "AUTOMOTIVE_API", true, true, true),
-    GIFT_CARDS("GIFT_CARDS", "Gift Cards", "Digital and value cards for popular brands", 60, "card_giftcard", "/gift-cards", "GIFT_CARD_API", true, true, true);
+    JEWELLERY("JEWELLERY", "One Gram Gold & Imitation Jewellery", "One gram gold, imitation jewellery, fashion jewellery, and accessories", 60, "diamond", "/jewellery", "JEWELLERY_API", true, true, true),
+    GIFT_CARDS("GIFT_CARDS", "Gift Cards", "Digital and value cards for popular brands", 70, "card_giftcard", "/gift-cards", "GIFT_CARD_API", true, true, true);
 
     private final String code;
     private final String displayName;

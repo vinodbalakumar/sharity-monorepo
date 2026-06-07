@@ -95,7 +95,7 @@ class MarketplaceServiceVerticalTest {
         List<MarketplaceDtos.VerticalResponse> response = service.activeVerticals();
 
         assertThat(response).extracting(MarketplaceDtos.VerticalResponse::moduleCode)
-                .containsExactly("MARKETPLACE", "GROCERY", "MEAT_SHOP", "PHARMACY", "AUTOMOTIVE", "GIFT_CARDS");
+                .containsExactly("MARKETPLACE", "GROCERY", "MEAT_SHOP", "PHARMACY", "AUTOMOTIVE", "JEWELLERY", "GIFT_CARDS");
         assertThat(response).allSatisfy(vertical -> assertThat(vertical.status()).isEqualTo("ACTIVE"));
     }
 

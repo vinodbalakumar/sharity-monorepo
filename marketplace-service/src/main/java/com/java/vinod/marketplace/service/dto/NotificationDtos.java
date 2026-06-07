@@ -1,207 +1,101 @@
 package com.java.vinod.marketplace.service.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
-/**
- * Mock notification center API contracts for STORY-032.
- *
- * <p>These records intentionally mirror the future notification-service shape
- * while keeping the marketplace-service implementation stateless and safe for
- * frontend integration.</p>
- */
 public final class NotificationDtos {
-    private NotificationDtos() {
-    }
+    private NotificationDtos() {}
+    public record NotificationCenterDashboardResponse(NotificationUnreadCounts unreadCounts,
+                                                      List<NotificationItem> criticalNotifications,
+                                                      List<NotificationItem> actionRequiredNotifications,
+                                                      List<NotificationFilterOption> availableFilters,
+                                                      List<NotificationItem> recentNotifications,
+                                                      NotificationPreferenceSummary preferencesShortcut,
+                                                      List<String> availableActions) {}
+    public record NotificationUnreadCounts(long totalUnread, long buyerUnread, long sellerUnread, long criticalUnread, long actionRequiredUnread) {}
+    public record NotificationItem(String notificationId, String title, String shortMessage, String fullMessage,
+                                   String category, String roleContext, String severity, String status,
+                                   boolean archived, boolean pinned, boolean critical, boolean actionRequired,
+                                   LocalDateTime createdAt, LocalDateTime readAt,
+                                   NotificationRelatedEntity relatedEntity, NotificationAction primaryAction,
+                                   List<NotificationAction> secondaryActions,
+                                   List<NotificationDeliveryChannelStatus> deliveryChannels,
+                                   String userSafeMetadata, String imageUrl) {}
+    public record NotificationRelatedEntity(String relatedEntityType, String relatedEntityId, String relatedEntityReference, String status, String summary, String route, boolean accessAllowed) {}
+    public record NotificationAction(String actionCode, String label, String route, boolean enabled, boolean expired, String userSafeDisabledReason, boolean requiresReauth, boolean primary) {}
+    public record NotificationDeliveryChannelStatus(String channel, boolean enabled, boolean sent, boolean delivered, boolean failed, String userSafeMessage) {}
+    public record NotificationFilterOption(String filterCode, String label, long count, boolean active, boolean available) {}
+    public record NotificationTimeGroup(String groupCode, String label, long count, long unreadCount, List<NotificationItem> notifications) {}
+    public record NotificationActionResponse(String notificationId, String actionCode, boolean allowed, String route, String message, boolean requiresReauth, LocalDateTime updatedAt) {}
+    public record NotificationPreferenceSummary(String route, boolean criticalAlertsMandatory, boolean promotionalNotificationsEnabled, boolean pushEnabled, boolean emailEnabled, boolean inAppEnabled, String userSafeMessage) {}
+    public record NotificationSummary(long totalUnread, long buyerUnread, long sellerUnread,
+                                      long criticalUnread, long actionRequiredUnread,
+                                      String userSafeMessage) {}
+    public record NotificationSettings(boolean inAppEnabled, boolean pushEnabled, boolean emailEnabled,
+                                       boolean sellerDeadlineAlertsMandatory,
+                                       boolean securityAlertsMandatory, String userSafeMessage) {}
+    public record AdminBroadcastSummary(String broadcastId, String title, String status, String audienceType, List<String> deliveryChannels, String createdBy, LocalDateTime createdAt, boolean placeholder) {}
+    public record AdminBroadcastTemplate(String templateId, String templateName, String category, String channel, boolean placeholder) {}
 
-    public record NotificationFeedResponse(List<NotificationItem> notifications,
-                                           List<NotificationGroup> groups,
-                                           Pagination pagination,
-                                           NotificationSummaryCounts summaryCounts,
-                                           List<String> availableFilters) {
+    public static NotificationCenterDashboardResponse dashboard() {
+        List<NotificationItem> items = notifications();
+        return new NotificationCenterDashboardResponse(counts(items),
+                items.stream().filter(item -> item.critical() && item.pinned() && !item.archived()).toList(),
+                items.stream().filter(item -> item.actionRequired() && !item.archived()).toList(),
+                filters().stream().map(filter -> new NotificationFilterOption(filter, filter, items.size(), false, true)).toList(),
+                items.stream().limit(6).toList(),
+                new NotificationPreferenceSummary("appSettings", true, false, true, true, true, "Critical security, payment, payout, and safety alerts cannot be fully disabled."),
+                List.of("VIEW_NOTIFICATION", "OPEN_RELATED_ENTITY", "MARK_READ", "MARK_UNREAD", "MARK_ALL_READ", "ARCHIVE_NOTIFICATION", "SEARCH_NOTIFICATIONS", "MANAGE_NOTIFICATION_PREFERENCES"));
     }
-
-    public record NotificationItem(String notificationId, String title, String message, String role,
-                                   String category, String priority, boolean read, boolean archived,
-                                   boolean critical, boolean nonDismissible, boolean actionRequired,
-                                   String relatedEntityType, String relatedEntityId, String relatedReference,
-                                   String productImageUrl, String iconType, LocalDateTime createdAt,
-                                   LocalDateTime readAt, NotificationAvailableActions availableActions,
-                                   NotificationDeepLink deepLink) {
-    }
-
-    public record NotificationGroup(String groupKey, String groupLabel, List<String> notificationIds) {
-    }
-
-    public record NotificationSummaryCounts(long unreadCount, long actionRequiredCount, long criticalCount,
-                                            long buyerCount, long sellerCount, long orderCount,
-                                            long refundCount, long disputeCount, long messageCount,
-                                            long payoutCount, long listingCount, long securityCount) {
-    }
-
-    public record NotificationAvailableActions(boolean canMarkRead, boolean canMarkUnread, boolean canArchive,
-                                               boolean canViewOrder, boolean canViewRefund,
-                                               boolean canViewDispute, boolean canOpenMessage,
-                                               boolean canViewPayout, boolean canViewListing,
-                                               boolean canManagePreferences, boolean canBack) {
-    }
-
-    public record NotificationDeepLink(String route, Map<String, String> routeParams, String targetType,
-                                       boolean requiresAuth, String requiredRole, String fallbackRoute) {
-    }
-
-    public record NotificationActionResponse(String notificationId, String status, String message,
-                                             boolean updatedRead, boolean updatedArchived, boolean resolved,
-                                             NotificationDeepLink deepLink) {
-    }
-
-    public record Pagination(int page, int size, boolean hasNextPage) {
-    }
-
-    public record PreferenceRouteResponse(String route, String contextRole) {
-    }
-
-    public record ResolveActionRequest(@NotBlank String actionType) {
-    }
-
-    public static NotificationFeedResponse mockFeed(int page, int size, String role, String category,
-                                                    String priority, boolean unreadOnly,
-                                                    boolean actionRequiredOnly, boolean archived) {
-        List<NotificationItem> filtered = mockNotifications().stream()
-                .filter(item -> archived == item.archived())
-                .filter(item -> role == null || role.isBlank() || item.role().equalsIgnoreCase(role))
-                .filter(item -> category == null || category.isBlank() || item.category().equalsIgnoreCase(category))
-                .filter(item -> priority == null || priority.isBlank() || item.priority().equalsIgnoreCase(priority))
-                .filter(item -> !unreadOnly || !item.read())
-                .filter(item -> !actionRequiredOnly || item.actionRequired())
-                .toList();
-        return new NotificationFeedResponse(filtered, mockGroups(filtered), new Pagination(page, size, false),
-                mockSummaryCounts(), availableFilters());
-    }
-
-    public static NotificationSummaryCounts mockSummaryCounts() {
-        List<NotificationItem> items = mockNotifications();
-        return new NotificationSummaryCounts(
-                items.stream().filter(item -> !item.read()).count(),
-                items.stream().filter(NotificationItem::actionRequired).count(),
-                items.stream().filter(NotificationItem::critical).count(),
-                items.stream().filter(item -> "BUYER".equals(item.role())).count(),
-                items.stream().filter(item -> "SELLER".equals(item.role())).count(),
-                items.stream().filter(item -> "ORDERS".equals(item.category())).count(),
-                items.stream().filter(item -> "REFUNDS".equals(item.category())).count(),
-                items.stream().filter(item -> "DISPUTES".equals(item.category())).count(),
-                items.stream().filter(item -> "MESSAGES".equals(item.category())).count(),
-                items.stream().filter(item -> "PAYOUTS".equals(item.category())).count(),
-                items.stream().filter(item -> "LISTINGS".equals(item.category())).count(),
-                items.stream().filter(item -> "SECURITY".equals(item.category())).count());
-    }
-
-    public static List<String> availableFilters() {
-        return List.of("All", "Buyer", "Seller", "Orders", "Refunds", "Disputes", "Messages",
-                "Payouts", "Listings", "Security", "Unread", "Action Required");
-    }
-
-    public static List<NotificationGroup> mockGroups(List<NotificationItem> items) {
-        return List.of(
-                group("today", "Today", items, "notif-dispute-response", "notif-security-login", "notif-order-complete"),
-                group("yesterday", "Yesterday", items, "notif-low-code", "notif-message"),
-                group("this-week", "This Week", items, "notif-payout-hold", "notif-listing-approved"),
-                group("earlier", "Earlier", items, "notif-policy-required", "notif-maintenance"));
-    }
-
-    private static NotificationGroup group(String key, String label, List<NotificationItem> items, String... ids) {
-        List<String> availableIds = List.of(ids).stream()
-                .filter(id -> items.stream().anyMatch(item -> item.notificationId().equals(id)))
-                .toList();
-        return new NotificationGroup(key, label, availableIds);
-    }
-
-    public static NotificationItem mockNotification(String notificationId) {
-        return mockNotifications().stream()
-                .filter(item -> item.notificationId().equals(notificationId))
-                .findFirst()
-                .orElseGet(NotificationDtos::deepLinkUnavailableNotification);
-    }
-
-    public static NotificationActionResponse actionResponse(String notificationId, String status, String message,
-                                                           boolean read, boolean archived) {
-        NotificationItem item = mockNotification(notificationId);
-        return new NotificationActionResponse(notificationId, status, message, read, archived,
-                "OK".equals(status), item.deepLink());
-    }
-
-    public static PreferenceRouteResponse preferenceRoute(String role) {
-        if ("SELLER".equalsIgnoreCase(role)) {
-            return new PreferenceRouteResponse("/seller/settings#notifications", "SELLER");
-        }
-        return new PreferenceRouteResponse("/settings/notifications", role == null ? "MIXED" : role.toUpperCase());
-    }
-
-    public static List<NotificationItem> mockNotifications() {
+    public static List<NotificationItem> notifications() {
         LocalDateTime now = LocalDateTime.now();
         return List.of(
-                item("notif-dispute-response", "Dispute response required", "Respond before Jun 5 to avoid delayed review.",
-                        "SELLER", "DISPUTES", "ACTION_REQUIRED", false, false, true, true, true,
-                        "DISPUTE", "DSP-8821", "Dispute DSP-8821", null, "shield-alert",
-                        now.minusHours(1), "/seller/disputes/DSP-8821", "DISPUTE", "SELLER"),
-                item("notif-security-login", "New login detected", "A new login was detected from a recognized browser.",
-                        "SYSTEM", "SECURITY", "CRITICAL", false, false, true, true, true,
-                        "SECURITY_EVENT", "SEC-1002", "Security alert", null, "lock",
-                        now.minusHours(2), "/profile/security", "SECURITY", "BUYER"),
-                item("notif-order-complete", "Order completed", "Your digital order is complete and ready in your library.",
-                        "BUYER", "ORDERS", "SUCCESS", false, false, false, false, false,
-                        "ORDER", "ORD-4109", "Order ORD-4109", "marketplace/placeholders/gift_cards.png", "package-check",
-                        now.minusHours(5), "/orders/ORD-4109", "ORDER", "BUYER"),
-                item("notif-low-code", "Low code inventory", "Add codes soon to keep this digital listing available.",
-                        "SELLER", "LISTINGS", "WARNING", false, false, false, false, true,
-                        "LISTING", "LST-2055", "Listing LST-2055", "marketplace/placeholders/gaming.png", "boxes",
-                        now.minusDays(1), "/seller/listings/LST-2055/codes", "LISTING", "SELLER"),
-                item("notif-message", "New safe message", "A buyer sent a message about order ORD-4109.",
-                        "SELLER", "MESSAGES", "INFO", true, false, false, false, false,
-                        "ORDER", "ORD-4109", "Order message", null, "message-circle",
-                        now.minusDays(1).minusHours(3), "/seller/messages/order/ORD-4109", "MESSAGE", "SELLER"),
-                item("notif-payout-hold", "Payout on hold", "A payout is held until account verification is completed.",
-                        "SELLER", "PAYOUTS", "WARNING", false, false, false, false, true,
-                        "PAYOUT", "PAY-7712", "Payout PAY-7712", null, "wallet",
-                        now.minusDays(3), "/seller/payouts", "PAYOUT", "SELLER"),
-                item("notif-listing-approved", "Listing approved", "Your listing passed review and is visible to buyers.",
-                        "SELLER", "LISTINGS", "SUCCESS", true, false, false, false, false,
-                        "LISTING", "LST-2001", "Listing LST-2001", "marketplace/placeholders/electronics.png", "badge-check",
-                        now.minusDays(4), "/seller/products", "LISTING", "SELLER"),
-                item("notif-policy-required", "Policy acceptance required", "Accept the updated seller policy to continue selling.",
-                        "SYSTEM", "SECURITY", "CRITICAL", false, false, true, true, true,
-                        "POLICY", "POL-2026-06", "Seller policy", null, "file-warning",
-                        now.minusDays(9), "/settings/policies", "POLICY", "SELLER"),
-                item("notif-maintenance", "System maintenance scheduled", "Some marketplace tools may be unavailable during maintenance.",
-                        "SYSTEM", "SYSTEM", "INFO", true, false, false, false, false,
-                        "SYSTEM_STATUS", "SYS-2201", "Maintenance", null, "info",
-                        now.minusDays(14), "/system/status", "SYSTEM", "BUYER"));
+                item("notif-order", "Order update available", "Order SH-1000 is moving through checkout.", "ORDER_UPDATE", "BUYER", "SUCCESS", "UNREAD", false, false, now.minusHours(1), "ORDER", "SH-1000", "View order", "orders", "marketplace/placeholders/gift_cards.png"),
+                item("notif-seller-order", "Seller acceptance needed", "Accept seller order SH-1000-A within 24 hours.", "SELLER_ACCEPTANCE_UPDATE", "SELLER", "WARNING", "UNREAD", true, false, now.minusHours(2), "SELLER_ORDER", "SH-1000-A", "Review seller order", "orders", null),
+                item("notif-payment-failed", "Payment authorization failed", "Your PayPal authorization could not be completed.", "PAYMENT_AUTHORIZATION_UPDATE", "BUYER", "CRITICAL", "UNREAD", true, false, now.minusHours(3), "PAYMENT_AUTHORIZATION", "PAY-AUTH-4431", "Retry payment", "paymentAuthorization", null),
+                item("notif-refund", "Refund response needed", "A seller responded to your refund request.", "REFUND_UPDATE", "BUYER", "WARNING", "UNREAD", true, false, now.minusHours(21), "REFUND_REQUEST", "REF-7781", "View refund", "refundStatus", null),
+                item("notif-payout", "Payout blocked", "Complete verification before payout can proceed.", "SELLER_PAYOUT_UPDATE", "SELLER", "CRITICAL", "UNREAD", true, false, now.minusDays(2), "PAYOUT", "PAY-7712", "View eligibility", "sellerVerification", null),
+                item("notif-support", "Support ticket reply", "Support replied to ticket SUP-1001.", "SUPPORT_TICKET_UPDATE", "BOTH", "INFO", "READ", false, false, now.minusDays(3), "SUPPORT_TICKET", "SUP-1001", "Open support ticket", "support", null),
+                item("notif-security", "Security alert", "A new login was detected from an approximate Phoenix region.", "SECURITY_ALERT", "BOTH", "CRITICAL", "UNREAD", true, false, now.minusDays(3), "SECURITY_EVENT", "SEC-1002", "Review security alert", "loginSecurity", null),
+                item("notif-policy", "Policy re-acceptance required", "Accept updated seller terms to continue selling.", "POLICY_TERMS_REACCEPTANCE_ALERT", "SELLER", "CRITICAL", "UNREAD", true, false, now.minusDays(7), "POLICY", "POL-2026-06", "Accept policy", "policies", null),
+                item("notif-admin", "Admin announcement placeholder", "Future broadcasts and templates will appear here.", "ADMIN_ANNOUNCEMENT", "ADMIN", "INFO", "READ", false, false, now.minusDays(12), "ANNOUNCEMENT", "ANN-001", "Preview announcement", "notifications", null));
     }
-
-    private static NotificationItem item(String id, String title, String message, String role, String category,
-                                         String priority, boolean read, boolean archived, boolean critical,
-                                         boolean nonDismissible, boolean actionRequired, String entityType,
-                                         String entityId, String reference, String productImageUrl, String iconType,
-                                         LocalDateTime createdAt, String route, String targetType, String requiredRole) {
-        NotificationAvailableActions actions = new NotificationAvailableActions(!read, read,
-                !nonDismissible, "ORDER".equals(entityType), "REFUND".equals(entityType),
-                "DISPUTE".equals(entityType), "MESSAGE".equals(targetType), "PAYOUT".equals(entityType),
-                "LISTING".equals(entityType), true, true);
-        NotificationDeepLink deepLink = new NotificationDeepLink(route, Map.of("id", entityId), targetType,
-                true, requiredRole, "/notifications");
-        return new NotificationItem(id, title, message, role, category, priority, read, archived, critical,
-                nonDismissible, actionRequired, entityType, entityId, reference, productImageUrl, iconType,
-                createdAt, read ? createdAt.plusMinutes(20) : null, actions, deepLink);
+    public static List<NotificationTimeGroup> groups() {
+        List<NotificationItem> items = notifications();
+        return List.of(group("today", "Today", items.stream().filter(item -> item.createdAt().isAfter(LocalDateTime.now().minusDays(1))).toList()),
+                group("yesterday", "Yesterday", items.stream().filter(item -> item.createdAt().isBefore(LocalDateTime.now().minusDays(1)) && item.createdAt().isAfter(LocalDateTime.now().minusDays(2))).toList()),
+                group("this-week", "This week", items.stream().filter(item -> item.createdAt().isBefore(LocalDateTime.now().minusDays(2)) && item.createdAt().isAfter(LocalDateTime.now().minusDays(7))).toList()),
+                group("older", "Older", items.stream().filter(item -> item.createdAt().isBefore(LocalDateTime.now().minusDays(7))).toList()));
     }
-
-    private static NotificationItem deepLinkUnavailableNotification() {
-        LocalDateTime now = LocalDateTime.now();
-        return item("notif-deeplink-unavailable", "Related screen unavailable",
-                "This notification's related screen is no longer available.", "SYSTEM", "SYSTEM", "WARNING",
-                false, false, false, false, false, "UNKNOWN", "UNKNOWN", "Unavailable", null, "unlink",
-                now, "/notifications", "UNKNOWN", "BUYER");
+    public static NotificationItem notification(String notificationId) { return notifications().stream().filter(item -> item.notificationId().equals(notificationId)).findFirst().orElse(notifications().get(0)); }
+    public static NotificationActionResponse action(String notificationId, String actionCode, boolean allowed, String route, String message) { return new NotificationActionResponse(notificationId, actionCode, allowed, route, message, false, LocalDateTime.now()); }
+    public static NotificationUnreadCounts counts() { return counts(notifications()); }
+    public static NotificationSummary summary() {
+        NotificationUnreadCounts counts = counts();
+        return new NotificationSummary(counts.totalUnread(), counts.buyerUnread(), counts.sellerUnread(),
+                counts.criticalUnread(), counts.actionRequiredUnread(),
+                "Notification counts are user-scoped and related routes require permission checks.");
     }
+    public static NotificationPreferenceSummary preferencesSummary() { return dashboard().preferencesShortcut(); }
+    public static NotificationSettings settings() {
+        return new NotificationSettings(true, true, true, true, true,
+                "Critical seller deadline and security alerts are mandatory.");
+    }
+    public static List<AdminBroadcastSummary> broadcasts() { return List.of(new AdminBroadcastSummary("broadcast-001", "Marketplace maintenance placeholder", "DRAFT_PLACEHOLDER", "All users later", List.of("IN_APP", "PUSH", "EMAIL"), "Admin placeholder", LocalDateTime.now().minusHours(3), true)); }
+    public static List<AdminBroadcastTemplate> templates() { return List.of(new AdminBroadcastTemplate("template-marketplace", "Marketplace announcement", "MARKETPLACE", "IN_APP", true), new AdminBroadcastTemplate("template-policy", "Policy update", "POLICY", "EMAIL", true)); }
+    private static NotificationItem item(String id, String title, String message, String category, String role, String severity, String status, boolean actionRequired, boolean archived, LocalDateTime createdAt, String entityType, String entityId, String actionLabel, String route, String imageUrl) {
+        boolean critical = "CRITICAL".equals(severity);
+        return new NotificationItem(id, title, message, message + " Sensitive provider payloads, digital codes, raw URLs, security raw payloads, internal risk, and admin notes are hidden.", category, role, severity, status, archived, critical || actionRequired, critical, actionRequired, createdAt, "READ".equals(status) ? createdAt.plusMinutes(20) : null,
+                new NotificationRelatedEntity(entityType, entityId, entityId, actionRequired ? "ACTION_REQUIRED" : "AVAILABLE", entityType + " " + entityId, route, true),
+                new NotificationAction("OPEN_RELATED_ENTITY", actionLabel, route, true, false, null, critical && category.contains("SECURITY"), true),
+                List.of(new NotificationAction("MARK_READ", "Mark read", "notifications", true, false, null, false, false), new NotificationAction("ARCHIVE", "Archive", "notifications", !(critical && actionRequired), false, critical && actionRequired ? "Resolve critical action first." : null, false, false)),
+                List.of(new NotificationDeliveryChannelStatus("IN_APP", true, true, true, false, "Delivered in-app."), new NotificationDeliveryChannelStatus("PUSH", true, critical || actionRequired, critical || actionRequired, false, "Push sent when required."), new NotificationDeliveryChannelStatus("EMAIL", true, critical, critical, false, "Email sent for critical notices."), new NotificationDeliveryChannelStatus("SMS_LATER", false, false, false, false, "SMS is later.")),
+                "Related entity access is backend-validated before navigation.", imageUrl);
+    }
+    private static NotificationTimeGroup group(String code, String label, List<NotificationItem> items) { return new NotificationTimeGroup(code, label, items.size(), items.stream().filter(item -> "UNREAD".equals(item.status())).count(), items); }
+    private static NotificationUnreadCounts counts(List<NotificationItem> items) {
+        List<NotificationItem> visible = items.stream().filter(item -> !item.archived()).toList();
+        return new NotificationUnreadCounts(visible.stream().filter(item -> "UNREAD".equals(item.status())).count(), visible.stream().filter(item -> "UNREAD".equals(item.status()) && "BUYER".equals(item.roleContext())).count(), visible.stream().filter(item -> "UNREAD".equals(item.status()) && "SELLER".equals(item.roleContext())).count(), visible.stream().filter(item -> "UNREAD".equals(item.status()) && item.critical()).count(), visible.stream().filter(NotificationItem::actionRequired).count());
+    }
+    private static List<String> filters() { return List.of("All", "Buyer", "Seller", "Orders", "Seller orders", "Payments", "Seller acceptance", "Digital delivery", "Refunds", "Disputes", "Payouts", "Verification", "Support", "Security", "Marketplace", "Coupons/rewards", "Policies", "Listing moderation", "Admin announcements", "Unread", "Critical", "Action required", "Archived"); }
 }

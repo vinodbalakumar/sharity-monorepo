@@ -30,6 +30,15 @@ app:
   services:
     authorization-provider-eligibility-url: ${AUTH_PROVIDER_ELIGIBILITY_INTERNAL_URL:http://authorization-server:8080/authorization-server/api/internal/api/v1}
     payment-internal-url: ${PAYMENT_SERVICE_INTERNAL_URL:http://payment-service:8080/payment-service/internal/api/v1}
+  assets:
+    provider-code: ${ASSET_STORAGE_PROVIDER_CODE:CLOUDFLARE_R2_PRIMARY}
+    bucket-name: ${ASSET_STORAGE_BUCKET_NAME:sharity-assets}
+    endpoint-url: ${ASSET_STORAGE_ENDPOINT_URL:}
+    public-base-url: ${ASSET_STORAGE_PUBLIC_BASE_URL:}
+    region: ${ASSET_STORAGE_REGION:auto}
+    access-key-id: ${ASSET_STORAGE_ACCESS_KEY_ID:}
+    secret-access-key: ${ASSET_STORAGE_SECRET_ACCESS_KEY:}
+    max-file-size-bytes: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:5242880}
 
 springdoc:
   swagger-ui:

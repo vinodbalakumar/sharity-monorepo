@@ -7,6 +7,14 @@ import java.util.List;
 
 @RestController
 public class SupportMockController {
+    @GetMapping({"/api/support/topics", "/api/support/popular"})
+    public List<SupportDtos.SupportTopic> topics() { return SupportDtos.topics(); }
+    @GetMapping("/api/support/topics/{topicId}")
+    public SupportDtos.SupportTopic topic(@PathVariable String topicId) { return SupportDtos.topic(topicId); }
+    @GetMapping("/api/support/contextual-help")
+    public List<SupportDtos.ContextualSupportLink> contextualHelp() { return SupportDtos.contextualLinks(); }
+    @GetMapping("/api/support/actions")
+    public SupportDtos.SupportActionEligibility actions() { return SupportDtos.home().actionEligibility(); }
     @GetMapping("/api/support/dashboard")
     public SupportDtos.SupportDashboardResponse dashboard() { return SupportDtos.dashboard(); }
     @GetMapping("/api/support/search")

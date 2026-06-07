@@ -1,80 +1,48 @@
 package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.NotificationDtos;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Stateless mocked Notification Center API for STORY-032.
- */
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/notifications")
 public class NotificationMockController {
-
-    @GetMapping
-    public NotificationDtos.NotificationFeedResponse notifications(@RequestParam(defaultValue = "0") int page,
-                                                                   @RequestParam(defaultValue = "25") int size,
-                                                                   @RequestParam(required = false) String role,
-                                                                   @RequestParam(required = false) String category,
-                                                                   @RequestParam(required = false) String priority,
-                                                                   @RequestParam(defaultValue = "false") boolean unreadOnly,
-                                                                   @RequestParam(defaultValue = "false") boolean actionRequiredOnly,
-                                                                   @RequestParam(defaultValue = "false") boolean archived) {
-        return NotificationDtos.mockFeed(page, size, role, category, priority, unreadOnly, actionRequiredOnly, archived);
-    }
-
-    @GetMapping("/summary-counts")
-    public NotificationDtos.NotificationSummaryCounts summaryCounts() {
-        return NotificationDtos.mockSummaryCounts();
-    }
-
-    @PostMapping("/{notificationId}/read")
-    public NotificationDtos.NotificationActionResponse markRead(@PathVariable String notificationId) {
-        return NotificationDtos.actionResponse(notificationId, "OK", "Notification marked read.", true, false);
-    }
-
-    @PostMapping("/{notificationId}/unread")
-    public NotificationDtos.NotificationActionResponse markUnread(@PathVariable String notificationId) {
-        return NotificationDtos.actionResponse(notificationId, "OK", "Notification marked unread.", false, false);
-    }
-
-    @PostMapping("/read-all")
-    public NotificationDtos.NotificationActionResponse markAllRead() {
-        return NotificationDtos.actionResponse("ALL", "OK", "All eligible notifications marked read.", true, false);
-    }
-
-    @PostMapping("/{notificationId}/archive")
-    public NotificationDtos.NotificationActionResponse archive(@PathVariable String notificationId) {
-        NotificationDtos.NotificationItem item = NotificationDtos.mockNotification(notificationId);
-        if (item.nonDismissible()) {
-            return NotificationDtos.actionResponse(notificationId, "NOTIFICATION_ARCHIVE_NOT_ALLOWED",
-                    "Critical notifications cannot be archived until resolved.", item.read(), false);
-        }
-        return NotificationDtos.actionResponse(notificationId, "OK", "Notification archived.", item.read(), true);
-    }
-
-    @GetMapping("/{notificationId}")
-    public NotificationDtos.NotificationItem details(@PathVariable String notificationId) {
-        return NotificationDtos.mockNotification(notificationId);
-    }
-
-    @PostMapping("/{notificationId}/resolve-action")
-    public NotificationDtos.NotificationActionResponse resolveAction(@PathVariable String notificationId,
-                                                                     @RequestBody(required = false)
-                                                                     NotificationDtos.ResolveActionRequest request) {
-        NotificationDtos.NotificationItem item = NotificationDtos.mockNotification(notificationId);
-        String action = request == null ? "open" : request.actionType();
-        return new NotificationDtos.NotificationActionResponse(notificationId, "OK",
-                "Resolved notification action: " + action + ".", true, item.archived(), true, item.deepLink());
-    }
-
-    @GetMapping("/preferences-route")
-    public NotificationDtos.PreferenceRouteResponse preferencesRoute(@RequestParam(required = false) String role) {
-        return NotificationDtos.preferenceRoute(role);
-    }
+    @GetMapping("/api/notifications/dashboard")
+    public NotificationDtos.NotificationCenterDashboardResponse dashboard() { return NotificationDtos.dashboard(); }
+    @GetMapping("/api/notifications")
+    public List<NotificationDtos.NotificationItem> notifications() { return NotificationDtos.notifications(); }
+    @GetMapping("/api/notifications/{notificationId}")
+    public NotificationDtos.NotificationItem detail(@PathVariable String notificationId) { return NotificationDtos.notification(notificationId); }
+    @GetMapping("/api/notifications/summary")
+    public NotificationDtos.NotificationSummary summary() { return NotificationDtos.summary(); }
+    @GetMapping("/api/notifications/search")
+    public List<NotificationDtos.NotificationItem> search(@RequestParam(required = false) String q) { return NotificationDtos.notifications(); }
+    @PostMapping("/api/notifications/{notificationId}/read")
+    public NotificationDtos.NotificationActionResponse read(@PathVariable String notificationId) { return NotificationDtos.action(notificationId, "MARK_READ", true, "notifications", "Notification marked read."); }
+    @PostMapping("/api/notifications/{notificationId}/unread")
+    public NotificationDtos.NotificationActionResponse unread(@PathVariable String notificationId) { return NotificationDtos.action(notificationId, "MARK_UNREAD", true, "notifications", "Notification marked unread."); }
+    @PostMapping({"/api/notifications/mark-all-read", "/api/notifications/read-all"})
+    public NotificationDtos.NotificationActionResponse markAllRead() { return NotificationDtos.action("ALL", "MARK_ALL_READ", true, "notifications", "All eligible notifications marked read."); }
+    @PostMapping("/api/notifications/{notificationId}/archive")
+    public NotificationDtos.NotificationActionResponse archive(@PathVariable String notificationId) { return NotificationDtos.action(notificationId, "ARCHIVE", true, "notifications", "Notification archived. Audit history was not deleted."); }
+    @PostMapping("/api/notifications/{notificationId}/actions/{actionCode}")
+    public NotificationDtos.NotificationActionResponse action(@PathVariable String notificationId, @PathVariable String actionCode) { return NotificationDtos.action(notificationId, actionCode, true, NotificationDtos.notification(notificationId).primaryAction().route(), "Notification action validated."); }
+    @PostMapping("/api/notifications/{notificationId}/resolve-action")
+    public NotificationDtos.NotificationActionResponse resolveAction(@PathVariable String notificationId) { return action(notificationId, "OPEN_RELATED_ENTITY"); }
+    @GetMapping({"/api/notifications/counts", "/api/notifications/summary-counts"})
+    public NotificationDtos.NotificationUnreadCounts counts() { return NotificationDtos.counts(); }
+    @GetMapping({"/api/notifications/preferences-summary", "/api/notifications/preferences-route"})
+    public NotificationDtos.NotificationPreferenceSummary preferencesSummary() { return NotificationDtos.preferencesSummary(); }
+    @GetMapping("/api/notifications/settings")
+    public NotificationDtos.NotificationSettings settings() { return NotificationDtos.settings(); }
+    @PostMapping("/api/notifications/settings")
+    public NotificationDtos.NotificationSettings updateSettings() { return NotificationDtos.settings(); }
+    @PostMapping("/api/notifications/refresh")
+    public NotificationDtos.NotificationActionResponse refresh() { return NotificationDtos.action("ALL", "REFRESH", true, "notifications", "Notifications refreshed."); }
+    @GetMapping("/api/admin/notifications/broadcasts")
+    public List<NotificationDtos.AdminBroadcastSummary> broadcasts() { return NotificationDtos.broadcasts(); }
+    @GetMapping("/api/admin/notifications/templates")
+    public List<NotificationDtos.AdminBroadcastTemplate> templates() { return NotificationDtos.templates(); }
+    @PostMapping("/api/admin/notifications/broadcasts")
+    public NotificationDtos.NotificationActionResponse createBroadcast() { return NotificationDtos.action("broadcast-new", "CREATE_BROADCAST_PLACEHOLDER", true, "notifications", "Admin broadcast placeholder accepted."); }
 }
