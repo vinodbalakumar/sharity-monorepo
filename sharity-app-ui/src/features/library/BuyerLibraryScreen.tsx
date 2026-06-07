@@ -11,6 +11,7 @@ import { Button, Card, H1, Input, Paragraph, ScrollView, Text, XStack, YStack } 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import { colors } from '../../theme';
+import { InteriorShell } from '../../components/appShell';
 import type { AppRoute } from '../../types/navigation';
 import {
   endRevealSession,
@@ -193,24 +194,9 @@ export function BuyerLibraryScreen({ onNavigate, onOpenCodeReveal, onOpenSecureD
   }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2" maxWidth={760}>
-              <Text color="$blue10" fontWeight="800">Digital access center</Text>
-              <H1 color="$color">My Library</H1>
-              <Paragraph color="$gray10">
-                Access digital codes, downloads, subscriptions, courses, and digital service orders. Electronics orders are managed in Orders.
-              </Paragraph>
-            </YStack>
-            <XStack gap="$2">
-              <Button onPress={() => onNavigate('marketplaces')}>Browse Digital Products</Button>
-              <Button onPress={() => onNavigate('home')}>Dashboard</Button>
-            </XStack>
-          </XStack>
-
-          <PremiumCard p="$4">
+    <InteriorShell onNavigate={onNavigate} title="My Library" subtitle="Access your digital purchases" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <PremiumCard p="$4">
             <YStack gap="$4">
               <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
                 <XStack ai="center" bg="$background" br="$6" borderColor="$borderColor" borderWidth={1} flex={1} gap="$2" px="$3" py="$2" width="100%">
@@ -267,7 +253,6 @@ export function BuyerLibraryScreen({ onNavigate, onOpenCodeReveal, onOpenSecureD
             />
           ) : null}
         </YStack>
-      </ScrollView>
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
       {revealStep !== 'closed' ? (
         <RevealOverlay
@@ -282,7 +267,7 @@ export function BuyerLibraryScreen({ onNavigate, onOpenCodeReveal, onOpenSecureD
           onReveal={revealWithConsent}
         />
       ) : null}
-    </YStack>
+    </InteriorShell>
   );
 }
 

@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, with
 import * as DropdownMenu from 'zeego/dropdown-menu';
 import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
+import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
@@ -58,22 +59,12 @@ export function PoliciesScreen({ onNavigate }: Props) {
   if (!dashboard || !detail || !changes) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading policies and terms..." /></YStack>;
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Versioned acceptance and audit</Text>
-              <H1>Policies & Terms</H1>
-              <Paragraph color="$gray10">Review, accept, re-accept, and track required Sharity buyer, seller, digital, refund, payout, marketplace, and country policies.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2"><Button onPress={() => onNavigate('home')}>Back</Button><Button theme="purple" onPress={handleAcceptAll}>Accept All Required</Button><DropdownMenu.Root><DropdownMenu.Trigger><Button>More</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="download">Download Policy Copy</DropdownMenu.Item><DropdownMenu.Item key="changes">View What Changed</DropdownMenu.Item><DropdownMenu.Item key="admin">Admin Preview</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root></XStack>
-          </XStack>
+    <InteriorShell onNavigate={onNavigate} title="Policies & Terms" subtitle="Review and accept policies" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        {dashboard.blockingSummary.blocked ? <PremiumCard p="$4"><YStack gap="$2"><Badge label="Action required" tone="warning" /><Paragraph color="$orange10">{dashboard.blockingSummary.userSafeMessage}</Paragraph></YStack></PremiumCard> : null}
+        <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.policies.selectedTab.set(tab); appStorage.setString('policiesLastTab', tab); }}>{tab}</Button>)}</XStack>
 
-          {dashboard.blockingSummary.blocked ? <PremiumCard p="$4"><YStack gap="$2"><Badge label="Action required" tone="warning" /><Paragraph color="$orange10">{dashboard.blockingSummary.userSafeMessage}</Paragraph></YStack></PremiumCard> : null}
-          <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.policies.selectedTab.set(tab); appStorage.setString('policiesLastTab', tab); }}>{tab}</Button>)}</XStack>
-
-          <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+        <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               {selectedTab === 'Required' ? <Panel title="Required Policies"><PolicyList data={dashboard.requiredPolicies} estimatedItemSize={132} keyExtractor={(item) => item.policyId} renderItem={({ item, index }) => <PolicyRow item={item} index={index} onAccept={() => handleAccept(item)} />} /></Panel> : null}
               {selectedTab === 'Groups' ? <Panel title="Policy Groups"><GroupList data={dashboard.policyGroups} estimatedItemSize={112} keyExtractor={(item) => item.groupCode} renderItem={({ item, index }) => <GroupRow item={item} index={index} />} /></Panel> : null}
@@ -89,8 +80,7 @@ export function PoliciesScreen({ onNavigate }: Props) {
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
-    </YStack>
+    </InteriorShell>
   );
 }
 

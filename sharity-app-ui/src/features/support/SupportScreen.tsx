@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, with
 import * as DropdownMenu from 'zeego/dropdown-menu';
 import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
+import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
@@ -70,23 +71,9 @@ export function SupportScreen({ onNavigate }: Props) {
   const filteredTickets = data.dashboard.recentTickets.filter((ticket) => selectedFilter === 'All tickets' || (selectedFilter === 'Unread' ? ticket.unreadCount > 0 : selectedFilter === 'Action required' ? ticket.actionRequired : ticket.status.includes(selectedFilterKey)));
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Guided help and ticket inbox</Text>
-              <H1>Help & Support</H1>
-              <Paragraph color="$gray10">Get help with orders, refunds, payouts, verification, digital access, account safety, policies, and app issues.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('home')}>Back</Button>
-              <Button theme="purple" onPress={() => appState$.support.selectedTab.set('Create Ticket')}>Create Support Ticket</Button>
-              <DropdownMenu.Root><DropdownMenu.Trigger><Button>More</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="reply" onSelect={() => runAction('reply')}>Reply to Ticket</DropdownMenu.Item><DropdownMenu.Item key="escalate" onSelect={() => runAction('escalate')}>Escalate Ticket</DropdownMenu.Item><DropdownMenu.Item key="close" onSelect={() => runAction('close')}>Close Ticket</DropdownMenu.Item><DropdownMenu.Item key="reopen" onSelect={() => runAction('reopen')}>Reopen Ticket</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          <PremiumCard p="$4">
+    <InteriorShell onNavigate={onNavigate} title="Help & Support" subtitle="Get help with your account" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <PremiumCard p="$4">
             <YStack gap="$3">
               <Input bg="$background" borderColor="$borderColor" placeholder={data.dashboard.searchPlaceholder} value={searchQuery} onChangeText={(value) => appState$.support.searchQuery.set(value)} />
               <Paragraph color="$gray10">For safety, do not share passwords, card details, digital codes, private contact info, raw provider payloads, bank details, or identity/tax/KYC documents in support messages.</Paragraph>
@@ -110,8 +97,7 @@ export function SupportScreen({ onNavigate }: Props) {
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
-    </YStack>
+    </InteriorShell>
   );
 }
 
