@@ -31,7 +31,7 @@ export function InteriorShell({ activeLabel, children, onNavigate, scrollable = 
   );
 }
 
-function Sidebar({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate: (route: AppRoute) => void }) {
+function Sidebar({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate: (route: AppRoute | string) => void }) {
   return (
     <View style={styles.sidebar}>
       <Pressable onPress={() => onNavigate('home')} style={styles.sidebarBrand}>
@@ -59,7 +59,7 @@ function Sidebar({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate
   );
 }
 
-function Header({ onNavigate, subtitle, title }: { onNavigate: (route: AppRoute) => void; subtitle?: string; title: string }) {
+function Header({ onNavigate, subtitle, title }: { onNavigate: (route: AppRoute | string) => void; subtitle?: string; title: string }) {
   return (
     <View style={styles.header}>
       <Pressable onPress={() => onNavigate('home')} style={styles.headerBrand}>
@@ -86,7 +86,7 @@ function Header({ onNavigate, subtitle, title }: { onNavigate: (route: AppRoute)
   );
 }
 
-function BottomTabs({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate: (route: AppRoute) => void }) {
+function BottomTabs({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate: (route: AppRoute | string) => void }) {
   return (
     <View style={styles.bottomTabs}>
       {mobileTabItems.map((item) => (
@@ -124,7 +124,7 @@ function routeForLabel(label: string): AppRoute {
 type Props = {
   activeLabel?: string;
   children: ReactNode;
-  onNavigate: (route: AppRoute) => void;
+  onNavigate: (route: AppRoute | string) => void;
   subtitle?: string;
   title: string;
   scrollable?: boolean;

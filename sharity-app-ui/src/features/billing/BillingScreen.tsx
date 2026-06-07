@@ -1,6 +1,7 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppButton, AppCard } from '../../components/ui';
+import { InteriorShell } from '../../components/appShell';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
@@ -29,18 +30,8 @@ export function BillingScreen({ onNavigate }: BillingScreenProps) {
   const totalSpent = paidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => onNavigate('settings')}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <View>
-          <Text style={styles.headerTitle}>Billing & Payments</Text>
-          <Text style={styles.headerSubtitle}>Manage your invoices and payment methods</Text>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <InteriorShell onNavigate={onNavigate} title="Billing & Payments" subtitle="Manage your invoices and payment methods">
+      <View>
         {/* Summary Cards */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Summary</Text>
@@ -144,8 +135,8 @@ export function BillingScreen({ onNavigate }: BillingScreenProps) {
             Cancel Subscription
           </AppButton>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </InteriorShell>
   );
 }
 
@@ -209,33 +200,6 @@ function InvoiceRow({ invoice, onNavigate }: { invoice: Invoice; onNavigate: (sc
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: spacing.xs
-  },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg
-  },
   section: {
     gap: spacing.md
   },

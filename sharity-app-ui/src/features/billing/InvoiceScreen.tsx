@@ -1,6 +1,7 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppButton, AppCard } from '../../components/ui';
+import { InteriorShell } from '../../components/appShell';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
@@ -68,18 +69,8 @@ export function InvoiceScreen({ invoiceId, onNavigate }: InvoiceScreenProps) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => onNavigate('billing')}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Invoice Details</Text>
-        <Pressable onPress={() => {}}>
-          <Ionicons name="download" size={24} color={colors.primary} />
-        </Pressable>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <InteriorShell onNavigate={onNavigate} title="Invoice Details">
+      <View>
         {/* Invoice Header */}
         <AppCard variant="elevated" padding="large" style={styles.headerCard}>
           <View style={styles.headerTop}>
@@ -244,37 +235,12 @@ export function InvoiceScreen({ invoiceId, onNavigate }: InvoiceScreenProps) {
             Download PDF
           </AppButton>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </InteriorShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center'
-  },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-    paddingBottom: spacing.lg * 2
-  },
   headerCard: {
     paddingHorizontal: 0,
     paddingVertical: 0
