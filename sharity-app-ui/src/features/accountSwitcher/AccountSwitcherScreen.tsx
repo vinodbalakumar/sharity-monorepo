@@ -5,7 +5,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -52,28 +54,9 @@ export function AccountSwitcherScreen({ onNavigate }: Props) {
   }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1180} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2" flex={1}>
-              <Text color="$blue10" fontWeight="800">Buyer, seller, and marketplace mode</Text>
-              <H1>Account Switcher</H1>
-              <Paragraph color="$gray10">Switch between buying, selling, and available marketplaces.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('home')}>Back</Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger><Button icon={<Ionicons name="chevron-down" size={18} />}>Mode</Button></DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item key="buyer" onSelect={() => switchMode('BUYER')}>Switch to Buyer</DropdownMenu.Item>
-                  <DropdownMenu.Item key="seller" onSelect={() => switchMode('SELLER')}>Switch to Seller</DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          {loading ? <CenteredState title="Loading account switcher..." /> : null}
+    <InteriorShell onNavigate={onNavigate} title="Account Switcher" subtitle="Switch between buying, selling, and available marketplaces" scrollable={true}>
+      <YStack gap="$5" maxWidth={1180} mx="auto" width="100%">
+        {loading ? <CenteredState title="Loading account switcher..." /> : null}
           {summary ? (
             <>
               <CurrentSummary summary={summary} />
@@ -87,7 +70,7 @@ export function AccountSwitcherScreen({ onNavigate }: Props) {
                   <PremiumCard p="$5">
                     <YStack gap="$4">
                       <XStack ai="center" jc="space-between" gap="$3">
-                        <H2>Marketplace Modules</H2>
+                        <Text fontSize="$6" fontWeight="900">Marketplace Modules</Text>
                         <Button onPress={() => setMessage('Marketplace preferences saved in mock state.')}>Manage Preferences</Button>
                       </XStack>
                       <ModuleList
@@ -103,9 +86,8 @@ export function AccountSwitcherScreen({ onNavigate }: Props) {
               </XStack>
             </>
           ) : null}
-        </YStack>
-      </ScrollView>
-    </YStack>
+      </YStack>
+    </InteriorShell>
   );
 }
 
@@ -126,11 +108,11 @@ const MarketplaceRow = memo(function MarketplaceRow({ module, index, onSelect }:
 
 function UnavailableReasons({ modules }: { modules: MarketplaceModuleAvailability[] }) {
   const unavailable = modules.filter((module) => module.status !== 'ENABLED');
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Required Actions</H2>{unavailable.map((module) => <XStack key={module.marketplaceCode} ai="center" jc="space-between" gap="$3"><YStack flex={1}><Text fontWeight="900">{module.marketplaceName}</Text><Paragraph color="$gray10">{module.reasonMessage ?? module.status}</Paragraph></YStack><Badge label={module.requiredAction ?? module.status} tone="warning" /></XStack>)}</YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Required Actions</Text>{unavailable.map((module) => <XStack key={module.marketplaceCode} ai="center" jc="space-between" gap="$3"><YStack flex={1}><Text fontWeight="900">{module.marketplaceName}</Text><Paragraph color="$gray10">{module.reasonMessage ?? module.status}</Paragraph></YStack><Badge label={module.requiredAction ?? module.status} tone="warning" /></XStack>)}</YStack></PremiumCard>;
 }
 
 function CenteredState({ title }: { title: string }) {
-  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><H2 ta="center">{title}</H2></YStack></PremiumCard>;
+  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></YStack></PremiumCard>;
 }
 
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
