@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   topLayout: {
     flexDirection: 'row',

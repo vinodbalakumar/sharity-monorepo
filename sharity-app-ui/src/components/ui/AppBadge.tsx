@@ -1,46 +1,99 @@
-import { StyleSheet, Text } from 'react-native';
+import type { ReactNode } from 'react';
+import { View } from 'react-native';
+import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
+import { AppText } from './AppText';
 
-import { colors, radii, spacing, typography } from '../../theme';
-
-type AppBadgeVariant =
-  | 'active'
-  | 'comingSoon'
-  | 'condition'
-  | 'deliveryType'
-  | 'discount'
-  | 'error'
-  | 'info'
-  | 'marketplace'
-  | 'success'
-  | 'verified'
-  | 'warning';
+type AppBadgeVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'default';
+type AppBadgeSize = 'small' | 'medium';
 
 type AppBadgeProps = {
-  label: string;
+  children: ReactNode;
   variant?: AppBadgeVariant;
+  size?: AppBadgeSize;
+  icon?: ReactNode;
+  style?: any;
 };
 
-export function AppBadge({ label, variant = 'info' }: AppBadgeProps) {
-  const filled = ['active', 'discount', 'success', 'verified'].includes(variant);
-  return <Text style={[styles.badge, filled ? styles.filled : styles.outlined]}>{label}</Text>;
-}
-
-const styles = StyleSheet.create({
-  badge: {
-    borderRadius: radii.sm,
-    fontSize: typography.badge.fontSize,
-    fontWeight: typography.badge.fontWeight,
-    overflow: 'hidden',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs
+const variantStyles = {
+  primary: {
+    backgroundColor: colors.primary + '20',
+    color: colors.primary
   },
-  filled: {
-    backgroundColor: colors.black,
-    color: colors.white
+  secondary: {
+    backgroundColor: colors.secondary + '20',
+    color: colors.secondary
   },
-  outlined: {
-    borderColor: colors.border,
-    borderWidth: 1,
-    color: colors.black
+  success: {
+    backgroundColor: colors.success + '20',
+    color: colors.success
+  },
+  warning: {
+    backgroundColor: colors.warning + '20',
+    color: colors.warning
+  },
+  error: {
+    backgroundColor: colors.error + '20',
+    color: colors.error
+  },
+  info: {
+    backgroundColor: colors.info + '20',
+    color: colors.info
+  },
+  default: {
+    backgroundColor: colors.gray200,
+    color: colors.gray700
   }
-});
+};
+
+const sizeStyles = {
+  small: {
+    paddingVertical: spacing['0.5'],
+    paddingHorizontal: spacing.sm,
+    fontSize: 11
+  },
+  medium: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    fontSize: 12
+  }
+};
+
+export function AppBadge({
+  children,
+  variant = 'default',
+  size = 'small',
+  icon,
+  style
+}: AppBadgeProps) {
+  const variantStyle = variantStyles[variant];
+  const sizeStyle = sizeStyles[size];
+
+  return (
+    <View
+      style={[
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingVertical: sizeStyle.paddingVertical,
+          paddingHorizontal: sizeStyle.paddingHorizontal,
+          borderRadius: radius.full,
+          backgroundColor: variantStyle.backgroundColor,
+          alignSelf: 'flex-start'
+        },
+        style
+      ]}
+    >
+      {icon && icon}
+      <AppText
+        variant="badge"
+        color="inherit"
+        style={{ color: variantStyle.color, fontSize: sizeStyle.fontSize }}
+      >
+        {children}
+      </AppText>
+    </View>
+  );
+}

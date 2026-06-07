@@ -1,4 +1,4 @@
-﻿import { appState$ } from '../../state/appState';
+import { appState$ } from '../../state/appState';
 import { placeholderImageUrl } from '../../utils/mockImages';
 import { getBuyerOrders, reportOrderProblem } from '../../services/ordersApi';
 import type {

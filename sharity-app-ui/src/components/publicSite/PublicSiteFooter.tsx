@@ -5,10 +5,10 @@ import { spacing } from '../../theme';
 import type { VisitorContextResponse } from '../../services/publicContentApi';
 
 export type PublicSiteFooterLinkGroup = {
-  links: Array<{
+  links: {
     label: string;
     slug: string;
-  }>;
+  }[];
   title: string;
 };
 

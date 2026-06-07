@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import {
 import { authPalette, authSpacing } from './authTheme';
 import { AuthOptionModal, type AuthOption } from './AuthOptionModal';
 import { LegalContentModal } from './LegalContentModal';
+import { DatePickerModal } from '../../components/ui/DatePickerModal';
 import type { AppRoute } from '../../types/navigation';
 
 type Props = {
@@ -86,6 +87,7 @@ export function CreateAccountScreen({ onNavigate, onSignIn, visitorContext }: Pr
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
   const [genderPickerVisible, setGenderPickerVisible] = useState(false);
   const [privacyPickerVisible, setPrivacyPickerVisible] = useState(false);
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [legalModalSlug, setLegalModalSlug] = useState<'terms' | 'privacy' | null>(null);
 
   const selectedCountry = useMemo(
@@ -168,10 +170,6 @@ export function CreateAccountScreen({ onNavigate, onSignIn, visitorContext }: Pr
     setGenderPickerVisible(false);
   }
 
-  function chooseDateOfBirth(value: string) {
-    update('dateOfBirth', value);
-  }
-
   function choosePrivacy(option: AuthOption) {
     update('privacySetting', option.key);
     setPrivacyPickerVisible(false);
@@ -182,7 +180,7 @@ export function CreateAccountScreen({ onNavigate, onSignIn, visitorContext }: Pr
   }
 
   function openDatePicker() {
-    // Native branch keeps a visible picker button; web uses the native date input directly.
+    setDatePickerVisible(true);
   }
 
   async function submit() {
@@ -403,6 +401,9 @@ export function CreateAccountScreen({ onNavigate, onSignIn, visitorContext }: Pr
                 onPress={openDatePicker}
                 required
                 value={form.dateOfBirth}
+                datePickerVisible={datePickerVisible}
+                onDatePickerOpen={() => setDatePickerVisible(true)}
+                onDatePickerClose={() => setDatePickerVisible(false)}
               />
               <SelectField
                 error={fieldErrors.gender}
@@ -498,6 +499,14 @@ export function CreateAccountScreen({ onNavigate, onSignIn, visitorContext }: Pr
         title={legalModalSlug === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
         visible={legalModalSlug !== null}
       />
+
+      <DatePickerModal
+        visible={datePickerVisible}
+        onClose={() => setDatePickerVisible(false)}
+        onDateSelect={(date) => update('dateOfBirth', date)}
+        value={form.dateOfBirth}
+        title="Select your date of birth"
+      />
     </SafeAreaView>
   );
 }
@@ -552,7 +561,10 @@ function DateField({
   onChangeText,
   onPress,
   required,
-  value
+  value,
+  datePickerVisible,
+  onDatePickerOpen,
+  onDatePickerClose
 }: {
   error?: string;
   label: string;
@@ -560,10 +572,22 @@ function DateField({
   onPress: () => void;
   required?: boolean;
   value: string;
+  datePickerVisible?: boolean;
+  onDatePickerOpen?: () => void;
+  onDatePickerClose?: () => void;
 }) {
   const displayValue = displayDateValue(value);
   const browserValue = browserDateValue(value);
   const isWeb = Platform.OS === 'web';
+
+  const handleCalendarPress = () => {
+    if (isWeb) {
+      onPress();
+    } else if (onDatePickerOpen) {
+      onDatePickerOpen();
+    }
+  };
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>
@@ -591,8 +615,10 @@ function DateField({
             placeholderTextColor={authPalette.textMuted}
             style={styles.dateInput}
             value={displayValue}
+            keyboardType="number-pad"
+            editable={false}
           />
-          <Pressable accessibilityRole="button" hitSlop={10} onPress={onPress} style={styles.dateIconButton}>
+          <Pressable accessibilityRole="button" hitSlop={10} onPress={handleCalendarPress} style={styles.dateIconButton}>
             <Ionicons color={authPalette.textMuted} name="calendar-outline" size={20} />
           </Pressable>
         </View>

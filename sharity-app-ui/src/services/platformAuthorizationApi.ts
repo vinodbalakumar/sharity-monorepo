@@ -74,8 +74,8 @@ export function getMyCapabilities(): Promise<Capability> {
   return getJson<Capability>('/users/me/capabilities');
 }
 
-export function getMyModules(): Promise<Array<{ moduleCode: string; moduleName: string; status: string; displayOrder: number; providerAccessEnabled: boolean; requiresProviderApproval: boolean; availableToCustomer: boolean; providerAccessActive: boolean }>> {
-  return getJson<Array<{ moduleCode: string; moduleName: string; status: string; displayOrder: number; providerAccessEnabled: boolean; requiresProviderApproval: boolean; availableToCustomer: boolean; providerAccessActive: boolean }>>('/users/me/modules');
+export function getMyModules(): Promise<{ moduleCode: string; moduleName: string; status: string; displayOrder: number; providerAccessEnabled: boolean; requiresProviderApproval: boolean; availableToCustomer: boolean; providerAccessActive: boolean }[]> {
+  return getJson<{ moduleCode: string; moduleName: string; status: string; displayOrder: number; providerAccessEnabled: boolean; requiresProviderApproval: boolean; availableToCustomer: boolean; providerAccessActive: boolean }[]>('/users/me/modules');
 }
 
 export function createProviderAccount(request: {

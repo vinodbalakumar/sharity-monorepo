@@ -1,9 +1,9 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, Card, Input, Paragraph, YStack, XStack } from 'tamagui';
+import { Button, Card, Input, Paragraph, XStack } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { colors, radius, spacing } from '../../theme';
@@ -30,6 +30,7 @@ type GenderOption = {
 };
 
 const privacyOptions = ['PRIVATE', 'VISIBLE_AFTER_ORDER', 'PUBLIC_WITHIN_SHARITY'] as const;
+const PROFILE_IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
 export function ProfilePrivacyScreen({ onNavigate }: Props) {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -173,6 +174,10 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
         filePayload = blob as Blob & { name?: string };
         filePayload.name = asset.fileName ?? 'profile-image.jpg';
       }
+      const fileSize = typeof filePayload.size === 'number' ? filePayload.size : 0;
+      if (fileSize > PROFILE_IMAGE_MAX_SIZE_BYTES) {
+        throw new Error('Profile photo must be 5 MB or smaller.');
+      }
       const updated = await uploadCurrentUserProfileImage(filePayload);
       setForm((current) => ({ ...current, profileImageUrl: updated.profileImageUrl }));
       setUser((current) => current ? { ...current, profile: { ...current.profile, profileImageUrl: updated.profileImageUrl } } : current);
@@ -298,7 +303,12 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                       Revoke All
                     </Button>
                   </View>
-                  <View style={styles.sessionList}>
+                  <ScrollView
+                    contentContainerStyle={styles.sessionList}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator
+                    style={styles.sessionScroll}
+                  >
                     {sessions.length === 0 ? <Paragraph color="$gray10">No active sessions found.</Paragraph> : null}
                     {sessions.map((session) => (
                       <View key={session.id} style={styles.sessionRow}>
@@ -312,7 +322,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                         </Button>
                       </View>
                     ))}
-                  </View>
+                  </ScrollView>
                 </Card>
               </View>
 
@@ -338,7 +348,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                         </View>
                         <View style={styles.imageControlCopy}>
                           <Text style={styles.imageControlTitle}>{form.profileImageUrl ? 'Photo on file' : 'No profile photo yet'}</Text>
-                          <Text style={styles.imageControlText}>Upload a new photo from your device. The raw image URL stays hidden.</Text>
+                          <Text style={styles.imageControlText}>Upload a JPG, PNG, or WEBP photo from your device. Max size: 5 MB.</Text>
                           <View style={styles.imageControlActions}>
                             <Pressable
                               accessibilityRole="button"
@@ -360,7 +370,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                               </Pressable>
                             ) : null}
                           </View>
-                          <Text style={styles.photoHint}>{uploadingImage ? 'Uploading...' : 'Stored in your account profile.'}</Text>
+                          <Text style={styles.photoHint}>{uploadingImage ? 'Uploading...' : 'Stored in your account profile. The page refreshes after upload.'}</Text>
                         </View>
                       </View>
                     </View>
@@ -535,7 +545,7 @@ function Pill({ label, tone }: { label: string; tone: 'success' | 'warning' | 'i
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   container: {
     gap: spacing.lg,
@@ -614,6 +624,9 @@ const styles = StyleSheet.create({
   sessionActions: {
     alignItems: 'flex-end',
     marginBottom: spacing.sm
+  },
+  sessionScroll: {
+    maxHeight: 320
   },
   sessionList: {
     gap: spacing.sm

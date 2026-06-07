@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, Card, Input, Paragraph, YStack, XStack } from 'tamagui';
+import { Button, Card, Input, Paragraph } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { colors, radius, spacing } from '../../theme';
@@ -215,7 +215,7 @@ function Pill({ label, tone }: { label: string; tone: 'success' | 'warning' | 'i
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   container: {
     gap: spacing.lg,

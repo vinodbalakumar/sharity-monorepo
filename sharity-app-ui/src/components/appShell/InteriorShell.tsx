@@ -1,13 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { mobileTabItems, sidebarItems } from '../../features/home/dashboardConfig';
-import { radii, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
-
-type IconName = ComponentProps<typeof Ionicons>['name'];
 
 type Props = {
   activeLabel?: string;
@@ -278,7 +276,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   contentNonScroll: {
     flex: 1,

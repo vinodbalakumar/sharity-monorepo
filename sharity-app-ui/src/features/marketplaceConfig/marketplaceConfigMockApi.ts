@@ -1,4 +1,5 @@
 import type { MarketplaceConfigDashboard, MarketplaceConfigDetail } from './marketplaceConfigTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 const now = new Date().toISOString();
 
@@ -74,4 +75,3 @@ function config(configId: string, countryCode: string, marketplaceCode: string, 
     updatedAt: now
   };
 }
-import { placeholderImageUrl } from '../../utils/mockImages';

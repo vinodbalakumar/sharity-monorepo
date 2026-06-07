@@ -1,4 +1,4 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useState, type ComponentProps, type ReactElement } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -157,7 +157,7 @@ function formatDate(value: string) {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   container: {
     gap: spacing.lg,

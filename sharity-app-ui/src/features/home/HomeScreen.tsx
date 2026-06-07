@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   hero: {
     backgroundColor: surface.hero,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     overflow: 'hidden',
-    padding: spacing.xxl,
+    padding: spacing['2xl'],
     shadowColor: surface.shadow,
     shadowOffset: { height: 16, width: 0 },
     shadowOpacity: 0.22,

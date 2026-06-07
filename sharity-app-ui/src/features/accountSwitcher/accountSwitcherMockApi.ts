@@ -1,4 +1,5 @@
 import type { AccountMode, AccountSwitcherResponse, MarketplaceModuleAvailability, SwitchAccountModeResponse } from './accountSwitcherTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 const modules: MarketplaceModuleAvailability[] = [
   marketplace('DIGITAL', 'Digital Marketplace', 'ENABLED', true, true),
@@ -82,4 +83,3 @@ function marketplace(marketplaceCode: string, marketplaceName: string, status: M
     comingSoon: status === 'COMING_SOON'
   };
 }
-import { placeholderImageUrl } from '../../utils/mockImages';

@@ -119,18 +119,43 @@ export function startGoogleLink(): void {
 
 export async function uploadCurrentUserProfileImage(file: Blob & { name?: string }): Promise<{ profileImageUrl: string }> {
   const formData = new FormData();
-  formData.append('file', file as never, file.name ?? 'profile-image.jpg');
+  const fileName = file.name ?? 'profile-image.jpg';
+  formData.append('file', file as never, fileName);
+
   const csrf = await getBffCsrfToken();
-  const response = await fetch(`${userBaseUrl}/users/me/profile-image`, {
-    body: formData,
-    credentials: 'include',
-    headers: csrf.csrfToken ? { 'X-CSRF-TOKEN': csrf.csrfToken } : undefined,
-    method: 'POST'
-  });
-  if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+  const headers: Record<string, string> = {};
+  if (csrf.csrfToken) {
+    headers['X-CSRF-TOKEN'] = csrf.csrfToken;
   }
-  return response.json() as Promise<{ profileImageUrl: string }>;
+
+  try {
+    const response = await fetch(`${userBaseUrl}/users/me/profile-image`, {
+      body: formData,
+      credentials: 'include',
+      headers,
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readErrorMessage(response);
+      console.error('Profile image upload failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorMessage,
+        fileName
+      });
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json() as { profileImageUrl: string };
+    console.log('Profile image uploaded successfully:', result);
+    return result;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Failed to fetch')) {
+      throw new Error('Network error: Check your connection and try again.');
+    }
+    throw error;
+  }
 }
 
 async function readErrorMessage(response: Response) {

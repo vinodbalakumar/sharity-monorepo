@@ -1,4 +1,4 @@
-﻿import { getBuyerOrders, type BuyerOrderItem } from '../../services/ordersApi';
+import { getBuyerOrders, type BuyerOrderItem } from '../../services/ordersApi';
 import { getMarketplaceListing } from '../../services/marketplaceApi';
 import type { OrderDetailsResponse, OrderEligibility, OrderTimelineEvent } from './orderDetailsTypes';
 

@@ -191,10 +191,6 @@ export function CompleteSocialRegistrationScreen({ onCancel, onNavigate, onSignI
     setPrivacyPickerVisible(false);
   }
 
-  function chooseDateOfBirth(displayValue: string) {
-    update('dateOfBirth', displayValue);
-  }
-
   function openLegal(slug: 'terms' | 'privacy') {
     setLegalModalSlug(slug);
   }

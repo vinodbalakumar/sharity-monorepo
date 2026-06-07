@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
-import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 
@@ -44,7 +43,6 @@ import { WalletScreen } from './features/wallet/WalletScreen';
 import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { getVisitorContext, type VisitorContextResponse } from './services/publicContentApi';
 import { checkSession } from './services/sessionService';
-import { paperTheme } from './theme';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
@@ -206,8 +204,7 @@ export default function App() {
 
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
-      <PaperProvider theme={paperTheme}>
-        <SafeAreaProvider>
+      <SafeAreaProvider>
           <StatusBar style="dark" />
           {route === 'splash' ? <SplashScreen isTakingLonger={isTakingLonger} /> : null}
           {route === 'welcome' ? (
@@ -404,7 +401,6 @@ export default function App() {
           ) : null}
           {route === 'support' ? <SupportScreen onNavigate={setRoute} /> : null}
         </SafeAreaProvider>
-      </PaperProvider>
     </TamaguiProvider>
   );
 }

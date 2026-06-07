@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppLoadingIndicator } from '../../components/ui';
+import { AppText, Column } from '../../components/ui';
 import { colors, spacing } from '../../theme';
 
 type SplashScreenProps = {
@@ -11,88 +11,84 @@ type SplashScreenProps = {
 export function SplashScreen({ isTakingLonger }: SplashScreenProps) {
   const { width } = useWindowDimensions();
   const isLarge = width >= 768;
+  const logoSize = isLarge ? 92 : 72;
+  const logoRadius = isLarge ? 30 : 24;
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={[styles.content, isLarge && styles.contentLarge]}>
-        <View style={[styles.logo, isLarge && styles.logoLarge]}>
-          <Text style={[styles.logoLetter, isLarge && styles.logoLetterLarge]}>S</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <Column
+        align="center"
+        justify="center"
+        gap="md"
+        style={{
+          flex: 1,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: isLarge ? spacing['6xl'] : spacing.xl,
+          maxWidth: 480,
+          marginHorizontal: 'auto',
+          width: '100%'
+        }}
+      >
+        {/* Logo */}
+        <View
+          style={{
+            width: logoSize,
+            height: logoSize,
+            borderRadius: logoRadius,
+            borderWidth: 2,
+            borderColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.surfaceVariant
+          }}
+        >
+          <AppText
+            variant={isLarge ? 'hero' : 'display'}
+            color="primary"
+            weight="bold"
+            style={{ fontSize: isLarge ? 44 : 34 }}
+          >
+            S
+          </AppText>
         </View>
-        <Text style={[styles.appName, isLarge && styles.appNameLarge]}>Sharity</Text>
-        <Text style={[styles.tagline, isLarge && styles.taglineLarge]}>The only Trusted marketplace.</Text>
-        <AppLoadingIndicator style={styles.loader} />
-        {isTakingLonger ? <Text style={styles.delayText}>Taking longer than expected...</Text> : null}
-      </View>
+
+        {/* App name */}
+        <AppText
+          variant={isLarge ? 'hero' : 'pageTitle'}
+          color="primary"
+          weight="bold"
+          style={{ marginTop: spacing.lg }}
+        >
+          Sharity
+        </AppText>
+
+        {/* Tagline */}
+        <AppText
+          variant={isLarge ? 'body' : 'bodySmall'}
+          color="secondary"
+          align="center"
+          style={{ marginTop: spacing.sm }}
+        >
+          The only Trusted marketplace.
+        </AppText>
+
+        {/* Loading indicator */}
+        <View style={{ marginTop: spacing.lg }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+
+        {/* Delay message */}
+        {isTakingLonger && (
+          <AppText
+            variant="caption"
+            color="muted"
+            align="center"
+            style={{ marginTop: spacing.md }}
+          >
+            Taking longer than expected...
+          </AppText>
+        )}
+      </Column>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.white,
-    flex: 1
-  },
-  content: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    marginHorizontal: 'auto',
-    maxWidth: 480,
-    padding: spacing.xl,
-    width: '100%'
-  },
-  contentLarge: {
-    padding: spacing.xxxl
-  },
-  logo: {
-    alignItems: 'center',
-    borderColor: colors.black,
-    borderRadius: 24,
-    borderWidth: 2,
-    height: 72,
-    justifyContent: 'center',
-    width: 72
-  },
-  logoLarge: {
-    borderRadius: 30,
-    height: 92,
-    width: 92
-  },
-  logoLetter: {
-    color: colors.black,
-    fontSize: 34,
-    fontWeight: '900'
-  },
-  logoLetterLarge: {
-    fontSize: 44
-  },
-  appName: {
-    color: colors.black,
-    fontSize: 34,
-    fontWeight: '900',
-    marginTop: spacing.lg
-  },
-  appNameLarge: {
-    fontSize: 44
-  },
-  tagline: {
-    color: colors.black,
-    fontSize: 16,
-    lineHeight: 24,
-    marginTop: spacing.sm,
-    textAlign: 'center'
-  },
-  taglineLarge: {
-    fontSize: 18,
-    lineHeight: 28
-  },
-  loader: {
-    marginTop: spacing.lg
-  },
-  delayText: {
-    color: colors.gray700,
-    fontSize: 13,
-    marginTop: spacing.md,
-    textAlign: 'center'
-  }
-});

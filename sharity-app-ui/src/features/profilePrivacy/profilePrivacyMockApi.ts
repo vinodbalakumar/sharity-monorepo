@@ -1,4 +1,5 @@
 import type { ProfilePrivacySettingsResponse } from './profilePrivacyTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 const now = Date.now();
 
@@ -124,4 +125,3 @@ function badge(badgeType: string, label: string, status: string, publicVisible: 
 function blocked(blockedUserId: string, displayAlias: string, role: 'BUYER' | 'SELLER', blockedReason: string, daysAgo: number, relatedEntityReference: string) {
   return { blockedUserId, displayAlias, role, blockedReason, blockedAt: new Date(now - daysAgo * 24 * 60 * 60 * 1000).toISOString(), relatedEntityReference, canUnblock: true };
 }
-import { placeholderImageUrl } from '../../utils/mockImages';

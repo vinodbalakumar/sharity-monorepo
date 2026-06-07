@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   layout: {
     alignItems: 'flex-start',

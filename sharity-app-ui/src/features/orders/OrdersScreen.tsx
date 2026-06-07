@@ -1,4 +1,4 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps } from 'react';
 import {
@@ -219,27 +219,6 @@ export function OrdersScreen({ onNavigate, onOpenOrderDetails, onOpenReceipt, on
         visible={filterSheetOpen}
       />
     </InteriorShell>
-  );
-}
-
-function Header({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.header}>
-      <View style={styles.headerLeft}>
-        <View style={styles.brandAvatar}>
-          <Text style={styles.brandAvatarText}>S</Text>
-        </View>
-        <Text style={styles.headerTitle}>Orders</Text>
-      </View>
-
-      <Pressable
-        accessibilityLabel="Open profile"
-        onPress={() => onNavigate('profilePrivacy')}
-        style={styles.userAvatar}
-      >
-        <Text style={styles.userAvatarText}>JD</Text>
-      </Pressable>
-    </View>
   );
 }
 

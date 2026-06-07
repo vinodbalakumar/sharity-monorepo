@@ -12,6 +12,7 @@ import type {
   SupportTicketSummary,
   SupportTicketTimelineEvent
 } from './supportTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 const now = new Date().toISOString();
 
@@ -172,4 +173,3 @@ function ticketTimeline(): SupportTicketTimelineEvent[] {
     { eventId: 'support-time-3', eventType: 'WAITING_FOR_SUPPORT', title: 'Waiting for support', message: 'Support team placeholder will review this ticket.', actorType: 'SHARITY', status: 'PENDING', timestamp: now }
   ];
 }
-import { placeholderImageUrl } from '../../utils/mockImages';

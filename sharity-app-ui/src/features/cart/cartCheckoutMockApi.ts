@@ -1,4 +1,5 @@
 import type { CartResponse, CartSellerGroup, CheckoutPreviewResponse } from './cartCheckoutTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 let digitalTermsAccepted = false;
 let sellerCouponApplied = true;
@@ -153,4 +154,3 @@ function item(cartItemId: string, productTitle: string, productType: string, del
     validationStatus: 'VALID'
   };
 }
-import { placeholderImageUrl } from '../../utils/mockImages';

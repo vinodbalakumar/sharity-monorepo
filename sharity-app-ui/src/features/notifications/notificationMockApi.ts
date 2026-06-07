@@ -1,4 +1,5 @@
 import type { NotificationActionResponse, NotificationCenterDashboardResponse, NotificationCenterScreenData, NotificationFilter, NotificationItem, NotificationTimeGroup, NotificationUnreadCounts } from './notificationTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 const now = Date.now();
 const iso = (hoursAgo: number) => new Date(now - hoursAgo * 60 * 60 * 1000).toISOString();
@@ -125,4 +126,3 @@ function matches(item: NotificationItem, filter: NotificationFilter) { if (filte
 function filters(): NotificationFilter[] { return ['All', 'Buyer', 'Seller', 'Orders', 'Seller orders', 'Payments', 'Seller acceptance', 'Digital delivery', 'Refunds', 'Disputes', 'Payouts', 'Verification', 'Support', 'Security', 'Marketplace', 'Coupons/rewards', 'Policies', 'Listing moderation', 'Admin announcements', 'Unread', 'Critical', 'Action required', 'Archived']; }
 function hours(item: NotificationItem) { return Math.max(0, (now - new Date(item.createdAt).getTime()) / (60 * 60 * 1000)); }
 function response(notificationId: string, actionCode: string, allowed: boolean, message: string): NotificationActionResponse { return { notificationId, actionCode, allowed, route: 'notifications', message, requiresReauth: false, updatedAt: new Date().toISOString() }; }
-import { placeholderImageUrl } from '../../utils/mockImages';

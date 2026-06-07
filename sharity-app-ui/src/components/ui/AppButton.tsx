@@ -1,32 +1,155 @@
 import type { ReactNode } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
-import { Button } from 'react-native-paper';
+import { ActivityIndicator, Pressable } from 'react-native';
+import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
+import { typography } from '../../theme/typography';
+import { AppText } from './AppText';
 
-type AppButtonVariant = 'danger' | 'disabled' | 'ghost' | 'outline' | 'primary' | 'secondary' | 'success' | 'warning';
-type AppButtonSize = 'fullWidth' | 'large' | 'medium' | 'small';
+type AppButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'danger' | 'success' | 'ghost' | 'outline';
+type AppButtonSize = 'small' | 'medium' | 'large' | 'fullWidth';
 
 type AppButtonProps = {
   children: ReactNode;
-  disabled?: boolean;
-  icon?: string;
-  onPress?: () => void;
-  size?: AppButtonSize;
-  style?: StyleProp<ViewStyle>;
   variant?: AppButtonVariant;
+  size?: AppButtonSize;
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: ReactNode;
+  iconPosition?: 'left' | 'right';
+  onPress?: () => void;
+  style?: any;
 };
 
-export function AppButton({ children, disabled, icon, onPress, size = 'medium', style, variant = 'primary' }: AppButtonProps) {
-  const mode = variant === 'ghost' ? 'text' : variant === 'outline' ? 'outlined' : 'contained';
+const variantStyles: Record<AppButtonVariant, any> = {
+  primary: {
+    bg: colors.primary,
+    bgHover: colors.primaryDark,
+    bgPress: colors.primaryDark,
+    bgDisabled: colors.disabledBg,
+    text: colors.white,
+    textDisabled: colors.disabled
+  },
+  secondary: {
+    bg: colors.secondary,
+    bgHover: colors.secondaryDark,
+    bgPress: colors.secondaryDark,
+    bgDisabled: colors.disabledBg,
+    text: colors.white,
+    textDisabled: colors.disabled
+  },
+  tertiary: {
+    bg: colors.tertiary,
+    bgHover: colors.tertiaryDark,
+    bgPress: colors.tertiaryDark,
+    bgDisabled: colors.disabledBg,
+    text: colors.white,
+    textDisabled: colors.disabled
+  },
+  danger: {
+    bg: colors.error,
+    bgHover: colors.errorDark,
+    bgPress: colors.errorDark,
+    bgDisabled: colors.disabledBg,
+    text: colors.white,
+    textDisabled: colors.disabled
+  },
+  success: {
+    bg: colors.success,
+    bgHover: colors.successDark,
+    bgPress: colors.successDark,
+    bgDisabled: colors.disabledBg,
+    text: colors.white,
+    textDisabled: colors.disabled
+  },
+  ghost: {
+    bg: 'transparent',
+    bgHover: colors.gray100,
+    bgPress: colors.gray200,
+    bgDisabled: 'transparent',
+    text: colors.textPrimary,
+    textDisabled: colors.disabled
+  },
+  outline: {
+    bg: colors.white,
+    bgHover: colors.gray50,
+    bgPress: colors.gray100,
+    bgDisabled: colors.disabledBg,
+    text: colors.textPrimary,
+    textDisabled: colors.disabled,
+    border: colors.border
+  }
+};
+
+const sizeStyles = {
+  small: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 32
+  },
+  medium: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: 40
+  },
+  large: {
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    minHeight: 48
+  },
+  fullWidth: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: 44,
+    width: '100%'
+  }
+};
+
+export function AppButton({
+  children,
+  variant = 'primary',
+  size = 'medium',
+  disabled = false,
+  loading = false,
+  icon,
+  iconPosition = 'left',
+  onPress,
+  style
+}: AppButtonProps) {
+  const styles = variantStyles[variant];
+  const sizeStyle = sizeStyles[size === 'fullWidth' ? size : size];
 
   return (
-    <Button
-      disabled={disabled || variant === 'disabled'}
-      icon={icon}
-      mode={mode}
+    <Pressable
       onPress={onPress}
-      style={[size === 'fullWidth' && { width: '100%' }, style]}
+      disabled={disabled || loading}
+      style={({ pressed }) => [
+        {
+          backgroundColor: disabled ? styles.bgDisabled : pressed ? styles.bgPress : styles.bgHover ?? styles.bg,
+          borderRadius: radius.lg,
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: spacing.sm,
+          ...sizeStyle,
+          ...(variant === 'outline' && { borderWidth: 1, borderColor: styles.border ?? colors.border })
+        },
+        style
+      ]}
     >
-      {children}
-    </Button>
+      {loading && <ActivityIndicator color={disabled ? styles.textDisabled : styles.text} size="small" />}
+      {!loading && icon && iconPosition === 'left' && icon}
+      <AppText
+        color="inherit"
+        style={{
+          color: disabled ? styles.textDisabled : styles.text,
+          fontWeight: '600',
+          fontSize: typography.button.fontSize
+        }}
+      >
+        {children}
+      </AppText>
+      {!loading && icon && iconPosition === 'right' && icon}
+    </Pressable>
   );
 }

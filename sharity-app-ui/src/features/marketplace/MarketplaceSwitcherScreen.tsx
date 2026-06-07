@@ -10,7 +10,6 @@ import {
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { AppLoadingIndicator } from '../../components/ui';
-import { mobileTabItems, sidebarItems } from '../home/dashboardConfig';
 import { buildDashboardDeals, buildDashboardServices, type DashboardDeal, type DashboardService } from '../home/dashboardData';
 import { getMarketplaceHome, getMarketplaceListings } from '../../services/marketplaceApi';
 import { colors, radii, spacing } from '../../theme';
@@ -137,56 +136,6 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
         />
       </ScrollView>
     </InteriorShell>
-  );
-}
-
-function SwitcherSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.sidebar}>
-      <View style={styles.sidebarBrand}>
-        <View style={styles.brandMark}>
-          <Text style={styles.brandLetter}>S</Text>
-        </View>
-        <View>
-          <Text style={styles.sidebarTitle}>Sharity</Text>
-          <Text style={styles.sidebarSubtitle}>United States</Text>
-        </View>
-      </View>
-      <View style={styles.sidebarList}>
-        {sidebarItems.map((item) => {
-          const active = item.label === 'Marketplace';
-          return (
-            <Pressable
-              key={item.label}
-              onPress={() => onNavigate(routeForLabel(item.label))}
-              style={[styles.sidebarItem, active && styles.sidebarItemActive]}
-            >
-              <Ionicons color={active ? colors.white : colors.gray700} name={item.icon} size={19} />
-              <Text style={[styles.sidebarItemText, active && styles.sidebarItemTextActive]}>{item.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-function SwitcherHeader({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.header}>
-      <View>
-        <Text style={styles.headerTitle}>Marketplaces</Text>
-        <Text style={styles.headerSubtitle}>Select a marketplace to focus the list below.</Text>
-      </View>
-      <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Notifications" onPress={() => onNavigate('notifications')} style={styles.iconButton}>
-          <Ionicons color={colors.black} name="notifications-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Profile" onPress={() => onNavigate('profilePrivacy')} style={styles.iconButton}>
-          <Ionicons color={colors.black} name="person-outline" size={20} />
-        </Pressable>
-      </View>
-    </View>
   );
 }
 
@@ -399,26 +348,6 @@ function SelectedMarketplaceCard({
   );
 }
 
-function SwitcherBottomTabs({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.bottomTabs}>
-      {mobileTabItems.map((item) => {
-        const active = item.label === 'Marketplace';
-        return (
-          <Pressable
-            key={item.label}
-            onPress={() => onNavigate(routeForLabel(item.label))}
-            style={styles.bottomTab}
-          >
-            <Ionicons color={active ? colors.white : colors.gray700} name={item.icon} size={19} />
-            <Text style={[styles.bottomTabText, active && styles.bottomTabTextActive]}>{item.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 function LoadingRow({ label }: { label: string }) {
   return (
     <View style={styles.stateRow}>
@@ -453,28 +382,6 @@ function formatMoney(value: number, currencyCode: string) {
     return new Intl.NumberFormat('en-US', { currency: currencyCode, style: 'currency' }).format(value);
   } catch {
     return `${currencyCode} ${value.toFixed(2)}`;
-  }
-}
-
-function routeForLabel(label: string): AppRoute {
-  switch (label) {
-    case 'Marketplace':
-      return 'marketplaces';
-    case 'Orders':
-    case 'My Orders':
-      return 'orders';
-    case 'Rewards':
-      return 'rewards';
-    case 'Cart':
-      return 'cart';
-    case 'Sell':
-      return 'sellerVerification';
-    case 'Wallet':
-      return 'wallet';
-    case 'Profile':
-      return 'profilePrivacy';
-    default:
-      return 'home';
   }
 }
 
@@ -593,7 +500,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   selectorCard: {
     backgroundColor: colors.white,

@@ -6,6 +6,7 @@ import type {
   RewardCampaignSummary,
   RewardsDashboardResponse
 } from './rewardsTypes';
+import { placeholderImageUrl } from '../../utils/mockImages';
 
 const now = Date.now();
 const dayMs = 24 * 60 * 60 * 1000;
@@ -234,4 +235,3 @@ function history(historyId: string, type: CreditType, amount: number, status: st
     termsSummary: 'Backend-controlled eligibility, refundability, and expiry rules.'
   };
 }
-import { placeholderImageUrl } from '../../utils/mockImages';

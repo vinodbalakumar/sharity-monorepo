@@ -10,11 +10,9 @@ import {
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { AppSearchBar } from '../../components/ui';
-import { mobileTabItems, sidebarItems } from '../home/dashboardConfig';
 import {
   electronicsCategories,
   electronicsConditionIcons,
-  electronicsFilters,
   electronicsProducts,
   sortOptions,
   type ElectronicsProduct
@@ -137,97 +135,6 @@ export function ElectronicsMarketplaceHomeScreen({ onNavigate, onOpenProduct }: 
   );
 }
 
-function Header({ isDesktop, onNavigate }: { isDesktop: boolean; onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.header}>
-      {!isDesktop ? (
-        <Pressable accessibilityLabel="Back to marketplace switcher" onPress={() => onNavigate('marketplaces')} style={styles.iconButton}>
-          <Ionicons color={colors.black} name="chevron-back" size={20} />
-        </Pressable>
-      ) : null}
-      <Text style={styles.headerTitle}>{isDesktop ? 'Electronics & Gadgets' : 'Electronics'}</Text>
-      <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Cart" style={styles.iconButton}>
-          <Ionicons color={colors.black} name="cart-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Notifications" style={styles.iconButton}>
-          <Ionicons color={colors.black} name="notifications-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Profile" style={styles.iconButton}>
-          <Ionicons color={colors.black} name="person-outline" size={20} />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function Sidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.sidebar}>
-      <View style={styles.sidebarBrand}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logoText}>S</Text>
-        </View>
-        <Text style={styles.sidebarTitle}>Sharity</Text>
-      </View>
-      <View style={styles.sidebarList}>
-        {sidebarItems.map((item) => {
-          const active = item.label === 'Marketplace';
-          return (
-            <Pressable
-              key={item.label}
-              onPress={() => {
-                if (item.label === 'Home') {
-                  onNavigate('home');
-                }
-                if (item.label === 'Marketplace') {
-                  onNavigate('marketplaces');
-                }
-              }}
-              style={[styles.sidebarItem, active && styles.sidebarItemActive]}
-            >
-              <Ionicons color={active ? colors.white : colors.black} name={item.icon} size={19} />
-              <Text style={[styles.sidebarItemText, active && styles.sidebarItemTextActive]}>{item.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-function FilterSidebar() {
-  const groups: [string, string[]][] = [
-    ['Category', electronicsCategories],
-    ['Brand', electronicsFilters.brand],
-    ['Condition', electronicsFilters.condition],
-    ['Price Range', electronicsFilters.priceRange],
-    ['Location', electronicsFilters.location],
-    ['Shipping', electronicsFilters.shipping],
-    ['Returns', electronicsFilters.returnEligible],
-    ['Warranty', electronicsFilters.warranty],
-    ['Seller', electronicsFilters.sellerVerification],
-    ['Rating', electronicsFilters.rating],
-    ['Discount', electronicsFilters.discount]
-  ];
-
-  return (
-    <ScrollView contentContainerStyle={styles.filterSidebar}>
-      <Text style={styles.filterTitle}>Filters</Text>
-      {groups.map(([title, values]) => (
-        <View key={title} style={styles.filterGroup}>
-          <Text style={styles.filterGroupTitle}>{title}</Text>
-          {(values as string[]).slice(0, 5).map((value) => (
-            <Text key={value} style={styles.filterValue}>
-              {value}
-            </Text>
-          ))}
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
-
 function ElectronicsProductCard({ onOpenProduct, product }: { onOpenProduct: (productId: string) => void; product: ElectronicsProduct }) {
   const conditionIcon = electronicsConditionIcons[product.condition];
   const discount = product.discountLabel ?? calculateDiscount(product);
@@ -259,30 +166,6 @@ function ElectronicsProductCard({ onOpenProduct, product }: { onOpenProduct: (pr
       </View>
       <Text style={styles.linkText}>View Product</Text>
     </Pressable>
-  );
-}
-
-function BottomTabs({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.bottomTabs}>
-      {mobileTabItems.map((item) => (
-        <Pressable
-          key={item.label}
-          onPress={() => {
-            if (item.label === 'Home') {
-              onNavigate('home');
-            }
-            if (item.label === 'Marketplace') {
-              onNavigate('marketplaces');
-            }
-          }}
-          style={styles.bottomTab}
-        >
-          <Ionicons color={colors.black} name={item.icon} size={19} />
-          <Text style={[styles.bottomTabText, item.label === 'Marketplace' && styles.bottomTabTextActive]}>{item.label}</Text>
-        </Pressable>
-      ))}
-    </View>
   );
 }
 
@@ -436,7 +319,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl
+    paddingBottom: spacing['6xl']
   },
   hero: {
     borderColor: colors.border,
