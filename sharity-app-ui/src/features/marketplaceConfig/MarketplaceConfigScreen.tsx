@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -40,28 +42,14 @@ export function MarketplaceConfigScreen({ onNavigate }: Props) {
     setMessage(result.message);
   }
 
-  if (!dashboard) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading country and marketplace settings..." /></YStack>;
+  if (!dashboard) return <InteriorShell onNavigate={onNavigate} title="Marketplace Settings" subtitle="Please wait..." scrollable={false}><Centered title="Loading country and marketplace settings..." /></InteriorShell>;
 
   const configs = dashboard.configs.filter((item) => item.countryCode === selectedCountry);
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Global marketplace control center</Text>
-              <H1>Country & Marketplace Settings</H1>
-              <Paragraph color="$gray10">Configure country availability, buyer/seller access, eligibility, feature flags, display order, simulation, and audit snapshots.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('home')}>Back</Button>
-              <Button theme="purple" onPress={handleSave}>Save Config</Button>
-              <DropdownMenu.Root><DropdownMenu.Trigger><Button>More</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="create">Create Marketplace Config</DropdownMenu.Item><DropdownMenu.Item key="simulate">Simulate Availability</DropdownMenu.Item><DropdownMenu.Item key="audit">View Audit Log</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.marketplaceConfig.selectedTab.set(tab); appStorage.setString('marketplaceConfigLastTab', tab); }}>{tab}</Button>)}</XStack>
+    <InteriorShell onNavigate={onNavigate} title="Country & Marketplace Settings" subtitle="Configure country availability, buyer/seller access, eligibility, and feature flags" scrollable={true}>
+      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
+        <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.marketplaceConfig.selectedTab.set(tab); appStorage.setString('marketplaceConfigLastTab', tab); }}>{tab}</Button>)}</XStack>
 
           <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
@@ -78,9 +66,8 @@ export function MarketplaceConfigScreen({ onNavigate }: Props) {
               {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
           </XStack>
-        </YStack>
-      </ScrollView>
-    </YStack>
+      </YStack>
+    </InteriorShell>
   );
 }
 
@@ -100,9 +87,9 @@ function Simulator({ dashboard }: { dashboard: MarketplaceConfigDashboard }) {
 }
 
 function AuditRow({ audit, index }: { audit: MarketplaceConfigAuditLogItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={audit.action} meta={`${audit.actorName} / ${audit.countryCode} ${audit.marketplaceCode} / ${audit.reason}`} badge={`v${audit.version}`} tone="info" /></Animated.View>; }
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
 function Row({ title, meta, badge, tone, action }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success'; action?: () => void }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} />{action ? <Button onPress={action}>Select</Button> : null}</XStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function toneFor(status: string) { return status === 'ENABLED' ? 'success' : status === 'DISABLED' || status === 'SUSPENDED' ? 'critical' : status === 'COMING_SOON' || status.includes('REQUIRES') || status === 'PILOT_BETA' ? 'warning' : 'info'; }
