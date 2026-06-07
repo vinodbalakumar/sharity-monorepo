@@ -3,7 +3,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-ENV EXPO_PUBLIC_API_BASE_URL=
+ARG EXPO_PUBLIC_BFF_BASE_URL=https://vinodbalakumar.com/bff
+ARG EXPO_PUBLIC_MARKETPLACE_BASE_URL=https://vinodbalakumar.com/marketplace-service/api/v1/marketplace
+ENV EXPO_PUBLIC_BFF_BASE_URL=$EXPO_PUBLIC_BFF_BASE_URL
+ENV EXPO_PUBLIC_MARKETPLACE_BASE_URL=$EXPO_PUBLIC_MARKETPLACE_BASE_URL
 RUN npm run build:web
 
 FROM nginx:1.27-alpine

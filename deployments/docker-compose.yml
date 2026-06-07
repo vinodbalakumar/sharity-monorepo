@@ -50,6 +50,9 @@ services:
     build:
       context: ../webapps/sharity-app
       dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-app.Dockerfile
+      args:
+        EXPO_PUBLIC_BFF_BASE_URL: ${EXPO_PUBLIC_BFF_BASE_URL:-https://vinodbalakumar.com/bff}
+        EXPO_PUBLIC_MARKETPLACE_BASE_URL: ${EXPO_PUBLIC_MARKETPLACE_BASE_URL:-https://vinodbalakumar.com/marketplace-service/api/v1/marketplace}
     image: sharity-app:latest
     expose:
       - "80"
@@ -94,12 +97,29 @@ services:
       JWT_PRIVATE_KEY_PATH: /keys/jwt-private.pem
       JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
       JWT_AUDIENCE: ${JWT_AUDIENCE:-auth-clients}
-      JWT_ISSUER: ${JWT_ISSUER:-https://vinodbalakumar.com/authorization-server/api}
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8080/authorization-server/api}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
       FRONTEND_BASE_URL: /authorization-server/api
       SHARITY_WEB_BFF_CLIENT_ID: ${SHARITY_WEB_BFF_CLIENT_ID:-sharity-web-bff}
       SHARITY_WEB_BFF_CLIENT_SECRET: ${SHARITY_WEB_BFF_CLIENT_SECRET:-change-me-local-only}
       SHARITY_BFF_PUBLIC_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-http://localhost:8080}
+      SHARITY_FRONTEND_REGISTER_URL: ${SHARITY_FRONTEND_REGISTER_URL:-https://vinodbalakumar.com/app/register}
+      SHARITY_FRONTEND_COMPLETE_REGISTRATION_URL: ${SHARITY_FRONTEND_COMPLETE_REGISTRATION_URL:-https://vinodbalakumar.com/app/complete-registration}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://vinodbalakumar.com/authorization-server/api/login/oauth2/code/google}
+      APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID:-}
+      APPLE_OAUTH_CLIENT_SECRET: ${APPLE_OAUTH_CLIENT_SECRET:-}
+      APPLE_OAUTH_REDIRECT_URI: ${APPLE_OAUTH_REDIRECT_URI:-https://vinodbalakumar.com/authorization-server/api/v1/auth/social/apple/callback}
+      ASSET_STORAGE_PROVIDER_CODE: ${ASSET_STORAGE_PROVIDER_CODE:-CLOUDFLARE_R2_PRIMARY}
+      ASSET_STORAGE_BUCKET_NAME: ${ASSET_STORAGE_BUCKET_NAME:-sharity-assets}
+      ASSET_STORAGE_ENDPOINT_URL: ${ASSET_STORAGE_ENDPOINT_URL:-}
+      ASSET_STORAGE_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-}
+      ASSET_STORAGE_REGION: ${ASSET_STORAGE_REGION:-auto}
+      ASSET_STORAGE_ACCESS_KEY_ID: ${ASSET_STORAGE_ACCESS_KEY_ID:-}
+      ASSET_STORAGE_SECRET_ACCESS_KEY: ${ASSET_STORAGE_SECRET_ACCESS_KEY:-}
+      ASSET_UPLOAD_MAX_FILE_SIZE_BYTES: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:-5242880}
+      AUTH_SESSION_COOKIE_SECURE: ${AUTH_SESSION_COOKIE_SECURE:-false}
       EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-false}
       MAIL_HOST: ${MAIL_HOST:-mail.smtp2go.com}
       MAIL_PORT: ${MAIL_PORT:-587}
@@ -124,14 +144,19 @@ services:
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: prod
-      AUTH_SERVER_PUBLIC_BASE_URL: ${AUTH_SERVER_PUBLIC_BASE_URL:-https://vinodbalakumar.com/authorization-server/api}
+      DB_HOST: host.docker.internal
+      DB_PORT: ${PC_MYSQL_PORT:-3306}
+      BFF_DB_NAME: ${AUTH_DB_NAME:-auth}
+      DB_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
+      AUTH_SERVER_PUBLIC_BASE_URL: ${AUTH_SERVER_PUBLIC_BASE_URL:-http://localhost:8080/authorization-server/api}
       AUTH_SERVER_BASE_URL: http://authorization-server:8080/authorization-server/api
       SHARITY_WEB_BFF_CLIENT_ID: ${SHARITY_WEB_BFF_CLIENT_ID:-sharity-web-bff}
       SHARITY_WEB_BFF_CLIENT_SECRET: ${SHARITY_WEB_BFF_CLIENT_SECRET:-change-me-local-only}
       SHARITY_BFF_PUBLIC_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-http://localhost:8080}
       SHARITY_WEB_BASE_URL: ${SHARITY_WEB_BASE_URL:-http://localhost:8080/app/}
       SHARITY_WEB_ALLOWED_ORIGIN: ${SHARITY_WEB_ALLOWED_ORIGIN:-http://localhost:8080}
-      BFF_SESSION_COOKIE_SECURE: ${BFF_SESSION_COOKIE_SECURE:-true}
+      BFF_SESSION_COOKIE_SECURE: ${BFF_SESSION_COOKIE_SECURE:-false}
       AUTHORIZATION_SERVER_BACKEND_URL: http://authorization-server:8080/authorization-server
       MARKETPLACE_SERVICE_BACKEND_URL: http://marketplace-service:8080/marketplace-service
       PAYMENT_SERVICE_BACKEND_URL: http://payment-service:8080/payment-service
@@ -159,10 +184,18 @@ services:
       DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
       JWT_AUDIENCE: ${RESOURCE_JWT_AUDIENCE:-auth-clients}
-      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-https://vinodbalakumar.com/authorization-server/api}
+      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-http://localhost:8080/authorization-server/api}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
       AUTH_PROVIDER_ELIGIBILITY_INTERNAL_URL: http://authorization-server:8080/authorization-server/api/internal/api/v1
       PAYMENT_SERVICE_INTERNAL_URL: http://payment-service:8080/payment-service/internal/api/v1
+      ASSET_STORAGE_PROVIDER_CODE: ${ASSET_STORAGE_PROVIDER_CODE:-CLOUDFLARE_R2_PRIMARY}
+      ASSET_STORAGE_BUCKET_NAME: ${ASSET_STORAGE_BUCKET_NAME:-sharity-assets}
+      ASSET_STORAGE_ENDPOINT_URL: ${ASSET_STORAGE_ENDPOINT_URL:-}
+      ASSET_STORAGE_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-}
+      ASSET_STORAGE_REGION: ${ASSET_STORAGE_REGION:-auto}
+      ASSET_STORAGE_ACCESS_KEY_ID: ${ASSET_STORAGE_ACCESS_KEY_ID:-}
+      ASSET_STORAGE_SECRET_ACCESS_KEY: ${ASSET_STORAGE_SECRET_ACCESS_KEY:-}
+      ASSET_UPLOAD_MAX_FILE_SIZE_BYTES: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:-5242880}
     volumes:
       - C:/Users/HP/projects/certs:/keys:ro
     expose:
@@ -188,7 +221,7 @@ services:
       DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
       JWT_AUDIENCE: ${RESOURCE_JWT_AUDIENCE:-auth-clients}
-      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-https://vinodbalakumar.com/authorization-server/api}
+      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-http://localhost:8080/authorization-server/api}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
       PAYMENT_GATEWAY_MODE: ${PAYMENT_GATEWAY_MODE:-mock}
       AUTH_PROVIDER_ELIGIBILITY_INTERNAL_URL: http://authorization-server:8080/authorization-server/api/internal/api/v1
@@ -218,7 +251,7 @@ services:
       DB_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
       JWT_AUDIENCE: ${RESOURCE_JWT_AUDIENCE:-auth-clients}
-      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-https://vinodbalakumar.com/authorization-server/api}
+      AUTH_ISSUER_URL: ${AUTH_ISSUER_URL:-http://localhost:8080/authorization-server/api}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
     volumes:
       - C:/Users/HP/projects/certs:/keys:ro
