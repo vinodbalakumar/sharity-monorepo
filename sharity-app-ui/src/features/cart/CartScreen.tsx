@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, with
 import * as DropdownMenu from 'zeego/dropdown-menu';
 import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
+import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';
 import type { AppRoute } from '../../types/navigation';
 import { acceptDigitalTerms, applyCoupon, getCart, getCheckoutPreview } from './cartCheckoutMockApi';
@@ -53,37 +54,25 @@ export function CartScreen({ onNavigate }: Props) {
   }
 
   if (loading) {
-    return <YStack bg="$background" f={1} p="$5"><CenteredState title="Loading cart..." /></YStack>;
+    return (
+      <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" scrollable={true}>
+        <CenteredState title="Loading cart..." />
+      </InteriorShell>
+    );
   }
 
   if (!cart || cart.sellerGroups.length === 0) {
-    return <YStack bg="$background" f={1} p="$5"><CenteredState title="Your cart is empty." action="Explore Marketplace" onAction={() => onNavigate('marketplaces')} /></YStack>;
+    return (
+      <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" scrollable={true}>
+        <CenteredState title="Your cart is empty." action="Explore Marketplace" onAction={() => onNavigate('marketplaces')} />
+      </InteriorShell>
+    );
   }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1220} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2" flex={1}>
-              <Text color="$blue10" fontWeight="800">Multi-seller checkout review</Text>
-              <H1>Cart & Checkout</H1>
-              <Paragraph color="$gray10">Review items from multiple sellers before payment authorization.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('marketplaces')}>Back</Button>
-              <Button icon={<Ionicons name="storefront-outline" size={18} />} onPress={() => onNavigate('marketplaces')}>Continue Shopping</Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger><Button icon={<Ionicons name="ellipsis-horizontal" size={18} />}>More</Button></DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item key="refresh" onSelect={load}>Refresh Pricing</DropdownMenu.Item>
-                  <DropdownMenu.Item key="save" onSelect={() => setMessage('Save-for-later mock flow ready.')}>Saved for Later</DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          <ValidationBanner issues={cart.validationSummary.issues} />
+    <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" subtitle="Review items from multiple sellers" scrollable={true}>
+      <YStack gap="$5" maxWidth={1220} mx="auto" width="100%">
+        <ValidationBanner issues={cart.validationSummary.issues} />
           <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               <GroupList
@@ -112,10 +101,9 @@ export function CartScreen({ onNavigate }: Props) {
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
-    </YStack>
-  );
-}
+      </InteriorShell>
+    );
+  }
 
 function SellerGroupCard({ group, index }: { group: CartSellerGroup; index: number }) {
   const style = useEntrance(index);

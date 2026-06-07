@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, with
 import * as DropdownMenu from 'zeego/dropdown-menu';
 import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
+import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import { colors } from '../../theme';
@@ -57,23 +58,9 @@ export function NotificationCenterScreen({ onNavigate }: Props) {
   const selected = data.notifications.find((item) => item.notificationId === selectedNotificationId) ?? data.dashboard.criticalNotifications[0] ?? data.notifications[0];
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 108 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1280} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">In-app inbox and action queue</Text>
-              <H1>Notification Center</H1>
-              <Paragraph color="$gray10">View order, payment, refund, payout, support, security, marketplace, policy, listing, and announcement updates.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('home')}>Back</Button>
-              <Button icon={<Ionicons name="checkmark-done" size={18} />} theme="purple" onPress={() => run('allRead')}>Mark All Read</Button>
-              <Button icon={<Ionicons name="settings-outline" size={18} />} onPress={() => onNavigate('appSettings')}>Preferences</Button>
-            </XStack>
-          </XStack>
-
-          <XStack $sm={{ flexDirection: 'column' }} gap="$3">
+    <InteriorShell onNavigate={onNavigate} title="Notification Center" subtitle="View all your notifications" scrollable={true}>
+      <YStack gap="$5" maxWidth={1280} mx="auto" width="100%">
+        <XStack $sm={{ flexDirection: 'column' }} gap="$3">
             <Metric label="Total unread" value={data.dashboard.unreadCounts.totalUnread} tone="info" />
             <Metric label="Buyer unread" value={data.dashboard.unreadCounts.buyerUnread} tone="success" />
             <Metric label="Seller unread" value={data.dashboard.unreadCounts.sellerUnread} tone="info" />
@@ -102,8 +89,7 @@ export function NotificationCenterScreen({ onNavigate }: Props) {
             </YStack>
           </XStack>
         </YStack>
-      </ScrollView>
-    </YStack>
+    </InteriorShell>
   );
 }
 

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppLoadingIndicator } from '../../components/ui';
+import { InteriorShell } from '../../components/appShell';
 import { electronicsProducts, type ElectronicsProduct } from '../electronics/electronicsData';
 import { getMarketplaceListing, getMarketplaceListings } from '../../services/marketplaceApi';
 import { colors, radii, spacing } from '../../theme';
@@ -161,22 +162,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
   );
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable accessibilityLabel="Back to marketplace" onPress={() => onNavigate(mode === 'electronics' ? 'electronics' : 'marketplaces')} style={styles.iconButton}>
-          <Ionicons color={colors.black} name="chevron-back" size={20} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Product Details</Text>
-        <View style={styles.headerActions}>
-          <Pressable accessibilityLabel="Share product" onPress={() => handleAction('share')} style={styles.iconButton}>
-            <Ionicons color={colors.black} name="share-outline" size={20} />
-          </Pressable>
-          <Pressable accessibilityLabel="Report listing" onPress={() => handleAction('report')} style={styles.iconButton}>
-            <Ionicons color={colors.black} name="flag-outline" size={20} />
-          </Pressable>
-        </View>
-      </View>
-
+    <InteriorShell onNavigate={onNavigate} title="Product Details" scrollable={true}>
       {state.loading ? (
         <View style={styles.centerState}>
           <AppLoadingIndicator />
@@ -230,7 +216,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
           {!isDesktop ? <ProductActionBar onAction={handleAction} /> : null}
         </>
       ) : null}
-    </SafeAreaView>
+    </InteriorShell>
   );
 }
 
