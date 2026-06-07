@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import type { ReactElement, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import { Button, Card, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -72,37 +74,36 @@ export function PaymentSuccessScreen({ onNavigate }: PaymentSuccessScreenProps) 
 
   if (loading) {
     return (
-      <ScreenShell>
+      <InteriorShell onNavigate={onNavigate} title="Order Confirmed" subtitle="Please wait..." scrollable={false}>
         <CenteredCard>
           <Paragraph color="$color">Confirming your order...</Paragraph>
         </CenteredCard>
-      </ScreenShell>
+      </InteriorShell>
     );
   }
 
   if (error || !confirmation) {
     return (
-      <ScreenShell>
+      <InteriorShell onNavigate={onNavigate} title="Error Loading Order" subtitle="Please try again" scrollable={false}>
         <CenteredCard>
-          <H2 color="$color">Payment was received, but we could not load your order details.</H2>
+          <Text fontSize="$6" fontWeight="900" color="$color">Payment was received, but we could not load your order details.</Text>
           <Button theme="blue" onPress={() => onNavigate('orders')}>Go to Orders</Button>
           <Button onPress={() => onNavigate('marketplaces')}>Contact Support</Button>
         </CenteredCard>
-      </ScreenShell>
+      </InteriorShell>
     );
   }
 
   return (
-    <ScreenShell>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1180} mx="auto" p="$5" width="100%">
+    <InteriorShell onNavigate={onNavigate} title="Order Confirmed" subtitle="Your payment was successful" scrollable={true}>
+      <YStack gap="$5" maxWidth={1180} mx="auto" width="100%">
           <Animated.View style={animatedStyle}>
             <PremiumCard p="$6" theme="green">
               <YStack ai="center" gap="$4">
                 <YStack ai="center" bg="$green5" br="$10" h={86} jc="center" w={86}>
                   <Ionicons color="green" name="checkmark" size={48} />
                 </YStack>
-                <H2 ta="center">Order Confirmed</H2>
+                <Text fontSize="$6" fontWeight="900" ta="center">Order Confirmed</Text>
                 <Paragraph ta="center">Your payment was successful and your order has been created.</Paragraph>
                 <XStack flexWrap="wrap" gap="$3" jc="center">
                   <StatusPill label="Payment: PayPal" tone="success" />
@@ -141,9 +142,8 @@ export function PaymentSuccessScreen({ onNavigate }: PaymentSuccessScreenProps) 
               </YStack>
             </PremiumCard>
           </XStack>
-        </YStack>
-      </ScrollView>
-    </ScreenShell>
+      </YStack>
+    </InteriorShell>
   );
 }
 
@@ -209,10 +209,6 @@ function SuccessOrderGroupCard({ group, index, onNavigate }: { group: OrderGroup
       </PremiumCard>
     </Animated.View>
   );
-}
-
-function ScreenShell({ children }: { children: ReactNode }) {
-  return <YStack bg="$background" f={1}>{children}</YStack>;
 }
 
 function CenteredCard({ children }: { children: ReactNode }) {

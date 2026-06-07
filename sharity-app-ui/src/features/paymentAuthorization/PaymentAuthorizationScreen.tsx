@@ -5,7 +5,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -50,43 +52,24 @@ export function PaymentAuthorizationScreen({ onNavigate }: Props) {
     appState$.paymentAuthorization.retryLoading.set(false);
   }
 
-  if (loading) return <YStack bg="$background" f={1} p="$5"><CenteredState title="Preparing secure payment authorization..." /></YStack>;
-  if (!response) return <YStack bg="$background" f={1} p="$5"><CenteredState title="Payment authorization unavailable." /></YStack>;
+  if (loading) return <InteriorShell onNavigate={onNavigate} title="Payment Authorization" subtitle="Please wait..." scrollable={false}><CenteredCard title="Preparing secure payment authorization..." /></InteriorShell>;
+  if (!response) return <InteriorShell onNavigate={onNavigate} title="Error" subtitle="Authorization unavailable" scrollable={false}><CenteredCard title="Payment authorization unavailable." /></InteriorShell>;
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1220} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Secure PayPal-first authorization</Text>
-              <H1>Payment Authorization</H1>
-              <Paragraph color="$gray10">Authorize payment securely. Some seller orders may require acceptance before capture.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('cart')}>Back to Cart</Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger><Button icon={<Ionicons name="ellipsis-horizontal" size={18} />}>More</Button></DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item key="support" onSelect={() => setMessage('Support mock flow ready.')}>Contact Support</DropdownMenu.Item>
-                  <DropdownMenu.Item key="orders" onSelect={() => onNavigate('orders')}>View Order Status</DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </XStack>
-          </XStack>
-
-          <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+    <InteriorShell onNavigate={onNavigate} title="Payment Authorization" subtitle="Authorize payment securely" scrollable={true}>
+      <YStack gap="$5" maxWidth={1220} mx="auto" width="100%">
+        <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               <Notice response={response} />
               <PremiumCard p="$5">
                 <YStack gap="$4">
-                  <H2>Seller Acceptance Status</H2>
+                  <Text fontSize="$6" fontWeight="900">Seller Acceptance Status</Text>
                   <SellerList data={response.sellerOrderAuthorizationStatuses} estimatedItemSize={210} keyExtractor={(item) => item.sellerOrderId} renderItem={({ item, index }) => <SellerOrderRow index={index} order={item} />} />
                 </YStack>
               </PremiumCard>
               <PremiumCard p="$5">
                 <YStack gap="$4">
-                  <H2>Payment Timeline</H2>
+                  <Text fontSize="$6" fontWeight="900">Payment Timeline</Text>
                   <TimelineList data={response.paymentTimeline} estimatedItemSize={108} keyExtractor={(item) => item.eventId} renderItem={({ item, index }) => <TimelineRow event={item} index={index} />} />
                 </YStack>
               </PremiumCard>
@@ -99,14 +82,13 @@ export function PaymentAuthorizationScreen({ onNavigate }: Props) {
               {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
           </XStack>
-        </YStack>
-      </ScrollView>
-    </YStack>
+      </YStack>
+    </InteriorShell>
   );
 }
 
 function ProviderPanel({ response, selectedProvider, onAuthorize }: { response: PaymentAuthorizationScreenResponse; selectedProvider: string; onAuthorize: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Payment Provider</H2>{response.paymentProviderOptions.map((provider) => <XStack key={provider.providerCode} ai="center" gap="$3"><Image source={placeholderImageUrl('gift_cards')} placeholder={blurhash} style={{ width: 38, height: 38, borderRadius: 8 }} /><YStack flex={1}><Text fontWeight="900">{provider.providerName}</Text><Text color="$gray10">{provider.message}</Text></YStack><Badge label={provider.enabled ? (provider.providerCode === selectedProvider ? 'Selected' : 'Available') : 'Coming Later'} tone={provider.enabled ? 'success' : 'warning'} /></XStack>)}<Button theme="purple" onPress={onAuthorize}>Authorize with PayPal</Button><Button disabled>Authorize with Stripe Later</Button></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Payment Provider</Text>{response.paymentProviderOptions.map((provider) => <XStack key={provider.providerCode} ai="center" gap="$3"><Image source={placeholderImageUrl('gift_cards')} placeholder={blurhash} style={{ width: 38, height: 38, borderRadius: 8 }} /><YStack flex={1}><Text fontWeight="900">{provider.providerName}</Text><Text color="$gray10">{provider.message}</Text></YStack><Badge label={provider.enabled ? (provider.providerCode === selectedProvider ? 'Selected' : 'Available') : 'Coming Later'} tone={provider.enabled ? 'success' : 'warning'} /></XStack>)}<Button theme="purple" onPress={onAuthorize}>Authorize with PayPal</Button><Button disabled>Authorize with Stripe Later</Button></YStack></PremiumCard>;
 }
 
 function Notice({ response }: { response: PaymentAuthorizationScreenResponse }) {
@@ -126,22 +108,22 @@ function TimelineRow({ event, index }: { event: PaymentTimelineEvent; index: num
 
 function PricingSummary({ response }: { response: PaymentAuthorizationScreenResponse }) {
   const p = response.pricingSummary;
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Final Pricing</H2><Price label="Items total" value={p.itemsTotal} /><Price label="Seller discounts" value={-p.sellerDiscounts} /><Price label="Platform discounts" value={-p.platformDiscounts} /><Price label="Buyer service fee" value={p.buyerServiceFee} /><Price label="Total authorized" value={p.totalAuthorizationAmount} strong /><Price label="Captured" value={p.totalCapturedAmount} /><Price label="Released" value={p.totalReleasedAmount} /><Paragraph color="$gray10">Buyer-safe totals only. Seller commission, fee waiver rules, and provider payloads are hidden.</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Final Pricing</Text><Price label="Items total" value={p.itemsTotal} /><Price label="Seller discounts" value={-p.sellerDiscounts} /><Price label="Platform discounts" value={-p.platformDiscounts} /><Price label="Buyer service fee" value={p.buyerServiceFee} /><Price label="Total authorized" value={p.totalAuthorizationAmount} strong /><Price label="Captured" value={p.totalCapturedAmount} /><Price label="Released" value={p.totalReleasedAmount} /><Paragraph color="$gray10">Buyer-safe totals only. Seller commission, fee waiver rules, and provider payloads are hidden.</Paragraph></YStack></PremiumCard>;
 }
 
 function DigitalDelivery({ response }: { response: PaymentAuthorizationScreenResponse }) {
-  return <PremiumCard p="$5"><YStack gap="$2"><H2>Digital Delivery</H2><Badge label={response.digitalDeliveryEligibility.status} tone={response.digitalDeliveryEligibility.eligible ? 'success' : 'warning'} /><Paragraph color="$gray10">{response.digitalDeliveryEligibility.message}</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$2"><Text fontSize="$6" fontWeight="900">Digital Delivery</Text><Badge label={response.digitalDeliveryEligibility.status} tone={response.digitalDeliveryEligibility.eligible ? 'success' : 'warning'} /><Paragraph color="$gray10">{response.digitalDeliveryEligibility.message}</Paragraph></YStack></PremiumCard>;
 }
 
 function FailedAuthorization({ onRetry, onReturnCart }: { onRetry: () => void; onReturnCart: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Retry Options</H2><Button onPress={onRetry} theme="purple">Retry Payment</Button><Button disabled>Choose Another Provider Later</Button><Button onPress={onReturnCart}>Return to Cart</Button></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Retry Options</Text><Button onPress={onRetry} theme="purple">Retry Payment</Button><Button disabled>Choose Another Provider Later</Button><Button onPress={onReturnCart}>Return to Cart</Button></YStack></PremiumCard>;
 }
 
 function Price({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return <XStack jc="space-between"><Text color={strong ? '$color' : '$gray10'} fontWeight={strong ? '900' : '600'}>{label}</Text><Text fontWeight={strong ? '900' : '600'}>{money(value)}</Text></XStack>;
 }
 
-function CenteredState({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
+function CenteredCard({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function money(value: number) { const sign = value < 0 ? '-' : ''; return `${sign}$${Math.abs(value).toFixed(2)}`; }

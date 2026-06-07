@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import type { ReactElement, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import { Button, Card, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+
+import { InteriorShell } from '../../components/appShell';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -91,30 +93,29 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
 
   if (loading) {
     return (
-      <ScreenShell>
+      <InteriorShell onNavigate={onNavigate} title="Payment Status" subtitle="Please wait..." scrollable={false}>
         <CenteredCard>
           <Paragraph>Checking payment status...</Paragraph>
         </CenteredCard>
-      </ScreenShell>
+      </InteriorShell>
     );
   }
 
   if (error || !attempt || !recovery) {
     return (
-      <ScreenShell>
+      <InteriorShell onNavigate={onNavigate} title="Error Loading Details" subtitle="Please try again" scrollable={false}>
         <CenteredCard>
-          <H2>We couldn't load your payment attempt details.</H2>
+          <Text fontSize="$6" fontWeight="900">We couldn't load your payment attempt details.</Text>
           <Button theme="purple" onPress={() => onNavigate('cart')}>Go to Cart</Button>
           <Button onPress={support}>Contact Support</Button>
         </CenteredCard>
-      </ScreenShell>
+      </InteriorShell>
     );
   }
 
   return (
-    <ScreenShell>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1180} mx="auto" p="$5" width="100%">
+    <InteriorShell onNavigate={onNavigate} title="Payment Failed" subtitle="Review and retry" scrollable={true}>
+      <YStack gap="$5" maxWidth={1180} mx="auto" width="100%">
           <PremiumCard p="$6" theme={statusCopy.tone}>
             <YStack ai="center" gap="$4">
               <Animated.View style={iconStyle}>
@@ -122,7 +123,7 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
                   <Ionicons color="orange" name="alert" size={42} />
                 </YStack>
               </Animated.View>
-              <H2 ta="center">{statusCopy.title}</H2>
+              <Text fontSize="$6" fontWeight="900" ta="center">{statusCopy.title}</Text>
               <Paragraph ta="center">{statusCopy.message}</Paragraph>
               <XStack flexWrap="wrap" gap="$3" jc="center">
                 <StatusPill label={`Payment method: ${attempt.provider}`} tone="info" />
@@ -166,8 +167,7 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
               </YStack>
             </PremiumCard>
           </XStack>
-        </YStack>
-      </ScrollView>
+      </YStack>
       {message ? (
         <YStack b="$4" l="$4" position="absolute" r="$4">
           <PremiumCard p="$4">
@@ -178,7 +178,7 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
           </PremiumCard>
         </YStack>
       ) : null}
-    </ScreenShell>
+    </InteriorShell>
   );
 }
 
@@ -238,10 +238,6 @@ function CommonReasonsCard() {
       </YStack>
     </PremiumCard>
   );
-}
-
-function ScreenShell({ children }: { children: ReactNode }) {
-  return <YStack bg="$background" f={1}>{children}</YStack>;
 }
 
 function CenteredCard({ children }: { children: ReactNode }) {
