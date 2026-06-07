@@ -249,7 +249,7 @@ function CheckoutStepHeader() {
       <Text style={styles.bodyText}>Cart validation, shipping, payment method, policy acknowledgment, and final review happen before payment starts.</Text>
       <View style={styles.badgeWrap}>
         {['Order Groups', 'Shipping', 'Rules', 'Payment', 'Review'].map((step) => (
-          <AppBadge key={step} label={step} variant="info" />
+          <AppBadge key={step} variant="info">{step}</AppBadge>
         ))}
       </View>
     </AppCard>
@@ -292,9 +292,9 @@ function CheckoutSellerGroupCard({ group }: { group: CheckoutOrderGroup }) {
           <Text style={styles.captionText}>{group.deliveryType.replaceAll('_', ' ')}</Text>
         </View>
         <View style={styles.badgeWrap}>
-          <AppBadge label={group.sellerVerified ? 'Verified Seller' : 'Seller Review'} variant={group.sellerVerified ? 'verified' : 'warning'} />
-          <AppBadge label={group.shippingRequired ? 'Shipping required' : 'No shipping'} variant={group.shippingRequired ? 'warning' : 'success'} />
-          <AppBadge label={formatMoney(group.groupSubtotal)} variant="marketplace" />
+          <AppBadge variant={group.sellerVerified ? 'success' : 'warning'}>{group.sellerVerified ? 'Verified Seller' : 'Seller Review'}</AppBadge>
+          <AppBadge variant={group.shippingRequired ? 'warning' : 'success'}>{group.shippingRequired ? 'Shipping required' : 'No shipping'}</AppBadge>
+          <AppBadge variant="primary">{formatMoney(group.groupSubtotal)}</AppBadge>
         </View>
       </View>
       {group.items.map((item) => (
@@ -445,7 +445,7 @@ function PaymentMethodSelector({
               <Text style={styles.cardTitle}>{method.name}</Text>
               <Text style={styles.bodyText}>{method.description}</Text>
             </View>
-            <AppBadge label={available ? 'Available' : 'Coming Soon'} variant={available ? 'success' : 'comingSoon'} />
+            <AppBadge variant={available ? 'success' : 'secondary'}>{available ? 'Available' : 'Coming Soon'}</AppBadge>
           </Pressable>
         );
       })}
