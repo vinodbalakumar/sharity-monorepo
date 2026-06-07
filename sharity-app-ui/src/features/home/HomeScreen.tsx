@@ -1,44 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppLoadingIndicator } from '../../components/ui';
-import { mobileTabItems, quickActions, sidebarItems } from './dashboardConfig';
+import { InteriorShell } from '../../components/appShell';
+import { quickActions } from './dashboardConfig';
 import { buildDashboardDeals, buildDashboardServices, type DashboardDeal, type DashboardService } from './dashboardData';
 import { getMarketplaceHome, getMarketplaceListings } from '../../services/marketplaceApi';
-import { radii, spacing } from '../../theme';
+import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
 import type { MarketplaceHomeResponse, MarketplaceListing } from '../../types/marketplace';
 import type { AppRoute } from '../../types/navigation';
-
-const surface = {
-  accent: '#7C5CFF',
-  accentSoft: '#F1EAFF',
-  blue: '#2563EB',
-  blueSoft: '#EAF1FF',
-  border: '#DCE6F2',
-  card: '#FFFFFF',
-  cardAlt: '#FFFFFF',
-  green: '#1FD39B',
-  greenSoft: '#E7F8F1',
-  hero: '#FFFFFF',
-  heroAlt: '#FFFFFF',
-  muted: '#64748B',
-  navy: '#0F172A',
-  page: '#F6F9FC',
-  purple: '#7C5CFF',
-  purpleSoft: '#F1EAFF',
-  shadow: '#8EA4C2',
-  white: '#FFFFFF'
-};
 
 type LoadState = {
   dealsError: boolean;
@@ -54,8 +28,6 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({ onNavigate, onOpenDigitalProduct }: HomeScreenProps) {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
   const [state, setState] = useState<LoadState>({
     dealsError: false,
     home: null,
@@ -86,12 +58,8 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct }: HomeScreenProps
   const deals = useMemo(() => buildDashboardDeals(state.listings), [state.listings]);
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.shell}>
-        {isDesktop ? <DashboardSidebar onNavigate={onNavigate} /> : null}
-        <View style={styles.main}>
-          <DashboardHeader onNavigate={onNavigate} />
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <InteriorShell onNavigate={onNavigate} title="Home" activeLabel="Home" scrollable={true}>
+      <View>
             <WelcomeHeroCard onNavigate={onNavigate} />
             <View style={styles.quickGrid}>
               {quickActions.map((action) => (
@@ -112,68 +80,11 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct }: HomeScreenProps
               onOpenDigitalProduct={onOpenDigitalProduct}
               onRetry={loadDashboard}
             />
-          </ScrollView>
-        </View>
       </View>
-      {!isDesktop ? <BottomTabs onNavigate={onNavigate} /> : null}
-    </SafeAreaView>
+    </InteriorShell>
   );
 }
 
-function DashboardSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.sidebar}>
-      <Pressable onPress={() => onNavigate('home')} style={styles.sidebarBrand}>
-        <View style={styles.brandMark}>
-          <Text style={styles.brandLetter}>S</Text>
-        </View>
-        <View>
-          <Text style={styles.sidebarTitle}>Sharity</Text>
-          <Text style={styles.sidebarSubcopy}>United States</Text>
-        </View>
-      </Pressable>
-      <View style={styles.sidebarList}>
-        {sidebarItems.map((item, index) => (
-          <Pressable
-            key={item.label}
-            onPress={() => onNavigate(routeForLabel(item.label))}
-            style={[styles.sidebarItem, index === 0 && styles.sidebarItemActive]}
-          >
-            <Ionicons color={index === 0 ? surface.white : surface.navy} name={item.icon} size={19} />
-            <Text style={[styles.sidebarItemText, index === 0 && styles.sidebarItemTextActive]}>{item.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function DashboardHeader({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.header}>
-      <Pressable onPress={() => onNavigate('welcome')} style={styles.headerBrand}>
-        <View style={styles.brandMarkSmall}>
-          <Text style={styles.brandLetterSmall}>S</Text>
-        </View>
-        <View>
-          <Text style={styles.headerTitle}>Sharity</Text>
-          <Text style={styles.headerSubtitle}>Unified dashboard</Text>
-        </View>
-      </Pressable>
-      <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Cart" onPress={() => onNavigate('cart')} style={styles.iconButton}>
-          <Ionicons color={surface.navy} name="cart-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Notifications" onPress={() => onNavigate('notifications')} style={styles.iconButton}>
-          <Ionicons color={surface.navy} name="notifications-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Profile" onPress={() => onNavigate('profilePrivacy')} style={styles.iconButton}>
-          <Ionicons color={surface.navy} name="person-outline" size={20} />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
 
 function WelcomeHeroCard({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
   return (
@@ -202,7 +113,7 @@ function QuickActionCard({
   return (
     <Pressable onPress={() => onNavigate(routeForLabel(label))} style={styles.quickCard}>
       <View style={styles.cardIcon}>
-        <Ionicons color={surface.blue} name={icon} size={22} />
+        <Ionicons color={colors.info} name={icon} size={22} />
       </View>
       <Text style={styles.cardTitle}>{label}</Text>
       <Text style={styles.cardText}>{text}</Text>
@@ -248,7 +159,7 @@ function ServiceCard({ onNavigate, service }: { onNavigate: (route: AppRoute) =>
     <Pressable onPress={() => onNavigate(routeForService(service.code))} style={styles.serviceCard}>
       <View style={styles.serviceHeader}>
         <View style={styles.cardIcon}>
-          <Ionicons color={service.enabled ? surface.green : surface.purple} name={service.icon} size={22} />
+          <Ionicons color={service.enabled ? colors.success : colors.primary} name={service.icon} size={22} />
         </View>
         {!service.enabled ? <Text style={styles.badge}>Coming Soon</Text> : <Text style={styles.activeBadge}>Active</Text>}
       </View>
@@ -293,7 +204,7 @@ function DealCard({ deal, onOpenDigitalProduct }: { deal: DashboardDeal; onOpenD
   return (
     <Pressable onPress={() => onOpenDigitalProduct(deal.id)} style={styles.dealCard}>
       <View style={styles.dealImage}>
-        <Ionicons color={surface.accent} name="pricetag-outline" size={26} />
+        <Ionicons color={colors.tertiary} name="pricetag-outline" size={26} />
       </View>
       <Text style={styles.badge}>{deal.badge}</Text>
       <Text style={styles.cardTitle}>{deal.title}</Text>
@@ -307,23 +218,6 @@ function DealCard({ deal, onOpenDigitalProduct }: { deal: DashboardDeal; onOpenD
       </Text>
       <Text style={styles.cardCta}>View Deal</Text>
     </Pressable>
-  );
-}
-
-function BottomTabs({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.bottomTabs}>
-      {mobileTabItems.map((item, index) => (
-        <Pressable
-          key={item.label}
-          onPress={() => onNavigate(routeForLabel(item.label))}
-          style={styles.bottomTab}
-        >
-          <Ionicons color={index === 0 ? surface.blue : surface.muted} name={item.icon} size={19} />
-          <Text style={[styles.bottomTabText, index === 0 && styles.bottomTabTextActive]}>{item.label}</Text>
-        </Pressable>
-      ))}
-    </View>
   );
 }
 
@@ -394,167 +288,31 @@ function formatMoney(value: number, currencyCode: string) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: surface.page,
-    flex: 1
-  },
-  shell: {
-    backgroundColor: surface.page,
-    flex: 1,
-    flexDirection: 'row'
-  },
-  sidebar: {
-    backgroundColor: surface.card,
-    borderRightColor: surface.border,
-    borderRightWidth: 1,
-    padding: spacing.lg,
-    width: 260
-  },
-  sidebarBrand: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.xs
-  },
-  brandMark: {
-    alignItems: 'center',
-    backgroundColor: surface.accent,
-    borderRadius: 14,
-    height: 48,
-    justifyContent: 'center',
-    shadowColor: surface.shadow,
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    width: 48
-  },
-  brandMarkSmall: {
-    alignItems: 'center',
-    backgroundColor: surface.accent,
-    borderRadius: 12,
-    height: 40,
-    justifyContent: 'center',
-    width: 40
-  },
-  brandLetter: {
-    color: surface.white,
-    fontSize: 20,
-    fontWeight: '900'
-  },
-  brandLetterSmall: {
-    color: surface.white,
-    fontSize: 18,
-    fontWeight: '900'
-  },
-  sidebarTitle: {
-    color: surface.navy,
-    fontSize: 21,
-    fontWeight: '900'
-  },
-  sidebarSubcopy: {
-    color: surface.muted,
-    fontSize: 12,
-    marginTop: 2
-  },
-  sidebarList: {
-    gap: spacing.sm
-  },
-  sidebarItem: {
-    alignItems: 'center',
-    backgroundColor: surface.card,
-    borderColor: surface.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14
-  },
-  sidebarItemActive: {
-    backgroundColor: surface.accent,
-    borderColor: surface.accent
-  },
-  sidebarItemText: {
-    color: surface.navy,
-    fontSize: 15,
-    fontWeight: '800'
-  },
-  sidebarItemTextActive: {
-    color: surface.white
-  },
-  main: {
-    flex: 1
-  },
-  header: {
-    alignItems: 'center',
-    backgroundColor: surface.card,
-    borderBottomColor: surface.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 70,
-    paddingHorizontal: spacing.xl
-  },
-  headerBrand: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm
-  },
-  headerTitle: {
-    color: surface.navy,
-    fontSize: 22,
-    fontWeight: '900'
-  },
-  headerSubtitle: {
-    color: surface.muted,
-    fontSize: 12,
-    marginTop: 2
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: spacing.sm
-  },
-  iconButton: {
-    alignItems: 'center',
-    backgroundColor: surface.card,
-    borderColor: surface.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44
-  },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.xl,
-    paddingBottom: spacing['6xl']
-  },
   hero: {
-    backgroundColor: surface.hero,
+    backgroundColor: colors.infoLight,
     borderRadius: 22,
     borderColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     overflow: 'hidden',
     padding: spacing['2xl'],
-    shadowColor: surface.shadow,
+    shadowColor: colors.gray900,
     shadowOffset: { height: 16, width: 0 },
     shadowOpacity: 0.22,
     shadowRadius: 28
   },
   heroTitle: {
-    color: surface.navy,
+    color: colors.gray900,
     fontSize: 36,
     fontWeight: '900'
   },
   heroKicker: {
-    color: surface.accent,
+    color: colors.info,
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0
   },
   heroText: {
-    color: surface.muted,
+    color: colors.gray600,
     fontSize: 17,
     lineHeight: 26,
     marginTop: spacing.sm,
@@ -562,18 +320,18 @@ const styles = StyleSheet.create({
   },
   heroButton: {
     alignSelf: 'flex-start',
-    backgroundColor: surface.accent,
-    borderRadius: 14,
+    backgroundColor: colors.info,
+    borderRadius: radius.lg,
     marginTop: spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    shadowColor: surface.accent,
+    shadowColor: colors.info,
     shadowOffset: { height: 8, width: 0 },
     shadowOpacity: 0.28,
     shadowRadius: 16
   },
   heroButtonText: {
-    color: surface.white,
+    color: colors.white,
     fontSize: 15,
     fontWeight: '900'
   },
@@ -583,23 +341,23 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   quickCard: {
-    backgroundColor: surface.card,
-    borderColor: surface.border,
-    borderRadius: 18,
+    backgroundColor: colors.white,
+    borderColor: colors.gray200,
+    borderRadius: radius.xl,
     borderWidth: 1,
     flexBasis: 210,
     flexGrow: 1,
     minHeight: 160,
     padding: spacing.lg,
-    shadowColor: surface.shadow,
+    shadowColor: colors.gray900,
     shadowOffset: { height: 10, width: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 20
   },
   cardIcon: {
     alignItems: 'center',
-    backgroundColor: surface.blueSoft,
-    borderColor: surface.border,
+    backgroundColor: colors.infoLight,
+    borderColor: colors.gray200,
     borderRadius: 999,
     borderWidth: 1,
     height: 48,
@@ -607,13 +365,13 @@ const styles = StyleSheet.create({
     width: 48
   },
   cardTitle: {
-    color: surface.navy,
+    color: colors.gray900,
     fontSize: 18,
     fontWeight: '900',
     marginTop: spacing.md
   },
   cardText: {
-    color: surface.muted,
+    color: colors.gray600,
     fontSize: 14,
     lineHeight: 21,
     marginTop: spacing.sm
@@ -622,7 +380,7 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   sectionTitle: {
-    color: surface.navy,
+    color: colors.gray900,
     fontSize: 26,
     fontWeight: '900'
   },
@@ -632,15 +390,15 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   serviceCard: {
-    backgroundColor: surface.card,
-    borderColor: surface.border,
-    borderRadius: 18,
+    backgroundColor: colors.white,
+    borderColor: colors.gray200,
+    borderRadius: radius.xl,
     borderWidth: 1,
     flexBasis: 250,
     flexGrow: 1,
     minHeight: 190,
     padding: spacing.lg,
-    shadowColor: surface.shadow,
+    shadowColor: colors.gray900,
     shadowOffset: { height: 10, width: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 20
@@ -652,9 +410,9 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: surface.purpleSoft,
-    borderRadius: radii.sm,
-    color: surface.purple,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.sm,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     overflow: 'hidden',
@@ -663,11 +421,11 @@ const styles = StyleSheet.create({
   },
   activeBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: surface.greenSoft,
+    backgroundColor: colors.successLight,
     borderColor: '#BCEBD8',
-    borderRadius: radii.sm,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    color: surface.green,
+    color: colors.success,
     fontSize: 12,
     fontWeight: '900',
     overflow: 'hidden',
@@ -675,7 +433,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs
   },
   cardCta: {
-    color: surface.blue,
+    color: colors.info,
     fontSize: 14,
     fontWeight: '900',
     marginTop: spacing.md,
@@ -687,22 +445,22 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   dealCard: {
-    backgroundColor: surface.card,
-    borderColor: surface.border,
-    borderRadius: 18,
+    backgroundColor: colors.white,
+    borderColor: colors.gray200,
+    borderRadius: radius.xl,
     borderWidth: 1,
     flexBasis: 240,
     flexGrow: 1,
     padding: spacing.lg,
-    shadowColor: surface.shadow,
+    shadowColor: colors.gray900,
     shadowOffset: { height: 10, width: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 20
   },
   dealImage: {
     alignItems: 'center',
-    backgroundColor: surface.accentSoft,
-    borderRadius: 16,
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.lg,
     height: 72,
     justifyContent: 'center',
     marginBottom: spacing.md
@@ -715,35 +473,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm
   },
   originalPrice: {
-    color: surface.muted,
+    color: colors.gray600,
     fontSize: 13,
     textDecorationLine: 'line-through'
   },
   dealPrice: {
-    color: surface.navy,
+    color: colors.gray900,
     fontSize: 18,
-    fontWeight: '900'
-  },
-  bottomTabs: {
-    backgroundColor: surface.card,
-    borderTopColor: surface.border,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: spacing.sm
-  },
-  bottomTab: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    minWidth: 58
-  },
-  bottomTabText: {
-    color: surface.muted,
-    fontSize: 11,
-    fontWeight: '700'
-  },
-  bottomTabTextActive: {
-    color: surface.blue,
     fontWeight: '900'
   },
   stateRow: {
@@ -752,27 +488,27 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   stateBox: {
-    backgroundColor: surface.card,
-    borderColor: surface.border,
-    borderRadius: 18,
+    backgroundColor: colors.white,
+    borderColor: colors.gray200,
+    borderRadius: radius.xl,
     borderWidth: 1,
     padding: spacing.lg
   },
   stateText: {
-    color: surface.muted,
+    color: colors.gray600,
     fontSize: 14,
     lineHeight: 21
   },
   smallButton: {
     alignSelf: 'flex-start',
-    backgroundColor: surface.blue,
-    borderRadius: radii.md,
+    backgroundColor: colors.info,
+    borderRadius: radius.md,
     marginTop: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
   smallButtonText: {
-    color: surface.white,
+    color: colors.white,
     fontSize: 14,
     fontWeight: '900'
   }
