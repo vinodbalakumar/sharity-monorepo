@@ -1,79 +1,84 @@
-import { getOrderDetails } from './ordersMockApi';
+﻿import { getBuyerOrders, type BuyerOrderItem } from '../../services/ordersApi';
+import { getMarketplaceListing } from '../../services/marketplaceApi';
 import type { OrderDetailsResponse, OrderEligibility, OrderTimelineEvent } from './orderDetailsTypes';
 
-const wait = (ms = 220) => new Promise((resolve) => setTimeout(resolve, ms));
+function toMarketplaceCode(order: BuyerOrderItem): 'DIGITAL' | 'ELECTRONICS' | 'MIXED' {
+  return order.type === 'digital' ? 'DIGITAL' : 'ELECTRONICS';
+}
 
 export async function getBuyerOrderDetails(orderId: string): Promise<OrderDetailsResponse | null> {
-  await wait();
-  const order = await getOrderDetails(orderId);
+  const orders = await getBuyerOrders();
+  const order = orders.find((item) => item.id === orderId) ?? orders[0];
   if (!order) {
     return null;
   }
 
-  const isDigital = order.marketplaceCode === 'DIGITAL';
-  const isElectronics = order.marketplaceCode === 'ELECTRONICS';
-  const timeline = buildTimeline(order.orderId, isDigital, order.orderStatus);
+  const listing = await getMarketplaceListingByOrder(order).catch(() => null);
+  const marketplaceCode = toMarketplaceCode(order);
+  const isDigital = marketplaceCode === 'DIGITAL';
+  const isElectronics = marketplaceCode === 'ELECTRONICS';
+  const timeline = buildTimeline(order.id, isDigital, order.status);
 
   return {
     availableActions: ['VIEW_RECEIPT', 'CONTACT_SELLER', 'REPORT_ISSUE', isDigital ? 'GO_TO_LIBRARY' : 'TRACK_PACKAGE'],
     digitalAccessSummary: isDigital
       ? {
-          accessStatus: order.digitalAccessStatus ?? 'ACCESS_READY',
+          accessStatus: order.status === 'refund_requested' ? 'REFUNDED' : order.status === 'access_ready' ? 'ACCESS_READY' : 'PENDING_RISK_REVIEW',
           goToLibraryAvailable: true,
-          message: 'Go to Library to securely reveal/download your digital product.',
-          refundEligibilityStatus: order.digitalAccessStatus === 'REFUNDED' ? 'Refunded' : 'Admin review may be required after access.',
-          riskReviewStatus: order.digitalAccessStatus === 'PENDING_RISK_REVIEW' ? 'Pending review' : 'No active risk hold'
+          message: 'Go to Library to securely reveal or download your digital product.',
+          refundEligibilityStatus: order.status === 'refund_requested' ? 'Refunded' : 'Refund review depends on access history.',
+          riskReviewStatus: order.status === 'processing' ? 'Pending review' : 'No active risk hold'
         }
       : undefined,
-    eligibility: buildEligibility(isDigital, isElectronics, order.orderStatus),
+    eligibility: buildEligibility(isDigital, isElectronics, order.status),
     items: [
       {
         condition: isElectronics ? 'Seller-certified refurbished' : undefined,
         deliveryType: isDigital ? 'DIGITAL' : 'SHIPPING_REQUIRED',
-        price: order.totalAmount,
-        productId: `product-${order.orderId}`,
-        productImageUrl: order.productImageUrl,
-        productTitle: order.productTitle,
-        productType: order.productType,
+        price: order.price,
+        productId: `product-${order.id}`,
+        productImageUrl: order.imageUrl,
+        productTitle: order.name,
+        productType: listing?.productType ?? (isDigital ? 'Digital item' : 'Electronics'),
         quantity: 1,
-        refundReturnSummary: isDigital ? 'Digital access is handled through Library and may affect refund review.' : 'Return/refund eligibility depends on delivery status and seller policy.'
+        refundReturnSummary: isDigital ? 'Digital access is handled through Library and may affect refund review.' : 'Return or refund eligibility depends on delivery status and seller policy.'
       }
     ],
     order: {
-      checkoutId: order.checkoutId,
-      currency: order.currency,
-      marketplaceCode: order.marketplaceCode,
-      marketplaceName: order.marketplaceName,
-      orderDate: order.orderDate,
-      orderId: order.orderId,
-      orderReference: order.orderReference,
-      orderStatus: order.orderStatus,
-      paymentStatus: order.paymentStatus,
-      refundDisputeStatus: order.refundDisputeStatus,
-      totalAmount: order.totalAmount,
-      updatedAt: order.updatedAt
+      checkoutId: `checkout-${order.id}`,
+      currency: 'USD',
+      marketplaceCode,
+      marketplaceName: marketplaceCode === 'DIGITAL' ? 'Digital Marketplace' : 'Electronics Marketplace',
+      orderDate: order.dateIso,
+      orderId: order.id,
+      orderReference: order.id,
+      orderStatus: normalizeOrderStatus(order.status),
+      paymentStatus: normalizePaymentStatus(order.payment),
+      refundDisputeStatus: normalizeDisputeStatus(order.status),
+      totalAmount: order.price,
+      updatedAt: order.dateIso
     },
     receiptSummary: {
-      receiptAvailable: order.receiptAvailable,
-      receiptId: `receipt-${order.orderId}`,
-      safePaymentReference: 'PAYPAL-SAFE-9KQ2'
+      receiptAvailable: true,
+      receiptId: `receipt-${order.id}`,
+      safePaymentReference: `PAY-${order.id.slice(-6).toUpperCase()}`
     },
     seller: {
       availableActions: ['CONTACT_SELLER', 'VIEW_PROFILE'],
       country: 'United States',
-      marketplaceCode: order.marketplaceCode,
-      sellerDisplayName: order.sellerDisplayName,
-      sellerId: order.sellerId,
-      sellerRating: order.sellerVerified ? 4.8 : 4.2,
-      sellerVerified: order.sellerVerified
+      marketplaceCode,
+      sellerDisplayName: order.seller,
+      sellerId: `seller-${order.seller.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      sellerRating: 4.8,
+      sellerVerified: true
     },
     shippingAddress: isElectronics
       ? {
-          addressLine1: '2148 N 32nd St',
-          addressLine2: 'Apt 5B',
+          addressLine1: 'Delivered address on file',
+          addressLine2: undefined,
           city: 'Phoenix',
           country: 'United States',
-          fullName: 'V D',
+          fullName: 'Sharity Buyer',
           phoneMasked: '+1 *** *** 4821',
           postalCode: '85032',
           state: 'AZ'
@@ -81,13 +86,13 @@ export async function getBuyerOrderDetails(orderId: string): Promise<OrderDetail
       : undefined,
     shippingSummary: isElectronics
       ? {
-          carrier: order.trackingAvailable ? 'UPS' : undefined,
-          estimatedDelivery: order.trackingAvailable ? '2026-06-06' : undefined,
-          lastUpdated: order.updatedAt,
+          carrier: order.status === 'shipped' || order.status === 'delivered' ? 'UPS' : undefined,
+          estimatedDelivery: order.status === 'shipped' ? new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10) : undefined,
+          lastUpdated: order.dateIso,
           shippingRequired: true,
-          shippingStatus: order.shippingStatus ?? 'TRACKING_NOT_AVAILABLE',
-          trackingAvailable: order.trackingAvailable,
-          trackingMaskedReference: order.trackingAvailable ? 'ending in 4832' : undefined
+          shippingStatus: order.status === 'delivered' ? 'DELIVERED' : order.status === 'shipped' ? 'SHIPPED' : 'TRACKING_NOT_AVAILABLE',
+          trackingAvailable: order.status === 'shipped' || order.status === 'delivered',
+          trackingMaskedReference: order.status === 'shipped' || order.status === 'delivered' ? 'ending in 4832' : undefined
         }
       : undefined,
     timeline
@@ -105,35 +110,43 @@ export async function checkCancelEligibility(orderId: string): Promise<OrderElig
 }
 
 export async function cancelOrder(orderId: string) {
-  await wait(180);
-  return {
-    orderId,
-    status: 'CANCEL_REQUESTED'
-  };
+  return { orderId, status: 'CANCEL_REQUESTED' };
 }
 
 export async function startRefundRequest(orderId: string) {
-  await wait(180);
-  return {
-    orderId,
-    status: 'REFUND_FLOW_READY'
-  };
+  return { orderId, status: 'REFUND_FLOW_READY' };
 }
 
 export async function startDispute(orderId: string) {
-  await wait(180);
-  return {
-    orderId,
-    status: 'DISPUTE_FLOW_READY'
-  };
+  return { orderId, status: 'DISPUTE_FLOW_READY' };
 }
 
 export async function reportOrderIssue(orderId: string) {
-  await wait(180);
-  return {
-    orderId,
-    status: 'ISSUE_REPORTED'
-  };
+  return { orderId, status: 'ISSUE_REPORTED' };
+}
+
+async function getMarketplaceListingByOrder(order: BuyerOrderItem) {
+  if (!order.listingPublicId) {
+    return null;
+  }
+  try {
+    const listing = await getMarketplaceListing(order.listingPublicId);
+    return listing;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeOrderStatus(status: BuyerOrderItem['status']) {
+  return status === 'access_ready' ? 'ACCESS_READY' : status === 'shipped' ? 'SHIPPED' : status === 'delivered' ? 'DELIVERED' : status === 'refund_requested' ? 'REFUND_REQUESTED' : status === 'disputed' ? 'DISPUTED' : 'PROCESSING';
+}
+
+function normalizePaymentStatus(status: BuyerOrderItem['payment']) {
+  return status === 'paid' ? 'PAID' : status === 'delivered' ? 'PAID' : 'PAYMENT_PENDING';
+}
+
+function normalizeDisputeStatus(status: BuyerOrderItem['status']) {
+  return status === 'refund_requested' ? 'REFUND_REQUESTED' : status === 'disputed' ? 'DISPUTE_OPEN' : 'NONE';
 }
 
 function buildEligibility(isDigital: boolean, isElectronics: boolean, orderStatus: string): OrderEligibility {
@@ -146,7 +159,7 @@ function buildEligibility(isDigital: boolean, isElectronics: boolean, orderStatu
     canRequestRefund: isDigital || isElectronics,
     cancelReason: fulfillmentStarted ? 'This order cannot be cancelled because fulfillment has started.' : 'Order is eligible for cancellation.',
     disputeReason: 'Dispute can be opened when refund or seller resolution is not enough.',
-    refundReason: isDigital ? 'Digital access history may require admin review.' : 'Return/refund review depends on delivery and product condition.'
+    refundReason: isDigital ? 'Digital access history may require review.' : 'Return/refund review depends on delivery and product condition.'
   };
 }
 
@@ -204,3 +217,4 @@ function buildTimeline(orderId: string, isDigital: boolean, status: string): Ord
     }
   ];
 }
+

@@ -10,7 +10,7 @@ export async function getCart(): Promise<CartResponse> {
       sellerId: 'seller-gamecodehub',
       sellerAlias: 'GameCodeHub',
       storeName: 'Game Code Hub',
-      storeLogoUrl: 'marketplace/placeholders/gift_cards.png',
+      storeLogoUrl: placeholderImageUrl('gift_cards'),
       sellerVerificationBadge: 'Verified Seller',
       marketplaceCode: 'DIGITAL',
       items: [
@@ -29,7 +29,7 @@ export async function getCart(): Promise<CartResponse> {
       sellerId: 'seller-techdeals',
       sellerAlias: 'TechDealsPhoenix',
       storeName: 'Tech Deals Phoenix',
-      storeLogoUrl: 'marketplace/placeholders/electronics.png',
+      storeLogoUrl: placeholderImageUrl('electronics'),
       sellerVerificationBadge: 'Verified Seller',
       marketplaceCode: 'ELECTRONICS',
       items: [
@@ -137,7 +137,7 @@ function item(cartItemId: string, productTitle: string, productType: string, del
     listingId: cartItemId.replace('cart-item', 'listing'),
     productId: cartItemId.replace('cart-item', 'product'),
     sellerId: cartItemId === 'cart-item-003' ? 'seller-techdeals' : 'seller-gamecodehub',
-    productImageUrl: productType === 'ELECTRONICS' ? 'marketplace/placeholders/electronics.png' : 'marketplace/placeholders/gift_cards.png',
+    productImageUrl: productType === 'ELECTRONICS' ? placeholderImageUrl('electronics') : placeholderImageUrl('gift_cards'),
     productTitle,
     productType,
     marketplaceCode: productType === 'ELECTRONICS' ? 'ELECTRONICS' : 'DIGITAL',
@@ -153,3 +153,4 @@ function item(cartItemId: string, productTitle: string, productType: string, del
     validationStatus: 'VALID'
   };
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

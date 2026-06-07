@@ -1,18 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from '@legendapp/state/react';
-import { FlashList } from '@shopify/flash-list';
+﻿import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import type { ReactElement, ReactNode } from 'react';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import { Button, Card, H1, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps } from 'react';
+import {
+  FlatList,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type ListRenderItemInfo,
+  type ViewStyle
+} from 'react-native';
 
-import { appState$ } from '../../state/appState';
-import { appStorage } from '../../storage/storage';
-import { colors } from '../../theme';
+import { InteriorShell } from '../../components/appShell/InteriorShell';
+import { getBuyerOrders } from '../../services/ordersApi';
 import type { AppRoute } from '../../types/navigation';
-import { getBuyerOrders, getOrderReceipt, getTrackingSummary } from './ordersMockApi';
-import type { OrderFilter, OrderListItem, OrderSort, OrdersResponse } from './ordersTypes';
 
 type OrdersScreenProps = {
   onNavigate: (route: AppRoute) => void;
@@ -21,465 +26,1275 @@ type OrdersScreenProps = {
   onOpenTracking?: (orderId: string) => void;
 };
 
-const blurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
-const filters: OrderFilter[] = ['All', 'Digital', 'Electronics', 'Processing', 'Access Ready', 'Shipping Pending', 'Shipped', 'Delivered', 'Cancelled', 'Refunded', 'Disputed', 'Seller Delivery Pending'];
-const sorts: OrderSort[] = ['Newest First', 'Oldest First', 'Highest Amount', 'Lowest Amount', 'Recently Updated', 'Status', 'Marketplace'];
+type OrderType = 'digital' | 'physical';
+type OrderStatus = 'access_ready' | 'shipped' | 'processing' | 'delivered' | 'refund_requested' | 'disputed';
+type PaymentStatus = 'paid' | 'delivered' | 'pending';
+type OrderFilter = 'All' | 'Digital' | 'Electronics' | 'Processing' | 'Shipped' | 'Delivered' | 'Refunded' | 'Disputed';
+type SortMode = 'Newest First' | 'Oldest First' | 'Highest Amount' | 'Lowest Amount';
+type BadgeTone = 'delivered' | 'shipped' | 'paid' | 'disputed' | 'refunded' | 'pending' | 'accessReady';
 
-const OrdersFlashList = FlashList as unknown as (props: {
-  data: OrderListItem[];
-  estimatedItemSize: number;
-  keyExtractor: (item: OrderListItem) => string;
-  renderItem: (info: { index: number; item: OrderListItem }) => ReactElement;
-}) => ReactElement;
+type OrderItem = {
+  category: string;
+  dateIso: string;
+  dateLabel: string;
+  id: string;
+  imageUrl: string;
+  name: string;
+  payment: PaymentStatus;
+  price: number;
+  seller: string;
+  status: OrderStatus;
+  trackingStep?: 1 | 2 | 3 | 4;
+  type: OrderType;
+};
+
+type ActionConfig = {
+  accessibilityLabel: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+};
+
+const BRAND = '#1D9E75';
+const BORDER = '#E5E5E5';
+const BG = '#F6F6F4';
+const SURFACE = '#FFFFFF';
+const TEXT = '#1A1A1A';
+const TEXT_SECONDARY = '#6B6B6B';
+const TEXT_TERTIARY = '#9E9E9E';
+const WHITE = '#FFFFFF';
+const DANGER = '#A32D2D';
+
+const BADGE = {
+  delivered: { bg: '#EAF3DE', text: '#3B6D11' },
+  shipped: { bg: '#E6F1FB', text: '#185FA5' },
+  paid: { bg: '#E1F5EE', text: '#0F6E56' },
+  disputed: { bg: '#FCEBEB', text: '#A32D2D' },
+  refunded: { bg: '#FBEAF0', text: '#993556' },
+  pending: { bg: '#FAEEDA', text: '#854F0B' },
+  accessReady: { bg: '#EAF3DE', text: '#3B6D11' }
+} as const;
+
+const FILTERS: OrderFilter[] = ['All', 'Digital', 'Electronics', 'Processing', 'Shipped', 'Delivered', 'Refunded', 'Disputed'];
+const SORT_OPTIONS: SortMode[] = ['Newest First', 'Oldest First', 'Highest Amount', 'Lowest Amount'];
 
 export function OrdersScreen({ onNavigate, onOpenOrderDetails, onOpenReceipt, onOpenTracking }: OrdersScreenProps) {
-  const selectedFilter = useSelector(appState$.orders.selectedFilter) as OrderFilter;
-  const selectedSort = useSelector(appState$.orders.selectedSort) as OrderSort;
-  const searchQuery = useSelector(appState$.orders.searchQuery);
-  const receiptModalOrderId = useSelector(appState$.orders.receiptModalOrderId);
-  const [response, setResponse] = useState<OrdersResponse | null>(null);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [message, setMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<OrderFilter>('All');
+  const [sortMode, setSortMode] = useState<SortMode>('Newest First');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(false);
+
     try {
-      const orders = await getBuyerOrders();
-      setResponse(orders);
-    } catch {
+      const response = await getBuyerOrders(signal);
+      setOrders(response);
+    } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return;
+      }
+      setOrders([]);
       setError(true);
     } finally {
+      if (signal?.aborted) {
+        return;
+      }
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadOrders();
-    const storedFilter = appStorage.getString('ordersSelectedFilter') as OrderFilter | null;
-    const storedSort = appStorage.getString('ordersSelectedSort') as OrderSort | null;
-    if (storedFilter && filters.includes(storedFilter)) {
-      appState$.orders.selectedFilter.set(storedFilter);
-    }
-    if (storedSort && sorts.includes(storedSort)) {
-      appState$.orders.selectedSort.set(storedSort);
-    }
+    const controller = new AbortController();
+    void loadOrders(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [loadOrders]);
 
-  const orders = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return sortOrders(
-      (response?.orders ?? []).filter((order) => {
-        const matchesFilter = matchesFilterValue(order, selectedFilter);
-        const haystack = [
-          order.orderId,
-          order.orderReference,
-          order.productTitle,
-          order.sellerDisplayName,
-          order.marketplaceName,
-          order.orderStatus,
-          order.paymentStatus,
-          order.digitalAccessStatus,
-          order.shippingStatus,
-          order.refundDisputeStatus
-        ].join(' ').toLowerCase();
-        return matchesFilter && (!query || haystack.includes(query));
-      }),
-      selectedSort
+  const reloadOrders = useCallback(() => {
+    const controller = new AbortController();
+    void loadOrders(controller.signal);
+  }, [loadOrders]);
+
+  const filteredOrders = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    const result = orders.filter((order) => {
+      const matchesFilter = matchesFilterValue(order, selectedFilter);
+      const searchableText = [order.id, order.name, order.category, order.seller, order.status, order.payment, order.dateLabel].join(' ').toLowerCase();
+      return matchesFilter && (!normalizedQuery || searchableText.includes(normalizedQuery));
+    });
+
+    return sortOrders(result, sortMode);
+  }, [orders, searchQuery, selectedFilter, sortMode]);
+
+  const listHeader = useMemo(() => (
+    <OrdersToolbar
+      activeFilter={selectedFilter}
+      onFilterPress={() => setFilterSheetOpen(true)}
+      onSearchChange={setSearchQuery}
+      onSelectFilter={setSelectedFilter}
+      searchQuery={searchQuery}
+      loading={loading}
+      totalCount={loading ? 0 : filteredOrders.length}
+    />
+  ), [filteredOrders.length, loading, searchQuery, selectedFilter]);
+
+  const listEmpty = useMemo(() => {
+    if (loading) {
+      return <LoadingState />;
+    }
+
+    if (error) {
+      return <ErrorState message="We could not load your orders right now." onRetry={reloadOrders} />;
+    }
+
+    if (orders.length === 0) {
+      return (
+        <EmptyState
+          ctaLabel="Explore Marketplace"
+          icon="cart-outline"
+          onCta={() => onNavigate('marketplaces')}
+          subtitle="Your digital purchases, electronics orders, refunds, and shipment updates will appear here."
+          title="No orders yet"
+        />
+      );
+    }
+
+    return (
+      <EmptyState
+        ctaLabel="Clear Filters"
+        icon="filter-outline"
+        onCta={() => {
+          setSearchQuery('');
+          setSelectedFilter('All');
+          setSortMode('Newest First');
+        }}
+        subtitle="Try a different search or filter to see more orders."
+        title="No orders match these filters"
+      />
     );
-  }, [response?.orders, searchQuery, selectedFilter, selectedSort]);
+  }, [error, loading, onNavigate, orders.length, reloadOrders]);
 
-  async function viewReceipt(order: OrderListItem) {
-    if (!order.receiptAvailable) {
-      setMessage('Receipt is not available for this order yet.');
-      return;
-    }
-    const receipt = await getOrderReceipt(order.orderId);
-    appState$.orders.receiptModalOrderId.set(order.orderId);
-    if (onOpenReceipt) {
-      onOpenReceipt(order.orderId, receipt.receiptId);
-      return;
-    }
-    setMessage(`Receipt ${receipt.receiptId} ready. Payment reference ${receipt.safePaymentReference}.`);
-  }
-
-  async function trackPackage(order: OrderListItem) {
-    const tracking = await getTrackingSummary(order.orderId);
-    if (!tracking.trackingAvailable) {
-      setMessage('Tracking will be available after the seller ships your item.');
-      return;
-    }
-    if (onOpenTracking) {
-      onOpenTracking(order.orderId);
-      return;
-    }
-    setMessage(`Tracking available: ${tracking.carrier ?? 'Carrier'} ${tracking.trackingMaskedReference ?? ''}.`);
-  }
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<OrderItem>) => (
+    <OrderCard
+      onOpenDetails={handleOpenDetailsFactory(onOpenOrderDetails)}
+      onOpenReceipt={handleOpenReceiptFactory(onOpenReceipt)}
+      onOpenSupport={() => onNavigate('support')}
+      onOpenTracking={handleOpenTrackingFactory(onOpenTracking, onNavigate)}
+      order={item}
+    />
+  ), [onNavigate, onOpenOrderDetails, onOpenReceipt, onOpenTracking]);
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2">
-              <Text color="$blue10" fontWeight="800">Order history</Text>
-              <H1>My Orders</H1>
-              <Paragraph color="$gray10">Digital, electronics, refunds, disputes, receipts, and safe tracking summaries in one place.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('home')}>Dashboard</Button>
-              <Button theme="purple" onPress={() => onNavigate('marketplaces')}>Explore Marketplace</Button>
-            </XStack>
-          </XStack>
+    <InteriorShell activeLabel="Orders" onNavigate={onNavigate} scrollable={false} subtitle="Digital, electronics, refunds, disputes, receipts, and safe tracking summaries in one place." title="My Orders">
+      <FlatList
+        data={loading ? [] : filteredOrders}
+        keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        style={styles.list}
+      />
 
-          <PremiumCard p="$4">
-            <YStack gap="$4">
-              <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
-                <XStack ai="center" bg="$background" br="$6" borderColor="$borderColor" borderWidth={1} flex={1} gap="$2" px="$3" py="$2" width="100%">
-                  <Ionicons color={colors.textSecondary} name="search" size={20} />
-                  <Input
-                    aria-label="Search orders"
-                    bg="transparent"
-                    borderWidth={0}
-                    flex={1}
-                    focusStyle={{ borderWidth: 0 }}
-                    onChangeText={(value) => appState$.orders.searchQuery.set(value)}
-                    placeholder="Search orders"
-                    value={searchQuery}
-                  />
-                </XStack>
-                <XStack flexWrap="wrap" gap="$2">
-                  {sorts.map((sort) => (
-                    <Button
-                      key={sort}
-                      size="$3"
-                      theme={selectedSort === sort ? 'purple' : undefined}
-                      onPress={() => {
-                        appState$.orders.selectedSort.set(sort);
-                        appStorage.setString('ordersSelectedSort', sort);
-                      }}
-                    >
-                      {sort}
-                    </Button>
-                  ))}
-                </XStack>
-              </XStack>
-              <XStack flexWrap="wrap" gap="$2">
-                {filters.map((filter) => (
-                  <Button
-                    key={filter}
-                    size="$3"
-                    theme={selectedFilter === filter ? 'purple' : undefined}
-                    onPress={() => {
-                      appState$.orders.selectedFilter.set(filter);
-                      appStorage.setString('ordersSelectedFilter', filter);
-                    }}
-                  >
-                    {filter}
-                  </Button>
-                ))}
-              </XStack>
-              {response ? <SummaryCounts orders={response} /> : null}
-            </YStack>
-          </PremiumCard>
+      <FilterSheet
+        onClose={() => setFilterSheetOpen(false)}
+        onReset={() => {
+          setSearchQuery('');
+          setSelectedFilter('All');
+          setSortMode('Newest First');
+          setFilterSheetOpen(false);
+        }}
+        onSelectSort={setSortMode}
+        sortMode={sortMode}
+        visible={filterSheetOpen}
+      />
+    </InteriorShell>
+  );
+}
 
-          {loading ? <LoadingState /> : null}
-          {error ? <CenteredState actionLabel="Retry" message="Unable to load your orders." onAction={loadOrders} /> : null}
-          {!loading && !error && orders.length === 0 ? (
-            <CenteredState
-              actionLabel={searchQuery ? 'Clear Search' : selectedFilter === 'All' ? 'Explore Marketplace' : 'View All Orders'}
-              message={searchQuery ? 'No orders found.' : selectedFilter === 'All' ? 'No orders yet.' : 'No orders match this filter.'}
-              onAction={() => {
-                if (searchQuery) {
-                  appState$.orders.searchQuery.set('');
-                  return;
-                }
-                if (selectedFilter !== 'All') {
-                  appState$.orders.selectedFilter.set('All');
-                  return;
-                }
-                onNavigate('marketplaces');
-              }}
-              subtitle="Your digital purchases, electronics orders, refunds, and shipment updates will appear here."
-            />
-          ) : null}
-          {!loading && !error && orders.length > 0 ? (
-            <YStack gap="$4">
-              <Text color="$gray10" fontWeight="800">{groupLabel(orders[0]!)}</Text>
-              <OrdersFlashList
-                data={orders}
-                estimatedItemSize={320}
-                keyExtractor={(order) => order.orderId}
-                renderItem={({ item, index }) => (
-                  <OrderCard
-                    index={index}
-                    order={item}
-                    onGoToLibrary={() => onNavigate('library')}
-                    onTrackPackage={() => trackPackage(item)}
-                    onViewDetails={() => {
-                      if (onOpenOrderDetails) {
-                        onOpenOrderDetails(item.orderId);
-                        return;
-                      }
-                      setMessage('Order Details is not available yet.');
-                    }}
-                    onViewReceipt={() => viewReceipt(item)}
-                  />
-                )}
-              />
-            </YStack>
-          ) : null}
-        </YStack>
+function Header({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
+  return (
+    <View style={styles.header}>
+      <View style={styles.headerLeft}>
+        <View style={styles.brandAvatar}>
+          <Text style={styles.brandAvatarText}>S</Text>
+        </View>
+        <Text style={styles.headerTitle}>Orders</Text>
+      </View>
+
+      <Pressable
+        accessibilityLabel="Open profile"
+        onPress={() => onNavigate('profilePrivacy')}
+        style={styles.userAvatar}
+      >
+        <Text style={styles.userAvatarText}>JD</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function OrdersToolbar({
+  activeFilter,
+  onFilterPress,
+  onSearchChange,
+  onSelectFilter,
+  searchQuery,
+  loading,
+  totalCount
+}: {
+  activeFilter: OrderFilter;
+  onFilterPress: () => void;
+  onSearchChange: (value: string) => void;
+  onSelectFilter: (value: OrderFilter) => void;
+  searchQuery: string;
+  loading: boolean;
+  totalCount: number;
+}) {
+  return (
+    <View style={styles.toolbar}>
+      <View style={styles.searchRow}>
+        <View style={styles.searchBox}>
+          <Ionicons color={TEXT_SECONDARY} name="search" size={18} />
+          <TextInput
+            accessibilityLabel="Search orders"
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="Search orders"
+            placeholderTextColor={TEXT_TERTIARY}
+            selectionColor={BRAND}
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+          />
+        </View>
+
+        <Pressable
+          accessibilityLabel="Open order sort and filter options"
+          onPress={onFilterPress}
+          style={({ pressed }) => [styles.filterIconButton, pressed ? styles.pressed : null]}
+        >
+          <Ionicons color={TEXT} name="options-outline" size={20} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRail}
+      >
+        {FILTERS.map((filter) => {
+          const isActive = activeFilter === filter;
+          return (
+            <Pressable
+              key={filter}
+              accessibilityLabel={`Filter orders by ${filter}`}
+              onPress={() => onSelectFilter(filter)}
+              style={({ pressed }) => [
+                styles.filterPill,
+                isActive ? styles.filterPillActive : null,
+                pressed ? styles.pressed : null
+              ]}
+            >
+              <Text style={[styles.filterPillText, isActive ? styles.filterPillTextActive : null]}>{filter}</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
-      {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
-      {receiptModalOrderId ? null : null}
-    </YStack>
+
+      <Text style={styles.countText}>{loading ? 'Loading orders...' : `${totalCount} order${totalCount === 1 ? '' : 's'} shown`}</Text>
+    </View>
   );
 }
 
 const OrderCard = memo(function OrderCard({
-  index,
-  onGoToLibrary,
-  onTrackPackage,
-  onViewDetails,
-  onViewReceipt,
+  onOpenDetails,
+  onOpenReceipt,
+  onOpenSupport,
+  onOpenTracking,
   order
 }: {
-  index: number;
-  onGoToLibrary: () => void;
-  onTrackPackage: () => void;
-  onViewDetails: () => void;
-  onViewReceipt: () => void;
-  order: OrderListItem;
+  onOpenDetails: (order: OrderItem) => void;
+  onOpenReceipt: (order: OrderItem) => void;
+  onOpenSupport: () => void;
+  onOpenTracking: (order: OrderItem) => void;
+  order: OrderItem;
 }) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(16);
-
-  useEffect(() => {
-    opacity.value = withDelay(index * 45, withTiming(1, { duration: 220 }));
-    translateY.value = withDelay(index * 45, withSpring(0, { damping: 16, stiffness: 140 }));
-  }, [index, opacity, translateY]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }]
-  }));
-
-  const isDigital = order.marketplaceCode === 'DIGITAL';
-  const isElectronics = order.marketplaceCode === 'ELECTRONICS';
+  const isPhysical = order.type === 'physical';
+  const isRefundOrDisputed = order.status === 'disputed' || order.status === 'refund_requested';
+  const statusToneValue = statusTone(order.status);
+  const paymentToneValue = paymentTone(order.payment);
+  const actionItems = buildActions(order, onOpenDetails, onOpenTracking, onOpenReceipt, onOpenSupport);
 
   return (
-    <Animated.View style={style}>
-      <PremiumCard mb="$4" p="$4">
-        <YStack gap="$4">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" gap="$4">
-            <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: order.productImageUrl }} style={{ borderRadius: 16, height: 112, width: 112 }} />
-            <YStack flex={1} gap="$3" minWidth={0}>
-              <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$2">
-                <YStack flex={1} gap="$1">
-                  <Text fontSize="$6" fontWeight="900">{order.productTitle}</Text>
-                  <Paragraph color="$gray10">{order.marketplaceName} - {order.productType} - Seller: {order.sellerDisplayName}</Paragraph>
-                  <Text color="$gray10" fontSize="$2">Order {order.orderReference} - {formatDate(order.orderDate)} - {formatMoney(order.totalAmount)}</Text>
-                </YStack>
-                <XStack flexWrap="wrap" gap="$2">
-                  <StatusPill label={labelize(order.orderStatus)} tone={statusTone(order.orderStatus)} />
-                  <StatusPill label={labelize(order.paymentStatus)} tone={order.paymentStatus === 'PAID' ? 'success' : order.paymentStatus === 'PAYMENT_FAILED' ? 'error' : 'warning'} />
-                </XStack>
-              </XStack>
-              <XStack flexWrap="wrap" gap="$2">
-                {isDigital ? <StatusPill label={labelize(order.digitalAccessStatus ?? 'ACCESS_READY')} tone="info" /> : null}
-                {isElectronics ? <StatusPill label={labelize(order.shippingStatus ?? 'TRACKING_NOT_AVAILABLE')} tone={order.trackingAvailable ? 'info' : 'warning'} /> : null}
-                <StatusPill label={labelize(order.refundDisputeStatus)} tone={order.refundDisputeStatus === 'NONE' ? 'success' : order.refundDisputeStatus.includes('DISPUTE') ? 'error' : 'warning'} />
-                <StatusPill label={order.sellerVerified ? 'Verified Seller' : 'Seller Review'} tone={order.sellerVerified ? 'success' : 'warning'} />
-              </XStack>
-            </YStack>
-          </XStack>
+    <View style={[styles.orderCard, cardShadow]}>
+      <View style={styles.cardTopRow}>
+        <View style={styles.cardTopLeft}>
+          <Image source={{ uri: order.imageUrl }} style={styles.thumbnail} contentFit="cover" />
+          <View style={styles.cardCopy}>
+            <Text numberOfLines={2} style={styles.productName}>
+              {order.name}
+            </Text>
+            <Text numberOfLines={1} style={styles.orderIdText}>
+              {order.id} · {order.dateLabel}
+            </Text>
+          </View>
+        </View>
 
-          <YStack bg="$background" br="$5" borderColor="$borderColor" borderWidth={1} gap="$2" p="$3">
-            {isDigital ? <Paragraph>Digital access actions stay protected in My Library. This list never reveals codes or starts downloads directly.</Paragraph> : null}
-            {isElectronics ? <Paragraph>{order.trackingAvailable ? 'Tracking summary is available for this shipment.' : 'Tracking will be available after the seller ships your item.'}</Paragraph> : null}
-          </YStack>
+        <StatusBadge label={statusLabel(order.status)} tone={statusToneValue} />
+      </View>
 
-          <XStack flexWrap="wrap" gap="$2">
-            <Button theme="purple" onPress={onViewDetails}>View Details</Button>
-            {isDigital ? <Button onPress={onGoToLibrary}>Go to Library</Button> : null}
-            {isElectronics ? <Button onPress={onTrackPackage}>Track Package</Button> : null}
-            <Button onPress={onViewReceipt}>View Receipt</Button>
-          </XStack>
-        </YStack>
-      </PremiumCard>
-    </Animated.View>
+      <Text numberOfLines={1} style={styles.sellerLine}>
+        {order.seller} · {order.category}
+      </Text>
+
+      <View style={styles.priceRow}>
+        <Text style={styles.priceText}>{formatMoney(order.price)}</Text>
+        <StatusBadge label={paymentLabel(order.payment)} tone={paymentToneValue} />
+      </View>
+
+      {isPhysical ? <TrackingProgress step={order.trackingStep ?? trackingStepFor(order.status)} /> : null}
+
+      {isRefundOrDisputed ? (
+        <View style={styles.alertBanner}>
+          <Ionicons color={DANGER} name="alert-circle-outline" size={18} />
+          <Text style={styles.alertText}>
+            {order.status === 'disputed'
+              ? 'Dispute open. Our team is reviewing the order.'
+              : 'Refund requested. The order is under review.'}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={styles.actionRow}>
+        {actionItems.map((action) => (
+          <ActionButton
+            key={action.label}
+            accessibilityLabel={action.accessibilityLabel}
+            icon={action.icon}
+            label={action.label}
+            onPress={action.onPress}
+          />
+        ))}
+      </View>
+    </View>
   );
 });
 
-function SummaryCounts({ orders }: { orders: OrdersResponse }) {
-  const items = [
-    ['All', orders.summaryCounts.all],
-    ['Digital', orders.summaryCounts.digital],
-    ['Electronics', orders.summaryCounts.electronics],
-    ['Access Ready', orders.summaryCounts.accessReady],
-    ['Shipped', orders.summaryCounts.shipped],
-    ['Refunded', orders.summaryCounts.refunded],
-    ['Disputed', orders.summaryCounts.disputed]
+function buildActions(
+  order: OrderItem,
+  onOpenDetails: (order: OrderItem) => void,
+  onOpenTracking: (order: OrderItem) => void,
+  onOpenReceipt: (order: OrderItem) => void,
+  onOpenSupport: () => void
+) {
+  const baseActions: ActionConfig[] = [
+    {
+      accessibilityLabel: `View details for ${order.name}`,
+      icon: 'document-text-outline' as const,
+      label: 'Details',
+      onPress: () => onOpenDetails(order)
+    }
   ];
+
+  if (order.type === 'digital') {
+    baseActions.push({
+      accessibilityLabel: `Open library for ${order.name}`,
+      icon: 'library-outline' as const,
+      label: 'Library',
+      onPress: () => onOpenTracking(order)
+    });
+  } else if (order.status === 'disputed' || order.status === 'refund_requested') {
+    baseActions.push({
+      accessibilityLabel: `Open support for ${order.name}`,
+      icon: 'help-circle-outline' as const,
+      label: 'Support',
+      onPress: onOpenSupport
+    });
+  } else {
+    baseActions.push({
+      accessibilityLabel: `Track package for ${order.name}`,
+      icon: 'navigate-outline' as const,
+      label: 'Track',
+      onPress: () => onOpenTracking(order)
+    });
+  }
+
+  baseActions.push({
+    accessibilityLabel: `View receipt for ${order.name}`,
+    icon: 'receipt-outline' as const,
+    label: 'Receipt',
+    onPress: () => onOpenReceipt(order)
+  });
+
+  return baseActions;
+}
+
+function ActionButton({
+  accessibilityLabel,
+  icon,
+  label,
+  onPress
+}: {
+  accessibilityLabel: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <XStack flexWrap="wrap" gap="$2">
-      {items.map(([label, count]) => (
-        <StatusPill key={label} label={`${label}: ${count}`} tone="info" />
-      ))}
-    </XStack>
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [styles.actionButton, pressed ? styles.pressed : null]}
+    >
+      <Ionicons color={TEXT} name={icon} size={14} />
+      <Text numberOfLines={1} style={styles.actionButtonText}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function TrackingProgress({ step }: { step: 1 | 2 | 3 | 4 }) {
+  const labels: [string, 1 | 2 | 3 | 4][] = [
+    ['Ordered', 1],
+    ['Shipped', 2],
+    ['In Transit', 3],
+    ['Delivered', 4]
+  ];
+
+  return (
+    <View style={styles.progressBlock}>
+      <View style={styles.progressRow}>
+        {labels.map(([, index]) => (
+          <View
+            key={index}
+            style={[
+              styles.progressSegment,
+              index <= step ? styles.progressSegmentActive : styles.progressSegmentInactive
+            ]}
+          />
+        ))}
+      </View>
+      <View style={styles.progressLabelRow}>
+        {labels.map(([label, index]) => (
+          <Text
+            key={label}
+            style={[
+              styles.progressLabel,
+              index <= step ? styles.progressLabelActive : styles.progressLabelInactive
+            ]}
+          >
+            {label}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function StatusBadge({ label, tone }: { label: string; tone: BadgeTone }) {
+  const badge = BADGE[tone];
+
+  return (
+    <View accessibilityLabel={label} style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+      <Text style={[styles.statusBadgeText, { color: badge.text }]}>{label}</Text>
+    </View>
   );
 }
 
 function LoadingState() {
   return (
-    <YStack gap="$3">
+    <View style={styles.stateStack}>
       {[0, 1, 2].map((item) => (
-        <PremiumCard key={item} p="$5">
-          <YStack gap="$3">
-            <YStack bg="$gray4" br="$4" h={18} w="65%" />
-            <YStack bg="$gray3" br="$4" h={96} w="100%" />
-          </YStack>
-        </PremiumCard>
+        <View key={item} style={[styles.skeletonCard, cardShadow]}>
+          <View style={styles.skeletonTopRow}>
+            <View style={styles.skeletonThumb} />
+            <View style={styles.skeletonTextBlock}>
+              <View style={styles.skeletonLineLarge} />
+              <View style={styles.skeletonLineSmall} />
+            </View>
+            <View style={styles.skeletonBadge} />
+          </View>
+          <View style={styles.skeletonLineMedium} />
+          <View style={styles.skeletonLineShort} />
+          <View style={styles.skeletonActionRow}>
+            <View style={styles.skeletonActionButton} />
+            <View style={styles.skeletonActionButton} />
+            <View style={styles.skeletonActionButton} />
+          </View>
+        </View>
       ))}
-    </YStack>
+    </View>
   );
 }
 
-function CenteredState({ actionLabel, message, onAction, subtitle }: { actionLabel: string; message: string; onAction: () => void; subtitle?: string }) {
+function EmptyState({
+  ctaLabel,
+  icon,
+  onCta,
+  subtitle,
+  title
+}: {
+  ctaLabel?: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  onCta?: () => void;
+  subtitle: string;
+  title: string;
+}) {
   return (
-    <YStack ai="center" jc="center" minHeight={320} p="$5">
-      <PremiumCard maxWidth={560} p="$6" width="100%">
-        <YStack ai="center" gap="$4">
-          <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
-          {subtitle ? <Paragraph ta="center">{subtitle}</Paragraph> : null}
-          <Button theme="purple" onPress={onAction}>{actionLabel}</Button>
-        </YStack>
-      </PremiumCard>
-    </YStack>
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}>
+        <Ionicons color={BRAND} name={icon} size={24} />
+      </View>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptySubtitle}>{subtitle}</Text>
+      {ctaLabel && onCta ? (
+        <Pressable accessibilityLabel={ctaLabel} onPress={onCta} style={({ pressed }) => [styles.emptyCta, pressed ? styles.pressed : null]}>
+          <Text style={styles.emptyCtaText}>{ctaLabel}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
-function Toast({ message, onClose }: { message: string; onClose: () => void }) {
+function ErrorState({
+  message,
+  onRetry
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
-    <YStack bottom={24} left={24} pos="absolute" right={24}>
-      <PremiumCard p="$3">
-        <XStack ai="center" jc="space-between" gap="$3">
-          <Text flex={1}>{message}</Text>
-          <Button size="$3" onPress={onClose}>Dismiss</Button>
-        </XStack>
-      </PremiumCard>
-    </YStack>
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}>
+        <Ionicons color={DANGER} name="alert-circle-outline" size={24} />
+      </View>
+      <Text style={styles.emptyTitle}>Something went wrong</Text>
+      <Text style={styles.emptySubtitle}>{message}</Text>
+      <Pressable accessibilityLabel="Retry loading orders" onPress={onRetry} style={({ pressed }) => [styles.emptyCta, pressed ? styles.pressed : null]}>
+        <Text style={styles.emptyCtaText}>Retry</Text>
+      </Pressable>
+    </View>
   );
 }
 
-function PremiumCard({ children, ...props }: { children: ReactNode; [key: string]: unknown }) {
+function FilterSheet({
+  onClose,
+  onReset,
+  onSelectSort,
+  sortMode,
+  visible
+}: {
+  onClose: () => void;
+  onReset: () => void;
+  onSelectSort: (sort: SortMode) => void;
+  sortMode: SortMode;
+  visible: boolean;
+}) {
   return (
-    <Card borderColor="$borderColor" borderWidth={1} shadowColor="$shadowColor" shadowRadius={12} {...props}>
-      {children}
-    </Card>
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+      <View style={styles.modalRoot}>
+        <Pressable accessibilityLabel="Close order filters" onPress={onClose} style={styles.modalBackdrop} />
+        <View style={[styles.filterSheet, cardShadow]}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.filterSheetTitle}>Sort orders</Text>
+          <View style={styles.filterSheetOptions}>
+            {SORT_OPTIONS.map((sort) => {
+              const isActive = sortMode === sort;
+              return (
+                <Pressable
+                  key={sort}
+                  accessibilityLabel={`Sort by ${sort}`}
+                  onPress={() => onSelectSort(sort)}
+                  style={({ pressed }) => [
+                    styles.sortOption,
+                    isActive ? styles.sortOptionActive : null,
+                    pressed ? styles.pressed : null
+                  ]}
+                >
+                  <Text style={[styles.sortOptionText, isActive ? styles.sortOptionTextActive : null]}>{sort}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.sheetActions}>
+            <Pressable
+              accessibilityLabel="Reset all filters"
+              onPress={onReset}
+              style={({ pressed }) => [styles.sheetSecondaryButton, pressed ? styles.pressed : null]}
+            >
+              <Text style={styles.sheetSecondaryButtonText}>Reset</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel="Close order filters"
+              onPress={onClose}
+              style={({ pressed }) => [styles.sheetPrimaryButton, pressed ? styles.pressed : null]}
+            >
+              <Text style={styles.sheetPrimaryButtonText}>Done</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
-function StatusPill({ label, tone }: { label: string; tone: 'error' | 'info' | 'success' | 'warning' }) {
-  const theme = tone === 'success' ? 'green' : tone === 'warning' ? 'orange' : tone === 'error' ? 'red' : 'blue';
-  return (
-    <YStack bg={`$${theme}4`} br="$10" px="$3" py="$2">
-      <Text color={`$${theme}11`} fontSize="$2" fontWeight="800">{label}</Text>
-    </YStack>
-  );
-}
-
-function matchesFilterValue(order: OrderListItem, filter: OrderFilter) {
+function matchesFilterValue(order: OrderItem, filter: OrderFilter) {
   if (filter === 'All') {
     return true;
   }
   if (filter === 'Digital') {
-    return order.marketplaceCode === 'DIGITAL';
+    return order.type === 'digital';
   }
   if (filter === 'Electronics') {
-    return order.marketplaceCode === 'ELECTRONICS';
+    return order.type === 'physical' && order.category.toLowerCase().includes('electronics');
   }
   if (filter === 'Processing') {
-    return ['ORDER_CREATED', 'PROCESSING'].includes(order.orderStatus);
-  }
-  if (filter === 'Access Ready') {
-    return ['ACCESS_READY', 'CODE_REVEAL_AVAILABLE', 'DOWNLOAD_READY'].includes(order.digitalAccessStatus ?? '');
-  }
-  if (filter === 'Shipping Pending') {
-    return order.orderStatus === 'SHIPPING_PENDING' || order.shippingStatus === 'SHIPPING_PENDING';
+    return order.status === 'processing';
   }
   if (filter === 'Shipped') {
-    return order.orderStatus === 'SHIPPED' || order.shippingStatus === 'SHIPPED';
+    return order.status === 'shipped';
   }
   if (filter === 'Delivered') {
-    return order.orderStatus === 'DELIVERED' || order.shippingStatus === 'DELIVERED';
-  }
-  if (filter === 'Cancelled') {
-    return order.orderStatus === 'CANCELLED';
+    return order.status === 'delivered';
   }
   if (filter === 'Refunded') {
-    return order.orderStatus === 'REFUNDED' || order.paymentStatus === 'REFUNDED';
+    return order.status === 'refund_requested';
   }
   if (filter === 'Disputed') {
-    return order.refundDisputeStatus.includes('DISPUTE');
+    return order.status === 'disputed';
   }
-  return order.orderStatus === 'SELLER_DELIVERY_PENDING';
+  return true;
 }
 
-function sortOrders(orders: OrderListItem[], sort: OrderSort) {
-  return [...orders].sort((a, b) => {
+function sortOrders(orderList: OrderItem[], sort: SortMode) {
+  return [...orderList].sort((left, right) => {
     if (sort === 'Oldest First') {
-      return new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime();
+      return new Date(left.dateIso).getTime() - new Date(right.dateIso).getTime();
     }
     if (sort === 'Highest Amount') {
-      return b.totalAmount - a.totalAmount;
+      return right.price - left.price;
     }
     if (sort === 'Lowest Amount') {
-      return a.totalAmount - b.totalAmount;
+      return left.price - right.price;
     }
-    if (sort === 'Recently Updated') {
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    }
-    if (sort === 'Status') {
-      return a.orderStatus.localeCompare(b.orderStatus);
-    }
-    if (sort === 'Marketplace') {
-      return a.marketplaceName.localeCompare(b.marketplaceName);
-    }
-    return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime();
+    return new Date(right.dateIso).getTime() - new Date(left.dateIso).getTime();
   });
 }
 
-function statusTone(status: string): 'error' | 'info' | 'success' | 'warning' {
-  if (['PAID', 'ACCESS_READY', 'DELIVERED', 'COMPLETED'].includes(status)) {
-    return 'success';
+function statusLabel(status: OrderStatus) {
+  switch (status) {
+    case 'access_ready':
+      return 'Access Ready';
+    case 'shipped':
+      return 'Shipped';
+    case 'processing':
+      return 'Pending';
+    case 'delivered':
+      return 'Delivered';
+    case 'refund_requested':
+      return 'Pending';
+    case 'disputed':
+      return 'Disputed';
+    default:
+      return 'Pending';
   }
-  if (['CANCELLED', 'REFUNDED', 'DISPUTED', 'FAILED', 'PAYMENT_FAILED'].includes(status)) {
-    return 'error';
-  }
-  if (['SHIPPED'].includes(status)) {
-    return 'info';
-  }
-  return 'warning';
 }
 
-function labelize(value: string) {
-  return value
-    .split('_')
-    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(' ');
+function statusTone(status: OrderStatus): BadgeTone {
+  switch (status) {
+    case 'access_ready':
+      return 'accessReady';
+    case 'shipped':
+      return 'shipped';
+    case 'processing':
+      return 'pending';
+    case 'delivered':
+      return 'delivered';
+    case 'refund_requested':
+      return 'pending';
+    case 'disputed':
+      return 'disputed';
+    default:
+      return 'pending';
+  }
 }
 
-function groupLabel(order: OrderListItem) {
-  return `Newest first - ${new Date(order.orderDate).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+function paymentLabel(payment: PaymentStatus) {
+  switch (payment) {
+    case 'paid':
+      return 'Paid';
+    case 'delivered':
+      return 'Delivered';
+    default:
+      return 'Pending';
+  }
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+function paymentTone(payment: PaymentStatus): BadgeTone {
+  switch (payment) {
+    case 'paid':
+      return 'paid';
+    case 'delivered':
+      return 'delivered';
+    default:
+      return 'pending';
+  }
+}
+
+function trackingStepFor(status: OrderStatus): 1 | 2 | 3 | 4 {
+  switch (status) {
+    case 'access_ready':
+      return 1;
+    case 'shipped':
+      return 2;
+    case 'processing':
+      return 1;
+    case 'delivered':
+      return 4;
+    case 'refund_requested':
+      return 4;
+    case 'disputed':
+      return 4;
+    default:
+      return 1;
+  }
 }
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat('en-US', { currency: 'USD', style: 'currency' }).format(value);
 }
+
+function handleOpenDetailsFactory(onOpenOrderDetails?: (orderId: string) => void) {
+  return (order: OrderItem) => {
+    onOpenOrderDetails?.(order.id);
+  };
+}
+
+function handleOpenReceiptFactory(onOpenReceipt?: (orderId: string, receiptId: string) => void) {
+  return (order: OrderItem) => {
+    onOpenReceipt?.(order.id, `RCPT-${order.id}`);
+  };
+}
+
+function handleOpenTrackingFactory(
+  onOpenTracking?: (orderId: string) => void,
+  onNavigate?: (route: AppRoute) => void
+) {
+  return (order: OrderItem) => {
+    if (order.type === 'digital') {
+      onNavigate?.('library');
+      return;
+    }
+    onOpenTracking?.(order.id);
+  };
+}
+
+const cardShadow: ViewStyle = Platform.select<ViewStyle>({
+  ios: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8
+  },
+  android: {
+    elevation: 3
+  },
+  web: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8
+  }
+}) ?? {};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: BG,
+    flex: 1
+  },
+  screen: {
+    backgroundColor: BG,
+    flex: 1
+  },
+  header: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderBottomColor: BORDER,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14
+  },
+  headerLeft: {
+    alignItems: 'flex-start',
+    gap: 8
+  },
+  brandAvatar: {
+    alignItems: 'center',
+    backgroundColor: BRAND,
+    borderRadius: 16,
+    height: 44,
+    justifyContent: 'center',
+    width: 44
+  },
+  brandAvatarText: {
+    color: WHITE,
+    fontSize: 20,
+    fontWeight: '900'
+  },
+  headerTitle: {
+    color: TEXT,
+    fontSize: 24,
+    fontWeight: '900',
+    lineHeight: 28
+  },
+  userAvatar: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40
+  },
+  userAvatarText: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: '900'
+  },
+  list: {
+    flex: 1
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28
+  },
+  toolbar: {
+    gap: 14
+  },
+  searchRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12
+  },
+  searchBox: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 52,
+    paddingHorizontal: 14
+  },
+  searchInput: {
+    color: TEXT,
+    flex: 1,
+    fontSize: 14,
+    minHeight: 24,
+    paddingVertical: 0
+  },
+  filterIconButton: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 52,
+    justifyContent: 'center',
+    width: 52
+  },
+  filterRail: {
+    gap: 8,
+    paddingVertical: 2
+  },
+  filterPill: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: 14
+  },
+  filterPillActive: {
+    backgroundColor: BRAND,
+    borderColor: BRAND
+  },
+  filterPillText: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  filterPillTextActive: {
+    color: WHITE
+  },
+  countText: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  orderCard: {
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+    marginBottom: 14,
+    padding: 14
+  },
+  cardTopRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  cardTopLeft: {
+    alignItems: 'flex-start',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 12,
+    minWidth: 0
+  },
+  thumbnail: {
+    borderRadius: 10,
+    height: 52,
+    width: 52
+  },
+  cardCopy: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0
+  },
+  productName: {
+    color: TEXT,
+    fontSize: 16,
+    fontWeight: '900',
+    lineHeight: 21
+  },
+  orderIdText: {
+    color: TEXT_TERTIARY,
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  sellerLine: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  priceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  priceText: {
+    color: TEXT,
+    fontSize: 18,
+    fontWeight: '900'
+  },
+  statusBadge: {
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '900'
+  },
+  progressBlock: {
+    gap: 8
+  },
+  progressRow: {
+    flexDirection: 'row',
+    gap: 4
+  },
+  progressSegment: {
+    borderRadius: 999,
+    flex: 1,
+    height: 6
+  },
+  progressSegmentActive: {
+    backgroundColor: BRAND
+  },
+  progressSegmentInactive: {
+    backgroundColor: '#DDE3E8'
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    gap: 4
+  },
+  progressLabel: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center'
+  },
+  progressLabelActive: {
+    color: BRAND
+  },
+  progressLabelInactive: {
+    color: TEXT_TERTIARY
+  },
+  alertBanner: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FCEBEB',
+    borderColor: '#F1BDBD',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    padding: 12
+  },
+  alertText: {
+    color: DANGER,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  actionButton: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    minHeight: 40,
+    paddingHorizontal: 10,
+    paddingVertical: 10
+  },
+  actionButtonText: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: '900'
+  },
+  stateStack: {
+    gap: 14
+  },
+  skeletonCard: {
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+    padding: 14
+  },
+  skeletonTopRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 12
+  },
+  skeletonThumb: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 10,
+    height: 52,
+    width: 52
+  },
+  skeletonTextBlock: {
+    flex: 1,
+    gap: 8
+  },
+  skeletonLineLarge: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 999,
+    height: 14,
+    width: '72%'
+  },
+  skeletonLineSmall: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 999,
+    height: 10,
+    width: '44%'
+  },
+  skeletonBadge: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 999,
+    height: 24,
+    width: 84
+  },
+  skeletonLineMedium: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 999,
+    height: 12,
+    width: '58%'
+  },
+  skeletonLineShort: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 999,
+    height: 12,
+    width: '36%'
+  },
+  skeletonActionRow: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  skeletonActionButton: {
+    backgroundColor: '#EDF1F4',
+    borderRadius: 12,
+    flex: 1,
+    height: 40
+  },
+  emptyState: {
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderColor: BORDER,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 10,
+    padding: 20
+  },
+  emptyIcon: {
+    alignItems: 'center',
+    backgroundColor: '#EAF8F4',
+    borderRadius: 999,
+    height: 48,
+    justifyContent: 'center',
+    width: 48
+  },
+  emptyTitle: {
+    color: TEXT,
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center'
+  },
+  emptySubtitle: {
+    color: TEXT_SECONDARY,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center'
+  },
+  emptyCta: {
+    alignItems: 'center',
+    backgroundColor: BRAND,
+    borderRadius: 12,
+    justifyContent: 'center',
+    minHeight: 40,
+    paddingHorizontal: 14
+  },
+  emptyCtaText: {
+    color: WHITE,
+    fontSize: 13,
+    fontWeight: '900'
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end'
+  },
+  modalBackdrop: {
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    ...StyleSheet.absoluteFillObject
+  },
+  filterSheet: {
+    backgroundColor: SURFACE,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    gap: 14,
+    padding: 16
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    backgroundColor: '#D6DCE2',
+    borderRadius: 999,
+    height: 4,
+    width: 44
+  },
+  filterSheetTitle: {
+    color: TEXT,
+    fontSize: 18,
+    fontWeight: '900'
+  },
+  filterSheetOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  sortOption: {
+    alignItems: 'center',
+    backgroundColor: BG,
+    borderColor: BORDER,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: 40,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  sortOptionActive: {
+    backgroundColor: BRAND,
+    borderColor: BRAND
+  },
+  sortOptionText: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  sortOptionTextActive: {
+    color: WHITE
+  },
+  sheetActions: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  sheetSecondaryButton: {
+    alignItems: 'center',
+    backgroundColor: BG,
+    borderColor: BORDER,
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  sheetSecondaryButtonText: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: '900'
+  },
+  sheetPrimaryButton: {
+    alignItems: 'center',
+    backgroundColor: BRAND,
+    borderRadius: 12,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  sheetPrimaryButtonText: {
+    color: WHITE,
+    fontSize: 13,
+    fontWeight: '900'
+  },
+  pressed: {
+    opacity: 0.85
+  }
+});
+

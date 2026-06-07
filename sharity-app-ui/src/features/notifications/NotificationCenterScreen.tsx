@@ -2,271 +2,134 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from '@legendapp/state/react';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
-import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps, type ReactElement } from 'react';
+import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import { colors } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
-import { archiveNotification, getNotificationFeed, markAllNotificationsRead, markNotificationRead } from './notificationMockApi';
-import type { NotificationFeedResponse, NotificationFilter, NotificationItem } from './notificationTypes';
+import { archiveNotification, getNotificationCenterData, markAllNotificationsRead, markNotificationRead, openNotificationAction } from './notificationMockApi';
+import type { AdminBroadcastSummary, NotificationFilter, NotificationItem, NotificationTimeGroup } from './notificationTypes';
 
-type NotificationCenterScreenProps = {
-  onNavigate: (route: AppRoute) => void;
-};
+type Props = { onNavigate: (route: AppRoute) => void };
+type ListComponent<T> = (props: { data: T[]; estimatedItemSize: number; keyExtractor: (item: T) => string; renderItem: (info: { item: T; index: number }) => ReactElement }) => ReactElement;
+const NotificationList = FlashList as unknown as ListComponent<NotificationItem>;
+const CriticalList = FlashList as unknown as ListComponent<NotificationItem>;
+const AdminList = FlashList as unknown as ListComponent<AdminBroadcastSummary>;
+const filters: NotificationFilter[] = ['All', 'Buyer', 'Seller', 'Orders', 'Seller orders', 'Payments', 'Seller acceptance', 'Digital delivery', 'Refunds', 'Disputes', 'Payouts', 'Verification', 'Support', 'Security', 'Marketplace', 'Coupons/rewards', 'Policies', 'Listing moderation', 'Admin announcements', 'Unread', 'Critical', 'Action required', 'Archived'];
 
-const blurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
-const NotificationFlashList = FlashList as unknown as (props: {
-  data: NotificationItem[];
-  estimatedItemSize: number;
-  keyExtractor: (item: NotificationItem) => string;
-  renderItem: (info: { index: number; item: NotificationItem }) => ReactElement;
-}) => ReactElement;
-
-export function NotificationCenterScreen({ onNavigate }: NotificationCenterScreenProps) {
+export function NotificationCenterScreen({ onNavigate }: Props) {
   const selectedFilter = useSelector(appState$.notifications.selectedFilter) as NotificationFilter;
-  const [feed, setFeed] = useState<NotificationFeedResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const searchQuery = useSelector(appState$.notifications.searchQuery);
+  const selectedNotificationId = useSelector(appState$.notifications.selectedNotificationId);
+  const [data, setData] = useState<Awaited<ReturnType<typeof getNotificationCenterData>> | null>(null);
   const [message, setMessage] = useState('');
 
-  const loadFeed = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      setFeed(await getNotificationFeed(selectedFilter));
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFilter]);
+  const load = useCallback(async () => {
+    setData(await getNotificationCenterData(selectedFilter, searchQuery));
+  }, [searchQuery, selectedFilter]);
 
   useEffect(() => {
     const stored = appStorage.getString('notificationsSelectedFilter') as NotificationFilter | null;
-    if (stored) {
-      appState$.notifications.selectedFilter.set(stored);
-    }
+    if (stored && filters.includes(stored)) appState$.notifications.selectedFilter.set(stored);
   }, []);
+  useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    loadFeed();
-  }, [loadFeed]);
-
-  const groupedRows = useMemo(() => {
-    if (!feed) return [];
-    return feed.groups.flatMap((group) => group.notificationIds.map((id) => feed.notifications.find((item) => item.notificationId === id)).filter(Boolean) as NotificationItem[]);
-  }, [feed]);
-
-  async function updateRead(notification: NotificationItem, read: boolean) {
-    await markNotificationRead(notification.notificationId, read);
-    setMessage(read ? 'Notification marked read.' : 'Notification marked unread.');
-    loadFeed();
+  async function run(action: 'read' | 'unread' | 'archive' | 'allRead' | 'open', item?: NotificationItem) {
+    const result = action === 'allRead'
+      ? await markAllNotificationsRead()
+      : action === 'archive' && item
+        ? await archiveNotification(item.notificationId)
+        : action === 'open' && item
+          ? await openNotificationAction(item.notificationId, item.primaryAction.actionCode)
+          : item
+            ? await markNotificationRead(item.notificationId, action === 'read')
+            : null;
+    if (item) appState$.notifications.selectedNotificationId.set(item.notificationId);
+    if (result) setMessage(result.message);
+    await load();
   }
 
-  async function archive(notification: NotificationItem) {
-    try {
-      await archiveNotification(notification.notificationId);
-      setMessage('Notification archived.');
-      loadFeed();
-    } catch {
-      setMessage('Critical notifications cannot be archived until resolved.');
-    }
-  }
+  if (!data) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading notifications..." /></YStack>;
+  const selected = data.notifications.find((item) => item.notificationId === selectedNotificationId) ?? data.dashboard.criticalNotifications[0] ?? data.notifications[0];
 
   return (
     <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1220} mx="auto" p="$5" width="100%">
+      <ScrollView contentContainerStyle={{ paddingBottom: 108 }} showsVerticalScrollIndicator={false}>
+        <YStack gap="$5" maxWidth={1280} mx="auto" p="$5" width="100%">
           <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2" flex={1}>
-              <Text color="$blue10" fontWeight="800">Alerts and action queue</Text>
+            <YStack flex={1} gap="$2">
+              <Text color="$blue10" fontWeight="800">In-app inbox and action queue</Text>
               <H1>Notification Center</H1>
-              <Paragraph color="$gray10">Stay updated on orders, messages, refunds, disputes, payouts, listings, and security alerts.</Paragraph>
+              <Paragraph color="$gray10">View order, payment, refund, payout, support, security, marketplace, policy, listing, and announcement updates.</Paragraph>
             </YStack>
             <XStack flexWrap="wrap" gap="$2">
               <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('home')}>Back</Button>
-              <Button icon={<Ionicons name="checkmark-done" size={18} />} theme="purple" onPress={async () => { await markAllNotificationsRead(); setMessage('All eligible notifications marked read.'); loadFeed(); }}>Mark All as Read</Button>
-              <Button icon={<Ionicons name="settings-outline" size={18} />} onPress={() => onNavigate('profilePrivacy')}>Preferences</Button>
+              <Button icon={<Ionicons name="checkmark-done" size={18} />} theme="purple" onPress={() => run('allRead')}>Mark All Read</Button>
+              <Button icon={<Ionicons name="settings-outline" size={18} />} onPress={() => onNavigate('appSettings')}>Preferences</Button>
             </XStack>
           </XStack>
 
-          {feed ? <SummaryStrip feed={feed} /> : null}
+          <XStack $sm={{ flexDirection: 'column' }} gap="$3">
+            <Metric label="Total unread" value={data.dashboard.unreadCounts.totalUnread} tone="info" />
+            <Metric label="Buyer unread" value={data.dashboard.unreadCounts.buyerUnread} tone="success" />
+            <Metric label="Seller unread" value={data.dashboard.unreadCounts.sellerUnread} tone="info" />
+            <Metric label="Critical unread" value={data.dashboard.unreadCounts.criticalUnread} tone="critical" />
+            <Metric label="Action required" value={data.dashboard.unreadCounts.actionRequiredUnread} tone="warning" />
+          </XStack>
 
           <PremiumCard p="$4">
-            <XStack flexWrap="wrap" gap="$2">
-              {(feed?.availableFilters ?? ['All', 'Buyer', 'Seller', 'Orders', 'Refunds', 'Disputes', 'Messages', 'Payouts', 'Listings', 'Security', 'Unread', 'Action Required']).map((filter) => (
-                <Button
-                  key={filter}
-                  size="$3"
-                  theme={selectedFilter === filter ? 'purple' : undefined}
-                  onPress={() => {
-                    appState$.notifications.selectedFilter.set(filter);
-                    appStorage.setString('notificationsSelectedFilter', filter);
-                  }}
-                >
-                  {filter}
-                </Button>
-              ))}
-            </XStack>
+            <YStack gap="$3">
+              <Input bg="$background" borderColor="$borderColor" placeholder="Search notifications, categories, references, or status" value={searchQuery} onChangeText={(value) => appState$.notifications.searchQuery.set(value)} />
+              <XStack flexWrap="wrap" gap="$2">{filters.map((filter) => <Button key={filter} size="$3" theme={selectedFilter === filter ? 'purple' : undefined} onPress={() => { appState$.notifications.selectedFilter.set(filter); appStorage.setString('notificationsSelectedFilter', filter); }}>{filter}</Button>)}</XStack>
+            </YStack>
           </PremiumCard>
 
-          {loading ? <CenteredState title="Loading notifications..." /> : null}
-          {error ? <CenteredState title="Unable to load notifications." actionLabel="Retry" onAction={loadFeed} /> : null}
-          {!loading && !error && groupedRows.length === 0 ? (
-            <CenteredState
-              title={selectedFilter === 'All' ? 'No notifications yet.' : 'No notifications match this filter.'}
-              subtitle="Updates about orders, messages, refunds, disputes, payouts, listings, and security alerts will appear here."
-              actionLabel={selectedFilter === 'All' ? 'Manage Preferences' : 'View All Notifications'}
-              onAction={() => selectedFilter === 'All' ? onNavigate('profilePrivacy') : appState$.notifications.selectedFilter.set('All')}
-            />
-          ) : null}
+          {data.dashboard.criticalNotifications.length ? <Panel title="Pinned Critical / Action Required"><CriticalList data={data.dashboard.criticalNotifications} estimatedItemSize={132} keyExtractor={(item) => item.notificationId} renderItem={({ item, index }) => <NotificationRow item={item} index={index} pinned onNavigate={onNavigate} run={run} />} /></Panel> : null}
+          {!data.notifications.length ? <Centered title={selectedFilter === 'Unread' ? 'No unread notifications. You are all caught up.' : 'No notifications match this filter.'} /> : null}
 
-          {!loading && !error && feed ? (
-            <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
-              <YStack flex={1} gap="$4" minWidth={0}>
-                {feed.groups.map((group) => {
-                  const items = group.notificationIds.map((id) => feed.notifications.find((item) => item.notificationId === id)).filter(Boolean) as NotificationItem[];
-                  if (items.length === 0) return null;
-                  return (
-                    <YStack key={group.groupKey} gap="$3">
-                      <Text color="$gray10" fontWeight="900">{group.groupLabel}</Text>
-                      <NotificationFlashList
-                        data={items}
-                        estimatedItemSize={190}
-                        keyExtractor={(item) => item.notificationId}
-                        renderItem={({ item, index }) => (
-                          <NotificationRow
-                            index={index}
-                            notification={item}
-                            onArchive={() => archive(item)}
-                            onOpen={() => {
-                              appState$.notifications.lastDeepLink.set(item.deepLink.route);
-                              appState$.notifications.selectedNotificationId.set(item.notificationId);
-                              updateRead(item, true);
-                              setMessage(`Deep link resolved: ${item.deepLink.route}`);
-                            }}
-                            onToggleRead={() => updateRead(item, !item.read)}
-                          />
-                        )}
-                      />
-                    </YStack>
-                  );
-                })}
-              </YStack>
-              <DetailsPanel feed={feed} message={message} onNavigate={onNavigate} />
-            </XStack>
-          ) : null}
+          <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
+            <YStack flex={1} gap="$4" minWidth={0}>
+              {data.timeGroups.map((group) => <TimeGroup key={group.groupCode} group={group} onNavigate={onNavigate} run={run} />)}
+              <Panel title="Admin Broadcast Placeholder"><AdminList data={data.adminBroadcasts} estimatedItemSize={116} keyExtractor={(item) => item.broadcastId} renderItem={({ item, index }) => <AdminRow item={item} index={index} />} /></Panel>
+            </YStack>
+            <YStack gap="$4" width={390} $md={{ width: '100%' }}>
+              <Details item={selected} message={message} onNavigate={onNavigate} run={run} />
+              <Panel title="Preference Shortcut"><Paragraph color="$gray10">{data.dashboard.preferencesShortcut.userSafeMessage}</Paragraph><Button onPress={() => onNavigate('appSettings')}>Manage Notification Preferences</Button></Panel>
+            </YStack>
+          </XStack>
         </YStack>
       </ScrollView>
     </YStack>
   );
 }
 
-function SummaryStrip({ feed }: { feed: NotificationFeedResponse }) {
-  const counts = feed.summaryCounts;
-  return (
-    <XStack $sm={{ flexDirection: 'column' }} gap="$3">
-      <SummaryCard label="Unread" value={counts.unreadCount} tone="info" />
-      <SummaryCard label="Action Required" value={counts.actionRequiredCount} tone="warning" />
-      <SummaryCard label="Critical" value={counts.criticalCount} tone="critical" />
-      <SummaryCard label="Buyer" value={counts.buyerCount} tone="success" />
-      <SummaryCard label="Seller" value={counts.sellerCount} tone="info" />
-    </XStack>
-  );
+function TimeGroup({ group, onNavigate, run }: { group: NotificationTimeGroup; onNavigate: (route: AppRoute) => void; run: (action: 'read' | 'unread' | 'archive' | 'allRead' | 'open', item?: NotificationItem) => void }) {
+  if (!group.notifications.length) return null;
+  return <Panel title={`${group.label} (${group.count}, ${group.unreadCount} unread)`}><NotificationList data={group.notifications} estimatedItemSize={156} keyExtractor={(item) => item.notificationId} renderItem={({ item, index }) => <NotificationRow item={item} index={index} onNavigate={onNavigate} run={run} />} /></Panel>;
 }
 
-const NotificationRow = memo(function NotificationRow({ index, notification, onArchive, onOpen, onToggleRead }: { index: number; notification: NotificationItem; onArchive: () => void; onOpen: () => void; onToggleRead: () => void }) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(12);
-
-  useEffect(() => {
-    opacity.value = withDelay(index * 45, withTiming(1, { duration: 220 }));
-    translateY.value = withDelay(index * 45, withSpring(0, { damping: 18, stiffness: 150 }));
-  }, [index, opacity, translateY]);
-
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
-
-  return (
-    <Animated.View style={style}>
-      <PremiumCard mb="$3" p="$4" borderColor={notification.critical ? '$red8' : notification.actionRequired ? '$orange8' : '$borderColor'}>
-        <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$4">
-          <YStack ai="center" bg={notification.read ? '$gray3' : '$blue3'} br="$6" h={54} jc="center" w={54}>
-            {notification.productImageUrl ? <Image source={notification.productImageUrl} placeholder={blurhash} style={{ width: 54, height: 54, borderRadius: 12 }} /> : <Ionicons color={notification.critical ? colors.error : notification.actionRequired ? colors.warning : colors.info} name={notification.critical ? 'shield' : 'notifications'} size={24} />}
-          </YStack>
-          <YStack flex={1} gap="$2" minWidth={0}>
-            <XStack ai="center" flexWrap="wrap" gap="$2">
-              {!notification.read ? <Badge label="Unread" tone="info" /> : null}
-              {notification.actionRequired ? <Badge label="Action Required" tone="warning" /> : null}
-              {notification.critical ? <Badge label="Critical" tone="critical" /> : null}
-              <Badge label={notification.role} tone={notification.role === 'SELLER' ? 'info' : 'success'} />
-            </XStack>
-            <Text fontSize="$6" fontWeight="900">{notification.title}</Text>
-            <Paragraph color="$gray10">{notification.message}</Paragraph>
-            <Text color="$gray10" fontSize="$3">{notification.role} • {notification.category} • {notification.priority} • {notification.relatedReference}</Text>
-          </YStack>
-          <YStack gap="$2" minWidth={168}>
-            <Button icon={<Ionicons name="open-outline" size={18} />} theme="purple" onPress={onOpen}>Open</Button>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button icon={<Ionicons name="ellipsis-horizontal" size={18} />}>Actions</Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                <DropdownMenu.Item key="read" onSelect={onToggleRead}>{notification.read ? 'Mark as Unread' : 'Mark as Read'}</DropdownMenu.Item>
-                <DropdownMenu.Item key="archive" disabled={!notification.availableActions.canArchive} onSelect={onArchive}>Archive Notification</DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </YStack>
-        </XStack>
-      </PremiumCard>
-    </Animated.View>
-  );
+const NotificationRow = memo(function NotificationRow({ item, index, pinned, onNavigate, run }: { item: NotificationItem; index: number; pinned?: boolean; onNavigate: (route: AppRoute) => void; run: (action: 'read' | 'unread' | 'archive' | 'allRead' | 'open', item?: NotificationItem) => void }) {
+  const style = useEntrance(index);
+  return <Animated.View style={style}><PremiumCard mb="$3" p="$4" borderColor={item.critical ? '$red8' : item.actionRequired ? '$orange8' : '$borderColor'}><XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$4">{item.imageUrl ? <Image source={item.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /> : <IconCircle severity={item.severity} />}<YStack flex={1} gap="$2" minWidth={0}><XStack flexWrap="wrap" gap="$2">{item.status === 'UNREAD' ? <Badge label="Unread" tone="info" /> : null}{item.actionRequired ? <Badge label="Action required" tone="warning" /> : null}{item.critical ? <Badge label="Critical" tone="critical" /> : null}{pinned || item.pinned ? <Badge label="Pinned" tone="success" /> : null}<Badge label={item.roleContext} tone={item.roleContext === 'SELLER' ? 'info' : 'success'} /></XStack><Text fontSize="$6" fontWeight="900">{item.title}</Text><Paragraph color="$gray10">{item.shortMessage}</Paragraph><Text color="$gray10" fontSize="$3">{item.category} / {item.relatedEntity.relatedEntityReference} / {new Date(item.createdAt).toLocaleString()}</Text></YStack><YStack gap="$2" minWidth={180}><Button theme="purple" onPress={() => { run('open', item); const route = item.primaryAction.route as AppRoute; if (['orders', 'paymentAuthorization', 'library', 'refundStatus', 'disputeStatus', 'sellerVerification', 'support', 'loginSecurity', 'appSettings', 'rewards', 'policies', 'profilePrivacy', 'marketplaces', 'notifications'].includes(route)) onNavigate(route); }}>{item.primaryAction.label}</Button><DropdownMenu.Root><DropdownMenu.Trigger><Button>Actions</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="read" onSelect={() => run(item.status === 'UNREAD' ? 'read' : 'unread', item)}>{item.status === 'UNREAD' ? 'Mark Read' : 'Mark Unread'}</DropdownMenu.Item><DropdownMenu.Item key="archive" disabled={!item.secondaryActions.find((action) => action.actionCode === 'ARCHIVE')?.enabled} onSelect={() => run('archive', item)}>Archive Notification</DropdownMenu.Item><DropdownMenu.Item key="prefs" onSelect={() => onNavigate('appSettings')}>Manage Preferences</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root></YStack></XStack></PremiumCard></Animated.View>;
 });
 
-function DetailsPanel({ feed, message, onNavigate }: { feed: NotificationFeedResponse; message: string; onNavigate: (route: AppRoute) => void }) {
-  const selectedId = useSelector(appState$.notifications.selectedNotificationId);
-  const selected = feed.notifications.find((item) => item.notificationId === selectedId) ?? feed.notifications[0];
-  return (
-    <PremiumCard p="$5" width={360} $md={{ width: '100%' }}>
-      <YStack gap="$4">
-        <Text fontSize="$6" fontWeight="900">Details</Text>
-        {selected ? (
-          <>
-            <H2>{selected.title}</H2>
-            <Paragraph color="$gray10">{selected.message}</Paragraph>
-            <Badge label={selected.deepLink.route} tone="info" />
-          </>
-        ) : <Paragraph color="$gray10">Select a notification to preview its deep link and actions.</Paragraph>}
-        {message ? <Paragraph color="$purple10">{message}</Paragraph> : null}
-        <Button onPress={() => onNavigate('profilePrivacy')}>Manage Notification Preferences</Button>
-      </YStack>
-    </PremiumCard>
-  );
+function Details({ item, message, onNavigate, run }: { item?: NotificationItem; message: string; onNavigate: (route: AppRoute) => void; run: (action: 'read' | 'unread' | 'archive' | 'allRead' | 'open', item?: NotificationItem) => void }) {
+  if (!item) return <Panel title="Notification Detail"><Paragraph color="$gray10">Notification not found.</Paragraph></Panel>;
+  return <Panel title="Notification Detail"><YStack gap="$3"><H2>{item.title}</H2><Paragraph color="$gray10">{item.fullMessage}</Paragraph><Row title={item.relatedEntity.relatedEntityReference} meta={`${item.relatedEntity.relatedEntityType} / ${item.relatedEntity.status} / ${item.relatedEntity.summary}`} badge={item.relatedEntity.accessAllowed ? 'Access allowed' : 'Unavailable'} tone={item.relatedEntity.accessAllowed ? 'success' : 'critical'} /><Row title="Delivery channels" meta={item.deliveryChannels.map((channel) => `${channel.channel}: ${channel.userSafeMessage}`).join(' / ')} badge="In-app / push / email" tone="info" /><XStack flexWrap="wrap" gap="$2"><Button theme="purple" onPress={() => run('open', item)}>Take Required Action</Button><Button onPress={() => run(item.status === 'UNREAD' ? 'read' : 'unread', item)}>{item.status === 'UNREAD' ? 'Mark Read' : 'Mark Unread'}</Button><Button onPress={() => onNavigate('appSettings')}>Preferences</Button></XStack>{message ? <Paragraph color="$purple10">{message}</Paragraph> : null}</YStack></Panel>;
 }
 
-function SummaryCard({ label, value, tone }: { label: string; value: number; tone: 'info' | 'warning' | 'critical' | 'success' }) {
-  return <PremiumCard flex={1} minWidth={150} p="$4"><Text color={toneColor(tone)} fontSize="$8" fontWeight="900">{value}</Text><Text color="$gray10">{label}</Text></PremiumCard>;
-}
-
-function CenteredState({ title, subtitle, actionLabel, onAction }: { title: string; subtitle?: string; actionLabel?: string; onAction?: () => void }) {
-  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><H2 ta="center">{title}</H2>{subtitle ? <Paragraph color="$gray10" ta="center">{subtitle}</Paragraph> : null}{actionLabel ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}</YStack></PremiumCard>;
-}
-
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
-  return <Text bg={toneBg(tone)} br="$6" color={toneColor(tone)} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>;
-}
-
-function PremiumCard(props: ComponentProps<typeof Card>) {
-  return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />;
-}
-
-function toneBg(tone: 'info' | 'warning' | 'critical' | 'success') {
-  return tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3';
-}
-
-function toneColor(tone: 'info' | 'warning' | 'critical' | 'success') {
-  return tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10';
-}
+function AdminRow({ item, index }: { item: AdminBroadcastSummary; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.title} meta={`${item.audienceType} / ${item.deliveryChannels.join(', ')} / ${item.createdBy}`} badge={item.status} tone="info" /></Animated.View>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
+function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1} minWidth={0}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
+function Metric({ label, value, tone }: { label: string; value: string | number; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <PremiumCard flex={1} minWidth={150} p="$4"><Text color={toneColor(tone)} fontSize="$8" fontWeight="900">{value}</Text><Text color="$gray10">{label}</Text></PremiumCard>; }
+function IconCircle({ severity }: { severity: NotificationItem['severity'] }) { const tone = severity === 'CRITICAL' ? 'critical' : severity === 'WARNING' ? 'warning' : severity === 'SUCCESS' ? 'success' : 'info'; return <YStack ai="center" bg={toneBg(tone)} br="$6" h={54} jc="center" w={54}><Ionicons color={tone === 'critical' ? colors.error : tone === 'warning' ? colors.warning : tone === 'success' ? colors.success : colors.info} name={tone === 'critical' ? 'shield' : tone === 'warning' ? 'alert-circle' : 'notifications'} size={24} /></YStack>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
+function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <Text bg={toneBg(tone)} br="$6" color={toneColor(tone)} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
+function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
+function toneBg(tone: 'info' | 'warning' | 'critical' | 'success') { return tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; }
+function toneColor(tone: 'info' | 'warning' | 'critical' | 'success') { return tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; }
+function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 28, withTiming(1, { duration: 210 })); translateY.value = withDelay(index * 28, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }

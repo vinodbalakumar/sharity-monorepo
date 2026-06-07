@@ -162,7 +162,7 @@ function relatedEntities(): SupportRelatedEntity[] {
 }
 
 function attachment(id: string, fileName: string, status: string): SupportAttachmentItem {
-  return { attachmentId: id, fileName, fileType: 'image/png', fileSize: 240000, previewUrl: 'marketplace/placeholders/gift_cards.png', uploadStatus: status, scanStatus: 'SCAN_PASSED', visibilityPolicy: 'Visible to support and relevant seller/admin reviewers only', createdAt: now };
+  return { attachmentId: id, fileName, fileType: 'image/png', fileSize: 240000, previewUrl: placeholderImageUrl('gift_cards'), uploadStatus: status, scanStatus: 'SCAN_PASSED', visibilityPolicy: 'Visible to support and relevant seller/admin reviewers only', createdAt: now };
 }
 
 function ticketTimeline(): SupportTicketTimelineEvent[] {
@@ -172,3 +172,4 @@ function ticketTimeline(): SupportTicketTimelineEvent[] {
     { eventId: 'support-time-3', eventType: 'WAITING_FOR_SUPPORT', title: 'Waiting for support', message: 'Support team placeholder will review this ticket.', actorType: 'SHARITY', status: 'PENDING', timestamp: now }
   ];
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

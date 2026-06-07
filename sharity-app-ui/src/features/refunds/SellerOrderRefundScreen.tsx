@@ -187,7 +187,7 @@ function Breakdown({ breakdown }: { breakdown: RefundBreakdown }) {
 }
 
 function PhysicalReturnPlaceholder() {
-  return <Panel title="Physical / Electronics Return Later"><YStack gap="$2"><Paragraph color="$gray10">Return required, product condition proof, tracking, inspection, and refund-after-return approval are placeholders for the later physical workflow.</Paragraph></YStack></Panel>;
+  return <Panel title="Physical / Electronics Return"><YStack gap="$2"><Paragraph color="$gray10">Live physical return reviews follow the marketplace delivery, inspection, and dispute rules for the selected order.</Paragraph></YStack></Panel>;
 }
 
 const SellerOrderRow = memo(function SellerOrderRow({ sellerOrder, selected, index }: { sellerOrder: SellerOrderRefundSummary; selected: boolean; index: number }) {

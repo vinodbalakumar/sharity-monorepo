@@ -9,6 +9,7 @@ import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStac
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
+import { placeholderImageUrl } from '../../utils/mockImages';
 import { getAuditLog, getCoupons, getFeeWaivers, getFreeProductRules, getPricingRules, runSimulation } from './pricingPromotionsMockApi';
 import type { CouponRule, FeeWaiverSellerRule, FreeProductRule, PricingAuditLogItem, PricingRule, PricingSimulationResponse } from './pricingPromotionsTypes';
 
@@ -84,7 +85,7 @@ function FreeRuleRow({ freeRule, index }: { freeRule: FreeProductRule; index: nu
 function AuditRow({ auditItem, index }: { auditItem: PricingAuditLogItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={auditItem.action} meta={`${auditItem.actorName} • ${auditItem.entityType} ${auditItem.entityId} • ${auditItem.reason}`} badge={`v${auditItem.version}`} tone="info" /></Animated.View>; }
 
 function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
-  return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source="marketplace/placeholders/gift_cards.png" style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>;
+  return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={placeholderImageUrl('gift_cards')} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>;
 }
 
 function Simulator({ simulation }: { simulation: PricingSimulationResponse }) {

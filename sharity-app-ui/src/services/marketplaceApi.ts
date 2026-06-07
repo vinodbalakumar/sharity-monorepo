@@ -25,8 +25,8 @@ async function getJson<T>(path: string): Promise<T> {
   }
 }
 
-export async function getMarketplaceHome(): Promise<MarketplaceHomeResponse> {
-  return getJson<MarketplaceHomeResponse>('/home');
+export async function getMarketplaceHome(query = ''): Promise<MarketplaceHomeResponse> {
+  return getJson<MarketplaceHomeResponse>(`/home${query}`);
 }
 
 export async function getMarketplaceListings(): Promise<MarketplaceListing[]> {

@@ -52,7 +52,7 @@ function config(configId: string, countryCode: string, marketplaceCode: string, 
     countryCode,
     marketplaceCode,
     marketplaceName,
-    marketplaceIconUrl: 'marketplace/placeholders/gift_cards.png',
+    marketplaceIconUrl: placeholderImageUrl('gift_cards'),
     buyerAvailability: { buyerAllowed, sellerAllowed: false, buyerStatus: buyerAllowed ? 'ALLOWED' : 'BLOCKED', sellerStatus: 'N/A', buyerUserSafeMessage: buyerAllowed ? 'Marketplace enabled' : 'Not available in your country', sellerUserSafeMessage: 'Seller preferences are handled separately' },
     sellerAvailability: { buyerAllowed: false, sellerAllowed, buyerStatus: 'N/A', sellerStatus: sellerAllowed ? 'ALLOWED' : 'REQUIRES_SETUP', buyerUserSafeMessage: 'Buyer-safe only', sellerUserSafeMessage: sellerAllowed ? 'Seller access enabled' : 'Complete seller setup or wait for admin approval' },
     status,
@@ -74,3 +74,4 @@ function config(configId: string, countryCode: string, marketplaceCode: string, 
     updatedAt: now
   };
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

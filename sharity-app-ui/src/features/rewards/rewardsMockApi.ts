@@ -191,7 +191,7 @@ function campaign(
     sellerPayoutImpact: 'Seller payout unchanged by default',
     refundBehavior: 'Campaign-controlled refundability',
     antiAbuseSummary: 'Verified account, country eligibility, claim limits, cooldown',
-    imageUrl: 'marketplace/placeholders/gift_cards.png',
+    imageUrl: placeholderImageUrl('gift_cards'),
     claimStatus
   };
 }
@@ -234,3 +234,4 @@ function history(historyId: string, type: CreditType, amount: number, status: st
     termsSummary: 'Backend-controlled eligibility, refundability, and expiry rules.'
   };
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

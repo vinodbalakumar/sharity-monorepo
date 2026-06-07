@@ -5,11 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
-  useWindowDimensions
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { AppLoadingIndicator } from '../../components/ui';
 import { mobileTabItems, sidebarItems } from '../home/dashboardConfig';
 import { buildDashboardDeals, buildDashboardServices, type DashboardDeal, type DashboardService } from '../home/dashboardData';
@@ -32,9 +31,8 @@ type LoadState = {
 };
 
 export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: MarketplaceSwitcherScreenProps) {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
   const [notice, setNotice] = useState<string | null>(null);
+  const [selectedMarketplaceCode, setSelectedMarketplaceCode] = useState<'ALL' | string>('ALL');
   const [state, setState] = useState<LoadState>({
     dealsError: false,
     home: null,
@@ -64,57 +62,81 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
   const activeServices = services.filter((service) => service.enabled);
   const comingSoonServices = services.filter((service) => !service.enabled);
   const deals = useMemo(() => buildDashboardDeals(state.listings), [state.listings]);
+  const selectedService = selectedMarketplaceCode === 'ALL'
+    ? null
+    : services.find((service) => service.code === selectedMarketplaceCode) ?? null;
+  const filteredActiveServices = selectedMarketplaceCode === 'ALL'
+    ? activeServices
+    : activeServices.filter((service) => service.code === selectedMarketplaceCode);
+  const filteredComingSoonServices = selectedMarketplaceCode === 'ALL'
+    ? comingSoonServices
+    : comingSoonServices.filter((service) => service.code === selectedMarketplaceCode);
+  const filteredDeals = selectedMarketplaceCode === 'ALL'
+    ? deals
+    : deals.filter((deal) => deal.marketplaceCode === selectedMarketplaceCode);
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.shell}>
-        {isDesktop ? <SwitcherSidebar onNavigate={onNavigate} /> : null}
-        <View style={styles.main}>
-          <SwitcherHeader />
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.titleBlock}>
-              <Text style={styles.title}>Choose Marketplace</Text>
-              <Text style={styles.subtitle}>Select where you want to browse, buy, sell, or find deals.</Text>
-            </View>
+    <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Select a marketplace to focus the list below." title="Marketplace">
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <MarketplaceSelector
+          onSelectMarketplace={setSelectedMarketplaceCode}
+          selectedMarketplaceCode={selectedMarketplaceCode}
+          services={services}
+        />
 
-            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+        {selectedService ? (
+          <SelectedMarketplaceCard
+            onBrowse={() => {
+              setSelectedMarketplaceCode(selectedService.code);
+              if (selectedService.code === 'ELECTRONICS') {
+                onNavigate('electronics');
+                return;
+              }
+              setNotice(`${selectedService.name} selected. Browse featured deals below.`);
+            }}
+            onNotify={() => setNotice(`You're on the list for ${selectedService.name}. We'll notify you when it is available.`)}
+            service={selectedService}
+          />
+        ) : null}
 
-            <MarketplaceSection
-              emptyLabel="No marketplaces are currently available in your region."
-              error={state.homeError}
-              loading={state.loading}
-              onBrowse={(service) => {
-                if (service.code === 'ELECTRONICS') {
-                  onNavigate('electronics');
-                }
-              }}
-              onRetry={loadMarketplaces}
-              services={activeServices}
-              title="Active Marketplaces"
-            />
+        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-            <MarketplaceSection
-              emptyLabel="No coming soon marketplaces are configured."
-              error={false}
-              loading={state.loading}
-              onNotify={() => setNotice("You're on the list. We'll notify you when this marketplace is available.")}
-              onRetry={loadMarketplaces}
-              services={comingSoonServices}
-              title="Coming Soon"
-            />
+        <MarketplaceSection
+          emptyLabel="No marketplaces are currently available in your region."
+          error={state.homeError}
+          loading={state.loading}
+          onBrowse={(service) => {
+            setSelectedMarketplaceCode(service.code);
+            if (service.code === 'ELECTRONICS') {
+              onNavigate('electronics');
+              return;
+            }
+            setNotice(`${service.name} selected. Browse featured deals below.`);
+          }}
+          onRetry={loadMarketplaces}
+          services={filteredActiveServices}
+          title="Active Marketplaces"
+        />
 
-            <DealsSection
-              deals={deals}
-              error={state.dealsError}
-              loading={state.loading}
-              onOpenDigitalProduct={onOpenDigitalProduct}
-              onRetry={loadMarketplaces}
-            />
-          </ScrollView>
-        </View>
-      </View>
-      {!isDesktop ? <SwitcherBottomTabs onNavigate={onNavigate} /> : null}
-    </SafeAreaView>
+        <MarketplaceSection
+          emptyLabel="No coming soon marketplaces are configured."
+          error={false}
+          loading={state.loading}
+          onNotify={(serviceName) => setNotice(`You're on the list for ${serviceName}. We'll notify you when this marketplace is available.`)}
+          onRetry={loadMarketplaces}
+          services={filteredComingSoonServices}
+          title="Coming Soon"
+        />
+
+        <DealsSection
+          deals={filteredDeals}
+          error={state.dealsError}
+          loading={state.loading}
+          onOpenDigitalProduct={onOpenDigitalProduct}
+          onRetry={loadMarketplaces}
+        />
+      </ScrollView>
+    </InteriorShell>
   );
 }
 
@@ -122,10 +144,13 @@ function SwitcherSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void
   return (
     <View style={styles.sidebar}>
       <View style={styles.sidebarBrand}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logoText}>S</Text>
+        <View style={styles.brandMark}>
+          <Text style={styles.brandLetter}>S</Text>
         </View>
-        <Text style={styles.sidebarTitle}>Sharity</Text>
+        <View>
+          <Text style={styles.sidebarTitle}>Sharity</Text>
+          <Text style={styles.sidebarSubtitle}>United States</Text>
+        </View>
       </View>
       <View style={styles.sidebarList}>
         {sidebarItems.map((item) => {
@@ -133,14 +158,10 @@ function SwitcherSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void
           return (
             <Pressable
               key={item.label}
-              onPress={() => {
-                if (item.label === 'Home') {
-                  onNavigate('home');
-                }
-              }}
+              onPress={() => onNavigate(routeForLabel(item.label))}
               style={[styles.sidebarItem, active && styles.sidebarItemActive]}
             >
-              <Ionicons color={active ? colors.white : colors.black} name={item.icon} size={19} />
+              <Ionicons color={active ? colors.white : colors.gray700} name={item.icon} size={19} />
               <Text style={[styles.sidebarItemText, active && styles.sidebarItemTextActive]}>{item.label}</Text>
             </Pressable>
           );
@@ -150,15 +171,18 @@ function SwitcherSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void
   );
 }
 
-function SwitcherHeader() {
+function SwitcherHeader({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
   return (
     <View style={styles.header}>
-      <Text style={styles.headerTitle}>Choose Marketplace</Text>
+      <View>
+        <Text style={styles.headerTitle}>Marketplaces</Text>
+        <Text style={styles.headerSubtitle}>Select a marketplace to focus the list below.</Text>
+      </View>
       <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Notifications" style={styles.iconButton}>
+        <Pressable accessibilityLabel="Notifications" onPress={() => onNavigate('notifications')} style={styles.iconButton}>
           <Ionicons color={colors.black} name="notifications-outline" size={20} />
         </Pressable>
-        <Pressable accessibilityLabel="Profile" style={styles.iconButton}>
+        <Pressable accessibilityLabel="Profile" onPress={() => onNavigate('profilePrivacy')} style={styles.iconButton}>
           <Ionicons color={colors.black} name="person-outline" size={20} />
         </Pressable>
       </View>
@@ -179,7 +203,7 @@ function MarketplaceSection({
   emptyLabel: string;
   error: boolean;
   loading: boolean;
-  onNotify?: () => void;
+  onNotify?: (serviceName: string) => void;
   onBrowse?: (service: DashboardService) => void;
   onRetry: () => void;
   services: DashboardService[];
@@ -208,14 +232,14 @@ function MarketplaceCard({
   service
 }: {
   onBrowse?: (service: DashboardService) => void;
-  onNotify?: () => void;
+  onNotify?: (serviceName: string) => void;
   service: DashboardService;
 }) {
   return (
     <View style={styles.marketplaceCard}>
       <View style={styles.cardTop}>
         <View style={styles.cardIcon}>
-          <Ionicons color={colors.black} name={service.icon} size={24} />
+          <Ionicons color={service.enabled ? '#1FD39B' : '#9A7BFF'} name={service.icon} size={24} />
         </View>
         <Text style={service.enabled ? styles.activeBadge : styles.badge}>{service.enabled ? 'Active' : 'Coming Soon'}</Text>
       </View>
@@ -239,7 +263,7 @@ function MarketplaceCard({
           </>
         ) : (
           <>
-            <Pressable onPress={onNotify}>
+            <Pressable onPress={() => onNotify?.(service.name)}>
               <Text style={styles.actionButton}>Notify Me</Text>
             </Pressable>
             <Text style={styles.actionButton}>Learn More</Text>
@@ -254,8 +278,8 @@ function DealsSection({
   deals,
   error,
   loading,
+  onOpenDigitalProduct,
   onRetry
-  , onOpenDigitalProduct
 }: {
   deals: DashboardDeal[];
   error: boolean;
@@ -274,11 +298,12 @@ function DealsSection({
           {deals.map((deal) => (
             <Pressable key={deal.id} onPress={() => onOpenDigitalProduct(deal.id)} style={styles.dealCard}>
               <View style={styles.dealImage}>
-                <Ionicons color={colors.black} name="pricetag-outline" size={26} />
+                <Ionicons color="#7C5CFF" name="pricetag-outline" size={26} />
               </View>
               <Text style={styles.badge}>{deal.badge}</Text>
               <Text style={styles.cardTitle}>{deal.title}</Text>
               <Text style={styles.cardText}>{deal.marketplaceName}</Text>
+              <Text style={styles.filterPill}>{deal.marketplaceCode === 'ELECTRONICS' ? 'Electronics' : 'Digital'}</Text>
               <Text style={styles.cardText}>
                 {deal.originalPrice ? `${formatMoney(deal.originalPrice, deal.currencyCode)} -> ` : ''}
                 {formatMoney(deal.discountedPrice, deal.currencyCode)}
@@ -295,6 +320,85 @@ function DealsSection({
   );
 }
 
+function MarketplaceSelector({
+  onSelectMarketplace,
+  selectedMarketplaceCode,
+  services
+}: {
+  onSelectMarketplace: (code: 'ALL' | string) => void;
+  selectedMarketplaceCode: 'ALL' | string;
+  services: DashboardService[];
+}) {
+  return (
+    <View style={styles.selectorCard}>
+      <View style={styles.selectorHeader}>
+        <Text style={styles.sectionTitle}>Select Marketplace</Text>
+        <Text style={styles.selectorHint}>Pick one marketplace to focus the cards and deals below.</Text>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.selectorRow}>
+          <Pressable
+            onPress={() => onSelectMarketplace('ALL')}
+            style={[styles.selectorChip, selectedMarketplaceCode === 'ALL' && styles.selectorChipActive]}
+          >
+            <Text style={[styles.selectorChipText, selectedMarketplaceCode === 'ALL' && styles.selectorChipTextActive]}>All</Text>
+          </Pressable>
+          {services.map((service) => {
+            const active = selectedMarketplaceCode === service.code;
+            return (
+              <Pressable
+                key={service.code}
+                onPress={() => onSelectMarketplace(service.code)}
+                style={[styles.selectorChip, active && styles.selectorChipActive]}
+              >
+                <Ionicons color={active ? colors.white : colors.gray700} name={service.icon} size={16} />
+                <Text style={[styles.selectorChipText, active && styles.selectorChipTextActive]}>{service.name}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function SelectedMarketplaceCard({
+  onBrowse,
+  onNotify,
+  service
+}: {
+  onBrowse: () => void;
+  onNotify: () => void;
+  service: DashboardService;
+}) {
+  return (
+    <View style={styles.selectedCard}>
+      <View style={styles.selectedCardTop}>
+        <View style={styles.cardIcon}>
+          <Ionicons color={service.enabled ? '#1FD39B' : '#9A7BFF'} name={service.icon} size={24} />
+        </View>
+        <Text style={service.enabled ? styles.activeBadge : styles.badge}>{service.enabled ? 'Active' : 'Coming Soon'}</Text>
+      </View>
+      <Text style={styles.cardTitle}>{service.name}</Text>
+      <Text style={styles.cardText}>{service.description}</Text>
+      <View style={styles.selectedActions}>
+        {service.enabled ? (
+          <>
+            <Pressable onPress={onBrowse}>
+              <Text style={styles.actionButton}>{service.code === 'ELECTRONICS' ? 'Open Electronics' : 'Browse Deals'}</Text>
+            </Pressable>
+            <Text style={styles.actionButton}>View More</Text>
+          </>
+        ) : (
+          <Pressable onPress={onNotify}>
+            <Text style={styles.actionButton}>Notify Me</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function SwitcherBottomTabs({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
   return (
     <View style={styles.bottomTabs}>
@@ -303,14 +407,10 @@ function SwitcherBottomTabs({ onNavigate }: { onNavigate: (route: AppRoute) => v
         return (
           <Pressable
             key={item.label}
-            onPress={() => {
-              if (item.label === 'Home') {
-                onNavigate('home');
-              }
-            }}
+            onPress={() => onNavigate(routeForLabel(item.label))}
             style={styles.bottomTab}
           >
-            <Ionicons color={colors.black} name={item.icon} size={19} />
+            <Ionicons color={active ? colors.white : colors.gray700} name={item.icon} size={19} />
             <Text style={[styles.bottomTabText, active && styles.bottomTabTextActive]}>{item.label}</Text>
           </Pressable>
         );
@@ -356,6 +456,28 @@ function formatMoney(value: number, currencyCode: string) {
   }
 }
 
+function routeForLabel(label: string): AppRoute {
+  switch (label) {
+    case 'Marketplace':
+      return 'marketplaces';
+    case 'Orders':
+    case 'My Orders':
+      return 'orders';
+    case 'Rewards':
+      return 'rewards';
+    case 'Cart':
+      return 'cart';
+    case 'Sell':
+      return 'sellerVerification';
+    case 'Wallet':
+      return 'wallet';
+    case 'Profile':
+      return 'profilePrivacy';
+    default:
+      return 'home';
+  }
+}
+
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.white,
@@ -367,6 +489,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row'
   },
   sidebar: {
+    backgroundColor: colors.white,
     borderRightColor: colors.border,
     borderRightWidth: 1,
     padding: spacing.md,
@@ -378,17 +501,21 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xl
   },
-  logoBox: {
+  brandMark: {
     alignItems: 'center',
-    backgroundColor: colors.black,
+    backgroundColor: '#7C5CFF',
     borderRadius: radii.md,
-    height: 40,
+    height: 44,
     justifyContent: 'center',
-    width: 40
+    shadowColor: '#02040A',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.24,
+    shadowRadius: 14,
+    width: 44
   },
-  logoText: {
+  brandLetter: {
     color: colors.white,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900'
   },
   sidebarTitle: {
@@ -396,11 +523,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900'
   },
+  sidebarSubtitle: {
+    color: colors.gray700,
+    fontSize: 12,
+    marginTop: 2
+  },
   sidebarList: {
     gap: spacing.sm
   },
   sidebarItem: {
     alignItems: 'center',
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -409,7 +542,8 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   sidebarItemActive: {
-    backgroundColor: colors.black
+    backgroundColor: '#7C5CFF',
+    borderColor: '#7C5CFF'
   },
   sidebarItemText: {
     color: colors.black,
@@ -424,6 +558,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
+    backgroundColor: colors.white,
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
@@ -433,8 +568,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.black,
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '900'
+  },
+  headerSubtitle: {
+    color: colors.gray700,
+    fontSize: 12,
+    marginTop: 2
   },
   headerActions: {
     flexDirection: 'row',
@@ -442,6 +582,7 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: 'center',
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -454,18 +595,47 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingBottom: spacing.xxxl
   },
-  titleBlock: {
+  selectorCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg
+  },
+  selectorHeader: {
+    gap: 4
+  },
+  selectorHint: {
+    color: colors.gray700,
+    fontSize: 13
+  },
+  selectorRow: {
+    flexDirection: 'row',
     gap: spacing.sm
   },
-  title: {
-    color: colors.black,
-    fontSize: 36,
-    fontWeight: '900'
+  selectorChip: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
   },
-  subtitle: {
-    color: colors.black,
-    fontSize: 16,
-    lineHeight: 24
+  selectorChipActive: {
+    backgroundColor: '#7C5CFF',
+    borderColor: '#7C5CFF'
+  },
+  selectorChipText: {
+    color: colors.gray700,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  selectorChipTextActive: {
+    color: colors.white
   },
   notice: {
     borderColor: colors.border,
@@ -490,12 +660,32 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   marketplaceCard: {
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexBasis: 290,
     flexGrow: 1,
     padding: spacing.lg
+  },
+  selectedCard: {
+    backgroundColor: '#FBFAFF',
+    borderColor: '#D8CFFF',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg
+  },
+  selectedCardTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  selectedActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm
   },
   cardTop: {
     alignItems: 'flex-start',
@@ -504,6 +694,7 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     alignItems: 'center',
+    backgroundColor: colors.surfaceVariant,
     borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
@@ -523,7 +714,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs
   },
   badge: {
-    backgroundColor: colors.black,
+    backgroundColor: '#111936',
     borderRadius: radii.sm,
     color: colors.white,
     fontSize: 12,
@@ -539,19 +730,25 @@ const styles = StyleSheet.create({
     marginTop: spacing.md
   },
   cardText: {
-    color: colors.black,
+    color: colors.gray700,
     fontSize: 14,
     lineHeight: 21,
     marginTop: spacing.sm
   },
+  filterPill: {
+    color: colors.gray700,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: spacing.xs
+  },
   countryText: {
-    color: colors.black,
+    color: colors.gray700,
     fontSize: 13,
     fontWeight: '900',
     marginTop: spacing.md
   },
   rulesText: {
-    color: colors.black,
+    color: colors.gray700,
     fontSize: 13,
     lineHeight: 19,
     marginTop: spacing.sm
@@ -574,6 +771,7 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   dealCard: {
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -609,6 +807,7 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   bottomTabTextActive: {
+    color: colors.white,
     fontWeight: '900'
   },
   stateRow: {
@@ -617,19 +816,20 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   stateBox: {
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
     padding: spacing.lg
   },
   stateText: {
-    color: colors.black,
+    color: colors.gray700,
     fontSize: 14,
     lineHeight: 21
   },
   smallButton: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.black,
+    backgroundColor: '#7C5CFF',
     borderRadius: radii.md,
     marginTop: spacing.md,
     paddingHorizontal: spacing.md,

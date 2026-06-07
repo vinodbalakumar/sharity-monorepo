@@ -27,3 +27,27 @@ export async function checkSession(): Promise<SessionCheckResult> {
     clearTimeout(timeout);
   }
 }
+
+export async function logoutBrowserSession(): Promise<void> {
+  const session = await getBffCsrfToken();
+  await fetch(`${bffBaseUrl}/logout`, {
+    credentials: 'include',
+    headers: session.csrfToken ? { 'X-CSRF-TOKEN': session.csrfToken } : undefined,
+    method: 'POST'
+  });
+}
+
+export async function getBffCsrfToken(): Promise<{ csrfToken?: string }> {
+  try {
+    const response = await fetch(`${bffBaseUrl}/session`, {
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      return {};
+    }
+    const body = (await response.json()) as { csrfToken?: string };
+    return { csrfToken: body.csrfToken };
+  } catch {
+    return {};
+  }
+}

@@ -15,6 +15,7 @@ export type DashboardDeal = {
   currencyCode: string;
   discountedPrice: number;
   id: string;
+  marketplaceCode: string;
   marketplaceName: string;
   originalPrice: number | null;
   productType: string;
@@ -63,6 +64,7 @@ export function buildDashboardDeals(listings: MarketplaceListing[]): DashboardDe
         currencyCode: listing.currencyCode,
         discountedPrice: listing.priceAmount,
         id: listing.publicId,
+        marketplaceCode: marketplaceCodeFor(listing),
         marketplaceName: marketplaceNameFor(listing.verticalCode),
         originalPrice: original,
         productType: listing.productType,
@@ -93,6 +95,10 @@ function marketplaceNameFor(verticalCode: string) {
     return 'Digital Marketplace';
   }
   return verticalCode === 'MARKETPLACE' ? 'Digital Marketplace' : verticalCode.replaceAll('_', ' ');
+}
+
+function marketplaceCodeFor(listing: MarketplaceListing) {
+  return isElectronicsDeal(listing) ? 'ELECTRONICS' : 'DIGITAL';
 }
 
 function discountValue(listing: MarketplaceListing) {

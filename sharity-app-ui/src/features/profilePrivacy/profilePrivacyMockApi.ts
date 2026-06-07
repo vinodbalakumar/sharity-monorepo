@@ -7,7 +7,7 @@ export async function getProfilePrivacySettings(): Promise<ProfilePrivacySetting
     profile: {
       userId: 'user-1000',
       displayName: 'Vinod',
-      profilePhotoUrl: 'marketplace/placeholders/avatar.png',
+      profilePhotoUrl: placeholderImageUrl('avatar'),
       bio: 'Buyer and seller on Sharity.',
       country: 'United States',
       region: 'Arizona',
@@ -30,7 +30,7 @@ export async function getProfilePrivacySettings(): Promise<ProfilePrivacySetting
     sellerProfile: {
       sellerAlias: 'TechDealsPhoenix',
       storeName: 'Tech Deals Phoenix',
-      storeLogoUrl: 'marketplace/placeholders/store.png',
+      storeLogoUrl: placeholderImageUrl('store'),
       storeDescription: 'Verified digital and electronics deals.',
       sellerDisplayPreference: 'Store name',
       salesCountVisible: false,
@@ -124,3 +124,4 @@ function badge(badgeType: string, label: string, status: string, publicVisible: 
 function blocked(blockedUserId: string, displayAlias: string, role: 'BUYER' | 'SELLER', blockedReason: string, daysAgo: number, relatedEntityReference: string) {
   return { blockedUserId, displayAlias, role, blockedReason, blockedAt: new Date(now - daysAgo * 24 * 60 * 60 * 1000).toISOString(), relatedEntityReference, canUnblock: true };
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

@@ -5,11 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
-  useWindowDimensions
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { AppSearchBar } from '../../components/ui';
 import { mobileTabItems, sidebarItems } from '../home/dashboardConfig';
 import {
@@ -29,8 +28,6 @@ type ElectronicsMarketplaceHomeScreenProps = {
 };
 
 export function ElectronicsMarketplaceHomeScreen({ onNavigate, onOpenProduct }: ElectronicsMarketplaceHomeScreenProps) {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 980;
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sort, setSort] = useState('Best Match');
@@ -52,99 +49,91 @@ export function ElectronicsMarketplaceHomeScreen({ onNavigate, onOpenProduct }: 
   }, [query, selectedCategory, sort]);
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.shell}>
-        {isDesktop ? <Sidebar onNavigate={onNavigate} /> : null}
-        {isDesktop ? <FilterSidebar /> : null}
-        <View style={styles.main}>
-          <Header isDesktop={isDesktop} onNavigate={onNavigate} />
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.hero}>
-              <Text style={styles.heroTitle}>Electronics & Gadgets</Text>
-              <Text style={styles.heroText}>
-                Buy and sell phones, laptops, tablets, gaming consoles, accessories, smart devices, used electronics,
-                and refurbished products from trusted sellers.
-              </Text>
-              <Text style={styles.heroTrust}>Protected checkout. Verified sellers. Clear condition, shipping, warranty, and return details.</Text>
-            </View>
+    <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Buy and sell phones, laptops, tablets, gaming consoles, accessories, smart devices, used electronics, and refurbished products." title="Electronics">
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          <Text style={styles.heroTitle}>Electronics & Gadgets</Text>
+          <Text style={styles.heroText}>
+            Buy and sell phones, laptops, tablets, gaming consoles, accessories, smart devices, used electronics,
+            and refurbished products from trusted sellers.
+          </Text>
+          <Text style={styles.heroTrust}>Protected checkout. Verified sellers. Clear condition, shipping, warranty, and return details.</Text>
+        </View>
 
-            <View style={styles.searchRow}>
-              <AppSearchBar onChangeText={setQuery} placeholder="Search electronics" style={styles.searchBox} value={query} />
-              <Pressable style={styles.filterButton}>
-                <Ionicons color={colors.black} name="options-outline" size={18} />
-                <Text style={styles.filterButtonText}>Filter</Text>
+        <View style={styles.searchRow}>
+          <AppSearchBar onChangeText={setQuery} placeholder="Search electronics" style={styles.searchBox} value={query} />
+          <Pressable style={styles.filterButton}>
+            <Ionicons color={colors.black} name="options-outline" size={18} />
+            <Text style={styles.filterButtonText}>Filter</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.safetyBanner}>
+          <Ionicons color={colors.black} name="alert-circle-outline" size={24} />
+          <View style={styles.safetyCopy}>
+            <Text style={styles.safetyTitle}>Buy electronics safely</Text>
+            <Text style={styles.safetyText}>
+              For used, refurbished, open-box, and like-new electronics, check condition, warranty, return policy,
+              seller rating, and product photos before purchase.
+            </Text>
+            <Text style={styles.linkText}>Learn More</Text>
+          </View>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroller}>
+          <View style={styles.categoryRow}>
+            <Pressable
+              onPress={() => setSelectedCategory(null)}
+              style={[styles.chip, selectedCategory === null && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, selectedCategory === null && styles.chipTextActive]}>All</Text>
+            </Pressable>
+            {electronicsCategories.map((category) => (
+              <Pressable
+                key={category}
+                onPress={() => setSelectedCategory(category)}
+                style={[styles.chip, selectedCategory === category && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, selectedCategory === category && styles.chipTextActive]}>{category}</Text>
               </Pressable>
-            </View>
+            ))}
+          </View>
+        </ScrollView>
 
-            <View style={styles.safetyBanner}>
-              <Ionicons color={colors.black} name="alert-circle-outline" size={24} />
-              <View style={styles.safetyCopy}>
-                <Text style={styles.safetyTitle}>Buy electronics safely</Text>
-                <Text style={styles.safetyText}>
-                  For used, refurbished, open-box, and like-new electronics, check condition, warranty, return policy,
-                  seller rating, and product photos before purchase.
-                </Text>
-                <Text style={styles.linkText}>Learn More</Text>
-              </View>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroller}>
-              <View style={styles.categoryRow}>
-                <Pressable
-                  onPress={() => setSelectedCategory(null)}
-                  style={[styles.chip, selectedCategory === null && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, selectedCategory === null && styles.chipTextActive]}>All</Text>
+        <View style={styles.sortRow}>
+          <Text style={styles.sectionTitle}>Products</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.sortOptions}>
+              {sortOptions.map((option) => (
+                <Pressable key={option} onPress={() => setSort(option)} style={[styles.sortChip, sort === option && styles.chipActive]}>
+                  <Text style={[styles.chipText, sort === option && styles.chipTextActive]}>{option}</Text>
                 </Pressable>
-                {electronicsCategories.map((category) => (
-                  <Pressable
-                    key={category}
-                    onPress={() => setSelectedCategory(category)}
-                    style={[styles.chip, selectedCategory === category && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, selectedCategory === category && styles.chipTextActive]}>{category}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </ScrollView>
-
-            <View style={styles.sortRow}>
-              <Text style={styles.sectionTitle}>Products</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.sortOptions}>
-                  {sortOptions.map((option) => (
-                    <Pressable key={option} onPress={() => setSort(option)} style={[styles.sortChip, sort === option && styles.chipActive]}>
-                      <Text style={[styles.chipText, sort === option && styles.chipTextActive]}>{option}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
+              ))}
             </View>
-
-            {filteredProducts.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>{selectedCategory ? 'No electronics available in this category yet.' : 'No electronics found.'}</Text>
-                <Pressable
-                  onPress={() => {
-                    setSelectedCategory(null);
-                    setQuery('');
-                  }}
-                >
-                  <Text style={styles.linkText}>{selectedCategory ? 'Explore Other Categories' : 'Clear Filters'}</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.productGrid}>
-                {filteredProducts.map((product) => (
-                  <ElectronicsProductCard key={product.id} onOpenProduct={onOpenProduct} product={product} />
-                ))}
-              </View>
-            )}
           </ScrollView>
         </View>
-      </View>
-      {!isDesktop ? <BottomTabs onNavigate={onNavigate} /> : null}
-    </SafeAreaView>
+
+        {filteredProducts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>{selectedCategory ? 'No electronics available in this category yet.' : 'No electronics found.'}</Text>
+            <Pressable
+              onPress={() => {
+                setSelectedCategory(null);
+                setQuery('');
+              }}
+            >
+              <Text style={styles.linkText}>{selectedCategory ? 'Explore Other Categories' : 'Clear Filters'}</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.productGrid}>
+            {filteredProducts.map((product) => (
+              <ElectronicsProductCard key={product.id} onOpenProduct={onOpenProduct} product={product} />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </InteriorShell>
   );
 }
 

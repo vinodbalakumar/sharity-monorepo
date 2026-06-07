@@ -4,8 +4,9 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
+import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
@@ -72,17 +73,12 @@ export function RewardsScreen({ onNavigate }: Props) {
   }
 
   return (
-    <YStack bg="$background" f={1}>
+    <InteriorShell activeLabel="Rewards" onNavigate={onNavigate} scrollable={false} subtitle="Credit, rewards, giveaways, multi-seller allocation, seller-safe impact, and admin campaign placeholders." title="Sharity Credit & Rewards">
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         <YStack gap="$5" maxWidth={1220} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">Later-phase rewards architecture</Text>
-              <H1>Sharity Credit & Rewards</H1>
-              <Paragraph color="$gray10">Credit, rewards, giveaways, multi-seller allocation, seller-safe impact, and admin campaign placeholders.</Paragraph>
-            </YStack>
+          <XStack $sm={{ flexDirection: 'column' }} ai="center" jc="space-between" gap="$3">
+            <Text color="$blue10" fontSize="$2" fontWeight="800">Later-phase rewards architecture</Text>
             <XStack flexWrap="wrap" gap="$2">
-              <Button onPress={() => onNavigate('home')}>Back</Button>
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger><Button>Actions</Button></DropdownMenu.Trigger>
                 <DropdownMenu.Content>
@@ -147,7 +143,7 @@ export function RewardsScreen({ onNavigate }: Props) {
           </XStack>
         </YStack>
       </ScrollView>
-    </YStack>
+    </InteriorShell>
   );
 }
 

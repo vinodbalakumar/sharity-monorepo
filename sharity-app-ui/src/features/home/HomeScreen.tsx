@@ -15,9 +15,30 @@ import { AppLoadingIndicator } from '../../components/ui';
 import { mobileTabItems, quickActions, sidebarItems } from './dashboardConfig';
 import { buildDashboardDeals, buildDashboardServices, type DashboardDeal, type DashboardService } from './dashboardData';
 import { getMarketplaceHome, getMarketplaceListings } from '../../services/marketplaceApi';
-import { colors, radii, spacing } from '../../theme';
+import { radii, spacing } from '../../theme';
 import type { MarketplaceHomeResponse, MarketplaceListing } from '../../types/marketplace';
 import type { AppRoute } from '../../types/navigation';
+
+const surface = {
+  accent: '#7C5CFF',
+  accentSoft: '#F1EAFF',
+  blue: '#2563EB',
+  blueSoft: '#EAF1FF',
+  border: '#DCE6F2',
+  card: '#FFFFFF',
+  cardAlt: '#FFFFFF',
+  green: '#1FD39B',
+  greenSoft: '#E7F8F1',
+  hero: '#FFFFFF',
+  heroAlt: '#FFFFFF',
+  muted: '#64748B',
+  navy: '#0F172A',
+  page: '#F6F9FC',
+  purple: '#7C5CFF',
+  purpleSoft: '#F1EAFF',
+  shadow: '#8EA4C2',
+  white: '#FFFFFF'
+};
 
 type LoadState = {
   dealsError: boolean;
@@ -69,7 +90,7 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct }: HomeScreenProps
       <View style={styles.shell}>
         {isDesktop ? <DashboardSidebar onNavigate={onNavigate} /> : null}
         <View style={styles.main}>
-          <DashboardHeader />
+          <DashboardHeader onNavigate={onNavigate} />
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <WelcomeHeroCard onNavigate={onNavigate} />
             <View style={styles.quickGrid}>
@@ -80,6 +101,7 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct }: HomeScreenProps
             <ExploreServicesSection
               error={state.homeError}
               loading={state.loading}
+              onNavigate={onNavigate}
               onRetry={loadDashboard}
               services={services}
             />
@@ -101,24 +123,23 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct }: HomeScreenProps
 function DashboardSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
   return (
     <View style={styles.sidebar}>
-      <View style={styles.sidebarBrand}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logoText}>S</Text>
+      <Pressable onPress={() => onNavigate('home')} style={styles.sidebarBrand}>
+        <View style={styles.brandMark}>
+          <Text style={styles.brandLetter}>S</Text>
         </View>
-        <Text style={styles.sidebarTitle}>Sharity</Text>
-      </View>
+        <View>
+          <Text style={styles.sidebarTitle}>Sharity</Text>
+          <Text style={styles.sidebarSubcopy}>United States</Text>
+        </View>
+      </Pressable>
       <View style={styles.sidebarList}>
         {sidebarItems.map((item, index) => (
           <Pressable
             key={item.label}
-            onPress={() => {
-              if (item.label === 'Marketplace') {
-                onNavigate('marketplaces');
-              }
-            }}
+            onPress={() => onNavigate(routeForLabel(item.label))}
             style={[styles.sidebarItem, index === 0 && styles.sidebarItemActive]}
           >
-            <Ionicons color={index === 0 ? colors.white : colors.black} name={item.icon} size={19} />
+            <Ionicons color={index === 0 ? surface.white : surface.navy} name={item.icon} size={19} />
             <Text style={[styles.sidebarItemText, index === 0 && styles.sidebarItemTextActive]}>{item.label}</Text>
           </Pressable>
         ))}
@@ -127,16 +148,27 @@ function DashboardSidebar({ onNavigate }: { onNavigate: (route: AppRoute) => voi
   );
 }
 
-function DashboardHeader() {
+function DashboardHeader({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
   return (
     <View style={styles.header}>
-      <Text style={styles.headerTitle}>Sharity</Text>
+      <Pressable onPress={() => onNavigate('welcome')} style={styles.headerBrand}>
+        <View style={styles.brandMarkSmall}>
+          <Text style={styles.brandLetterSmall}>S</Text>
+        </View>
+        <View>
+          <Text style={styles.headerTitle}>Sharity</Text>
+          <Text style={styles.headerSubtitle}>Unified dashboard</Text>
+        </View>
+      </Pressable>
       <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Notifications" style={styles.iconButton}>
-          <Ionicons color={colors.black} name="notifications-outline" size={20} />
+        <Pressable accessibilityLabel="Cart" onPress={() => onNavigate('cart')} style={styles.iconButton}>
+          <Ionicons color={surface.navy} name="cart-outline" size={20} />
         </Pressable>
-        <Pressable accessibilityLabel="Profile" style={styles.iconButton}>
-          <Ionicons color={colors.black} name="person-outline" size={20} />
+        <Pressable accessibilityLabel="Notifications" onPress={() => onNavigate('notifications')} style={styles.iconButton}>
+          <Ionicons color={surface.navy} name="notifications-outline" size={20} />
+        </Pressable>
+        <Pressable accessibilityLabel="Profile" onPress={() => onNavigate('profilePrivacy')} style={styles.iconButton}>
+          <Ionicons color={surface.navy} name="person-outline" size={20} />
         </Pressable>
       </View>
     </View>
@@ -146,8 +178,9 @@ function DashboardHeader() {
 function WelcomeHeroCard({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
   return (
     <View style={styles.hero}>
+      <Text style={styles.heroKicker}>WELCOME BACK</Text>
       <Text style={styles.heroTitle}>Welcome to Sharity</Text>
-      <Text style={styles.heroText}>Your all-in-one platform for digital codes, electronics, trading, and more.</Text>
+      <Text style={styles.heroText}>Your account, orders, rewards, and marketplace activity in one clean place.</Text>
       <Pressable onPress={() => onNavigate('marketplaces')} style={styles.heroButton}>
         <Text style={styles.heroButtonText}>Explore Marketplace</Text>
       </Pressable>
@@ -167,12 +200,13 @@ function QuickActionCard({
   text: string;
 }) {
   return (
-    <Pressable onPress={() => (label === 'Cart' ? onNavigate('cart') : undefined)} style={styles.quickCard}>
+    <Pressable onPress={() => onNavigate(routeForLabel(label))} style={styles.quickCard}>
       <View style={styles.cardIcon}>
-        <Ionicons color={colors.black} name={icon} size={22} />
+        <Ionicons color={surface.blue} name={icon} size={22} />
       </View>
       <Text style={styles.cardTitle}>{label}</Text>
       <Text style={styles.cardText}>{text}</Text>
+      <Text style={styles.cardCta}>Open</Text>
     </Pressable>
   );
 }
@@ -180,11 +214,13 @@ function QuickActionCard({
 function ExploreServicesSection({
   error,
   loading,
+  onNavigate,
   onRetry,
   services
 }: {
   error: boolean;
   loading: boolean;
+  onNavigate: (route: AppRoute) => void;
   onRetry: () => void;
   services: DashboardService[];
 }) {
@@ -199,7 +235,7 @@ function ExploreServicesSection({
       {!loading && !error && services.length > 0 ? (
         <View style={styles.serviceGrid}>
           {services.map((service) => (
-            <ServiceCard key={service.code} service={service} />
+            <ServiceCard key={service.code} onNavigate={onNavigate} service={service} />
           ))}
         </View>
       ) : null}
@@ -207,12 +243,12 @@ function ExploreServicesSection({
   );
 }
 
-function ServiceCard({ service }: { service: DashboardService }) {
+function ServiceCard({ onNavigate, service }: { onNavigate: (route: AppRoute) => void; service: DashboardService }) {
   return (
-    <Pressable style={styles.serviceCard}>
+    <Pressable onPress={() => onNavigate(routeForService(service.code))} style={styles.serviceCard}>
       <View style={styles.serviceHeader}>
         <View style={styles.cardIcon}>
-          <Ionicons color={colors.black} name={service.icon} size={22} />
+          <Ionicons color={service.enabled ? surface.green : surface.purple} name={service.icon} size={22} />
         </View>
         {!service.enabled ? <Text style={styles.badge}>Coming Soon</Text> : <Text style={styles.activeBadge}>Active</Text>}
       </View>
@@ -257,7 +293,7 @@ function DealCard({ deal, onOpenDigitalProduct }: { deal: DashboardDeal; onOpenD
   return (
     <Pressable onPress={() => onOpenDigitalProduct(deal.id)} style={styles.dealCard}>
       <View style={styles.dealImage}>
-        <Ionicons color={colors.black} name="pricetag-outline" size={26} />
+        <Ionicons color={surface.accent} name="pricetag-outline" size={26} />
       </View>
       <Text style={styles.badge}>{deal.badge}</Text>
       <Text style={styles.cardTitle}>{deal.title}</Text>
@@ -280,19 +316,44 @@ function BottomTabs({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
       {mobileTabItems.map((item, index) => (
         <Pressable
           key={item.label}
-          onPress={() => {
-            if (item.label === 'Marketplace') {
-              onNavigate('marketplaces');
-            }
-          }}
+          onPress={() => onNavigate(routeForLabel(item.label))}
           style={styles.bottomTab}
         >
-          <Ionicons color={colors.black} name={item.icon} size={19} />
+          <Ionicons color={index === 0 ? surface.blue : surface.muted} name={item.icon} size={19} />
           <Text style={[styles.bottomTabText, index === 0 && styles.bottomTabTextActive]}>{item.label}</Text>
         </Pressable>
       ))}
     </View>
   );
+}
+
+function routeForLabel(label: string): AppRoute {
+  switch (label) {
+    case 'Marketplace':
+      return 'marketplaces';
+    case 'Orders':
+    case 'My Orders':
+      return 'orders';
+    case 'Rewards':
+      return 'rewards';
+    case 'Cart':
+      return 'cart';
+    case 'Sell':
+      return 'sellerVerification';
+    case 'Wallet':
+      return 'wallet';
+    case 'Profile':
+      return 'profilePrivacy';
+    default:
+      return 'home';
+  }
+}
+
+function routeForService(code: string): AppRoute {
+  if (code === 'ELECTRONICS') {
+    return 'electronics';
+  }
+  return 'marketplaces';
 }
 
 function LoadingRow({ label }: { label: string }) {
@@ -334,83 +395,121 @@ function formatMoney(value: number, currencyCode: string) {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.white,
+    backgroundColor: surface.page,
     flex: 1
   },
   shell: {
-    backgroundColor: colors.white,
+    backgroundColor: surface.page,
     flex: 1,
     flexDirection: 'row'
   },
   sidebar: {
-    borderRightColor: colors.border,
+    backgroundColor: surface.card,
+    borderRightColor: surface.border,
     borderRightWidth: 1,
-    padding: spacing.md,
-    width: 236
+    padding: spacing.lg,
+    width: 260
   },
   sidebarBrand: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.xl
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.xs
   },
-  logoBox: {
+  brandMark: {
     alignItems: 'center',
-    backgroundColor: colors.black,
-    borderRadius: radii.md,
+    backgroundColor: surface.accent,
+    borderRadius: 14,
+    height: 48,
+    justifyContent: 'center',
+    shadowColor: surface.shadow,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    width: 48
+  },
+  brandMarkSmall: {
+    alignItems: 'center',
+    backgroundColor: surface.accent,
+    borderRadius: 12,
     height: 40,
     justifyContent: 'center',
     width: 40
   },
-  logoText: {
-    color: colors.white,
+  brandLetter: {
+    color: surface.white,
     fontSize: 20,
     fontWeight: '900'
   },
-  sidebarTitle: {
-    color: colors.black,
-    fontSize: 20,
+  brandLetterSmall: {
+    color: surface.white,
+    fontSize: 18,
     fontWeight: '900'
+  },
+  sidebarTitle: {
+    color: surface.navy,
+    fontSize: 21,
+    fontWeight: '900'
+  },
+  sidebarSubcopy: {
+    color: surface.muted,
+    fontSize: 12,
+    marginTop: 2
   },
   sidebarList: {
     gap: spacing.sm
   },
   sidebarItem: {
     alignItems: 'center',
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    backgroundColor: surface.card,
+    borderColor: surface.border,
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    padding: spacing.md
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14
   },
   sidebarItemActive: {
-    backgroundColor: colors.black
+    backgroundColor: surface.accent,
+    borderColor: surface.accent
   },
   sidebarItemText: {
-    color: colors.black,
+    color: surface.navy,
     fontSize: 15,
     fontWeight: '800'
   },
   sidebarItemTextActive: {
-    color: colors.white
+    color: surface.white
   },
   main: {
     flex: 1
   },
   header: {
     alignItems: 'center',
-    borderBottomColor: colors.border,
+    backgroundColor: surface.card,
+    borderBottomColor: surface.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 64,
+    minHeight: 70,
     paddingHorizontal: spacing.xl
   },
+  headerBrand: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm
+  },
   headerTitle: {
-    color: colors.black,
+    color: surface.navy,
     fontSize: 22,
     fontWeight: '900'
+  },
+  headerSubtitle: {
+    color: surface.muted,
+    fontSize: 12,
+    marginTop: 2
   },
   headerActions: {
     flexDirection: 'row',
@@ -418,12 +517,13 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: 'center',
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    backgroundColor: surface.card,
+    borderColor: surface.border,
+    borderRadius: 14,
     borderWidth: 1,
-    height: 40,
+    height: 44,
     justifyContent: 'center',
-    width: 40
+    width: 44
   },
   content: {
     gap: spacing.xl,
@@ -431,17 +531,30 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl
   },
   hero: {
-    backgroundColor: colors.black,
-    borderRadius: radii.md,
-    padding: spacing.xxl
+    backgroundColor: surface.hero,
+    borderRadius: 22,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: spacing.xxl,
+    shadowColor: surface.shadow,
+    shadowOffset: { height: 16, width: 0 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28
   },
   heroTitle: {
-    color: colors.white,
+    color: surface.navy,
     fontSize: 36,
     fontWeight: '900'
   },
+  heroKicker: {
+    color: surface.accent,
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0
+  },
   heroText: {
-    color: colors.white,
+    color: surface.muted,
     fontSize: 17,
     lineHeight: 26,
     marginTop: spacing.sm,
@@ -449,14 +562,18 @@ const styles = StyleSheet.create({
   },
   heroButton: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.white,
-    borderRadius: radii.md,
+    backgroundColor: surface.accent,
+    borderRadius: 14,
     marginTop: spacing.lg,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md
+    paddingVertical: spacing.md,
+    shadowColor: surface.accent,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16
   },
   heroButtonText: {
-    color: colors.black,
+    color: surface.white,
     fontSize: 15,
     fontWeight: '900'
   },
@@ -466,30 +583,37 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   quickCard: {
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    backgroundColor: surface.card,
+    borderColor: surface.border,
+    borderRadius: 18,
     borderWidth: 1,
     flexBasis: 210,
     flexGrow: 1,
-    padding: spacing.lg
+    minHeight: 160,
+    padding: spacing.lg,
+    shadowColor: surface.shadow,
+    shadowOffset: { height: 10, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20
   },
   cardIcon: {
     alignItems: 'center',
-    borderColor: colors.border,
+    backgroundColor: surface.blueSoft,
+    borderColor: surface.border,
     borderRadius: 999,
     borderWidth: 1,
-    height: 44,
+    height: 48,
     justifyContent: 'center',
-    width: 44
+    width: 48
   },
   cardTitle: {
-    color: colors.black,
+    color: surface.navy,
     fontSize: 18,
     fontWeight: '900',
     marginTop: spacing.md
   },
   cardText: {
-    color: colors.black,
+    color: surface.muted,
     fontSize: 14,
     lineHeight: 21,
     marginTop: spacing.sm
@@ -498,7 +622,7 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   sectionTitle: {
-    color: colors.black,
+    color: surface.navy,
     fontSize: 26,
     fontWeight: '900'
   },
@@ -508,12 +632,18 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   serviceCard: {
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    backgroundColor: surface.card,
+    borderColor: surface.border,
+    borderRadius: 18,
     borderWidth: 1,
     flexBasis: 250,
     flexGrow: 1,
-    padding: spacing.lg
+    minHeight: 190,
+    padding: spacing.lg,
+    shadowColor: surface.shadow,
+    shadowOffset: { height: 10, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20
   },
   serviceHeader: {
     alignItems: 'flex-start',
@@ -522,9 +652,9 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.black,
+    backgroundColor: surface.purpleSoft,
     borderRadius: radii.sm,
-    color: colors.white,
+    color: surface.purple,
     fontSize: 12,
     fontWeight: '900',
     overflow: 'hidden',
@@ -533,10 +663,11 @@ const styles = StyleSheet.create({
   },
   activeBadge: {
     alignSelf: 'flex-start',
-    borderColor: colors.border,
+    backgroundColor: surface.greenSoft,
+    borderColor: '#BCEBD8',
     borderRadius: radii.sm,
     borderWidth: 1,
-    color: colors.black,
+    color: surface.green,
     fontSize: 12,
     fontWeight: '900',
     overflow: 'hidden',
@@ -544,11 +675,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs
   },
   cardCta: {
-    color: colors.black,
+    color: surface.blue,
     fontSize: 14,
     fontWeight: '900',
     marginTop: spacing.md,
-    textDecorationLine: 'underline'
+    textDecorationLine: 'none'
   },
   dealGrid: {
     flexDirection: 'row',
@@ -556,18 +687,22 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   dealCard: {
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    backgroundColor: surface.card,
+    borderColor: surface.border,
+    borderRadius: 18,
     borderWidth: 1,
     flexBasis: 240,
     flexGrow: 1,
-    padding: spacing.lg
+    padding: spacing.lg,
+    shadowColor: surface.shadow,
+    shadowOffset: { height: 10, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20
   },
   dealImage: {
     alignItems: 'center',
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
+    backgroundColor: surface.accentSoft,
+    borderRadius: 16,
     height: 72,
     justifyContent: 'center',
     marginBottom: spacing.md
@@ -580,18 +715,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm
   },
   originalPrice: {
-    color: colors.black,
+    color: surface.muted,
     fontSize: 13,
     textDecorationLine: 'line-through'
   },
   dealPrice: {
-    color: colors.black,
+    color: surface.navy,
     fontSize: 18,
     fontWeight: '900'
   },
   bottomTabs: {
-    backgroundColor: colors.white,
-    borderTopColor: colors.border,
+    backgroundColor: surface.card,
+    borderTopColor: surface.border,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -603,11 +738,12 @@ const styles = StyleSheet.create({
     minWidth: 58
   },
   bottomTabText: {
-    color: colors.black,
+    color: surface.muted,
     fontSize: 11,
     fontWeight: '700'
   },
   bottomTabTextActive: {
+    color: surface.blue,
     fontWeight: '900'
   },
   stateRow: {
@@ -616,26 +752,27 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   stateBox: {
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    backgroundColor: surface.card,
+    borderColor: surface.border,
+    borderRadius: 18,
     borderWidth: 1,
     padding: spacing.lg
   },
   stateText: {
-    color: colors.black,
+    color: surface.muted,
     fontSize: 14,
     lineHeight: 21
   },
   smallButton: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.black,
+    backgroundColor: surface.blue,
     borderRadius: radii.md,
     marginTop: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
   smallButtonText: {
-    color: colors.white,
+    color: surface.white,
     fontSize: 14,
     fontWeight: '900'
   }

@@ -1,94 +1,412 @@
-import { useSelector } from '@legendapp/state/react';
-import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Paragraph, Progress, ScrollView, Text, XStack, YStack } from 'tamagui';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Card, Input, Paragraph, YStack, XStack } from 'tamagui';
 
-import { appState$ } from '../../state/appState';
-import { appStorage } from '../../storage/storage';
+import { InteriorShell } from '../../components/appShell/InteriorShell';
+import { colors, radius, spacing } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
-import { connectPayPal, getSellerVerificationDashboard, requestAdminReview, uploadSellerDocument } from './sellerVerificationMockApi';
-import type { SellerAccountLimitItem, SellerDocumentRequirement, SellerMarketplaceEligibilityItem, SellerPayoutBlockingReason, SellerVerificationChecklistItem, SellerVerificationDashboardResponse, SellerVerificationTimelineEvent } from './sellerVerificationTypes';
+import { getRegistrationOptions } from '../../services/authApi';
+import { getCurrentUser, type CurrentUser } from '../../services/userApi';
+import { createProviderAccount, enrollProviderModule, getMyModules, getMyProviderAccounts, type ProviderAccount } from '../../services/platformAuthorizationApi';
 
 type Props = { onNavigate: (route: AppRoute) => void };
-type ListComponent<T> = (props: { data: T[]; estimatedItemSize: number; keyExtractor: (item: T) => string; renderItem: (info: { item: T; index: number }) => ReactElement }) => ReactElement;
-const ChecklistList = FlashList as unknown as ListComponent<SellerVerificationChecklistItem>;
-const BlockerList = FlashList as unknown as ListComponent<SellerPayoutBlockingReason>;
-const MarketList = FlashList as unknown as ListComponent<SellerMarketplaceEligibilityItem>;
-const LimitList = FlashList as unknown as ListComponent<SellerAccountLimitItem>;
-const DocList = FlashList as unknown as ListComponent<SellerDocumentRequirement>;
-const TimelineList = FlashList as unknown as ListComponent<SellerVerificationTimelineEvent>;
-const tabs = ['Checklist', 'Payout', 'Marketplace', 'Limits', 'Documents', 'Timeline'] as const;
+type ModuleItem = { moduleCode: string; moduleName: string; status: string; displayOrder: number; providerAccessEnabled: boolean; requiresProviderApproval: boolean; availableToCustomer: boolean; providerAccessActive: boolean };
 
 export function SellerVerificationScreen({ onNavigate }: Props) {
-  const selectedTab = useSelector(appState$.sellerVerification.selectedTab) as typeof tabs[number];
-  const [dashboard, setDashboard] = useState<SellerVerificationDashboardResponse | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [providerAccounts, setProviderAccounts] = useState<ProviderAccount[]>([]);
+  const [allModules, setAllModules] = useState<ModuleItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [selectedProviderId, setSelectedProviderId] = useState('');
+  const [newProviderName, setNewProviderName] = useState('');
 
-  const load = useCallback(async () => {
-    setDashboard(await getSellerVerificationDashboard());
-    const stored = appStorage.getString('sellerVerificationLastTab') as typeof tabs[number] | null;
-    if (stored && tabs.includes(stored)) appState$.sellerVerification.selectedTab.set(stored);
+  useEffect(() => {
+    void load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  async function action(kind: 'paypal' | 'document' | 'review') {
-    const result = kind === 'paypal' ? await connectPayPal() : kind === 'document' ? await uploadSellerDocument() : await requestAdminReview();
-    setMessage(result.message);
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      const [user, accounts, modules, registrationOptions] = await Promise.all([
+        getCurrentUser(),
+        getMyProviderAccounts(),
+        getMyModules(),
+        getRegistrationOptions()
+      ]);
+      setCurrentUser(user);
+      setProviderAccounts(accounts);
+      setAllModules(modules);
+      const chosen = accounts[0];
+      setSelectedProviderId(chosen?.publicId ?? '');
+      setNewProviderName(chosen?.displayName ?? user.username);
+      if (!chosen && registrationOptions.countries.length > 0) {
+        setMessage('Create a provider account with your live profile details to unlock seller access.');
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load seller verification.');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (!dashboard) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading verification and payout eligibility..." /></YStack>;
+  const selectedProvider = useMemo(() => providerAccounts.find((account) => account.publicId === selectedProviderId) ?? providerAccounts[0] ?? null, [providerAccounts, selectedProviderId]);
+
+  async function createAccount() {
+    if (!currentUser) {
+      return;
+    }
+    const countryCode = currentUser.profile.countryCode ?? 'USA';
+    const defaultCurrencyCode = countryCode === 'IND' ? 'INR' : 'USD';
+    try {
+      setMessage('');
+      const account = await createProviderAccount({
+        displayName: newProviderName.trim() || currentUser.username,
+        providerType: 'INDIVIDUAL',
+        countryCode,
+        defaultCurrencyCode
+      });
+      setProviderAccounts((current) => [account, ...current]);
+      setSelectedProviderId(account.publicId);
+      setMessage('Provider account created from live account data.');
+    } catch (createError) {
+      setError(createError instanceof Error ? createError.message : 'Unable to create provider account.');
+    }
+  }
+
+  async function enroll(moduleCode: string) {
+    if (!selectedProvider) {
+      return;
+    }
+    try {
+      const updated = await enrollProviderModule(selectedProvider.publicId, moduleCode);
+      setProviderAccounts((current) => current.map((account) => (account.publicId === updated.publicId ? updated : account)));
+      setMessage(`${moduleCode} enrollment updated.`);
+    } catch (enrollError) {
+      setError(enrollError instanceof Error ? enrollError.message : 'Unable to enroll module.');
+    }
+  }
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1240} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack flex={1} gap="$2">
-              <Text color="$blue10" fontWeight="800">{dashboard.storeName} / {dashboard.sellerAlias}</Text>
-              <H1>Verification & Payout Eligibility</H1>
-              <Paragraph color="$gray10">Complete seller-safe verification steps to unlock selling, marketplace access, payout eligibility, limits, and badges.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2"><Button onPress={() => onNavigate('home')}>Back to Seller Center</Button><Button theme="purple" onPress={() => action('paypal')}>Connect PayPal</Button><DropdownMenu.Root><DropdownMenu.Trigger><Button>More</Button></DropdownMenu.Trigger><DropdownMenu.Content><DropdownMenu.Item key="policy">Accept Policies</DropdownMenu.Item><DropdownMenu.Item key="doc" onSelect={() => action('document')}>Upload Documents</DropdownMenu.Item><DropdownMenu.Item key="review" onSelect={() => action('review')}>Request Admin Review</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Root></XStack>
-          </XStack>
+    <InteriorShell activeLabel="Sell" onNavigate={onNavigate} scrollable={false} subtitle="Live seller account status and module access" title="Verification & Payout Eligibility">
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerCopy}>
+              <Text style={styles.eyebrow}>Seller access</Text>
+              <Text style={styles.title}>Verification & Payout Eligibility</Text>
+              <Text style={styles.subtitle}>Use your real provider account and module enrollments to unlock selling, service, and payout access.</Text>
+            </View>
+          </View>
 
-          <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.sellerVerification.selectedTab.set(tab); appStorage.setString('sellerVerificationLastTab', tab); }}>{tab}</Button>)}</XStack>
+          {loading ? <StateCard title="Loading provider access..." /> : null}
+          {error ? <StateCard title={error} actionLabel="Reload" onAction={load} /> : null}
+          {message ? <StateCard title={message} /> : null}
 
-          <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
-            <YStack flex={1} gap="$4" minWidth={0}>
-              {selectedTab === 'Checklist' ? <Panel title="Verification Checklist"><ChecklistList data={dashboard.verificationChecklist} estimatedItemSize={110} keyExtractor={(item) => item.verificationType} renderItem={({ item, index }) => <ChecklistRow item={item} index={index} />} /></Panel> : null}
-              {selectedTab === 'Payout' ? <Panel title="Payout Blockers"><BlockerList data={dashboard.payoutEligibility.blockingReasons} estimatedItemSize={112} keyExtractor={(item) => item.reasonCode} renderItem={({ item, index }) => <BlockerRow item={item} index={index} />} /></Panel> : null}
-              {selectedTab === 'Marketplace' ? <Panel title="Marketplace / Category Eligibility"><MarketList data={dashboard.marketplaceEligibility} estimatedItemSize={132} keyExtractor={(item) => item.marketplaceCode} renderItem={({ item, index }) => <MarketRow item={item} index={index} />} /></Panel> : null}
-              {selectedTab === 'Limits' ? <Panel title="Seller-Safe Account Limits"><LimitList data={dashboard.accountLimits} estimatedItemSize={112} keyExtractor={(item) => item.limitType} renderItem={({ item, index }) => <LimitRow item={item} index={index} />} /></Panel> : null}
-              {selectedTab === 'Documents' ? <Panel title="Document Requirements"><DocList data={dashboard.documentRequirements} estimatedItemSize={124} keyExtractor={(item) => item.requirementId} renderItem={({ item, index }) => <DocRow item={item} index={index} />} /></Panel> : null}
-              {selectedTab === 'Timeline' ? <Panel title="Verification Timeline"><TimelineList data={dashboard.timeline} estimatedItemSize={112} keyExtractor={(item) => item.eventId} renderItem={({ item, index }) => <TimelineRow item={item} index={index} />} /></Panel> : null}
-            </YStack>
-            <YStack gap="$4" width={360} $md={{ width: '100%' }}>
-              <Panel title="Readiness"><Text fontSize="$10" fontWeight="900">{dashboard.overallReadiness.setupProgressPercent}%</Text><Progress value={dashboard.overallReadiness.setupProgressPercent} /><Badge label={dashboard.overallReadiness.payoutEligibilityStatus} tone="warning" /><Paragraph color="$gray10">{dashboard.payoutEligibility.userSafeMessage}</Paragraph></Panel>
-              <Panel title="PayPal First Payout"><Badge label={dashboard.payoutEligibility.payoutProviderStatus} tone="warning" /><Paragraph color="$gray10">Stripe Connect is later/coming soon. Provider tokens and payloads are never stored locally.</Paragraph></Panel>
-              <Panel title="Seller Badge Preview">{dashboard.sellerBadges.map((badge) => <Row key={badge.badgeType} title={badge.label} meta={badge.description} badge={badge.status} tone={badge.status === 'ACTIVE' ? 'success' : 'info'} />)}</Panel>
-              {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
-            </YStack>
-          </XStack>
-        </YStack>
+          {!loading ? (
+            <View style={styles.grid}>
+              <View style={styles.leftColumn}>
+                <Card style={styles.card}>
+                  <SectionTitle title="Create / select provider account" />
+                  <Input value={newProviderName} onChangeText={setNewProviderName} placeholder="Display name" style={styles.input} />
+                  <Button accessibilityLabel="Create provider account" onPress={createAccount} theme="purple" style={styles.actionButton}>
+                    Create Account
+                  </Button>
+                  <View style={styles.accountList}>
+                    {providerAccounts.length === 0 ? <Paragraph color="$gray10">No provider account yet.</Paragraph> : null}
+                    {providerAccounts.map((account) => {
+                      const selected = account.publicId === selectedProviderId;
+                      return (
+                        <Pressable key={account.publicId} accessibilityLabel={`Select provider account ${account.displayName}`} onPress={() => setSelectedProviderId(account.publicId)} style={[styles.accountRow, selected && styles.accountRowActive]}>
+                          <View style={styles.accountMeta}>
+                            <Text style={styles.accountTitle}>{account.displayName}</Text>
+                            <Text style={styles.accountText}>{account.providerType} · {account.countryCode} · {account.defaultCurrencyCode}</Text>
+                            <Text style={styles.accountText}>{account.verificationStatus} · {account.overallStatus}</Text>
+                          </View>
+                          <Pill label={account.payoutsEnabled ? 'Payouts on' : 'Payouts off'} tone={account.payoutsEnabled ? 'success' : 'warning'} />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </Card>
+
+                <Card style={styles.card}>
+                  <SectionTitle title="Current provider account" />
+                  {selectedProvider ? (
+                    <View style={styles.summaryRows}>
+                      <SummaryRow label="Display name" value={selectedProvider.displayName} />
+                      <SummaryRow label="Status" value={selectedProvider.overallStatus} />
+                      <SummaryRow label="Verification" value={selectedProvider.verificationStatus} />
+                      <SummaryRow label="Payouts enabled" value={selectedProvider.payoutsEnabled ? 'Yes' : 'No'} />
+                      <SummaryRow label="Charges enabled" value={selectedProvider.chargesEnabled ? 'Yes' : 'No'} />
+                    </View>
+                  ) : (
+                    <Paragraph color="$gray10">Create a provider account to view live seller eligibility.</Paragraph>
+                  )}
+                </Card>
+              </View>
+
+              <View style={styles.rightColumn}>
+                <Card style={styles.card}>
+                  <SectionTitle title="Module access" />
+                  <Text style={styles.helper}>Available modules come directly from the platform authorization service.</Text>
+                  <View style={styles.moduleList}>
+                    {allModules.map((module) => <ModuleRow key={module.moduleCode} module={module} onEnroll={enroll} selectedProvider={selectedProvider} />)}
+                  </View>
+                </Card>
+              </View>
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
-    </YStack>
+    </InteriorShell>
   );
 }
 
-const ChecklistRow = memo(function ChecklistRow({ item, index }: { item: SellerVerificationChecklistItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.label} meta={`${item.required ? 'Required' : 'Optional'} / ${item.userSafeMessage}`} badge={item.status} tone={toneFor(item.status)} /></Animated.View>; });
-function BlockerRow({ item, index }: { item: SellerPayoutBlockingReason; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.title} meta={`${item.userSafeMessage} / Action: ${item.requiredAction}`} badge={item.blocking ? 'Blocking' : 'Warning'} tone={item.blocking ? 'critical' : 'warning'} /></Animated.View>; }
-function MarketRow({ item, index }: { item: SellerMarketplaceEligibilityItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={item.marketplaceIconUrl} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{item.marketplaceName}</Text><Paragraph color="$gray10">{item.userSafeReason}</Paragraph></YStack><Badge label={item.status} tone={item.sellerEligible ? 'success' : 'warning'} /></XStack></Animated.View>; }
-function LimitRow({ item, index }: { item: SellerAccountLimitItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.label} meta={`${item.currentValue}${item.currency ? ` ${item.currency}` : ''} / ${item.unlockGuidance}`} badge={item.relatedMarketplaceCode} tone="info" /></Animated.View>; }
-function DocRow({ item, index }: { item: SellerDocumentRequirement; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.documentType} meta={`${item.reason} / ${item.uploadStatus} / ${item.reviewStatus}`} badge={item.required ? 'Required' : 'Optional'} tone={item.required ? 'warning' : 'info'} /></Animated.View>; }
-function TimelineRow({ item, index }: { item: SellerVerificationTimelineEvent; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.title} meta={item.userSafeMessage} badge={item.status} tone={toneFor(item.status)} /></Animated.View>; }
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
-function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
-function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
-function toneFor(status: string) { return status.includes('COMPLETE') || status === 'ACTIVE' ? 'success' : status.includes('REQUIRED') || status.includes('PENDING') || status.includes('ACTION') ? 'warning' : status.includes('REJECTED') || status.includes('SUSPENDED') ? 'critical' : 'info'; }
-function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 35, withTiming(1, { duration: 220 })); translateY.value = withDelay(index * 35, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }
+function ModuleRow({ module, onEnroll, selectedProvider }: { module: ModuleItem; onEnroll: (moduleCode: string) => void; selectedProvider: ProviderAccount | null }) {
+  const enrollment = selectedProvider?.enrollments.find((item) => item.moduleCode === module.moduleCode);
+  const status = enrollment?.enrollmentStatus ?? module.status;
+  return (
+    <View style={styles.moduleRow}>
+      <View style={styles.moduleMeta}>
+        <Text style={styles.moduleTitle}>{module.moduleName}</Text>
+        <Text style={styles.moduleText}>{module.moduleCode} · {status}</Text>
+        <Text style={styles.moduleText}>{module.providerAccessEnabled ? 'Provider access enabled' : 'Provider access closed'}</Text>
+      </View>
+      <View style={styles.moduleActions}>
+        <Pill label={status} tone={status === 'APPROVED' || status === 'ACTIVE' ? 'success' : 'warning'} />
+        {selectedProvider ? (
+          <Button accessibilityLabel={`Enroll ${module.moduleName}`} onPress={() => onEnroll(module.moduleCode)} size="$2">
+            Enroll
+          </Button>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function StateCard({ title, actionLabel, onAction }: { title: string; actionLabel?: string; onAction?: () => void }) {
+  return (
+    <View style={styles.stateCard}>
+      <Text style={styles.stateText}>{title}</Text>
+      {actionLabel ? <Button accessibilityLabel={actionLabel} onPress={onAction} size="$2">{actionLabel}</Button> : null}
+    </View>
+  );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return <Text style={styles.sectionTitle}>{title}</Text>;
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={styles.summaryValue}>{value}</Text>
+    </View>
+  );
+}
+
+function Pill({ label, tone }: { label: string; tone: 'success' | 'warning' | 'info' | 'neutral' }) {
+  return <Text style={[styles.pill, tone === 'success' && styles.pillSuccess, tone === 'warning' && styles.pillWarning, tone === 'info' && styles.pillInfo]}>{label}</Text>;
+}
+
+const styles = StyleSheet.create({
+  content: {
+    paddingBottom: spacing.xxxl
+  },
+  container: {
+    gap: spacing.lg,
+    marginHorizontal: 'auto',
+    maxWidth: 1240,
+    padding: spacing.lg,
+    width: '100%'
+  },
+  headerRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between'
+  },
+  headerCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  eyebrow: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 30,
+    fontWeight: '900'
+  },
+  subtitle: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: 860
+  },
+  grid: {
+    flexDirection: 'row',
+    gap: spacing.lg
+  },
+  leftColumn: {
+    gap: spacing.lg,
+    width: 380
+  },
+  rightColumn: {
+    flex: 1,
+    minWidth: 0
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    padding: spacing.lg
+  },
+  sectionTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: spacing.sm
+  },
+  helper: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginBottom: spacing.md
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 48,
+    marginBottom: spacing.md,
+    paddingHorizontal: 14
+  },
+  actionButton: {
+    marginBottom: spacing.md
+  },
+  accountList: {
+    gap: spacing.sm
+  },
+  accountRow: {
+    alignItems: 'center',
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+    padding: spacing.md
+  },
+  accountRowActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#F1FBF7'
+  },
+  accountMeta: {
+    flex: 1
+  },
+  accountTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  accountText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2
+  },
+  summaryRows: {
+    gap: spacing.sm
+  },
+  summaryRow: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm
+  },
+  summaryLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  summaryValue: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '900'
+  },
+  moduleList: {
+    gap: spacing.sm
+  },
+  moduleRow: {
+    alignItems: 'center',
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md
+  },
+  moduleMeta: {
+    flex: 1,
+    gap: 2
+  },
+  moduleTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  moduleText: {
+    color: colors.textSecondary,
+    fontSize: 12
+  },
+  moduleActions: {
+    alignItems: 'flex-end',
+    gap: spacing.sm
+  },
+  stateCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.large,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg
+  },
+  stateText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  pill: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 999,
+    color: colors.textPrimary,
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  pillInfo: {
+    backgroundColor: '#EAF1FF',
+    color: '#185FA5'
+  },
+  pillSuccess: {
+    backgroundColor: '#E7F8F1',
+    color: '#0F6E56'
+  },
+  pillWarning: {
+    backgroundColor: '#FAEEDA',
+    color: '#854F0B'
+  }
+});
+
+
+

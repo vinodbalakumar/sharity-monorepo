@@ -67,7 +67,21 @@ export const appState$ = observable({
     archiveError: '',
     lastDeepLink: '',
     selectedFilter: 'All',
-    selectedNotificationId: ''
+    selectedNotificationId: '',
+    searchQuery: ''
+  },
+  appSettings: {
+    selectedSection: 'Appearance',
+    theme: 'System default',
+    language: 'English',
+    syncStatus: 'SYNCED'
+  },
+  loginSecurity: {
+    selectedTab: 'Overview',
+    selectedFilter: 'All',
+    reauthRequired: false,
+    selectedDeviceSessionId: '',
+    selectedMethodId: ''
   },
   profilePrivacy: {
     deleteConfirmation: '',

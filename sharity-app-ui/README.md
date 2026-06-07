@@ -74,6 +74,9 @@ Country & Marketplace Settings | Tamagui Card, Button, FlashList, expo-image, Ze
 Verification & Payout Eligibility | Tamagui Card, Button, Progress, FlashList, expo-image, Zeego, Legend-State, Reanimated | Tamagui tokens with Sharity theme baseline | Seller verification checklist, PayPal-first payout setup, blockers, marketplace eligibility, limits, documents, admin review, badges
 Policies & Terms | Tamagui Card, Button, FlashList, Zeego, Legend-State, Reanimated | Tamagui tokens with Sharity theme baseline | Versioned buyer/seller policy acceptance, re-acceptance, blockers, what-changed summary, history, admin preview
 Help & Support | Tamagui Card, Button, Input, FlashList, expo-image, Zeego, Legend-State, Reanimated | Tamagui tokens with Sharity theme baseline | Help search, guided troubleshooting, ticket creation, related entities, evidence, replies, timeline, escalation, admin/support placeholder
+Login & Security | Tamagui Card, Button, Input, FlashList, expo-image, Zeego, Legend-State, Reanimated | Tamagui tokens with Sharity theme baseline | Login methods, Google/Apple/password linking, devices/sessions, alerts, re-auth, recovery, suspicious activity, admin security placeholder
+App Settings | Tamagui Card, Button, FlashList, expo-image, Zeego, Legend-State, Reanimated | Tamagui tokens with Sharity theme baseline | Theme, language, region/country shortcut, currency display, marketplace preferences, notifications, accessibility, cache, app about
+Notification Center | Tamagui Card, Button, Input, FlashList, expo-image, Zeego, Legend-State, Reanimated | Tamagui tokens with Sharity theme baseline | Buyer/seller inbox, unread badges, critical pinned alerts, related entities, actions, read/archive, filters, admin broadcast placeholder
 Seller Dashboard | Card, Button, Menu | AppCard, AppButton, AppMenu, AppBadge | Planned seller management
 Profile | Card, TextInput, Switch | AppCard, AppTextInput, AppSwitch, AppButton | Planned profile and privacy settings
 
@@ -329,3 +332,24 @@ Help & Support backend/security usage:
 - Main APIs: support dashboard, search, categories, guided help, self-service suggestions, create ticket, ticket list/detail, replies, attachments, timeline, escalation, close/reopen, related entities, admin support queue placeholder
 - DTOs: `SupportDashboardResponse`, `SupportCategoryItem`, `HelpSearchResultItem`, `GuidedHelpFlowResponse`, `GuidedHelpStep`, `SelfServiceSuggestionItem`, `CreateSupportTicketRequest`, `CreateSupportTicketResponse`, `SupportTicketSummary`, `SupportTicketDetail`, `SupportRelatedEntity`, `SupportTicketMessage`, `SupportAttachmentItem`, `SupportTicketTimelineEvent`, `ReplySupportTicketRequest`, `EscalateSupportTicketRequest`, `SupportTicketActionResponse`, `AdminSupportQueueItem`
 - Security notes: Sharity-only support replies, access-controlled related entities/attachments, unsafe content blocking, no digital codes/passwords/card details/provider payloads/internal risk/admin notes/staff direct contact
+
+Login & Security backend/security usage:
+- Frontend routes: `/settings/security`, `/login-security`, device/alert/recovery/login-method route aliases, and admin security placeholder routes
+- Backend services: `authorization-server`, user-service/auth-user module, notification-service, future account-security/session/device/audit/risk/support/admin services
+- Main APIs: security dashboard, login methods, Google/Apple link, add/change password, unlink method, devices/sessions, revoke/sign out, alerts, event history, re-auth, recovery options, suspicious activity report, admin security review placeholder
+- DTOs: `SecurityDashboardResponse`, `LoginMethodItem`, `DeviceSessionItem`, `SecurityAlertItem`, `SecurityEventHistoryItem`, `ReauthenticationChallengeResponse`, `RecoveryOptionItem`, `SuspiciousActivityReportResponse`, `SecurityActionResponse`, `AdminSecurityReviewQueueItem`
+- Security notes: never remove final login method, re-auth for high-risk actions, approximate location only, no passwords/OAuth tokens/provider payloads/raw IP/exact GPS/internal risk/admin notes in UI or local storage
+
+App Settings backend/security usage:
+- Frontend routes: `/settings`, `/settings/app`, `/settings/theme`, `/settings/language`, `/settings/region`, `/settings/currency`, `/settings/marketplaces`, `/settings/notifications`, `/settings/accessibility`, `/settings/about`
+- Backend services: user-service/auth-user module, marketplace-service, notification-service, future user-preferences/notification-preferences/app-config/audit services
+- Main APIs: app settings dashboard, theme, language, region summary, currency options/update, marketplace preferences/update/reorder/default, notification preferences/update, accessibility preferences/update, app about/version
+- DTOs: `AppSettingsDashboardResponse`, `ThemePreference`, `LanguagePreference`, `RegionSummary`, `CurrencyDisplayPreference`, `MarketplacePreferenceItem`, `NotificationPreferenceItem`, `AccessibilityPreference`, `AppAboutInfo`, `SettingsActionResponse`
+- Security notes: admin config separate, country change routed to profile flow, backend controls currency/marketplace/mandatory notifications, no sensitive data in local cache, clear cache does not silently clear auth/session
+
+Notification Center backend/security usage:
+- Frontend routes: `/notifications`, `/notification-center`, `/notifications/[notificationId]`, `/notifications/preferences`, and admin broadcast placeholder routes
+- Backend services: notification-service, user-service/auth-user module, marketplace-service, future push/email/preference/audit/admin-broadcast services
+- Main APIs: notification dashboard, list, detail, search, mark read/unread/all read, archive, action validation/open, counts, preferences summary, admin broadcasts/templates placeholder
+- DTOs: `NotificationCenterDashboardResponse`, `NotificationUnreadCounts`, `NotificationItem`, `NotificationRelatedEntity`, `NotificationAction`, `NotificationDeliveryChannelStatus`, `NotificationFilterOption`, `NotificationTimeGroup`, `NotificationActionResponse`, `NotificationPreferenceSummary`, `AdminBroadcastSummary`
+- Security notes: user-scoped notifications, seller ownership checks, related entity access validation, archive does not delete audit history, critical alerts mandatory, no provider payloads/digital codes/raw URLs/security raw payloads/internal risk/admin notes

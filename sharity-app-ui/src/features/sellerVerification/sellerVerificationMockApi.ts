@@ -77,5 +77,6 @@ function checklist(type: string, label: string, status: string, required: boolea
 }
 
 function market(code: string, name: string, status: string, eligible: boolean, reason: string) {
-  return { marketplaceCode: code, marketplaceName: name, marketplaceIconUrl: 'marketplace/placeholders/gift_cards.png', status, sellerEligible: eligible, requiredVerification: eligible ? 'Basic profile' : 'Identity/business verification', requiredPolicy: 'Seller Terms', payoutSetupRequired: true, businessLicenseRequired: status.includes('BUSINESS'), maxOrderValue: eligible ? 100 : 0, categoryRestrictions: eligible ? 'None for MVP digital' : 'Restricted until requirements complete', adminApprovalStatus: status.includes('ADMIN') ? 'REQUIRED' : 'NOT_REQUIRED', userSafeReason: reason, availableActions: eligible ? ['CREATE_LISTING'] : ['COMPLETE_REQUIREMENTS'] };
+  return { marketplaceCode: code, marketplaceName: name, marketplaceIconUrl: placeholderImageUrl('gift_cards'), status, sellerEligible: eligible, requiredVerification: eligible ? 'Basic profile' : 'Identity/business verification', requiredPolicy: 'Seller Terms', payoutSetupRequired: true, businessLicenseRequired: status.includes('BUSINESS'), maxOrderValue: eligible ? 100 : 0, categoryRestrictions: eligible ? 'None for MVP digital' : 'Restricted until requirements complete', adminApprovalStatus: status.includes('ADMIN') ? 'REQUIRED' : 'NOT_REQUIRED', userSafeReason: reason, availableActions: eligible ? ['CREATE_LISTING'] : ['COMPLETE_REQUIREMENTS'] };
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

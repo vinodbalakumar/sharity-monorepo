@@ -20,7 +20,7 @@ export async function getAccountSwitcherSummary(currentMode: AccountMode = 'BUYE
       userId: 'user-1000',
       buyerAlias: 'V***D',
       displayName: 'Vinod',
-      avatarUrl: 'marketplace/placeholders/avatar.png',
+      avatarUrl: placeholderImageUrl('avatar'),
       country: 'USA',
       buyerStatus: 'ACTIVE',
       privacyModeEnabled: true
@@ -29,7 +29,7 @@ export async function getAccountSwitcherSummary(currentMode: AccountMode = 'BUYE
       sellerId: 'seller-1000',
       sellerAlias: 'TechDealsPhoenix',
       storeName: 'Tech Deals Phoenix',
-      storeLogoUrl: 'marketplace/placeholders/store.png',
+      storeLogoUrl: placeholderImageUrl('store'),
       sellerStatus: 'ACTIVE',
       onboardingStatus: sellerEligible ? 'COMPLETE' : 'REQUIRED',
       verificationStatus: 'VERIFIED',
@@ -68,7 +68,7 @@ function marketplace(marketplaceCode: string, marketplaceName: string, status: M
   return {
     marketplaceCode,
     marketplaceName,
-    iconUrl: 'marketplace/placeholders/gift_cards.png',
+    iconUrl: placeholderImageUrl('gift_cards'),
     buyerAvailable,
     sellerAvailable,
     buyerEnabledByUser: buyerAvailable,
@@ -82,3 +82,4 @@ function marketplace(marketplaceCode: string, marketplaceName: string, status: M
     comingSoon: status === 'COMING_SOON'
   };
 }
+import { placeholderImageUrl } from '../../utils/mockImages';

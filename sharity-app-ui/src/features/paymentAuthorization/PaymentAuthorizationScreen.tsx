@@ -10,6 +10,7 @@ import { Button, Card, H1, H2, Paragraph, ScrollView, Text, XStack, YStack } fro
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
+import { placeholderImageUrl } from '../../utils/mockImages';
 import { getPaymentAuthorization, retryAuthorization, startPayPalAuthorization } from './paymentAuthorizationMockApi';
 import type { PaymentAuthorizationScreenResponse, PaymentTimelineEvent, SellerOrderAuthorizationStatus } from './paymentAuthorizationTypes';
 
@@ -105,7 +106,7 @@ export function PaymentAuthorizationScreen({ onNavigate }: Props) {
 }
 
 function ProviderPanel({ response, selectedProvider, onAuthorize }: { response: PaymentAuthorizationScreenResponse; selectedProvider: string; onAuthorize: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Payment Provider</H2>{response.paymentProviderOptions.map((provider) => <XStack key={provider.providerCode} ai="center" gap="$3"><Image source="marketplace/placeholders/gift_cards.png" placeholder={blurhash} style={{ width: 38, height: 38, borderRadius: 8 }} /><YStack flex={1}><Text fontWeight="900">{provider.providerName}</Text><Text color="$gray10">{provider.message}</Text></YStack><Badge label={provider.enabled ? (provider.providerCode === selectedProvider ? 'Selected' : 'Available') : 'Coming Later'} tone={provider.enabled ? 'success' : 'warning'} /></XStack>)}<Button theme="purple" onPress={onAuthorize}>Authorize with PayPal</Button><Button disabled>Authorize with Stripe Later</Button></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><H2>Payment Provider</H2>{response.paymentProviderOptions.map((provider) => <XStack key={provider.providerCode} ai="center" gap="$3"><Image source={placeholderImageUrl('gift_cards')} placeholder={blurhash} style={{ width: 38, height: 38, borderRadius: 8 }} /><YStack flex={1}><Text fontWeight="900">{provider.providerName}</Text><Text color="$gray10">{provider.message}</Text></YStack><Badge label={provider.enabled ? (provider.providerCode === selectedProvider ? 'Selected' : 'Available') : 'Coming Later'} tone={provider.enabled ? 'success' : 'warning'} /></XStack>)}<Button theme="purple" onPress={onAuthorize}>Authorize with PayPal</Button><Button disabled>Authorize with Stripe Later</Button></YStack></PremiumCard>;
 }
 
 function Notice({ response }: { response: PaymentAuthorizationScreenResponse }) {

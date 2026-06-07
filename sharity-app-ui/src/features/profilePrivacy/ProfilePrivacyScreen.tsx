@@ -1,301 +1,849 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from '@legendapp/state/react';
-import { FlashList } from '@shopify/flash-list';
+﻿import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H1, H2, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
+import * as ImagePicker from 'expo-image-picker';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Card, Input, Paragraph, YStack, XStack } from 'tamagui';
 
-import { appState$ } from '../../state/appState';
-import { appStorage } from '../../storage/storage';
-import { colors } from '../../theme';
+import { InteriorShell } from '../../components/appShell/InteriorShell';
+import { colors, radius, spacing } from '../../theme';
+import { authPalette } from '../auth/authTheme';
 import type { AppRoute } from '../../types/navigation';
-import { getProfilePrivacySettings, requestDataExport, saveProfilePrivacySettings } from './profilePrivacyMockApi';
-import type { BlockedUserItem, ProfilePrivacySettingsResponse, VerificationBadgeItem } from './profilePrivacyTypes';
+import { logoutBrowserSession } from '../../services/sessionService';
+import { getRegistrationOptions } from '../../services/authApi';
+import { getCurrentUser, getCurrentUserSessions, getCurrentUserSocialLinks, revokeAllCurrentUserSessions, revokeCurrentUserSession, startGoogleLink, updateCurrentUserProfile, uploadCurrentUserProfileImage, type CurrentUser, type SocialLink, type UserSession } from '../../services/userApi';
 
-type ProfilePrivacyScreenProps = {
+type Props = {
   onNavigate: (route: AppRoute) => void;
 };
 
-const blurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
-const sections = ['Identity', 'Buyer', 'Seller', 'Privacy', 'Messages', 'Blocked', 'Badges', 'Data'] as const;
+type CountryOption = {
+  countryCode: string;
+  countryName: string;
+  phoneDialCode: string;
+  defaultCurrencyCode: string;
+};
 
-const BadgeFlashList = FlashList as unknown as (props: {
-  data: VerificationBadgeItem[];
-  estimatedItemSize: number;
-  keyExtractor: (item: VerificationBadgeItem) => string;
-  renderItem: (info: { index: number; item: VerificationBadgeItem }) => ReactElement;
-}) => ReactElement;
+type GenderOption = {
+  code: string;
+  label: string;
+};
 
-const BlockedFlashList = FlashList as unknown as (props: {
-  data: BlockedUserItem[];
-  estimatedItemSize: number;
-  keyExtractor: (item: BlockedUserItem) => string;
-  renderItem: (info: { index: number; item: BlockedUserItem }) => ReactElement;
-}) => ReactElement;
+const privacyOptions = ['PRIVATE', 'VISIBLE_AFTER_ORDER', 'PUBLIC_WITHIN_SHARITY'] as const;
 
-export function ProfilePrivacyScreen({ onNavigate }: ProfilePrivacyScreenProps) {
-  const selectedSection = useSelector(appState$.profilePrivacy.selectedSection) as typeof sections[number];
-  const deleteConfirmation = useSelector(appState$.profilePrivacy.deleteConfirmation);
-  const realNameWarningOpen = useSelector(appState$.profilePrivacy.realNameWarningOpen);
-  const [settings, setSettings] = useState<ProfilePrivacySettingsResponse | null>(null);
+export function ProfilePrivacyScreen({ onNavigate }: Props) {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+  const [genders, setGenders] = useState<GenderOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    phoneNumber: '',
+    countryCode: '',
+    countryName: '',
+    phoneDialCode: '',
+    dateOfBirth: '',
+    gender: '',
+    profileImageUrl: '',
+    privacySetting: 'VISIBLE_AFTER_ORDER'
+  });
+  const googleLinked = socialLinks.some((link) => link.provider.toUpperCase() === 'GOOGLE');
 
-  const loadSettings = useCallback(async () => {
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function load() {
     setLoading(true);
-    setError(false);
+    setError('');
     try {
-      setSettings(await getProfilePrivacySettings());
-    } catch {
-      setError(true);
+      const [currentUser, currentSessions, registrationOptions] = await Promise.all([
+        getCurrentUser(),
+        getCurrentUserSessions(),
+        getRegistrationOptions()
+      ]);
+      const links = await getCurrentUserSocialLinks().catch(() => []);
+      setUser(currentUser);
+      setSessions(currentSessions);
+      setSocialLinks(links);
+      setCountries(registrationOptions.countries);
+      setGenders(registrationOptions.genders);
+      setForm({
+        firstName: currentUser.profile.firstName ?? '',
+        lastName: currentUser.profile.lastName ?? '',
+        phoneNumber: currentUser.profile.phoneNumber ?? '',
+        countryCode: currentUser.profile.countryCode ?? '',
+        countryName: currentUser.profile.countryName ?? '',
+        phoneDialCode: currentUser.profile.phoneDialCode ?? '',
+        dateOfBirth: currentUser.profile.dateOfBirth ?? '',
+        gender: currentUser.profile.gender ?? '',
+        profileImageUrl: currentUser.profile.profileImageUrl ?? '',
+        privacySetting: currentUser.profile.privacySetting ?? 'VISIBLE_AFTER_ORDER'
+      });
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load profile');
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const stored = appStorage.getString('profilePrivacySelectedSection') as typeof sections[number] | null;
-    if (stored && sections.includes(stored)) {
-      appState$.profilePrivacy.selectedSection.set(stored);
-    }
-    loadSettings();
-  }, [loadSettings]);
-
-  async function save() {
-    appState$.profilePrivacy.saveStatus.set('SAVING');
-    const response = await saveProfilePrivacySettings();
-    appState$.profilePrivacy.saveStatus.set('SAVED');
-    setMessage(response.message);
   }
 
-  const visibleBadges = useMemo(() => settings?.verificationBadges ?? [], [settings?.verificationBadges]);
+  async function saveProfile() {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await updateCurrentUserProfile({
+        ...form,
+        dateOfBirth: form.dateOfBirth || null,
+        gender: form.gender || null,
+        profileImageUrl: form.profileImageUrl || null,
+        privacySetting: form.privacySetting || null
+      });
+      setUser((current) => current ? { ...current, profile: { ...current.profile, ...updated } } : current);
+      setMessage('Profile updated from live account data.');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Unable to save profile');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function changeProfileImage() {
+    if (uploadingImage) {
+      return;
+    }
+    setUploadingImage(true);
+    setError('');
+    setMessage('');
+    try {
+      let filePayload: Blob & { name?: string };
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/jpeg,image/png,image/webp';
+        input.style.position = 'fixed';
+        input.style.left = '-9999px';
+        input.style.top = '-9999px';
+        const selected = await new Promise<File | null>((resolve) => {
+          input.onchange = () => {
+            const file = input.files?.[0] ?? null;
+            input.remove();
+            resolve(file);
+          };
+          document.body.appendChild(input);
+          input.click();
+        });
+        if (!selected) {
+          setUploadingImage(false);
+          return;
+        }
+        filePayload = selected;
+      } else {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          throw new Error('Photo library permission is required to update your profile image');
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.9,
+          mediaTypes: ImagePicker.MediaTypeOptions.Images
+        });
+        if (result.canceled) {
+          setUploadingImage(false);
+          return;
+        }
+        const asset = result.assets[0];
+        if (!asset) {
+          setUploadingImage(false);
+          return;
+        }
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        filePayload = blob as Blob & { name?: string };
+        filePayload.name = asset.fileName ?? 'profile-image.jpg';
+      }
+      const updated = await uploadCurrentUserProfileImage(filePayload);
+      setForm((current) => ({ ...current, profileImageUrl: updated.profileImageUrl }));
+      setUser((current) => current ? { ...current, profile: { ...current.profile, profileImageUrl: updated.profileImageUrl } } : current);
+      setMessage('Profile image updated.');
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Unable to upload profile image');
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function signOut() {
+    try {
+      await logoutBrowserSession();
+      onNavigate('welcome');
+    } catch {
+      setError('Unable to sign out right now.');
+    }
+  }
+
+  async function revokeSession(sessionId: number) {
+    try {
+      await revokeCurrentUserSession(sessionId);
+      setSessions((current) => current.filter((session) => session.id !== sessionId));
+      setMessage('Session revoked.');
+    } catch (revokeError) {
+      setError(revokeError instanceof Error ? revokeError.message : 'Unable to revoke session');
+    }
+  }
+
+  async function revokeAllSessions() {
+    try {
+      await revokeAllCurrentUserSessions();
+      setSessions([]);
+      setMessage('All sessions revoked.');
+    } catch (revokeError) {
+      setError(revokeError instanceof Error ? revokeError.message : 'Unable to revoke sessions');
+    }
+  }
+
+  function selectCountry(country: CountryOption) {
+    setForm((current) => ({
+      ...current,
+      countryCode: country.countryCode,
+      countryName: country.countryName,
+      phoneDialCode: country.phoneDialCode
+    }));
+  }
+
+  function setPhone(value: string) {
+    setForm((current) => ({
+      ...current,
+      phoneNumber: value.replace(/\D/g, '').slice(0, 10)
+    }));
+  }
+
+  const displayName = useMemo(() => {
+    const first = form.firstName.trim();
+    const last = form.lastName.trim();
+    return [first, last].filter(Boolean).join(' ') || user?.username || user?.email || 'Sharity user';
+  }, [form.firstName, form.lastName, user?.email, user?.username]);
 
   return (
-    <YStack bg="$background" f={1}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$5" maxWidth={1220} mx="auto" p="$5" width="100%">
-          <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$4">
-            <YStack gap="$2" flex={1}>
-              <Text color="$blue10" fontWeight="800">Privacy-first account settings</Text>
-              <H1>Profile & Privacy</H1>
-              <Paragraph color="$gray10">Control how your buyer and seller identity appears on Sharity.</Paragraph>
-            </YStack>
-            <XStack flexWrap="wrap" gap="$2">
-              <Button icon={<Ionicons name="arrow-back" size={18} />} onPress={() => onNavigate('home')}>Back</Button>
-              <Button icon={<Ionicons name="save-outline" size={18} />} theme="purple" onPress={save}>Save Profile</Button>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger><Button icon={<Ionicons name="ellipsis-horizontal" size={18} />}>More</Button></DropdownMenu.Trigger>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item key="photo" onSelect={() => setMessage('Photo upload mock flow ready.')}>Upload/Change Photo</DropdownMenu.Item>
-                  <DropdownMenu.Item key="messages" onSelect={() => appState$.profilePrivacy.selectedSection.set('Messages')}>Manage Message Privacy</DropdownMenu.Item>
-                  <DropdownMenu.Item key="blocked" onSelect={() => appState$.profilePrivacy.selectedSection.set('Blocked')}>Manage Blocked Users</DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </XStack>
-          </XStack>
+    <InteriorShell activeLabel="Profile" onNavigate={onNavigate} scrollable={false} subtitle="Real account profile, sessions, and privacy settings" title="Profile & Privacy">
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
 
-          {loading ? <CenteredState title="Loading profile and privacy settings..." /> : null}
-          {error ? <CenteredState title="Profile not found." actionLabel="Reload" onAction={loadSettings} /> : null}
+          {loading ? <StateCard title="Loading account details..." /> : null}
+          {error ? <StateCard title={error} actionLabel="Reload" onAction={load} /> : null}
+          {message ? <StateCard title={message} /> : null}
 
-          {settings ? (
-            <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
-              <YStack gap="$4" width={286} $md={{ width: '100%' }}>
-                <IdentityCard settings={settings} />
-                <PremiumCard p="$3">
-                  <YStack gap="$2">
-                    {sections.map((section) => (
-                      <Button
-                        key={section}
-                        justifyContent="flex-start"
-                        theme={selectedSection === section ? 'purple' : undefined}
-                        onPress={() => {
-                          appState$.profilePrivacy.selectedSection.set(section);
-                          appStorage.setString('profilePrivacySelectedSection', section);
-                        }}
-                      >
-                        {section}
-                      </Button>
+          {!loading && user ? (
+            <>
+              <View style={styles.grid}>
+              <View style={styles.leftColumn}>
+                <Card style={styles.card}>
+                  <View style={styles.hero}>
+                    <View style={styles.avatarWrap}>
+                      {user.profile.profileImageUrl ? (
+                        <Image source={user.profile.profileImageUrl} style={styles.avatar} contentFit="cover" />
+                      ) : (
+                        <View style={styles.avatarFallback}>
+                          <Text style={styles.avatarInitials}>{initials(displayName)}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.displayName}>{displayName}</Text>
+                    <Text style={styles.subcopy}>{user.email}</Text>
+                    <XStack gap="$2" flexWrap="wrap" justifyContent="center">
+                      <Pill label={user.status} tone="info" />
+                      <Pill label={user.profileCompletionStatus} tone={user.profileCompletionStatus === 'COMPLETE' ? 'success' : 'warning'} />
+                      {user.roles.map((role) => <Pill key={role} label={role} tone="neutral" />)}
+                    </XStack>
+                  </View>
+                </Card>
+
+                <Card style={styles.card}>
+                  <SectionTitle title="Sessions" />
+                  <View style={styles.sessionActions}>
+                    <Button accessibilityLabel="Revoke all sessions" onPress={revokeAllSessions} theme="red">
+                      Revoke All
+                    </Button>
+                  </View>
+                  <View style={styles.sessionList}>
+                    {sessions.length === 0 ? <Paragraph color="$gray10">No active sessions found.</Paragraph> : null}
+                    {sessions.map((session) => (
+                      <View key={session.id} style={styles.sessionRow}>
+                        <View style={styles.sessionMeta}>
+                          <Text style={styles.sessionTitle}>{session.deviceName ?? 'Unknown device'}</Text>
+                          <Text style={styles.sessionText}>{session.ipAddress ?? 'Unknown IP'}</Text>
+                          <Text style={styles.sessionText}>{session.lastUsedAt ? `Last used ${formatDate(session.lastUsedAt)}` : 'No recent usage data'}</Text>
+                        </View>
+                        <Button accessibilityLabel={`Revoke session ${session.id}`} onPress={() => revokeSession(session.id)} size="$2">
+                          Revoke
+                        </Button>
+                      </View>
                     ))}
-                  </YStack>
-                </PremiumCard>
-              </YStack>
+                  </View>
+                </Card>
+              </View>
 
-              <YStack flex={1} gap="$4" minWidth={0}>
-                {selectedSection === 'Identity' ? <IdentitySection settings={settings} /> : null}
-                {selectedSection === 'Buyer' ? <BuyerSection settings={settings} /> : null}
-                {selectedSection === 'Seller' ? <SellerSection settings={settings} /> : null}
-                {selectedSection === 'Privacy' ? <PrivacySection settings={settings} /> : null}
-                {selectedSection === 'Messages' ? <MessageSection settings={settings} /> : null}
-                {selectedSection === 'Blocked' ? (
-                  <ListSection title="Blocked Users">
-                    <BlockedFlashList
-                      data={settings.blockedUsersSummary.users}
-                      estimatedItemSize={128}
-                      keyExtractor={(item) => item.blockedUserId}
-                      renderItem={({ item, index }) => <BlockedRow blockedUser={item} index={index} />}
-                    />
-                  </ListSection>
+              <View style={styles.rightColumn}>
+                <Card style={styles.card}>
+                  <SectionTitle title="Profile details" />
+                  <View style={styles.formGrid}>
+                    <Field label="First name" value={form.firstName} onChangeText={(value) => setForm((current) => ({ ...current, firstName: value }))} />
+                    <Field label="Last name" value={form.lastName} onChangeText={(value) => setForm((current) => ({ ...current, lastName: value }))} />
+                    <Field label="Phone number" value={form.phoneNumber} onChangeText={setPhone} keyboardType="phone-pad" helper="10 digits only" />
+                    <Field label="Date of birth" value={form.dateOfBirth} onChangeText={(value) => setForm((current) => ({ ...current, dateOfBirth: value }))} type={Platform.OS === 'web' ? 'date' : 'text'} helper="Web uses the native date picker." />
+                    <View style={styles.field}>
+                      <Text style={styles.label}>Profile image</Text>
+                      <View style={styles.imageControl}>
+                        <View style={styles.imagePreviewSmall}>
+                          {form.profileImageUrl ? (
+                            <Image contentFit="cover" source={{ uri: form.profileImageUrl }} style={styles.imagePreviewPhoto} />
+                          ) : (
+                            <View style={styles.imagePreviewFallback}>
+                              <Ionicons color={authPalette.textMuted} name="person-circle-outline" size={28} />
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.imageControlCopy}>
+                          <Text style={styles.imageControlTitle}>{form.profileImageUrl ? 'Photo on file' : 'No profile photo yet'}</Text>
+                          <Text style={styles.imageControlText}>Upload a new photo from your device. The raw image URL stays hidden.</Text>
+                          <View style={styles.imageControlActions}>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={form.profileImageUrl ? 'Update profile photo' : 'Add profile photo'}
+                              disabled={uploadingImage}
+                              onPress={changeProfileImage}
+                              style={[styles.photoButton, uploadingImage && styles.photoButtonDisabled]}
+                            >
+                              {uploadingImage ? (
+                                <ActivityIndicator color={authPalette.white} />
+                              ) : (
+                                <Ionicons color={authPalette.white} name="cloud-upload-outline" size={18} />
+                              )}
+                              <Text style={styles.photoButtonText}>{form.profileImageUrl ? 'Update photo' : 'Add photo'}</Text>
+                            </Pressable>
+                            {form.profileImageUrl ? (
+                              <Pressable accessibilityLabel="Remove profile photo" onPress={() => setForm((current) => ({ ...current, profileImageUrl: '' }))} style={styles.photoLinkButton}>
+                                <Text style={styles.photoLinkText}>Remove</Text>
+                              </Pressable>
+                            ) : null}
+                          </View>
+                          <Text style={styles.photoHint}>{uploadingImage ? 'Uploading...' : 'Stored in your account profile.'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <Subsection title="Country">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+                      {countries.map((country) => {
+                        const selected = form.countryCode === country.countryCode;
+                        return (
+                          <Pressable key={country.countryCode} accessibilityLabel={`Country ${country.countryName}`} onPress={() => selectCountry(country)} style={[styles.chip, selected && styles.chipActive]}>
+                            <Text style={[styles.chipTitle, selected && styles.chipTitleActive]}>{country.countryName}</Text>
+                            <Text style={[styles.chipSubcopy, selected && styles.chipSubcopyActive]}>{country.countryCode} · {country.phoneDialCode}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </Subsection>
+
+                  <Subsection title="Gender">
+                    <View style={styles.chipRow}>
+                      {genders.map((gender) => {
+                        const selected = form.gender === gender.code;
+                        return (
+                          <Pressable key={gender.code} accessibilityLabel={`Gender ${gender.label}`} onPress={() => setForm((current) => ({ ...current, gender: gender.code }))} style={[styles.chip, selected && styles.chipActive]}>
+                            <Text style={[styles.chipTitle, selected && styles.chipTitleActive]}>{gender.label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </Subsection>
+
+                  <Subsection title="Privacy setting">
+                    <View style={styles.chipRow}>
+                      {privacyOptions.map((option) => {
+                        const selected = form.privacySetting === option;
+                        return (
+                          <Pressable key={option} accessibilityLabel={`Privacy ${option}`} onPress={() => setForm((current) => ({ ...current, privacySetting: option }))} style={[styles.chip, selected && styles.chipActive]}>
+                            <Text style={[styles.chipTitle, selected && styles.chipTitleActive]}>{privacyLabel(option)}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </Subsection>
+                </Card>
+
+                <Card style={styles.card}>
+                  <SectionTitle title="Account summary" />
+                  <SummaryRow label="Display name" value={displayName} />
+                  <SummaryRow label="Country" value={form.countryName || 'Not set'} />
+                  <SummaryRow label="Phone code" value={form.phoneDialCode || 'Not set'} />
+                  <SummaryRow label="DOB" value={form.dateOfBirth || 'Not set'} />
+                  <SummaryRow label="Privacy" value={privacyLabel(form.privacySetting)} />
+                  <SummaryRow label="Email verified" value={user.emailVerified ? 'Yes' : 'No'} />
+                </Card>
+              </View>
+
+              </View>
+
+              <View style={styles.actionsFooter}>
+                <Button accessibilityLabel="Save profile" disabled={saving || loading} icon={<Ionicons name="save-outline" size={18} />} onPress={saveProfile} theme="purple">
+                  {saving ? 'Saving...' : 'Save Profile'}
+                </Button>
+                <Button accessibilityLabel="Sign out" icon={<Ionicons name="log-out-outline" size={18} />} onPress={signOut} theme="red">
+                  Sign Out
+                </Button>
+                {!googleLinked ? (
+                  <Button accessibilityLabel="Link Google account" icon={<Ionicons name="logo-google" size={18} />} onPress={startGoogleLink}>
+                    Link Google
+                  </Button>
                 ) : null}
-                {selectedSection === 'Badges' ? (
-                  <ListSection title="Trust & Verification Badges">
-                    <BadgeFlashList
-                      data={visibleBadges}
-                      estimatedItemSize={100}
-                      keyExtractor={(item) => item.badgeType}
-                      renderItem={({ item, index }) => <BadgeRow badge={item} index={index} />}
-                    />
-                  </ListSection>
-                ) : null}
-                {selectedSection === 'Data' ? <DataSection deleteConfirmation={deleteConfirmation} onRequestExport={async () => { const response = await requestDataExport(); setMessage(response.message); }} settings={settings} /> : null}
-                {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
-              </YStack>
-            </XStack>
+              </View>
+            </>
           ) : null}
-        </YStack>
+        </View>
       </ScrollView>
-      {realNameWarningOpen ? <RealNameWarning /> : null}
-    </YStack>
+    </InteriorShell>
   );
 }
 
-function IdentityCard({ settings }: { settings: ProfilePrivacySettingsResponse }) {
+function Field({
+  label,
+  value,
+  onChangeText,
+  helper,
+  keyboardType,
+  type
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  helper?: string;
+  keyboardType?: 'default' | 'phone-pad';
+  type?: string;
+}) {
   return (
-    <PremiumCard p="$4">
-      <YStack ai="center" gap="$3">
-        <Image source={settings.profile.profilePhotoUrl} placeholder={blurhash} style={{ width: 88, height: 88, borderRadius: 44 }} />
-        <Text fontSize="$6" fontWeight="900">{settings.profile.displayName}</Text>
-        <Badge label="Real name hidden publicly" tone="success" />
-        <Text color="$gray10" ta="center">Buyer alias: {settings.buyerProfile.buyerAlias}</Text>
-        <Text color="$gray10" ta="center">Seller alias: {settings.sellerProfile.sellerAlias}</Text>
-        <Text color="$gray10" ta="center">Store: {settings.sellerProfile.storeName}</Text>
-      </YStack>
-    </PremiumCard>
-  );
-}
-
-function IdentitySection({ settings }: { settings: ProfilePrivacySettingsResponse }) {
-  return (
-    <Section title="Profile Identity">
-      <XStack $sm={{ flexDirection: 'column' }} gap="$3">
-        <Field label="Display name" value={settings.profile.displayName} />
-        <Field label="Country/region" value={`${settings.profile.country}, ${settings.profile.region}`} />
-      </XStack>
-      <XStack $sm={{ flexDirection: 'column' }} gap="$3">
-        <Field label="Preferred language" value={settings.profile.preferredLanguage} />
-        <Field label="Time zone" value={settings.profile.timeZone} />
-      </XStack>
-      <InfoCard title="Compliance-only fields" text="Date of birth, gender, legal identity, phone, email, and verification documents stay private unless required by law or platform policy." tone="info" />
-    </Section>
-  );
-}
-
-function BuyerSection({ settings }: { settings: ProfilePrivacySettingsResponse }) {
-  return <Section title="Buyer Profile"><Field label="Buyer alias" value={settings.buyerProfile.buyerAlias} /><ToggleRows rows={['Show buyer alias instead of real name', 'Hide profile photo', 'Hide country/region', 'Hide purchase history', 'Hide online status', 'Hide last active']} /></Section>;
-}
-
-function SellerSection({ settings }: { settings: ProfilePrivacySettingsResponse }) {
-  return <Section title="Seller Profile"><Field label="Seller alias" value={settings.sellerProfile.sellerAlias} /><Field label="Store name" value={settings.sellerProfile.storeName} /><Field label="Store description" value={settings.sellerProfile.storeDescription} /><ToggleRows rows={['Show seller alias/store name instead of real name', 'Hide seller sales count', 'Hide seller rating details', 'Seller profile visible within Sharity']} /></Section>;
-}
-
-function PrivacySection({ settings }: { settings: ProfilePrivacySettingsResponse }) {
-  return (
-    <Section title="Privacy Controls">
-      <ToggleRows rows={['Hide real name from buyers/sellers', 'Show buyer alias instead of real name', 'Show seller alias/store name instead of real name', 'Hide country/region from public profile', 'Hide purchase history', 'Control profile visibility']} />
-      <Button icon={<Ionicons name="warning-outline" size={18} />} theme="red" onPress={() => appState$.profilePrivacy.realNameWarningOpen.set(true)}>Request Real Name Public Visibility</Button>
-      <InfoCard title="Digital Product Privacy" text={settings.digitalPrivacy.message} tone="info" />
-    </Section>
-  );
-}
-
-function MessageSection({ settings }: { settings: ProfilePrivacySettingsResponse }) {
-  return <Section title="Message Privacy"><ToggleRows rows={['Allow messages only for orders/refunds/disputes', 'Pre-purchase questions later', 'Hide online status', 'Hide last active', `Blocked users: ${settings.messagePrivacy.blockedUserCount}`, 'Report user enabled']} /></Section>;
-}
-
-function DataSection({ settings, deleteConfirmation, onRequestExport }: { settings: ProfilePrivacySettingsResponse; deleteConfirmation: string; onRequestExport: () => void }) {
-  return (
-    <Section title="Data Export & Delete Account">
-      <InfoCard title="Data export" text={`Status: ${settings.dataExportStatus.status}. Secure download route: ${settings.dataExportStatus.secureDownloadRoute}`} tone="info" />
-      <Button icon={<Ionicons name="download-outline" size={18} />} theme="purple" onPress={onRequestExport}>Download My Data</Button>
-      <InfoCard title="Delete account blocked" text={`${settings.deleteAccountEligibility.legalRetentionNotice} Blocking reasons: ${settings.deleteAccountEligibility.blockingReasons.join(', ')}.`} tone="critical" />
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
       <Input
-        aria-label="Delete account confirmation"
-        bg="$background"
-        borderColor="$borderColor"
-        onChangeText={(value) => appState$.profilePrivacy.deleteConfirmation.set(value)}
-        placeholder="DELETE MY ACCOUNT"
-        value={deleteConfirmation}
+        keyboardType={keyboardType}
+        onChangeText={onChangeText}
+        style={styles.input}
+        type={type as never}
+        value={value}
       />
-      <Button disabled={deleteConfirmation !== 'DELETE MY ACCOUNT'} theme="red">Delete Account</Button>
-    </Section>
+      {helper ? <Text style={styles.helper}>{helper}</Text> : null}
+    </View>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>;
-}
-
-function ListSection({ title, children }: { title: string; children: ReactNode }) {
-  return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>;
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return <YStack flex={1} gap="$2"><Text color="$gray10" fontWeight="800">{label}</Text><Input bg="$background" borderColor="$borderColor" value={value} /></YStack>;
-}
-
-function ToggleRows({ rows }: { rows: string[] }) {
-  return <YStack gap="$2">{rows.map((row) => <XStack key={row} ai="center" jc="space-between" gap="$3"><Text flex={1}>{row}</Text><Badge label={row.includes('later') ? 'Later' : 'On'} tone={row.includes('later') ? 'warning' : 'success'} /></XStack>)}</YStack>;
-}
-
-const BadgeRow = memo(function BadgeRow({ badge, index }: { badge: VerificationBadgeItem; index: number }) {
-  const style = useEntrance(index);
-  return <Animated.View style={style}><PremiumCard mb="$3" p="$4"><XStack ai="center" gap="$3"><Ionicons color={badge.sellerSafeOnly ? colors.warning : colors.success} name={badge.sellerSafeOnly ? 'lock-closed' : 'checkmark-circle'} size={24} /><YStack flex={1}><Text fontWeight="900">{badge.label}</Text><Paragraph color="$gray10">{badge.description}</Paragraph></YStack><Badge label={badge.status} tone={badge.sellerSafeOnly ? 'warning' : 'success'} /></XStack></PremiumCard></Animated.View>;
-});
-
-const BlockedRow = memo(function BlockedRow({ blockedUser, index }: { blockedUser: BlockedUserItem; index: number }) {
-  const style = useEntrance(index);
-  return <Animated.View style={style}><PremiumCard mb="$3" p="$4"><XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3"><YStack flex={1}><Text fontWeight="900">{blockedUser.displayAlias}</Text><Paragraph color="$gray10">{blockedUser.role} • {blockedUser.blockedReason} • {blockedUser.relatedEntityReference}</Paragraph></YStack><Button>Unblock</Button></XStack></PremiumCard></Animated.View>;
-});
-
-function RealNameWarning() {
+function Subsection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <YStack bg="$backgroundStrong" borderColor="$red8" borderWidth={1} bottom={24} br="$6" gap="$3" left={24} p="$4" position="absolute" right={24}>
-      <Text color="$red10" fontWeight="900">Your real name is hidden by default.</Text>
-      <Paragraph>Showing it publicly may reveal your identity to buyers and sellers. This mock flow requires explicit confirmation before backend approval.</Paragraph>
-      <XStack gap="$2" jc="flex-end">
-        <Button onPress={() => appState$.profilePrivacy.realNameWarningOpen.set(false)}>Keep Hidden</Button>
-        <Button theme="red" onPress={() => appState$.profilePrivacy.realNameWarningOpen.set(false)}>I Understand</Button>
-      </XStack>
-    </YStack>
+    <View style={styles.subsection}>
+      <Text style={styles.sectionLabel}>{title}</Text>
+      {children}
+    </View>
   );
 }
 
-function CenteredState({ title, actionLabel, onAction }: { title: string; actionLabel?: string; onAction?: () => void }) {
-  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><H2 ta="center">{title}</H2>{actionLabel ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}</YStack></PremiumCard>;
+function SectionTitle({ title }: { title: string }) {
+  return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
-function InfoCard({ title, text, tone }: { title: string; text: string; tone: 'info' | 'critical' }) {
-  return <YStack bg={tone === 'critical' ? '$red3' : '$blue3'} br="$5" gap="$2" p="$4"><Text color={tone === 'critical' ? '$red10' : '$blue10'} fontWeight="900">{title}</Text><Paragraph color="$gray11">{text}</Paragraph></YStack>;
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <XStack ai="center" jc="space-between" py="$2">
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={styles.summaryValue}>{value}</Text>
+    </XStack>
+  );
 }
 
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
-  const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3';
-  const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10';
-  return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>;
+function StateCard({ title, actionLabel, onAction }: { title: string; actionLabel?: string; onAction?: () => void }) {
+  return (
+    <Card style={styles.stateCard}>
+      <Text style={styles.stateText}>{title}</Text>
+      {actionLabel ? <Button accessibilityLabel={actionLabel} onPress={onAction} size="$2">{actionLabel}</Button> : null}
+    </Card>
+  );
 }
 
-function PremiumCard(props: ComponentProps<typeof Card>) {
-  return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />;
+function initials(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'S';
 }
 
-function useEntrance(index: number) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(10);
-  useEffect(() => {
-    opacity.value = withDelay(index * 45, withTiming(1, { duration: 220 }));
-    translateY.value = withDelay(index * 45, withSpring(0, { damping: 18, stiffness: 150 }));
-  }, [index, opacity, translateY]);
-  return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
+
+function privacyLabel(value: string) {
+  if (value === 'PRIVATE') {
+    return 'Private';
+  }
+  if (value === 'VISIBLE_AFTER_ORDER') {
+    return 'Visible after order';
+  }
+  if (value === 'PUBLIC_WITHIN_SHARITY') {
+    return 'Public within Sharity';
+  }
+  return value;
+}
+
+function Pill({ label, tone }: { label: string; tone: 'success' | 'warning' | 'info' | 'neutral' }) {
+  return <Text style={[styles.pill, tone === 'success' && styles.pillSuccess, tone === 'warning' && styles.pillWarning, tone === 'info' && styles.pillInfo]}>{label}</Text>;
+}
+
+const styles = StyleSheet.create({
+  content: {
+    paddingBottom: spacing.xxxl
+  },
+  container: {
+    gap: spacing.lg,
+    marginHorizontal: 'auto',
+    maxWidth: 1240,
+    padding: spacing.lg,
+    width: '100%'
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'flex-end'
+  },
+  actionsFooter: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'flex-end',
+    paddingTop: spacing.sm
+  },
+  grid: {
+    flexDirection: 'row',
+    gap: spacing.lg
+  },
+  leftColumn: {
+    gap: spacing.lg,
+    width: 380
+  },
+  rightColumn: {
+    flex: 1,
+    minWidth: 0
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    padding: spacing.lg
+  },
+  hero: {
+    alignItems: 'center',
+    gap: spacing.sm
+  },
+  avatarWrap: {
+    height: 84,
+    width: 84
+  },
+  avatar: {
+    borderRadius: 42,
+    height: 84,
+    width: 84
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    backgroundColor: '#EAEAFE',
+    borderRadius: 42,
+    height: 84,
+    justifyContent: 'center',
+    width: 84
+  },
+  avatarInitials: {
+    color: colors.primary,
+    fontSize: 24,
+    fontWeight: '900'
+  },
+  displayName: {
+    color: colors.textPrimary,
+    fontSize: 24,
+    fontWeight: '900'
+  },
+  subcopy: {
+    color: colors.textSecondary,
+    fontSize: 14
+  },
+  sessionActions: {
+    alignItems: 'flex-end',
+    marginBottom: spacing.sm
+  },
+  sessionList: {
+    gap: spacing.sm
+  },
+  sessionRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    paddingBottom: spacing.sm
+  },
+  sessionMeta: {
+    flex: 1,
+    gap: 2
+  },
+  sessionTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  sessionText: {
+    color: colors.textSecondary,
+    fontSize: 12
+  },
+  formGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    justifyContent: 'space-between'
+  },
+  field: {
+    flexBasis: '48%',
+    gap: 6,
+    minWidth: 240
+  },
+  imageControl: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md
+  },
+  imagePreviewSmall: {
+    height: 72,
+    overflow: 'hidden',
+    width: 72
+  },
+  imagePreviewPhoto: {
+    borderRadius: 14,
+    height: '100%',
+    width: '100%'
+  },
+  imagePreviewFallback: {
+    alignItems: 'center',
+    backgroundColor: '#F4F7FB',
+    borderRadius: 14,
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%'
+  },
+  imageControlCopy: {
+    flex: 1,
+    gap: 6
+  },
+  inlineEditor: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm
+  },
+  inlineEditorInput: {
+    backgroundColor: '#fff',
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    color: colors.textPrimary,
+    flex: 1,
+    fontSize: 14,
+    minHeight: 42,
+    paddingHorizontal: spacing.sm
+  },
+  imageControlTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  imageControlText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 16
+  },
+  imageControlActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: 2
+  },
+  photoButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 10
+  },
+  photoButtonDisabled: {
+    opacity: 0.65
+  },
+  photoButtonText: {
+    color: authPalette.white,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  photoLinkButton: {
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    justifyContent: 'center',
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 10
+  },
+  photoLinkText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  photoHint: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 16
+  },
+  fieldError: {
+    color: authPalette.danger,
+    fontSize: 12,
+    marginTop: 6
+  },
+  label: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 48,
+    paddingHorizontal: 14
+  },
+  helper: {
+    color: colors.textSecondary,
+    fontSize: 12
+  },
+  subsection: {
+    gap: spacing.sm,
+    marginTop: spacing.lg
+  },
+  sectionLabel: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900'
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingRight: spacing.sm
+  },
+  chip: {
+    backgroundColor: '#fff',
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 2,
+    minWidth: 120,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  chipActive: {
+    backgroundColor: '#F1FBF7',
+    borderColor: colors.primary
+  },
+  chipTitle: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  chipTitleActive: {
+    color: colors.primary
+  },
+  chipSubcopy: {
+    color: colors.textSecondary,
+    fontSize: 11
+  },
+  chipSubcopyActive: {
+    color: colors.primary
+  },
+  summaryLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  summaryValue: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '900'
+  },
+  stateCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.large,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg
+  },
+  stateText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  sectionTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: spacing.sm
+  },
+  pill: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 999,
+    color: colors.textPrimary,
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  pillInfo: {
+    backgroundColor: '#EAF1FF',
+    color: '#185FA5'
+  },
+  pillSuccess: {
+    backgroundColor: '#E7F8F1',
+    color: '#0F6E56'
+  },
+  pillWarning: {
+    backgroundColor: '#FAEEDA',
+    color: '#854F0B'
+  }
+});
+
+
+
+

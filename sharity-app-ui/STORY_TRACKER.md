@@ -33,6 +33,14 @@ Validation:
 - `npm run lint`
 - Docker build and HTTP check passed for `sharity-app`
 
+## Recent Completed Story Batch
+
+Story | Screen | Status | Notes
+--- | --- | --- | ---
+STORY-044 | Security Settings / Login Devices / Account Protection Screen | CODED | Login methods, devices/sessions, security alerts, re-auth, recovery, suspicious activity report, admin security placeholder
+STORY-045 | App Settings / Theme / Language / Region Screen | CODED | Theme, language, region/country shortcut, currency display, marketplace preferences, notification preferences, accessibility, cache, app about
+STORY-046 | Notification Center / Alerts / In-App Inbox Screen | CODED | Buyer/seller inbox, unread badges, critical pinned alerts, related entity actions, read/archive, filters, admin broadcast placeholder
+
 ## Story 032: Notifications Center Screen
 
 Status: Done

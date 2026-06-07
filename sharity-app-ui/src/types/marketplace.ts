@@ -9,9 +9,13 @@ export type MarketplaceVertical = {
 };
 
 export type MarketplaceCategory = {
+  id: number;
   code: string;
   name: string;
+  slug: string;
   verticalCode: string;
+  countryCode: string | null;
+  iconRef: string | null;
   active: boolean;
 };
 

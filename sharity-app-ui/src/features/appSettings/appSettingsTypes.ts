@@ -1,0 +1,27 @@
+export type ThemePreference = { currentTheme: string; availableThemes: string[]; systemThemeDetected: string; highContrastAvailableLater: boolean };
+export type LanguagePreference = { currentLanguage: string; availableLanguages: string[]; futureLanguages: string[]; languageStatus: string; userSafeMessage: string };
+export type RegionSummary = { countryCode: string; countryName: string; countryChangeAllowed: boolean; countryChangeReviewRequired: boolean; marketplaceImpactSummary: string; payoutImpactSummary: string; manageCountryRoute: string };
+export type CurrencyDisplayPreference = { checkoutCurrency: string; displayCurrency: string; availableDisplayCurrencies: string[]; backendControlled: boolean; userCanChangeDisplayCurrency: boolean; userSafeMessage: string };
+export type MarketplacePreferenceItem = { marketplaceCode: string; marketplaceName: string; marketplaceIconUrl: string; buyerVisible: boolean; sellerVisible: boolean; buyerPreferenceEnabled: boolean; sellerPreferenceEnabled: boolean; adminCountryAllowed: boolean; status: string; userSafeReason: string; displayOrder: number; defaultMarketplace: boolean; availableActions: string[] };
+export type NotificationPreferenceItem = { notificationType: string; label: string; description: string; pushEnabled: boolean; emailEnabled: boolean; inAppEnabled: boolean; mandatory: boolean; critical: boolean; userCanDisable: boolean; userSafeMessage: string };
+export type AccessibilityPreference = { largerTextEnabled: boolean; reduceMotionEnabled: boolean; highContrastEnabledLater: boolean; screenReaderOptimized: boolean; hapticFeedbackEnabled: boolean };
+export type AppAboutInfo = { appName: string; appVersion: string; buildNumber: string; platform: string; environmentLabelSafe: string; termsRoute: string; privacyRoute: string; licensesRouteLater: string; debugInfoAvailableInDevOnly: boolean };
+export type UpdateMarketplacePreferencesRequest = { marketplaceCode: string; buyerPreferenceEnabled: boolean; sellerPreferenceEnabled: boolean };
+export type ReorderMarketplaceShortcutsRequest = { orderedMarketplaceCodes: string[] };
+export type UpdateNotificationPreferenceRequest = { notificationType: string; pushEnabled: boolean; emailEnabled: boolean; inAppEnabled: boolean };
+export type SettingsActionResponse = { success: boolean; status: string; message: string; updatedAt: string; syncStatus: string };
+export type AppSettingsDashboardResponse = {
+  userId: string;
+  currentMode: string;
+  currentMarketplace: string;
+  themePreference: ThemePreference;
+  languagePreference: LanguagePreference;
+  regionSummary: RegionSummary;
+  currencyPreference: CurrencyDisplayPreference;
+  marketplacePreferences: MarketplacePreferenceItem[];
+  notificationPreferencesSummary: NotificationPreferenceItem[];
+  accessibilityPreferences: AccessibilityPreference;
+  appAbout: AppAboutInfo;
+  syncStatus: string;
+  availableActions: string[];
+};
