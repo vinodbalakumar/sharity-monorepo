@@ -5,6 +5,7 @@ import com.java.vinod.platform.web.bff.dto.BffSessionResponse;
 import com.java.vinod.platform.web.bff.service.BffProxyService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,13 +36,15 @@ public class BffController {
 
     private final BffProperties properties;
     private final BffProxyService proxyService;
+    private final org.springframework.web.client.RestTemplate restTemplate;
 
     /**
      * Creates the browser BFF controller with its public configuration and proxy service.
      */
-    public BffController(BffProperties properties, BffProxyService proxyService) {
+    public BffController(BffProperties properties, BffProxyService proxyService, org.springframework.web.client.RestTemplate restTemplate) {
         this.properties = properties;
         this.proxyService = proxyService;
+        this.restTemplate = restTemplate;
     }
 
     /**
@@ -61,8 +64,13 @@ public class BffController {
      * render without browser console auth errors.</p>
      */
     @GetMapping("/bff/session")
-    public BffSessionResponse session(Authentication authentication, CsrfToken csrfToken) {
-        if (authentication == null || !authentication.isAuthenticated()) {
+    public BffSessionResponse session(HttpServletRequest request, Authentication authentication, CsrfToken csrfToken) {
+        // Check if logout was just initiated (force re-auth cookie is set)
+        boolean forceLogout = request.getCookies() != null &&
+                java.util.Arrays.stream(request.getCookies())
+                        .anyMatch(c -> FORCE_REAUTH_COOKIE.equals(c.getName()));
+
+        if (forceLogout || authentication == null || !authentication.isAuthenticated()) {
             return new BffSessionResponse(false, null, null, null, null,
                     List.of(), List.of(), csrfToken == null ? null : csrfToken.getToken());
         }
@@ -103,7 +111,41 @@ public class BffController {
      * Clears the browser session after the user signs out.
      */
     @PostMapping("/bff/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response,
+                                      @org.springframework.web.bind.annotation.RequestBody(required = false)
+                                      java.util.Map<String, String> body) {
+        try {
+            String refreshToken = body != null ? body.get("refreshToken") : null;
+
+            if (refreshToken != null && !refreshToken.isEmpty()) {
+                String authServerUrl = properties.backends().authorizationServer();
+                String logoutUrl = authServerUrl + "/api/v1/auth/logout";
+
+                // Create logout request
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+                java.util.Map<String, String> logoutRequest = new java.util.HashMap<>();
+                logoutRequest.put("refreshToken", refreshToken);
+
+                HttpEntity<java.util.Map<String, String>> entity = new HttpEntity<>(logoutRequest, headers);
+
+                try {
+                    ResponseEntity<String> authResponse = restTemplate.postForEntity(logoutUrl, entity, String.class);
+                    // Forward auth-server Set-Cookie headers
+                    authResponse.getHeaders().forEach((key, values) -> {
+                        if (HttpHeaders.SET_COOKIE.equalsIgnoreCase(key)) {
+                            values.forEach(value -> response.addHeader(HttpHeaders.SET_COOKIE, value));
+                        }
+                    });
+                } catch (Exception e) {
+                    // Continue logout on auth-server error
+                }
+            }
+        } catch (Exception e) {
+            // Continue with BFF logout even if auth-server call fails
+        }
+
+        // Clear BFF session
         if (request.getSession(false) != null) {
             request.getSession(false).invalidate();
         }

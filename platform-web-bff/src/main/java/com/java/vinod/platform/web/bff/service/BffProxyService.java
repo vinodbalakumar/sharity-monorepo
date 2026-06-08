@@ -22,7 +22,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
@@ -79,8 +78,8 @@ public class BffProxyService {
                         && !HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(header)
                         && !HttpHeaders.HOST.equalsIgnoreCase(header)) {
                 headers.add(header, request.getHeader(header));
-            }
-        });
+                }
+            });
         headers.setBearerAuth(bearerToken);
         if (headers.get(HttpHeaders.ACCEPT) == null) {
             headers.setAccept(MediaType.parseMediaTypes(MediaType.APPLICATION_JSON_VALUE));
@@ -148,6 +147,11 @@ public class BffProxyService {
                 || "PUT".equalsIgnoreCase(method)
                 || "PATCH".equalsIgnoreCase(method)
                 || "DELETE".equalsIgnoreCase(method);
+    }
+
+    private boolean isMultipart(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase().startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
     }
 
     private static final class NoOpErrorHandler extends DefaultResponseErrorHandler {
