@@ -18,6 +18,7 @@ import {
   startRefundRequest
 } from './orderDetailsMockApi';
 import type { OrderDetailsItem, OrderDetailsResponse, OrderTimelineEvent } from './orderDetailsTypes';
+import { getOrderStatusColor, getOrderStatusLabel, canRequestRefund, canInitiateDispute, canTrackOrder, getPaymentStatusIcon, isPaymentAuthorized } from '../../utils/orderUtils';
 
 type OrderDetailsScreenProps = {
   onNavigate: (route: AppRoute) => void;
@@ -150,6 +151,9 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
 
   const isDigital = details.order.marketplaceCode === 'DIGITAL';
   const isElectronics = details.order.marketplaceCode === 'ELECTRONICS';
+  const canRefund = canRequestRefund(details.order.orderStatus, details.order.refundDisputeStatus === 'NONE' ? null : details.order.refundDisputeStatus);
+  const canDispute = canInitiateDispute(details.order.refundDisputeStatus === 'NONE' ? null : details.order.refundDisputeStatus, null);
+  const canTrack = canTrackOrder(details.order.orderStatus);
 
   return (
     <InteriorShell onNavigate={onNavigate} title="Order Details" subtitle={`Order ${details.order.orderReference}`} scrollable={true}>
@@ -182,13 +186,14 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
                 <YStack gap="$3">
                   <Text fontSize="$6" fontWeight="900">Actions</Text>
                   {isDigital ? <Button theme="purple" onPress={() => onNavigate('library')}>Go to Library</Button> : null}
-                  {isElectronics ? <Button theme="purple" onPress={openTracking}>Track Package</Button> : null}
-                  <Button onPress={requestRefund}>Request Refund / Return</Button>
-                  <Button disabled={!details.eligibility.canOpenDispute} onPress={openDispute}>Open Dispute</Button>
-                  <Button disabled={!details.eligibility.canCancel} onPress={cancelCurrentOrder}>Cancel Order</Button>
+                  {isElectronics && canTrack ? <Button theme="purple" onPress={openTracking}>Track Package</Button> : null}
+                  <Button disabled={!canRefund} onPress={requestRefund}>{canRefund ? 'Request Refund / Return' : 'Refund not available'}</Button>
+                  <Button disabled={!canDispute} onPress={openDispute}>{canDispute ? 'Open Dispute' : 'Dispute not available'}</Button>
+                  <Button disabled={!details.eligibility.canCancel} onPress={cancelCurrentOrder}>{details.eligibility.canCancel ? 'Cancel Order' : 'Cannot cancel'}</Button>
                   <Button onPress={reportIssue}>Report Issue</Button>
                   <Button onPress={() => setMessage('Safe seller contact flow will be added later. Seller private phone/email is not exposed.')}>Contact Seller</Button>
                   {!details.eligibility.canCancel ? <Paragraph color="$gray10">{details.eligibility.cancelReason}</Paragraph> : null}
+                  {!canRefund && details.eligibility.refundReason ? <Paragraph color="$gray10">{details.eligibility.refundReason}</Paragraph> : null}
                 </YStack>
               </PremiumCard>
             </YStack>
@@ -200,6 +205,11 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
 }
 
 function SummaryCard({ details }: { details: OrderDetailsResponse }) {
+  const paymentTone = isPaymentAuthorized(details.order.paymentStatus) ? 'success' : 'warning';
+  const statusColor = getOrderStatusColor(details.order.orderStatus);
+  const statusLabel = getOrderStatusLabel(details.order.orderStatus);
+  const refundTone = details.order.refundDisputeStatus === 'NONE' ? 'success' : details.order.refundDisputeStatus.includes('DISPUTE') ? 'error' : 'warning';
+
   return (
     <PremiumCard p="$5">
       <YStack gap="$4">
@@ -211,10 +221,19 @@ function SummaryCard({ details }: { details: OrderDetailsResponse }) {
           </YStack>
           <Text fontSize="$7" fontWeight="900">{formatMoney(details.order.totalAmount)}</Text>
         </XStack>
-        <XStack flexWrap="wrap" gap="$2">
-          <StatusPill label={labelize(details.order.paymentStatus)} tone={details.order.paymentStatus === 'PAID' ? 'success' : 'warning'} />
-          <StatusPill label={labelize(details.order.orderStatus)} tone={statusTone(details.order.orderStatus)} />
-          <StatusPill label={labelize(details.order.refundDisputeStatus)} tone={details.order.refundDisputeStatus === 'NONE' ? 'success' : details.order.refundDisputeStatus.includes('DISPUTE') ? 'error' : 'warning'} />
+        <XStack flexWrap="wrap" gap="$2" ai="center">
+          <XStack ai="center" gap="$1">
+            <Ionicons name={getPaymentStatusIcon(details.order.paymentStatus)} size={16} color="currentColor" />
+            <StatusPill label={labelize(details.order.paymentStatus)} tone={paymentTone} />
+          </XStack>
+          <XStack ai="center" gap="$1">
+            <Ionicons name="layers-outline" size={16} color="currentColor" />
+            <StatusPill label={statusLabel} tone={refundTone} />
+          </XStack>
+          <XStack ai="center" gap="$1">
+            <Ionicons name={details.order.refundDisputeStatus === 'NONE' ? 'checkmark-circle' : 'alert-circle'} size={16} color="currentColor" />
+            <StatusPill label={labelize(details.order.refundDisputeStatus)} tone={refundTone} />
+          </XStack>
         </XStack>
       </YStack>
     </PremiumCard>
