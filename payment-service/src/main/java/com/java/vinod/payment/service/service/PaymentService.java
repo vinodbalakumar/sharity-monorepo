@@ -1,5 +1,7 @@
 package com.java.vinod.payment.service.service;
 
+import com.java.vinod.payment.service.aspect.CircuitBreakerProtected;
+import com.java.vinod.payment.service.aspect.Retryable;
 import com.java.vinod.payment.service.dto.PaymentDtos;
 import com.java.vinod.payment.service.entity.PaymentOrder;
 import com.java.vinod.payment.service.entity.PaymentTransaction;
@@ -487,6 +489,8 @@ public class PaymentService {
         }
     }
 
+    @Retryable("service-retry")
+    @CircuitBreakerProtected("authorization-circuit-breaker")
     private ProviderEligibilityResponse providerEligibility(String providerPublicId) {
         try {
             return restClient.get()
