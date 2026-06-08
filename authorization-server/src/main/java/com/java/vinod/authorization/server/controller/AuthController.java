@@ -167,8 +167,24 @@ public class AuthController {
      * Revokes the caller's refresh token family.
      */
     @PostMapping("/logout")
-    public AuthDtos.MessageResponse logout(@Valid @RequestBody AuthDtos.LogoutRequest request) {
-        return authService.logout(request);
+    public ResponseEntity<AuthDtos.MessageResponse> logout(@Valid @RequestBody AuthDtos.LogoutRequest request,
+                                                           HttpServletResponse response) {
+        authService.logout(request);
+        // Clear access token cookie
+        response.addHeader(HttpHeaders.SET_COOKIE, clearCookie("access_token").toString());
+        // Clear refresh token cookie
+        response.addHeader(HttpHeaders.SET_COOKIE, clearCookie("refresh_token").toString());
+        return ResponseEntity.ok(new AuthDtos.MessageResponse("Logged out successfully. Please clear your browser cookies and refresh."));
+    }
+
+    private ResponseCookie clearCookie(String name) {
+        return ResponseCookie.from(name, "")
+                .maxAge(0)
+                .path("/")
+                .sameSite("Strict")
+                .httpOnly(true)
+                .secure(true)
+                .build();
     }
 
     /**

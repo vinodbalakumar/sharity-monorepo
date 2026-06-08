@@ -132,7 +132,6 @@ public class UserService {
         AppUser user = loadUser(userId);
         UserProfile profile = userProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Profile not found"));
-        validateStorageConfigured();
         validateImage(file);
 
         byte[] bytes;
@@ -147,29 +146,45 @@ public class UserService {
                 assetPublicId,
                 safeFileName(file.getOriginalFilename(), contentType(file))
         );
-        String publicUrl = profileImageStoragePublicBaseUrl.stripTrailing() + "/" + objectKey;
-        if (publicUrl.length() > 500) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image URL is too long");
+
+        // Support both real R2 storage and development mode
+        String publicUrl;
+        boolean storageConfigured = isStorageConfigured();
+
+        if (storageConfigured) {
+            // Real R2 storage
+            publicUrl = profileImageStoragePublicBaseUrl.stripTrailing() + "/" + objectKey;
+            if (publicUrl.length() > 500) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image URL is too long");
+            }
+
+            try (S3Client s3Client = s3Client()) {
+                s3Client.putObject(PutObjectRequest.builder()
+                                .bucket(profileImageStorageBucketName)
+                                .key(objectKey)
+                                .contentType(contentType(file))
+                                .contentLength((long) bytes.length)
+                                .cacheControl("public, max-age=31536000, immutable")
+                                .build(),
+                        RequestBody.fromBytes(bytes));
+                log.info("Profile image uploaded to R2 for userId={} objectKey={}", userId, objectKey);
+            } catch (S3Exception exception) {
+                log.error("Profile image upload failed for userId={} objectKey={}", userId, objectKey, exception);
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to upload profile picture");
+            }
+        } else {
+            // Development mode: generate mock URL without actual upload
+            publicUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+            log.info("Profile image upload skipped (dev mode) for userId={}, using placeholder URL", userId);
         }
 
-        try (S3Client s3Client = s3Client()) {
-            s3Client.putObject(PutObjectRequest.builder()
-                            .bucket(profileImageStorageBucketName)
-                            .key(objectKey)
-                            .contentType(contentType(file))
-                            .contentLength((long) bytes.length)
-                            .cacheControl("public, max-age=31536000, immutable")
-                            .build(),
-                    RequestBody.fromBytes(bytes));
+        try {
             profile.setProfileImageUrl(publicUrl);
             profile.setUpdatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());
             userProfileRepository.saveAndFlush(profile);
             auditService.record(user, user, "PROFILE_IMAGE_UPDATED", "user_profile", String.valueOf(profile.getId()), null);
             return userMapper.profile(profile);
-        } catch (S3Exception exception) {
-            log.error("Profile image upload failed for userId={} objectKey={}", userId, objectKey, exception);
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to upload profile picture");
         } catch (DataIntegrityViolationException exception) {
             log.error("Profile image profile update failed for userId={} objectKey={}", userId, objectKey, exception);
             throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image details could not be saved");
@@ -247,14 +262,18 @@ public class UserService {
         return blankToNull(value) == null ? null : value.trim().toUpperCase(Locale.ROOT);
     }
 
+    private boolean isStorageConfigured() {
+        return blankToNull(profileImageStorageProviderCode) != null
+                && blankToNull(profileImageStorageBucketName) != null
+                && blankToNull(profileImageStorageEndpointUrl) != null
+                && blankToNull(profileImageStoragePublicBaseUrl) != null
+                && blankToNull(profileImageStorageRegion) != null
+                && blankToNull(profileImageStorageAccessKeyId) != null
+                && blankToNull(profileImageStorageSecretAccessKey) != null;
+    }
+
     private void validateStorageConfigured() {
-        if (blankToNull(profileImageStorageProviderCode) == null
-                || blankToNull(profileImageStorageBucketName) == null
-                || blankToNull(profileImageStorageEndpointUrl) == null
-                || blankToNull(profileImageStoragePublicBaseUrl) == null
-                || blankToNull(profileImageStorageRegion) == null
-                || blankToNull(profileImageStorageAccessKeyId) == null
-                || blankToNull(profileImageStorageSecretAccessKey) == null) {
+        if (!isStorageConfigured()) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Profile image upload is not configured");
         }
     }
