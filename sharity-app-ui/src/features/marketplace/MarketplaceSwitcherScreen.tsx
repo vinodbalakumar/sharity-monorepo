@@ -32,6 +32,7 @@ type LoadState = {
 export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: MarketplaceSwitcherScreenProps) {
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedMarketplaceCode, setSelectedMarketplaceCode] = useState<'ALL' | string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [state, setState] = useState<LoadState>({
     dealsError: false,
     home: null,
@@ -73,10 +74,33 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
   const filteredDeals = selectedMarketplaceCode === 'ALL'
     ? deals
     : deals.filter((deal) => deal.marketplaceCode === selectedMarketplaceCode);
+  const filteredDealsBySearch = filteredDeals.filter((deal) =>
+    deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    deal.marketplaceName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Select a marketplace to focus the list below." title="Marketplace">
+    <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Discover trusted digital products" title="Marketplace">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Premium Hero Section */}
+        <View style={styles.hero}>
+          <Text style={styles.heroTitle}>Discover Premium Digital Products</Text>
+          <Text style={styles.heroSubtitle}>Secure, verified, and trusted marketplace for digital goods</Text>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color={colors.textMuted} />
+            <Pressable style={styles.searchInput} onPress={() => {}}>
+              <Text style={styles.searchPlaceholder}>Search products...</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Trust Badge */}
+        <View style={styles.trustBadge}>
+          <Ionicons name="shield-checkmark" size={16} color={colors.success} />
+          <Text style={styles.trustText}>Buyer Protection • Secure Delivery • Verified Sellers</Text>
+        </View>
+
+        {/* Category Selector */}
         <MarketplaceSelector
           onSelectMarketplace={setSelectedMarketplaceCode}
           selectedMarketplaceCode={selectedMarketplaceCode}
@@ -112,6 +136,7 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
             }
             setNotice(`${service.name} selected. Browse featured deals below.`);
           }}
+          onNavigate={onNavigate}
           onRetry={loadMarketplaces}
           services={filteredActiveServices}
           title="Active Marketplaces"
@@ -121,14 +146,18 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
           emptyLabel="No coming soon marketplaces are configured."
           error={false}
           loading={state.loading}
+          onNavigate={onNavigate}
           onNotify={(serviceName) => setNotice(`You're on the list for ${serviceName}. We'll notify you when this marketplace is available.`)}
           onRetry={loadMarketplaces}
           services={filteredComingSoonServices}
           title="Coming Soon"
         />
 
+        {/* Featured Listings Section */}
+        <Text style={styles.sectionTitle}>Featured Listings</Text>
+        <Text style={styles.sectionSubtitle}>Popular digital products from verified sellers</Text>
         <DealsSection
-          deals={filteredDeals}
+          deals={filteredDealsBySearch}
           error={state.dealsError}
           loading={state.loading}
           onOpenDigitalProduct={onOpenDigitalProduct}
@@ -143,6 +172,7 @@ function MarketplaceSection({
   emptyLabel,
   error,
   loading,
+  onNavigate,
   onNotify,
   onBrowse,
   onRetry,
@@ -152,6 +182,7 @@ function MarketplaceSection({
   emptyLabel: string;
   error: boolean;
   loading: boolean;
+  onNavigate?: (route: AppRoute) => void;
   onNotify?: (serviceName: string) => void;
   onBrowse?: (service: DashboardService) => void;
   onRetry: () => void;
@@ -167,7 +198,7 @@ function MarketplaceSection({
       {!loading && !error && services.length > 0 ? (
         <View style={styles.cardGrid}>
           {services.map((service) => (
-            <MarketplaceCard key={service.code} onBrowse={onBrowse} onNotify={onNotify} service={service} />
+            <MarketplaceCard key={service.code} onBrowse={onBrowse} onNavigate={onNavigate} onNotify={onNotify} service={service} />
           ))}
         </View>
       ) : null}
@@ -177,10 +208,12 @@ function MarketplaceSection({
 
 function MarketplaceCard({
   onBrowse,
+  onNavigate,
   onNotify,
   service
 }: {
   onBrowse?: (service: DashboardService) => void;
+  onNavigate?: (route: AppRoute) => void;
   onNotify?: (serviceName: string) => void;
   service: DashboardService;
 }) {
@@ -208,7 +241,9 @@ function MarketplaceCard({
               <Text style={styles.actionButton}>Browse</Text>
             </Pressable>
             <Text style={styles.actionButton}>View Deals</Text>
-            <Text style={styles.actionButton}>Sell</Text>
+            <Pressable onPress={() => onNavigate?.('seller')}>
+              <Text style={styles.actionButton}>Sell</Text>
+            </Pressable>
           </>
         ) : (
           <>
@@ -387,8 +422,65 @@ function formatMoney(value: number, currencyCode: string) {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     flex: 1
+  },
+  hero: {
+    backgroundColor: colors.primary,
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing['3xl'],
+    paddingHorizontal: spacing.lg,
+    borderBottomLeftRadius: radii.xl,
+    borderBottomRightRadius: radii.xl,
+    marginBottom: spacing.xl,
+    alignItems: 'center'
+  },
+  heroTitle: {
+    color: colors.white,
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: spacing.sm,
+    textAlign: 'center'
+  },
+  heroSubtitle: {
+    color: colors.primaryLight,
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: spacing.lg,
+    textAlign: 'center'
+  },
+  searchContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginTop: spacing.md
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: spacing.sm
+  },
+  searchPlaceholder: {
+    color: colors.textMuted,
+    fontSize: 14
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.successLight,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+    gap: spacing.xs
+  },
+  trustText: {
+    color: colors.successDark,
+    fontSize: 12,
+    fontWeight: '600'
   },
   shell: {
     backgroundColor: colors.white,
@@ -498,9 +590,22 @@ const styles = StyleSheet.create({
     width: 40
   },
   content: {
-    gap: spacing.xl,
-    padding: spacing.xl,
-    paddingBottom: spacing['6xl']
+    gap: spacing.md,
+    padding: spacing.lg,
+    paddingBottom: spacing['6xl'],
+    backgroundColor: colors.background
+  },
+  sectionTitle: {
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs
+  },
+  sectionSubtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginBottom: spacing.md
   },
   selectorCard: {
     backgroundColor: colors.white,
@@ -555,11 +660,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.md
-  },
-  sectionTitle: {
-    color: colors.black,
-    fontSize: 26,
-    fontWeight: '900'
   },
   cardGrid: {
     flexDirection: 'row',
@@ -678,20 +778,26 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   dealCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    flexBasis: 240,
+    flexBasis: 160,
     flexGrow: 1,
-    padding: spacing.lg
+    padding: spacing.md,
+    marginRight: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: colors.gray900,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3
   },
   dealImage: {
     alignItems: 'center',
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     borderRadius: radii.md,
-    borderWidth: 1,
-    height: 72,
+    height: 100,
     justifyContent: 'center',
     marginBottom: spacing.md
   },

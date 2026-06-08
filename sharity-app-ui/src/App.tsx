@@ -37,6 +37,7 @@ import { PricingPromotionsScreen } from './features/pricingPromotions/PricingPro
 import { ProfilePrivacyScreen } from './features/profilePrivacy/ProfilePrivacyScreen';
 import { ProductDetailsScreen } from './features/products/ProductDetailsScreen';
 import { PublicContentScreen } from './features/publicContent/PublicContentScreen';
+import { SellerListingScreen } from './features/seller/SellerListingScreen';
 import { SellerVerificationScreen } from './features/sellerVerification/SellerVerificationScreen';
 import { SupportScreen } from './features/support/SupportScreen';
 import { WalletScreen } from './features/wallet/WalletScreen';
@@ -390,6 +391,7 @@ export default function App() {
           {route === 'wallet' ? <WalletScreen onNavigate={setRoute} /> : null}
           {route === 'marketplaceConfig' ? <MarketplaceConfigScreen onNavigate={setRoute} /> : null}
           {route === 'sellerVerification' ? <SellerVerificationScreen onNavigate={setRoute} /> : null}
+          {route === 'seller' ? <SellerListingScreen onNavigate={setRoute} /> : null}
           {route === 'policies' ? <PoliciesScreen onNavigate={setRoute} /> : null}
           {route === 'publicContent' ? (
             <PublicContentScreen

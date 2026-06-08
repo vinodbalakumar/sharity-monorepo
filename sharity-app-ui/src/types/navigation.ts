@@ -35,6 +35,7 @@ export type AppRoute =
   | 'wallet'
   | 'marketplaceConfig'
   | 'sellerVerification'
+  | 'seller'
   | 'policies'
   | 'publicContent'
   | 'support';

@@ -18,11 +18,12 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors, radii, spacing, typography } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
 import {
-  acknowledgePolicies,
-  prepareCheckout,
+  createCheckout,
+  getCheckout,
   selectPaymentMethod,
-  startPayment
-} from './checkoutMockApi';
+  startPaymentAuthorization,
+  applyCoupon
+} from '../../services/checkoutApi';
 import type { CheckoutOrderGroup, CheckoutResponse, PaymentMethod, ShippingAddress } from './checkoutTypes';
 
 type CheckoutScreenProps = {
@@ -57,23 +58,24 @@ export function CheckoutScreen({ onNavigate }: CheckoutScreenProps) {
     setError(false);
     setLoading(true);
     try {
-      const response = await prepareCheckout({
-        cartId: 'cart-001',
-        couponCode: 'SHARITY10',
-        selectedPaymentMethod
-      });
-      setCheckout(response);
-      if (response.shippingAddress) {
-        const { id, ...addressWithoutId } = response.shippingAddress;
-        void id;
-        setAddress(addressWithoutId);
+      // Create checkout from default cart ID
+      const response = await createCheckout('cart-001');
+      setCheckout(response as any);
+      if (response && typeof response === 'object' && 'shippingAddress' in response) {
+        const checkoutResponse = response as any;
+        if (checkoutResponse.shippingAddress) {
+          const { id, ...addressWithoutId } = checkoutResponse.shippingAddress;
+          void id;
+          setAddress(addressWithoutId);
+        }
       }
-    } catch {
+    } catch (error) {
+      console.error('Error loading checkout:', error);
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [selectedPaymentMethod]);
+  }, []);
 
   useEffect(() => {
     loadCheckout();
@@ -94,20 +96,31 @@ export function CheckoutScreen({ onNavigate }: CheckoutScreenProps) {
     if (!checkout) {
       return;
     }
-    if (checkout.shippingRequired && !addressIsValid(address)) {
-      setSnackbarMessage('Shipping address is required for electronics products.');
-      return;
-    }
     if (!acknowledged) {
       setSnackbarMessage('Please confirm that you understand the refund, return, and digital access rules.');
       return;
     }
 
-    await selectPaymentMethod(checkout.checkoutId, selectedPaymentMethod);
-    await acknowledgePolicies(checkout.checkoutId, acknowledged, acknowledged);
-    const payment = await startPayment(checkout.checkoutId, selectedPaymentMethod);
-    setSnackbarMessage(`Mock ${payment.provider} payment session ready. Real provider redirect will be integrated later.`);
-    onNavigate('paymentSuccess');
+    try {
+      const checkoutId = typeof checkout === 'object' && 'checkoutId' in checkout ? (checkout as any).checkoutId : 'checkout-001';
+      await selectPaymentMethod(checkoutId, selectedPaymentMethod);
+      const payment = await startPaymentAuthorization(checkoutId);
+      if (payment && typeof payment === 'object' && 'status' in payment) {
+        const paymentResponse = payment as any;
+        if (paymentResponse.status === 'AUTHORIZED') {
+          setSnackbarMessage('Payment authorized successfully. Processing order...');
+          onNavigate('paymentSuccess');
+        } else if (paymentResponse.redirectRequired && paymentResponse.paymentUrl) {
+          setSnackbarMessage('Redirecting to payment provider...');
+          // In real app, would open payment URL
+          onNavigate('paymentSuccess');
+        } else {
+          setSnackbarMessage('Payment authorization pending. Please wait...');
+        }
+      }
+    } catch (error) {
+      setSnackbarMessage(error instanceof Error ? error.message : 'Error completing checkout');
+    }
   }
 
   if (loading) {

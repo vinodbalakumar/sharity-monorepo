@@ -619,14 +619,15 @@ function DateField({
       </Text>
       {isWeb ? (
         <View style={[styles.dateWrap, error && styles.inputError]}>
-          <TextInput
-            {...({ type: 'date' } as any)}
-            onChangeText={(next) => onChangeText(displayDateValue(next))}
-            placeholder="mm/dd/yyyy"
-            placeholderTextColor={authPalette.textMuted}
-            style={styles.dateInputWeb}
-            value={browserValue}
-          />
+          <View style={styles.webDateInputShell}>
+            <input
+              aria-label={label}
+              onChange={(event) => onChangeText(displayDateValue(event.currentTarget.value))}
+              style={styles.webDateInput as never}
+              type="date"
+              value={browserValue}
+            />
+          </View>
           <View pointerEvents="none" style={styles.dateIconButton}>
             <Ionicons color={authPalette.textMuted} name="calendar-outline" size={20} />
           </View>
@@ -1118,6 +1119,19 @@ const styles = StyleSheet.create({
     outlineStyle: 'none' as never,
     paddingHorizontal: 0,
     paddingVertical: 18
+  },
+  webDateInputShell: {
+    flex: 1
+  },
+  webDateInput: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    color: authPalette.text,
+    fontSize: 16,
+    fontWeight: '700',
+    height: 62,
+    outlineStyle: 'none' as never,
+    width: '100%'
   },
   datePlaceholder: {
     color: authPalette.textMuted,

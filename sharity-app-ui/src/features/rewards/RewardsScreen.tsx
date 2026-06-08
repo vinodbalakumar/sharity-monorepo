@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, with
 import * as DropdownMenu from 'zeego/dropdown-menu';
 import { Button, Card, H2, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui';
 
+import { AppButton } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
@@ -155,7 +156,7 @@ function BuyerView({ dashboard, onApplyCredit, onClaim }: { dashboard: RewardsDa
           <H2>Available Sharity Credit</H2>
           <Text color="$green10" fontSize="$10" fontWeight="900">${dashboard.creditBalance.availableBalance.toFixed(2)}</Text>
           <Badge label={`$${dashboard.creditBalance.expiringSoonAmount.toFixed(2)} expires ${dashboard.creditBalance.expiryDate}`} tone="warning" />
-          <Button theme="purple" onPress={onApplyCredit}>Apply Credit</Button>
+          <AppButton variant="primary" onPress={onApplyCredit}>Apply Credit</AppButton>
           {dashboard.creditBalance.typeBreakdown.map((item) => (
             <Paragraph key={item.creditType} color="$gray10">{item.creditType}: ${item.amount.toFixed(2)}. {item.refundBehavior}</Paragraph>
           ))}
@@ -178,7 +179,7 @@ function AdminCampaignPanel({ campaigns }: { campaigns: RewardCampaignConfig[] }
     <Panel title="Admin Campaign Configuration">
       <YStack gap="$3">
         <Paragraph color="$gray10">Campaign builder placeholder covers type, funding, amount, dates, scope, eligibility, refund behavior, seller payout impact, anti-abuse settings, and audit.</Paragraph>
-        <Button theme="purple">Create Campaign</Button>
+        <AppButton variant="primary">Create Campaign</AppButton>
         <AdminCampaignList data={campaigns} estimatedItemSize={138} keyExtractor={(item) => item.campaignId} renderItem={({ item, index }) => <AdminCampaignRow campaign={item} index={index} />} />
       </YStack>
     </Panel>
@@ -234,7 +235,7 @@ function AuditPanel({ audit }: { audit: RewardsAuditLogItem[] }) {
 
 const CampaignRow = memo(function CampaignRow({ campaign, index, onClaim }: { campaign: RewardCampaignSummary; index: number; onClaim: () => void }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={campaign.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /><YStack flex={1}><Text fontWeight="900">{campaign.campaignName}</Text><Paragraph color="$gray10">{campaign.creditRewardType} / {campaign.fundingSource} / {campaign.antiAbuseSummary}</Paragraph></YStack><Button onPress={onClaim}>{campaign.creditRewardType === 'GIVEAWAY_REWARD' ? 'Claim Giveaway' : 'View'}</Button></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={campaign.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /><YStack flex={1}><Text fontWeight="900">{campaign.campaignName}</Text><Paragraph color="$gray10">{campaign.creditRewardType} / {campaign.fundingSource} / {campaign.antiAbuseSummary}</Paragraph></YStack><AppButton variant="secondary" onPress={onClaim}>{campaign.creditRewardType === 'GIVEAWAY_REWARD' ? 'Claim Giveaway' : 'View'}</AppButton></XStack></Animated.View>;
 });
 
 const AdminCampaignRow = memo(function AdminCampaignRow({ campaign, index }: { campaign: RewardCampaignConfig; index: number }) {

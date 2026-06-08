@@ -11,7 +11,7 @@ import {
   useWindowDimensions
 } from 'react-native';
 
-import { AppLoadingIndicator } from '../../components/ui';
+import { AppButton, AppLoadingIndicator } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell';
 import { electronicsProducts, type ElectronicsProduct } from '../electronics/electronicsData';
 import { getMarketplaceListing, getMarketplaceListings } from '../../services/marketplaceApi';
@@ -172,18 +172,18 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
       {!state.loading && state.error ? (
         <View style={styles.centerState}>
           <Text style={styles.stateTitle}>Unable to load product details.</Text>
-          <Pressable onPress={loadProduct} style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Retry</Text>
-          </Pressable>
+          <AppButton onPress={loadProduct} variant="primary">
+            Retry
+          </AppButton>
         </View>
       ) : null}
 
       {!state.loading && !state.error && !state.product ? (
         <View style={styles.centerState}>
           <Text style={styles.stateTitle}>Product not found.</Text>
-          <Pressable onPress={() => onNavigate('marketplaces')} style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Back to Marketplace</Text>
-          </Pressable>
+          <AppButton onPress={() => onNavigate('marketplaces')} variant="primary">
+            Back to Marketplace
+          </AppButton>
         </View>
       ) : null}
 
@@ -280,18 +280,18 @@ function ProductSummaryCard({
         {averageRating ? `${averageRating} rating` : 'No rating yet'} - {product.reviews.length} reviews
       </Text>
       <View style={styles.actionGrid}>
-        <Pressable onPress={() => onAction('purchase')} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Buy Now</Text>
-        </Pressable>
-        <Pressable onPress={() => onAction('cart')} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Add to Cart</Text>
-        </Pressable>
-        <Pressable onPress={() => onAction('wishlist')} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Add to Wishlist</Text>
-        </Pressable>
-        <Pressable onPress={() => onAction('contact')} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Contact Seller</Text>
-        </Pressable>
+        <AppButton onPress={() => onAction('purchase')} variant="primary">
+          Buy Now
+        </AppButton>
+        <AppButton onPress={() => onAction('cart')} variant="outline">
+          Add to Cart
+        </AppButton>
+        <AppButton onPress={() => onAction('wishlist')} variant="outline">
+          Add to Wishlist
+        </AppButton>
+        <AppButton onPress={() => onAction('contact')} variant="outline">
+          Contact Seller
+        </AppButton>
       </View>
       {actionMessage ? <Text style={styles.noticeText}>{actionMessage}</Text> : null}
       <Text style={styles.smallText}>Guests can browse and share. Login is required before checkout, seller contact, wishlist, reviews, refunds, and reports.</Text>
@@ -460,12 +460,12 @@ function RelatedProductsSection({ products }: { products: UnifiedProduct[] }) {
 function ProductActionBar({ onAction }: { onAction: (action: ProductAction) => void }) {
   return (
     <View style={styles.stickyBar}>
-      <Pressable onPress={() => onAction('purchase')} style={styles.primaryButton}>
-        <Text style={styles.primaryButtonText}>Buy Now</Text>
-      </Pressable>
-      <Pressable onPress={() => onAction('cart')} style={styles.secondaryButton}>
-        <Text style={styles.secondaryButtonText}>Add to Cart</Text>
-      </Pressable>
+      <AppButton onPress={() => onAction('purchase')} variant="primary" size="small">
+        Buy Now
+      </AppButton>
+      <AppButton onPress={() => onAction('cart')} variant="outline" size="small">
+        Add to Cart
+      </AppButton>
     </View>
   );
 }
