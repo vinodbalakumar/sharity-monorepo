@@ -128,3 +128,5 @@ logging:
     org.springframework.security: info
     org.hibernate.SQL: info
     org.hibernate.orm.jdbc.bind: warn
+    com.java.vinod.authorization.server.service.UserService: debug
+    com.java.vinod.authorization.server.exception.GlobalExceptionHandler: debug

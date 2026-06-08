@@ -3,6 +3,8 @@ package com.java.vinod.authorization.server.exception;
 import com.java.vinod.authorization.server.config.RequestCorrelationLoggingFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -26,9 +28,12 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ApiException.class)
     public ProblemDetail handleApiException(ApiException exception, HttpServletRequest request) {
+        String correlationId = correlationId(request);
+        log.warn("API error correlationId={} path={} status={} message={}", correlationId, request.getRequestURI(), exception.getStatus(), exception.getMessage());
         return problem(exception.getStatus(), exception.getStatus().getReasonPhrase(), exception.getMessage(), request, "API_ERROR");
     }
 
@@ -93,6 +98,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(Exception exception, HttpServletRequest request) {
+        String correlationId = correlationId(request);
+        log.error("Unexpected error correlationId={} path={} method={}", correlationId, request.getRequestURI(), request.getMethod(), exception);
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Unexpected server error", request, "INTERNAL_SERVER_ERROR");
     }
 
