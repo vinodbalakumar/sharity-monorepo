@@ -12,6 +12,7 @@ import { appState$ } from '../../state/appState';
 import type { AppRoute } from '../../types/navigation';
 import { acceptDigitalTerms, applyCoupon, getCart, getCheckoutPreview } from './cartCheckoutMockApi';
 import type { CartItem, CartResponse, CartSellerGroup, CartValidationIssue, CheckoutPreviewResponse } from './cartCheckoutTypes';
+import { getTotalCartValue, getCartItemCount, canCheckout, requiresSellerAcceptance, hasDigitalProducts, hasPhysicalProducts, calculateSavings } from '../../utils/cartUtils';
 
 type Props = { onNavigate: (route: AppRoute) => void };
 const blurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
@@ -69,10 +70,41 @@ export function CartScreen({ onNavigate }: Props) {
     );
   }
 
+  const isReadyForCheckout = canCheckout(cart);
+  const needsSellerAcceptance = requiresSellerAcceptance(cart);
+  const hasBothProductTypes = hasDigitalProducts(cart) && hasPhysicalProducts(cart);
+  const savings = calculateSavings(cart);
+
   return (
-    <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" subtitle="Review items from multiple sellers" scrollable={true}>
+    <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" subtitle={`${getCartItemCount(cart)} items from multiple sellers`} scrollable={true}>
       <YStack gap="$5" maxWidth={1220} mx="auto" width="100%">
         <ValidationBanner issues={cart.validationSummary.issues} />
+        {hasBothProductTypes ? (
+          <PremiumCard p="$4" bg="$blue3" borderColor="$blue10" borderWidth={1}>
+            <XStack ai="center" gap="$2">
+              <Ionicons name="information-circle" size={20} color="blue" />
+              <Paragraph color="$blue10">Your cart contains both digital and physical items. Digital items will be delivered instantly after payment authorization.</Paragraph>
+            </XStack>
+          </PremiumCard>
+        ) : null}
+        {needsSellerAcceptance ? (
+          <PremiumCard p="$4" bg="$orange3" borderColor="$orange10" borderWidth={1}>
+            <XStack ai="center" gap="$2">
+              <Ionicons name="time-outline" size={20} color="orange" />
+              <Paragraph color="$orange10">Some items require seller acceptance. You'll be notified once sellers accept your order.</Paragraph>
+            </XStack>
+          </PremiumCard>
+        ) : null}
+        {savings > 0 ? (
+          <PremiumCard p="$4" bg="$green3" borderColor="$green10" borderWidth={1}>
+            <XStack ai="center" gap="$2" jc="space-between">
+              <XStack ai="center" gap="$2" flex={1}>
+                <Ionicons name="checkmark-circle" size={20} color="green" />
+                <Text color="$green10" fontWeight="900">You're saving {money(savings)} with coupons!</Text>
+              </XStack>
+            </XStack>
+          </PremiumCard>
+        ) : null}
           <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
               <GroupList
@@ -85,16 +117,16 @@ export function CartScreen({ onNavigate }: Props) {
             </YStack>
             <YStack gap="$4" width={380} $md={{ width: '100%' }}>
               <CouponPanel couponCode={couponCode} onApply={handleCoupon} />
-              <DigitalTermsPanel accepted={cart.digitalTerms.accepted} onAccept={handleTerms} summary={cart.digitalTerms.summary} />
+              {hasDigitalProducts(cart) ? <DigitalTermsPanel accepted={cart.digitalTerms.accepted} onAccept={handleTerms} summary={cart.digitalTerms.summary} /> : null}
               <PaymentNotice />
               {preview ? <CheckoutPreview preview={preview} /> : null}
               <PricingSummary cart={cart} />
               {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
               <Button
-                disabled={!cart.validationSummary.checkoutReady}
+                disabled={!isReadyForCheckout}
                 icon={<Ionicons name="lock-closed-outline" size={18} />}
                 theme="purple"
-                onPress={() => cart.validationSummary.checkoutReady ? onNavigate('paymentSuccess') : setMessage('Digital terms and validation must be complete before authorization.')}
+                onPress={() => isReadyForCheckout ? onNavigate('paymentSuccess') : setMessage(needsSellerAcceptance ? 'Waiting for seller acceptance.' : 'Please resolve validation issues before proceeding.')}
               >
                 Proceed to Payment Authorization
               </Button>
