@@ -36,3 +36,19 @@ export async function getMarketplaceListings(): Promise<MarketplaceListing[]> {
 export async function getMarketplaceListing(publicId: string): Promise<MarketplaceListing> {
   return getJson<MarketplaceListing>(`/listings/${publicId}`);
 }
+
+export async function searchMarketplaceListings(query: string): Promise<MarketplaceListing[]> {
+  return getJson<MarketplaceListing[]>(`/listings/search?q=${encodeURIComponent(query)}`);
+}
+
+export async function getMarketplaceListingsByCategory(categoryCode: string): Promise<MarketplaceListing[]> {
+  return getJson<MarketplaceListing[]>(`/listings?category=${categoryCode}`);
+}
+
+export async function getMarketplaceListingsByVertical(verticalCode: string): Promise<MarketplaceListing[]> {
+  return getJson<MarketplaceListing[]>(`/listings?vertical=${verticalCode}`);
+}
+
+export async function getMarketplaceListingsSorted(sortBy: 'price' | 'rating' | 'newest' | 'discount'): Promise<MarketplaceListing[]> {
+  return getJson<MarketplaceListing[]>(`/listings?sort=${sortBy}`);
+}
