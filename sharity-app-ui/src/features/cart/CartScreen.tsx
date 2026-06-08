@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H2, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
+import { Button, Card, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';
@@ -162,11 +162,11 @@ const CartItemRow = memo(function CartItemRow({ item, index }: { item: CartItem;
 });
 
 function CouponPanel({ couponCode, onApply }: { couponCode: string; onApply: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Coupons</H2><Input bg="$background" borderColor="$borderColor" onChangeText={(value) => appState$.multiSellerCart.couponCode.set(value)} placeholder="SELLER5 or SHARITY10" value={couponCode} /><Button theme="purple" onPress={onApply}>Apply Coupon</Button><Paragraph color="$gray10">Seller coupons reduce eligible seller groups. Platform coupons reduce buyer total or platform-funded portions.</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Coupons</Text><Input bg="$background" borderColor="$borderColor" onChangeText={(value) => appState$.multiSellerCart.couponCode.set(value)} placeholder="SELLER5 or SHARITY10" value={couponCode} /><Button theme="purple" onPress={onApply}>Apply Coupon</Button><Paragraph color="$gray10">Seller coupons reduce eligible seller groups. Platform coupons reduce buyer total or platform-funded portions.</Paragraph></YStack></PremiumCard>;
 }
 
 function DigitalTermsPanel({ accepted, summary, onAccept }: { accepted: boolean; summary: string; onAccept: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Digital Terms</H2><Paragraph color="$gray10">{summary}</Paragraph><Button icon={<Ionicons name={accepted ? 'checkmark-circle' : 'square-outline'} size={18} />} theme={accepted ? 'green' : 'orange'} onPress={onAccept}>{accepted ? 'Digital Terms Accepted' : 'Accept Digital Terms'}</Button></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Digital Terms</Text><Paragraph color="$gray10">{summary}</Paragraph><Button icon={<Ionicons name={accepted ? 'checkmark-circle' : 'square-outline'} size={18} />} theme={accepted ? 'green' : 'orange'} onPress={onAccept}>{accepted ? 'Digital Terms Accepted' : 'Accept Digital Terms'}</Button></YStack></PremiumCard>;
 }
 
 function PaymentNotice() {
@@ -174,12 +174,12 @@ function PaymentNotice() {
 }
 
 function CheckoutPreview({ preview }: { preview: CheckoutPreviewResponse }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Order Split Preview</H2><Paragraph color="$gray10">Parent order {preview.parentOrderPreview.parentOrderReferencePreview} creates {preview.parentOrderPreview.sellerOrderCount} seller orders.</Paragraph>{preview.sellerOrderPreviews.map((order) => <XStack key={order.sellerOrderReferencePreview} jc="space-between" gap="$3"><Text>{order.sellerOrderReferencePreview}</Text><Text color="$gray10">{order.storeName}</Text></XStack>)}<Badge label={preview.paymentAuthorizationModel} tone="info" /></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Order Split Preview</Text><Paragraph color="$gray10">Parent order {preview.parentOrderPreview.parentOrderReferencePreview} creates {preview.parentOrderPreview.sellerOrderCount} seller orders.</Paragraph>{preview.sellerOrderPreviews.map((order) => <XStack key={order.sellerOrderReferencePreview} jc="space-between" gap="$3"><Text>{order.sellerOrderReferencePreview}</Text><Text color="$gray10">{order.storeName}</Text></XStack>)}<Badge label={preview.paymentAuthorizationModel} tone="info" /></YStack></PremiumCard>;
 }
 
 function PricingSummary({ cart }: { cart: CartResponse }) {
   const p = cart.pricingSummary;
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Pricing Summary</H2><PriceRow label="Items total" value={p.itemsTotal} /><PriceRow label="Seller discounts" value={-p.sellerCouponDiscountTotal} /><PriceRow label="Platform coupon" value={-p.platformCouponDiscountTotal} /><PriceRow label="Buyer service fee" value={p.buyerServiceFee} /><PriceRow label="Total authorization" value={p.totalAuthorizationAmount} strong /><Paragraph color="$gray10">Buyer-safe pricing only. Seller commission and fee-waiver rules are not shown.</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Pricing Summary</Text><PriceRow label="Items total" value={p.itemsTotal} /><PriceRow label="Seller discounts" value={-p.sellerCouponDiscountTotal} /><PriceRow label="Platform coupon" value={-p.platformCouponDiscountTotal} /><PriceRow label="Buyer service fee" value={p.buyerServiceFee} /><PriceRow label="Total authorization" value={p.totalAuthorizationAmount} strong /><Paragraph color="$gray10">Buyer-safe pricing only. Seller commission and fee-waiver rules are not shown.</Paragraph></YStack></PremiumCard>;
 }
 
 function ValidationBanner({ issues }: { issues: CartValidationIssue[] }) {
@@ -187,7 +187,7 @@ function ValidationBanner({ issues }: { issues: CartValidationIssue[] }) {
 }
 
 function SavedForLater({ items }: { items: CartItem[] }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><H2>Saved for Later</H2>{items.map((item) => <XStack key={item.cartItemId} ai="center" gap="$3"><Image source={item.productImageUrl} placeholder={blurhash} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{item.productTitle}</Text><Text color="$gray10">{money(item.price)}</Text></YStack><Button>Move to Cart</Button></XStack>)}</YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Saved for Later</Text>{items.map((item) => <XStack key={item.cartItemId} ai="center" gap="$3"><Image source={item.productImageUrl} placeholder={blurhash} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{item.productTitle}</Text><Text color="$gray10">{money(item.price)}</Text></YStack><Button>Move to Cart</Button></XStack>)}</YStack></PremiumCard>;
 }
 
 function PriceRow({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
@@ -195,7 +195,7 @@ function PriceRow({ label, value, strong }: { label: string; value: number; stro
 }
 
 function CenteredState({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
-  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><H2 ta="center">{title}</H2>{action ? <Button theme="purple" onPress={onAction}>{action}</Button> : null}</YStack></PremiumCard>;
+  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text>{action ? <Button theme="purple" onPress={onAction}>{action}</Button> : null}</YStack></PremiumCard>;
 }
 
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
