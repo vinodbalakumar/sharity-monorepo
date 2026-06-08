@@ -26,7 +26,17 @@ export const appState$ = observable({
     supportModalOpen: false
   },
   marketplace: {
-    selected: 'DIGITAL'
+    selected: 'DIGITAL',
+    searchQuery: '',
+    filters: {
+      minPrice: 0,
+      maxPrice: 999,
+      verifiedSellersOnly: false,
+      categoryCode: '',
+      verticalCode: '',
+      deliveryType: ''
+    },
+    sortBy: 'newest'
   },
   orders: {
     cancelConfirmationOrderId: '',
