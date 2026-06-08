@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -79,6 +80,19 @@ public class SecurityConfig {
     JwtDecoder jwtDecoder(@Value("${app.jwt.public-key-path}") String publicKeyPath,
                           @Value("${app.jwt.issuer}") String issuer,
                           @Value("${app.jwt.audience}") String audience) throws Exception {
+        if (publicKeyPath == null || publicKeyPath.isBlank()) {
+            return token -> {
+                throw new JwtException("JWT public key is not configured");
+            };
+        }
+
+        Path keyPath = Path.of(publicKeyPath);
+        if (!Files.isRegularFile(keyPath)) {
+            return token -> {
+                throw new JwtException("JWT public key path is not a file: " + publicKeyPath);
+            };
+        }
+
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey(readPublicKey(publicKeyPath)).build();
         OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience().contains(audience)
                 ? OAuth2TokenValidatorResult.success()
