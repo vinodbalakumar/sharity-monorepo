@@ -119,17 +119,20 @@ public class PublicContentService {
 
     private List<String> legalPolicyCodes() {
         return jdbcTemplate.queryForList("""
-                SELECT DISTINCT slug
-                FROM public_content_page
-                WHERE category = 'Legal'
-                  AND approved = TRUE
-                  AND enabled = TRUE
-                ORDER BY CASE slug
-                    WHEN 'privacy' THEN 1
-                    WHEN 'terms' THEN 2
-                    WHEN 'guidelines' THEN 3
-                    ELSE 4
-                END, slug
+                                SELECT slug
+                                FROM (
+                                        SELECT DISTINCT slug
+                                        FROM public_content_page
+                                        WHERE category = 'Legal'
+                                            AND approved = TRUE
+                                            AND enabled = TRUE
+                                ) policies
+                                ORDER BY CASE slug
+                                        WHEN 'privacy' THEN 1
+                                        WHEN 'terms' THEN 2
+                                        WHEN 'guidelines' THEN 3
+                                        ELSE 4
+                                END, slug
                 """, String.class);
     }
 

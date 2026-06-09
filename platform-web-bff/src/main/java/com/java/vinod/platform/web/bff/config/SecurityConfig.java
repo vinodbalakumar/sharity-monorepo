@@ -40,8 +40,6 @@ public class SecurityConfig {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
     private static final String REGISTRATION_ID = "sharity-web-bff";
     private static final String FORCE_REAUTH_COOKIE = "sharity-force-login";
-    private static final String PUBLIC_AUTH_SERVER_BASE_URL = "https://vinodbalakumar.com/authorization-server/api";
-    private static final String PUBLIC_BFF_REDIRECT_URI = "https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -58,6 +56,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/bff/login").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/oauth2/authorization/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/login/oauth2/code/" + REGISTRATION_ID).permitAll()
                         .requestMatchers(HttpMethod.GET, "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/bff/session").permitAll()
@@ -86,9 +85,11 @@ public class SecurityConfig {
             while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
                 rootCause = rootCause.getCause();
             }
-            log.info("OAuth2 login failed. exceptionType={}, rootCauseType={}, requestUri={}, correlationId={}",
+            log.info("OAuth2 login failed. exceptionType={}, exceptionMessage={}, rootCauseType={}, rootCauseMessage={}, requestUri={}, correlationId={}",
                     exception.getClass().getSimpleName(),
+                    exception.getMessage(),
                     rootCause.getClass().getSimpleName(),
+                    rootCause.getMessage(),
                     request.getRequestURI(),
                     correlationId(request));
             response.sendRedirect("/login?error");
@@ -167,29 +168,11 @@ public class SecurityConfig {
     }
 
     private String browserAuthorizationServerBaseUrl(BffProperties properties) {
-        String configured = properties.oauth2().authorizationServerPublicBaseUrl();
-        if (isLocalhostUrl(configured)) {
-            return PUBLIC_AUTH_SERVER_BASE_URL;
-        }
-        return trimTrailingSlash(configured);
+        return trimTrailingSlash(properties.oauth2().authorizationServerPublicBaseUrl());
     }
 
     private String browserRedirectUri(BffProperties properties) {
-        String configured = properties.oauth2().redirectUri();
-        if (isLocalhostUrl(configured)) {
-            return PUBLIC_BFF_REDIRECT_URI;
-        }
-        return configured;
-    }
-
-    private boolean isLocalhostUrl(String value) {
-        if (value == null || value.isBlank()) {
-            return true;
-        }
-        String lower = value.toLowerCase();
-        return lower.contains("://localhost")
-                || lower.contains("://127.0.0.1")
-                || lower.contains("://[::1]");
+        return properties.oauth2().redirectUri();
     }
 
     private String trimTrailingSlash(String value) {

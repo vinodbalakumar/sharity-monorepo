@@ -34,7 +34,7 @@ spring:
             client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:s6t23KqyEfo9L/sDgwTKtZYyuW71f51ooA2KI2/9MkBGXLdaOO9RCx+rfDpz0VnG}
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_basic
-            redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:3000}/login/oauth2/code/sharity-web-bff
+            redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8080}/login/oauth2/code/sharity-web-bff
             scope:
               - openid
               - profile
@@ -52,7 +52,7 @@ app:
   oauth2:
     client-id: ${SHARITY_WEB_BFF_CLIENT_ID:sharity-web-bff}
     client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:s6t23KqyEfo9L/sDgwTKtZYyuW71f51ooA2KI2/9MkBGXLdaOO9RCx+rfDpz0VnG}
-    redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:https://localhost:3000}/login/oauth2/code/sharity-web-bff
+    redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8080}/login/oauth2/code/sharity-web-bff
     authorization-server-public-base-url: ${AUTH_SERVER_PUBLIC_BASE_URL:http://localhost:8083/authorization-server/api}
     authorization-server-base-url: ${AUTH_SERVER_BASE_URL:http://localhost:8083/authorization-server/api}
   backends:
