@@ -1,6 +1,6 @@
 CREATE TABLE email_delivery_log (
     id BIGSERIAL NOT NULL,
-    message_group_id CHAR(36) NOT NULL,
+    message_group_id VARCHAR(36) NOT NULL,
     user_id BIGINT NULL,
     email_type VARCHAR(100) NOT NULL,
     recipient_email VARCHAR(255) NOT NULL,

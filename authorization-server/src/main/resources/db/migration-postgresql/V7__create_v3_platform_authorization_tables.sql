@@ -69,7 +69,7 @@ CREATE TABLE service_module_country (
 
 CREATE TABLE provider_account (
     id BIGSERIAL NOT NULL,
-    public_id CHAR(36) NOT NULL,
+    public_id VARCHAR(36) NOT NULL,
     owner_user_id BIGINT NOT NULL,
     provider_type VARCHAR(40) NOT NULL,
     display_name VARCHAR(150) NOT NULL,
@@ -137,7 +137,7 @@ CREATE INDEX idx_user_module_access_provider ON user_module_access (provider_acc
 
 CREATE TABLE user_restriction (
     id BIGSERIAL NOT NULL,
-    public_id CHAR(36) NOT NULL,
+    public_id VARCHAR(36) NOT NULL,
     user_id BIGINT NOT NULL,
     module_id BIGINT NULL,
     provider_account_id BIGINT NULL,

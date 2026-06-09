@@ -1,6 +1,6 @@
 CREATE TABLE app_user (
     id BIGSERIAL NOT NULL,
-    public_id CHAR(36) NOT NULL,
+    public_id VARCHAR(36) NOT NULL,
     email VARCHAR(255) NOT NULL,
     normalized_email VARCHAR(255) NOT NULL,
     username VARCHAR(100) NULL,
@@ -71,7 +71,7 @@ CREATE TABLE refresh_token (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,
     token_hash VARCHAR(255) NOT NULL,
-    token_family_id CHAR(36) NOT NULL,
+    token_family_id VARCHAR(36) NOT NULL,
     device_name VARCHAR(150) NULL,
     ip_address VARCHAR(45) NULL,
     user_agent VARCHAR(500) NULL,
