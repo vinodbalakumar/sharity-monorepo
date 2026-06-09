@@ -66,8 +66,10 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -365,30 +367,73 @@ public class AuthorizationServerConfig {
 
             var summary = userMapper.authSummary(user);
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+                String preferredUsername = firstNonBlank(summary.username(), summary.email());
                 context.getClaims().issuer(issuer);
                 context.getClaims().audience(List.of(audience));
                 context.getClaims().subject(user.getNormalizedEmail());
                 context.getClaims().claim("uid", summary.publicId());
                 context.getClaims().claim("email", summary.email());
-                context.getClaims().claim("username", summary.username());
+                context.getClaims().claim("username", preferredUsername);
                 context.getClaims().claim("status", summary.status());
                 context.getClaims().claim("emailVerified", summary.emailVerified());
                 context.getClaims().claim("roles", summary.roles());
                 context.getClaims().claim("apps", summary.apps());
-                context.getClaims().claim("user", summary);
+                context.getClaims().claim("user", summaryClaim(summary));
                 return;
             }
 
             if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
+                String preferredUsername = firstNonBlank(summary.username(), summary.email());
                 context.getClaims().subject(user.getNormalizedEmail());
                 context.getClaims().claim("uid", summary.publicId());
                 context.getClaims().claim("email", summary.email());
-                context.getClaims().claim("preferred_username", summary.username());
+                context.getClaims().claim("preferred_username", preferredUsername);
                 context.getClaims().claim("email_verified", summary.emailVerified());
                 context.getClaims().claim("roles", summary.roles());
                 context.getClaims().claim("apps", summary.apps());
             }
         };
+    }
+
+    private Map<String, Object> summaryClaim(com.java.vinod.authorization.server.dto.auth.AuthDtos.UserSummary summary) {
+        Map<String, Object> profile = new LinkedHashMap<>();
+        putIfNotNull(profile, "firstName", summary.profile().firstName());
+        putIfNotNull(profile, "lastName", summary.profile().lastName());
+        putIfNotNull(profile, "phoneNumber", summary.profile().phoneNumber());
+        putIfNotNull(profile, "phoneDialCode", summary.profile().phoneDialCode());
+        putIfNotNull(profile, "countryCode", summary.profile().countryCode());
+        putIfNotNull(profile, "countryName", summary.profile().countryName());
+        putIfNotNull(profile, "dateOfBirth", summary.profile().dateOfBirth());
+        putIfNotNull(profile, "gender", summary.profile().gender());
+        putIfNotNull(profile, "profileImageUrl", summary.profile().profileImageUrl());
+        putIfNotNull(profile, "privacySetting", summary.profile().privacySetting());
+
+        Map<String, Object> user = new LinkedHashMap<>();
+        user.put("publicId", summary.publicId());
+        user.put("email", summary.email());
+        user.put("username", firstNonBlank(summary.username(), summary.email()));
+        user.put("status", summary.status());
+        user.put("emailVerified", summary.emailVerified());
+        user.put("profileCompletionStatus", summary.profileCompletionStatus());
+        if (!profile.isEmpty()) {
+            user.put("profile", profile);
+        }
+        user.put("roles", summary.roles());
+        user.put("apps", summary.apps());
+        return user;
+    }
+
+    private void putIfNotNull(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
+    }
+
+    private String firstNonBlank(String first, String fallback) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return fallback;
     }
 
     static RegisteredClient publicPkceClient(String clientId, String redirectUri, List<String> scopes) {

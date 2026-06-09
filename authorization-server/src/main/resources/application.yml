@@ -50,7 +50,7 @@ app:
     web-bff:
       client-id: ${SHARITY_WEB_BFF_CLIENT_ID:sharity-web-bff}
       client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:s6t23KqyEfo9L/sDgwTKtZYyuW71f51ooA2KI2/9MkBGXLdaOO9RCx+rfDpz0VnG}
-      redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8083}/login/oauth2/code/sharity-web-bff
+      redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8080}/login/oauth2/code/sharity-web-bff
     native-clients:
       android:
         client-id: ${SHARITY_ANDROID_CLIENT_ID:sharity-android}

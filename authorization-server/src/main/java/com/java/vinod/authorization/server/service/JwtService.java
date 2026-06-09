@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -47,22 +49,64 @@ public class JwtService {
 
     public String createAccessToken(AppUser user, AuthDtos.UserSummary userSummary) {
         Instant now = Instant.now();
+        String preferredUsername = firstNonBlank(userSummary.username(), userSummary.email());
         return Jwts.builder()
                 .issuer(issuer)
                 .subject(user.getNormalizedEmail())
                 .audience().add(audience).and()
                 .claim("uid", user.getPublicId())
                 .claim("email", userSummary.email())
-                .claim("username", userSummary.username())
+            .claim("username", preferredUsername)
                 .claim("status", userSummary.status())
                 .claim("emailVerified", userSummary.emailVerified())
                 .claim("roles", userSummary.roles())
                 .claim("apps", userSummary.apps())
-                .claim("user", userSummary)
+                .claim("user", userClaim(userSummary))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(accessTokenExpiration)))
                 .signWith(privateKey, Jwts.SIG.RS256)
                 .compact();
+    }
+
+    private Map<String, Object> userClaim(AuthDtos.UserSummary userSummary) {
+        Map<String, Object> profile = new LinkedHashMap<>();
+        putIfNotNull(profile, "firstName", userSummary.profile().firstName());
+        putIfNotNull(profile, "lastName", userSummary.profile().lastName());
+        putIfNotNull(profile, "phoneNumber", userSummary.profile().phoneNumber());
+        putIfNotNull(profile, "phoneDialCode", userSummary.profile().phoneDialCode());
+        putIfNotNull(profile, "countryCode", userSummary.profile().countryCode());
+        putIfNotNull(profile, "countryName", userSummary.profile().countryName());
+        putIfNotNull(profile, "dateOfBirth", userSummary.profile().dateOfBirth());
+        putIfNotNull(profile, "gender", userSummary.profile().gender());
+        putIfNotNull(profile, "profileImageUrl", userSummary.profile().profileImageUrl());
+        putIfNotNull(profile, "privacySetting", userSummary.profile().privacySetting());
+
+        Map<String, Object> user = new LinkedHashMap<>();
+        user.put("publicId", userSummary.publicId());
+        user.put("email", userSummary.email());
+        user.put("username", firstNonBlank(userSummary.username(), userSummary.email()));
+        user.put("status", userSummary.status());
+        user.put("emailVerified", userSummary.emailVerified());
+        user.put("profileCompletionStatus", userSummary.profileCompletionStatus());
+        if (!profile.isEmpty()) {
+            user.put("profile", profile);
+        }
+        user.put("roles", userSummary.roles());
+        user.put("apps", userSummary.apps());
+        return user;
+    }
+
+    private void putIfNotNull(Map<String, Object> target, String key, Object value) {
+        if (value != null) {
+            target.put(key, value);
+        }
+    }
+
+    private String firstNonBlank(String first, String fallback) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return fallback;
     }
 
     public Claims parseClaims(String token) {
