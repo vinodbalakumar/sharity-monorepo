@@ -9,6 +9,7 @@ Spring Boot authorization service for Sharity and connected service modules.
 - Spring Security
 - Spring Data JPA
 - MySQL 8
+- PostgreSQL 15+
 - Flyway migrations
 - Jakarta Validation
 - Lombok
@@ -91,9 +92,10 @@ Seeded V3 modules:
 
 ## Local Run
 
-Default local profile:
+Default local profiles:
 
 ```text
+Profiles: local,mysql
 Database: auth
 MySQL host: localhost
 MySQL port: 3306
@@ -106,7 +108,13 @@ JWT public key: C:/Users/HP/projects/certs/jwt-public.pem
 Run locally:
 
 ```powershell
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run -Dspring-boot.run.profiles=local,mysql
+```
+
+Run locally with PostgreSQL:
+
+```powershell
+mvn spring-boot:run -Dspring-boot.run.profiles=local,postgresql
 ```
 
 Local URL:
@@ -267,13 +275,23 @@ This is intentionally simple for local V3. Later phases should move internal cal
 
 ## Database
 
-MySQL runs on the PC for the current deployment setup.
+The service supports both MySQL and PostgreSQL.
 
-Docker containers connect to PC MySQL using:
+Default MySQL local settings:
 
 ```text
-DB_HOST=host.docker.internal
+SPRING_PROFILES_ACTIVE=local,mysql
+DB_HOST=localhost
 DB_PORT=3306
+DB_NAME=auth
+```
+
+PostgreSQL local settings:
+
+```text
+SPRING_PROFILES_ACTIVE=local,postgresql
+DB_HOST=localhost
+DB_PORT=5432
 DB_NAME=auth
 ```
 
@@ -281,6 +299,12 @@ Flyway manages schema migrations from:
 
 ```text
 src/main/resources/db/migration
+```
+
+PostgreSQL-specific Flyway migrations live in:
+
+```text
+src/main/resources/db/migration-postgresql
 ```
 
 Do not edit old applied migrations. Add a new migration such as `V7__description.sql`.

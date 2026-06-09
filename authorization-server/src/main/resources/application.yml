@@ -14,16 +14,12 @@ spring:
   application:
     name: authorization-server
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}
-  datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:authorization_server}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USERNAME:auth_user}
-    password: ${DB_PASSWORD:auth_password}
+    active: ${SPRING_PROFILES_ACTIVE:local,mysql}
   mail:
-    host: ${MAIL_HOST:}
+    host: ${MAIL_HOST:mail.smtp2go.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USERNAME:change-me}
+    password: ${MAIL_PASSWORD:change-me}
     properties:
       mail:
         smtp:
@@ -35,7 +31,6 @@ spring:
           writetimeout: ${MAIL_WRITE_TIMEOUT_MS:5000}
   flyway:
     enabled: true
-    locations: classpath:db/migration
   jpa:
     show-sql: true
     hibernate:
@@ -54,8 +49,8 @@ app:
   oauth2:
     web-bff:
       client-id: ${SHARITY_WEB_BFF_CLIENT_ID:sharity-web-bff}
-      client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:change-me-local-only}
-      redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:https://vinodbalakumar.com}/login/oauth2/code/sharity-web-bff
+      client-secret: ${SHARITY_WEB_BFF_CLIENT_SECRET:s6t23KqyEfo9L/sDgwTKtZYyuW71f51ooA2KI2/9MkBGXLdaOO9RCx+rfDpz0VnG}
+      redirect-uri: ${SHARITY_BFF_PUBLIC_BASE_URL:http://localhost:8083}/login/oauth2/code/sharity-web-bff
     native-clients:
       android:
         client-id: ${SHARITY_ANDROID_CLIENT_ID:sharity-android}
@@ -74,7 +69,7 @@ app:
     public-key-base64: ${JWT_PUBLIC_KEY_BASE64:}
     private-key-path: ${JWT_PRIVATE_KEY_PATH:}
     public-key-path: ${JWT_PUBLIC_KEY_PATH:}
-    issuer: ${JWT_ISSUER:https://vinodbalakumar.com/authorization-server/api}
+    issuer: ${JWT_ISSUER:http://localhost:8083/authorization-server/api}
     audience: ${JWT_AUDIENCE:auth-clients}
     access-token-expiration: PT15M
   refresh-token:
@@ -88,17 +83,17 @@ app:
     verification-path: ${EMAIL_VERIFICATION_PATH:/verify-email}
     password-reset-path: ${PASSWORD_RESET_PATH:/reset-password}
   social:
-    frontend-register-url: ${SHARITY_FRONTEND_REGISTER_URL:https://vinodbalakumar.com/app/register}
-    frontend-complete-registration-url: ${SHARITY_FRONTEND_COMPLETE_REGISTRATION_URL:https://vinodbalakumar.com/app/complete-registration}
-    frontend-login-success-url: ${SHARITY_FRONTEND_LOGIN_SUCCESS_URL:https://vinodbalakumar.com/app/}
+    frontend-register-url: ${SHARITY_FRONTEND_REGISTER_URL:http://localhost:8083/app/register}
+    frontend-complete-registration-url: ${SHARITY_FRONTEND_COMPLETE_REGISTRATION_URL:http://localhost:8083/app/complete-registration}
+    frontend-login-success-url: ${SHARITY_FRONTEND_LOGIN_SUCCESS_URL:http://localhost:8083/app/}
   profile-image-storage:
     provider-code: ${ASSET_STORAGE_PROVIDER_CODE:CLOUDFLARE_R2_PRIMARY}
     bucket-name: ${ASSET_STORAGE_BUCKET_NAME:sharity-assets}
-    endpoint-url: ${ASSET_STORAGE_ENDPOINT_URL:}
-    public-base-url: ${ASSET_STORAGE_PUBLIC_BASE_URL:}
+    endpoint-url: ${ASSET_STORAGE_ENDPOINT_URL:https://75beeb37d05b7246321551b1684495e5.r2.cloudflaresto}
+    public-base-url: ${ASSET_STORAGE_PUBLIC_BASE_URL:https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
     region: ${ASSET_STORAGE_REGION:auto}
-    access-key-id: ${ASSET_STORAGE_ACCESS_KEY_ID:}
-    secret-access-key: ${ASSET_STORAGE_SECRET_ACCESS_KEY:}
+    access-key-id: ${ASSET_STORAGE_ACCESS_KEY_ID:20603d4aef790e17d671a800fcfa7a48 }
+    secret-access-key: ${ASSET_STORAGE_SECRET_ACCESS_KEY:dd752dd84bc1a6b16eba60ac5a753616793d8c9b56c3b}
     max-file-size-bytes: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:5242880}
   registration-cleanup:
     enabled: ${REGISTRATION_CLEANUP_ENABLED:true}
