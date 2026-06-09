@@ -1,69 +1,36 @@
--- Add product images for marketplace listings
--- Images uploaded to Cloudflare R2 and linked to listings
-
 INSERT INTO asset (
-    public_id, asset_type, file_name, mime_type, file_size_bytes,
-    storage_provider_code, remote_path, created_at, updated_at
-) VALUES
-('ASSET-PRODUCT-001', 'LISTING_IMAGE', 'product_001.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_001.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-002', 'LISTING_IMAGE', 'product_002.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_002.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-003', 'LISTING_IMAGE', 'product_003.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_003.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-004', 'LISTING_IMAGE', 'product_004.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_004.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-005', 'LISTING_IMAGE', 'product_005.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_005.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-006', 'LISTING_IMAGE', 'product_006.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_006.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-007', 'LISTING_IMAGE', 'product_007.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_007.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-008', 'LISTING_IMAGE', 'product_008.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_008.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-009', 'LISTING_IMAGE', 'product_009.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_009.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-010', 'LISTING_IMAGE', 'product_010.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_010.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-011', 'LISTING_IMAGE', 'product_011.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_011.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-012', 'LISTING_IMAGE', 'product_012.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_012.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-013', 'LISTING_IMAGE', 'product_013.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_013.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-014', 'LISTING_IMAGE', 'product_014.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_014.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-015', 'LISTING_IMAGE', 'product_015.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_015.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-016', 'LISTING_IMAGE', 'product_016.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_016.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-017', 'LISTING_IMAGE', 'product_017.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_017.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-018', 'LISTING_IMAGE', 'product_018.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_018.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-019', 'LISTING_IMAGE', 'product_019.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_019.jpg', NOW(), NOW()),
-
-('ASSET-PRODUCT-020', 'LISTING_IMAGE', 'product_020.jpg', 'image/jpeg', 45000,
- 'CLOUDFLARE_R2_PRIMARY', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_020.jpg', NOW(), NOW());
+    public_id, provider_code, bucket_name, object_key, public_url, thumbnail_url,
+    asset_type, owner_type, owner_id, content_type, file_size_bytes,
+    visibility, asset_status, created_at, updated_at
+)
+SELECT asset_public_id, 'CLOUDFLARE_R2_PRIMARY', 'sharity-assets', object_key, public_url, NULL,
+       'LISTING_IMAGE', 'LISTING_IMAGE_SEED', asset_public_id, 'image/jpeg', 45000,
+       'PUBLIC', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM (
+    SELECT 'ASSET-PRODUCT-001' AS asset_public_id, 'listings/product_001.jpg' AS object_key, 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_001.jpg' AS public_url
+    UNION ALL SELECT 'ASSET-PRODUCT-002', 'listings/product_002.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_002.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-003', 'listings/product_003.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_003.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-004', 'listings/product_004.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_004.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-005', 'listings/product_005.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_005.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-006', 'listings/product_006.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_006.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-007', 'listings/product_007.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_007.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-008', 'listings/product_008.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_008.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-009', 'listings/product_009.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_009.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-010', 'listings/product_010.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_010.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-011', 'listings/product_011.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_011.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-012', 'listings/product_012.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_012.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-013', 'listings/product_013.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_013.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-014', 'listings/product_014.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_014.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-015', 'listings/product_015.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_015.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-016', 'listings/product_016.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_016.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-017', 'listings/product_017.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_017.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-018', 'listings/product_018.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_018.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-019', 'listings/product_019.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_019.jpg'
+    UNION ALL SELECT 'ASSET-PRODUCT-020', 'listings/product_020.jpg', 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/listings/product_020.jpg'
+) seeded
+WHERE NOT EXISTS (
+    SELECT 1 FROM asset existing WHERE existing.public_id = seeded.asset_public_id
+);
 
 -- Verify assets were inserted
 SELECT COUNT(*) as total_assets FROM asset WHERE asset_type = 'LISTING_IMAGE';

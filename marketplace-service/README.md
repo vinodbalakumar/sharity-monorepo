@@ -5,7 +5,7 @@ V3 marketplace backend foundation.
 ## Current Scope
 
 - JWT resource-server security using the authorization-server public key.
-- MySQL/Flyway schema for listings, orders, delivery submission, acceptance, disputes, and outbox.
+- MySQL and PostgreSQL Flyway schemas for listings, orders, delivery submission, acceptance, disputes, and outbox.
 - Persisted listing, order, delivery, acceptance, and dispute-placeholder APIs.
 - Customer purchase creates a Payment Service order through the internal API.
 - Customer acceptance requests payout eligibility from Payment Service.
@@ -35,4 +35,16 @@ http://localhost:8080/marketplace-service/swagger-ui/index.html
 marketplace_db
 ```
 
-MySQL runs on the PC, not in Docker.
+Local database selection is profile-based:
+
+- `local,mysql` uses [src/main/resources/application-mysql.yml](c:/data/apps/marketplace-service/src/main/resources/application-mysql.yml)
+- `local,postgresql` uses [src/main/resources/application-postgresql.yml](c:/data/apps/marketplace-service/src/main/resources/application-postgresql.yml)
+
+Examples:
+
+```text
+mvn spring-boot:run -Dspring-boot.run.profiles=local,mysql
+mvn spring-boot:run -Dspring-boot.run.profiles=local,postgresql
+```
+
+The shared settings stay in [src/main/resources/application.yml](c:/data/apps/marketplace-service/src/main/resources/application.yml).

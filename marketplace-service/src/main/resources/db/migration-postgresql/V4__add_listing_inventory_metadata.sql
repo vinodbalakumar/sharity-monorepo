@@ -1,0 +1,8 @@
+ALTER TABLE listing
+    ADD COLUMN condition_label VARCHAR(30) NULL,
+    ADD COLUMN stock_quantity INT NOT NULL DEFAULT 1,
+    ADD COLUMN source_type VARCHAR(30) NULL,
+    ADD COLUMN source_name VARCHAR(150) NULL,
+    ADD COLUMN source_url VARCHAR(500) NULL,
+    ADD COLUMN license_note VARCHAR(255) NULL,
+    ADD COLUMN demo_seed BOOLEAN NOT NULL DEFAULT FALSE;
