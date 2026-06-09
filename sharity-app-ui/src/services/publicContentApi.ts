@@ -24,7 +24,9 @@ export type PublicContentPageResponse = {
   version: string;
 };
 
-const publicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL ?? '';
+const publicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL
+  ?? process.env.EXPO_PUBLIC_BFF_BASE_URL?.replace(/\/bff$/, '')
+  ?? '';
 const requestTimeoutMs = 6000;
 
 async function getJson<T>(path: string): Promise<T> {

@@ -48,6 +48,7 @@ import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
 const minimumSplashMs = 900;
+const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 
 function publicRouteFromLocation(): AppRoute | null {
   if (Platform.OS !== 'web') {
@@ -120,7 +121,7 @@ export default function App() {
 
   function startBrowserLogin() {
     if (Platform.OS === 'web') {
-      window.location.assign('/bff/login');
+      window.location.assign(`${bffBaseUrl}/login`);
       return;
     }
 
