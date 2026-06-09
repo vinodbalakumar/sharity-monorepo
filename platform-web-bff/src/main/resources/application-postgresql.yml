@@ -1,0 +1,10 @@
+spring:
+  config:
+    activate:
+      on-profile: postgresql
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${BFF_DB_NAME:platform_web_bff}}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  flyway:
+    locations: classpath:db/migration-postgresql
