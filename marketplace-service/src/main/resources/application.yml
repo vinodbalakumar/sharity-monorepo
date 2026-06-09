@@ -20,6 +20,8 @@ spring:
     open-in-view: false
 
 app:
+  web:
+    allowed-origin: ${SHARITY_WEB_ALLOWED_ORIGIN:http://localhost:3000}
   jwt:
     public-key-path: ${JWT_PUBLIC_KEY_PATH:c:/data/certs/jwt-public.pem}
     issuer: ${AUTH_ISSUER_URL:http://localhost:8083/authorization-server/api}

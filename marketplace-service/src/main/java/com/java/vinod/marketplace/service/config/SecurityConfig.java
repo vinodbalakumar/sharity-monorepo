@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -25,6 +26,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -35,6 +39,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -43,8 +48,9 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    SecurityFilterChain securityFilterChain(HttpSecurity http, InternalServiceTokenFilter internalServiceTokenFilter) throws Exception {
+        SecurityFilterChain securityFilterChain(HttpSecurity http, InternalServiceTokenFilter internalServiceTokenFilter) throws Exception {
         return http
+                                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
@@ -125,6 +131,20 @@ public class SecurityConfig {
                 .addFilterBefore(internalServiceTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
+
+        @Bean
+        CorsConfigurationSource corsConfigurationSource(@Value("${app.web.allowed-origin:http://localhost:3000}") String allowedOrigin) {
+                CorsConfiguration configuration = new CorsConfiguration();
+                configuration.setAllowedOrigins(List.of(allowedOrigin));
+                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+                configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-TOKEN", "X-Requested-With"));
+                configuration.setAllowCredentials(true);
+                configuration.setMaxAge(3600L);
+
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 
     /**
      * Converts JWT role claims into Spring authorities for resource-server authorization.
