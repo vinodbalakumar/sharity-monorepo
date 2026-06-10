@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class SafeMessagingMockController {
+public class SafeMessagingController {
     @GetMapping("/api/messages/threads")
     public SafeMessagingDtos.MessageThreadsResponse threads() {
         return SafeMessagingDtos.response();

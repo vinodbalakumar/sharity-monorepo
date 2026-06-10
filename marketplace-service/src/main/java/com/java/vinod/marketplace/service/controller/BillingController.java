@@ -17,7 +17,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1/billing")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-public class BillingMockController {
+public class BillingController {
 
     @GetMapping("/summary")
     public ResponseEntity<BillingResponse> getBillingSummary() {

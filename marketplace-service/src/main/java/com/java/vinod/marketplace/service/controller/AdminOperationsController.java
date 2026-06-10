@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-public class AdminOperationsMockController {
+public class AdminOperationsController {
     @GetMapping("/dashboard")
     public AdminOperationsDtos.AdminDashboardResponse dashboard() {
         return AdminOperationsDtos.dashboard();

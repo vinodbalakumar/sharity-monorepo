@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class MarketplaceConfigMockController {
+public class MarketplaceConfigController {
     @GetMapping("/api/admin/marketplace-config/countries")
     public List<MarketplaceConfigDtos.CountryMarketplaceConfigSummary> countries() { return MarketplaceConfigDtos.countries(); }
     @GetMapping("/api/admin/marketplace-config/countries/{countryCode}")

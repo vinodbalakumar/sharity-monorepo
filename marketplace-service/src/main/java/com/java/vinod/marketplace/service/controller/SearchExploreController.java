@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class SearchExploreMockController {
+public class SearchExploreController {
     @GetMapping("/api/search")
     public SearchExploreDtos.SearchDashboardResponse dashboard() {
         return SearchExploreDtos.dashboard();

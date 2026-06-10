@@ -16,7 +16,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/account")
-public class AccountSwitcherMockController {
+public class AccountSwitcherController {
     @GetMapping("/switcher")
     public AccountSwitcherDtos.AccountSwitcherResponse switcher(@RequestParam(required = false) String mode,
                                                                 @RequestParam(required = false) String marketplace) {

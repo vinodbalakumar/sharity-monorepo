@@ -7,7 +7,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/settings/app")
-public class AppSettingsMockController {
+public class AppSettingsController {
     @GetMapping
     public AppSettingsDtos.AppSettingsDashboardResponse dashboard() { return AppSettingsDtos.dashboard(); }
     @PatchMapping("/theme")

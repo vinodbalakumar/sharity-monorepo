@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class PublicStoreProfileMockController {
+public class PublicStoreProfileController {
     @GetMapping("/api/public/stores/{sellerStoreId}")
     public PublicStoreProfileDtos.SellerPublicStoreResponse store(@PathVariable String sellerStoreId) {
         return PublicStoreProfileDtos.store(sellerStoreId);

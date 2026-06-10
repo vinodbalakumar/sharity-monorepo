@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class CategoryMarketplaceMockController {
+public class CategoryMarketplaceController {
     @GetMapping("/api/marketplaces")
     public CategoryMarketplaceDtos.MarketplaceDashboardResponse dashboard() {
         return CategoryMarketplaceDtos.dashboard();

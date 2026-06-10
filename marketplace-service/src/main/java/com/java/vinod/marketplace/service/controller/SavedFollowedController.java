@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class SavedFollowedMockController {
+public class SavedFollowedController {
     @GetMapping("/api/saved")
     public SavedFollowedDtos.SavedDashboardResponse dashboard() {
         return SavedFollowedDtos.dashboard();

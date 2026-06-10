@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-public class AdminMvpMockController {
+public class AdminMvpController {
     @GetMapping("/admin/access")
     public AdminMvpDtos.AdminAccessStatus adminAccess() {
         return AdminMvpDtos.accessGranted();

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class SupportMockController {
+public class SupportController {
     @GetMapping({"/api/support/topics", "/api/support/popular"})
     public List<SupportDtos.SupportTopic> topics() { return SupportDtos.topics(); }
     @GetMapping("/api/support/topics/{topicId}")

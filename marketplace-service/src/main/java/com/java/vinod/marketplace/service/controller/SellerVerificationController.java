@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class SellerVerificationMockController {
+public class SellerVerificationController {
     @GetMapping("/api/seller/verification")
     public SellerVerificationDtos.SellerVerificationDashboardResponse dashboard() { return SellerVerificationDtos.dashboard(); }
     @GetMapping("/api/seller/verification/payout-eligibility")

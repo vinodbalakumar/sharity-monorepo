@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-public class InvoiceTaxMockController {
+public class InvoiceTaxController {
     @GetMapping("/api/buyer/orders/{orderId}/tax-documents")
     public InvoiceTaxDtos.TaxDocumentListResponse buyerOrderTaxDocuments(@PathVariable String orderId) {
         return InvoiceTaxDtos.buyerDocuments(orderId);

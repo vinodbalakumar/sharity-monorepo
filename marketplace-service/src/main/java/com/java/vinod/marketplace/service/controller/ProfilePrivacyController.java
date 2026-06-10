@@ -19,7 +19,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/profile")
-public class ProfilePrivacyMockController {
+public class ProfilePrivacyController {
 
     @GetMapping
     public ProfilePersonalInfoDtos.ProfileDashboardResponse profileDashboard() {

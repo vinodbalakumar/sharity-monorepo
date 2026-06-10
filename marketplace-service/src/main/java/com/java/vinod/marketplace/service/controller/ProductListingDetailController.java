@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class ProductListingDetailMockController {
+public class ProductListingDetailController {
     @GetMapping({"/api/listings/{listingId}", "/l/{listingId}"})
     public ProductListingDetailDtos.ListingDetailResponse listing(@PathVariable String listingId) {
         return ProductListingDetailDtos.detail(listingId, false);

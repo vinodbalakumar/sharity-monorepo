@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-public class SellerOrderRefundMockController {
+public class SellerOrderRefundController {
     @GetMapping("/api/orders/{parentOrderId}/refund-summary")
     public SellerOrderRefundDtos.ParentOrderRefundSummaryResponse summary(@PathVariable String parentOrderId) { return SellerOrderRefundDtos.summary(); }
     @GetMapping("/api/orders/{parentOrderId}/seller-orders/{sellerOrderId}/refund-eligibility")

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class ReviewsRatingsMockController {
+public class ReviewsRatingsController {
     @GetMapping("/api/reviews/eligibility")
     public ReviewsRatingsDtos.ReviewEligibilityResponse eligibility() {
         return ReviewsRatingsDtos.eligibility();

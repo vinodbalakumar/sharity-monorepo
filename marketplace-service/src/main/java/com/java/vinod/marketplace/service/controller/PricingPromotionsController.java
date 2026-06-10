@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-public class PricingPromotionsMockController {
+public class PricingPromotionsController {
     @GetMapping("/api/admin/pricing/rules")
     public List<PricingPromotionsDtos.PricingRule> rules() { return PricingPromotionsDtos.rules(); }
     @PostMapping("/api/admin/pricing/rules")

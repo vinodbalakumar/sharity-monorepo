@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class SecurityMockController {
+public class SecurityController {
     @GetMapping("/api/account/security")
     public SecurityDtos.AccountSecurityResponse accountSecurity() { return SecurityDtos.account(); }
     @GetMapping("/api/account/login-methods")

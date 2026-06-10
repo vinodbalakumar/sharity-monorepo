@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class NotificationMockController {
+public class NotificationController {
     @GetMapping("/api/notifications/dashboard")
     public NotificationDtos.NotificationCenterDashboardResponse dashboard() { return NotificationDtos.dashboard(); }
     @GetMapping("/api/notifications")

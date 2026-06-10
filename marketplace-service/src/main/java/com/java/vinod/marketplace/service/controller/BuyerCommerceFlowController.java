@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Mock buyer cart-to-order APIs for STORY-058, STORY-059, and STORY-060.
  */
 @RestController
-public class BuyerCommerceFlowMockController {
+public class BuyerCommerceFlowController {
     @GetMapping("/api/profile/completion")
     public BuyerCommerceFlowDtos.ProfileCompletionResponse profileCompletion() {
         return BuyerCommerceFlowDtos.mockProfileCompletion();

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 
 @RestController
-public class PaymentAuthorizationMockController {
+public class PaymentAuthorizationController {
     @GetMapping("/api/checkout/sessions/{checkoutSessionId}/payment-authorization")
     public PaymentAuthorizationDtos.PaymentAuthorizationScreenResponse screen(@PathVariable String checkoutSessionId) {
         return PaymentAuthorizationDtos.mock(checkoutSessionId);

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class RecentlyViewedHistoryMockController {
+public class RecentlyViewedHistoryController {
     @GetMapping("/api/history")
     public RecentlyViewedHistoryDtos.HistoryDashboardResponse dashboard(
             @RequestParam(defaultValue = "false") boolean guestMode,

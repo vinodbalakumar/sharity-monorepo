@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class PolicyMockController {
+public class PolicyController {
     @GetMapping("/api/policies")
     public PolicyDtos.PoliciesDashboardResponse dashboard() { return PolicyDtos.dashboard(); }
     @GetMapping("/api/policies/required")

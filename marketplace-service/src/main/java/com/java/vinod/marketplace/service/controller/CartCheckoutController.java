@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Stateless mocked multi-seller Cart & Checkout API for STORY-035.
  */
 @RestController
-public class CartCheckoutMockController {
+public class CartCheckoutController {
     @GetMapping("/api/cart")
     public BuyerCommerceFlowDtos.CartResponse cart(@RequestParam(defaultValue = "false") boolean termsAccepted) {
         return BuyerCommerceFlowDtos.mockCart();

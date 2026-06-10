@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class ProfileReviewAdminMockController {
+public class ProfileReviewAdminController {
     @GetMapping("/api/admin/profile-reviews")
     public List<ProfilePersonalInfoDtos.AdminProfileReviewQueueItem> reviews() {
         return ProfilePersonalInfoDtos.adminReviews();

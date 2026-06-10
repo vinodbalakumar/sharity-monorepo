@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-public class PrivacyPublicDisplayMockController {
+public class PrivacyPublicDisplayController {
     @GetMapping({"/api/privacy", "/api/privacy/buyer", "/api/privacy/seller"})
     public PrivacyPublicDisplayDtos.PrivacyDashboardResponse dashboard() {
         return PrivacyPublicDisplayDtos.dashboard();
