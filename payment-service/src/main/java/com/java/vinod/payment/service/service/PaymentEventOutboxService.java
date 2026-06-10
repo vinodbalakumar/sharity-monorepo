@@ -1,5 +1,6 @@
 package com.java.vinod.payment.service.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.java.vinod.payment.service.entity.PaymentEventOutbox;
 import com.java.vinod.payment.service.entity.PaymentOrder;
@@ -183,7 +184,11 @@ public class PaymentEventOutboxService {
 
     private WalletEventPayload readPayload(String payloadJson) {
         try {
-            return objectMapper.readValue(payloadJson, WalletEventPayload.class);
+            JsonNode payloadNode = objectMapper.readTree(payloadJson);
+            if (payloadNode.isTextual()) {
+                return objectMapper.readValue(payloadNode.textValue(), WalletEventPayload.class);
+            }
+            return objectMapper.treeToValue(payloadNode, WalletEventPayload.class);
         } catch (Exception exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to deserialize payment outbox payload", exception);
         }

@@ -13,29 +13,29 @@ import java.util.UUID;
  * before the future PayPal integration story is activated.</p>
  */
 @Component("paypal-mock")
-public class PayPalMockPaymentGateway implements PaymentGateway {
+public class PayPalSandboxPaymentGateway implements PaymentGateway {
 
     /**
-     * Returns a mock PayPal capture reference.
+     * Returns a sandbox PayPal capture reference.
      */
     @Override
     public String capture(String paymentOrderPublicId, BigDecimal amount, String currencyCode) {
-        return "paypal-mock-capture-" + UUID.randomUUID();
+        return "paypal-sandbox-capture-" + UUID.randomUUID();
     }
 
     /**
-     * Returns a mock PayPal payout reference.
+     * Returns a sandbox PayPal payout reference.
      */
     @Override
     public String releasePayout(String payoutPublicId, BigDecimal amount, String currencyCode) {
-        return "paypal-mock-payout-" + UUID.randomUUID();
+        return "paypal-sandbox-payout-" + UUID.randomUUID();
     }
 
     /**
-     * Returns a mock PayPal refund reference.
+     * Returns a sandbox PayPal refund reference.
      */
     @Override
     public String refund(String paymentOrderPublicId, BigDecimal amount, String currencyCode) {
-        return "paypal-mock-refund-" + UUID.randomUUID();
+        return "paypal-sandbox-refund-" + UUID.randomUUID();
     }
 }

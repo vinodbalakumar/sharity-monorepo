@@ -52,7 +52,7 @@ public class NotificationService {
         try {
             log.info("Sending notification to customer {}: {}", customerId, type);
 
-            String template = getEmailTemplate(type, data);
+            String template = getEmailTemplate(type, data == null ? Map.of() : data);
             emailService.sendEmail(email, type.subject, template);
 
             log.info("Notification sent successfully to {}", email);
@@ -134,8 +134,8 @@ public class NotificationService {
             <p><strong>Amount:</strong> {amount}</p>
             <p>Thank you for your purchase!</p>
             <p>Best regards,<br/>Sharity Team</p>
-            """.replace("{orderId}", data.get("orderId"))
-             .replace("{amount}", data.get("amount"));
+            """.replace("{orderId}", data.getOrDefault("orderId", ""))
+             .replace("{amount}", data.getOrDefault("amount", ""));
     }
 
     private String buildAuthorizationTemplate(Map<String, String> data) {
@@ -144,7 +144,7 @@ public class NotificationService {
             <p>Your payment has been authorized and is being processed.</p>
             <p><strong>Order ID:</strong> {orderId}</p>
             <p>You will receive a final confirmation shortly.</p>
-            """.replace("{orderId}", data.get("orderId"));
+            """.replace("{orderId}", data.getOrDefault("orderId", ""));
     }
 
     private String buildPaymentFailedTemplate(Map<String, String> data) {
@@ -154,8 +154,8 @@ public class NotificationService {
             <p><strong>Order ID:</strong> {orderId}</p>
             <p><strong>Reason:</strong> {reason}</p>
             <p>Please try again or contact support.</p>
-            """.replace("{orderId}", data.get("orderId"))
-             .replace("{reason}", data.get("reason"));
+            """.replace("{orderId}", data.getOrDefault("orderId", ""))
+             .replace("{reason}", data.getOrDefault("reason", ""));
     }
 
     private String buildRefundTemplate(Map<String, String> data) {
@@ -165,8 +165,8 @@ public class NotificationService {
             <p><strong>Order ID:</strong> {orderId}</p>
             <p><strong>Amount:</strong> {amount}</p>
             <p>The funds should appear in your account within 3-5 business days.</p>
-            """.replace("{orderId}", data.get("orderId"))
-             .replace("{amount}", data.get("amount"));
+            """.replace("{orderId}", data.getOrDefault("orderId", ""))
+             .replace("{amount}", data.getOrDefault("amount", ""));
     }
 
     private String buildDisputeTemplate(Map<String, String> data) {
@@ -175,7 +175,7 @@ public class NotificationService {
             <p>A dispute has been opened on your account.</p>
             <p><strong>Dispute ID:</strong> {disputeId}</p>
             <p>Please log in to your account to provide evidence and track the resolution.</p>
-            """.replace("{disputeId}", data.get("disputeId"));
+            """.replace("{disputeId}", data.getOrDefault("disputeId", ""));
     }
 
     private String buildDefaultTemplate(NotificationType type, Map<String, String> data) {

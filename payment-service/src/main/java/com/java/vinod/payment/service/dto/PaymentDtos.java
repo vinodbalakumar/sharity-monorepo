@@ -89,9 +89,9 @@ public final class PaymentDtos {
     /**
      * Carries an admin decision for a country-level gateway preference.
      *
-     * <p>The request stays intentionally small so super admins can switch a
-     * country between mock, Stripe test mode, or the PayPal mock adapter without
-     * changing buyer or provider flows.</p>
+    * <p>The request stays intentionally small so super admins can switch a
+    * country between sandbox, Stripe test mode, or the PayPal sandbox adapter without
+    * changing buyer or provider flows.</p>
      */
     public record PaymentGatewayPolicyRequest(@NotBlank String countryCode,
                                               @NotBlank String gatewayMode,

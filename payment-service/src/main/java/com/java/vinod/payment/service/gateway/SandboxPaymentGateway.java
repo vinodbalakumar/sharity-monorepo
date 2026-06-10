@@ -9,29 +9,29 @@ import java.util.UUID;
  * Local/demo payment provider that always succeeds without moving real money.
  */
 @Component("mock")
-public class MockPaymentGateway implements PaymentGateway {
+public class SandboxPaymentGateway implements PaymentGateway {
 
     /**
-     * Returns a mock capture reference.
+     * Returns a sandbox capture reference.
      */
     @Override
     public String capture(String paymentOrderPublicId, BigDecimal amount, String currencyCode) {
-        return "mock-capture-" + UUID.randomUUID();
+        return "sandbox-capture-" + UUID.randomUUID();
     }
 
     /**
-     * Returns a mock payout reference.
+     * Returns a sandbox payout reference.
      */
     @Override
     public String releasePayout(String payoutPublicId, BigDecimal amount, String currencyCode) {
-        return "mock-payout-" + UUID.randomUUID();
+        return "sandbox-payout-" + UUID.randomUUID();
     }
 
     /**
-     * Returns a mock refund reference.
+     * Returns a sandbox refund reference.
      */
     @Override
     public String refund(String paymentOrderPublicId, BigDecimal amount, String currencyCode) {
-        return "mock-refund-" + UUID.randomUUID();
+        return "sandbox-refund-" + UUID.randomUUID();
     }
 }

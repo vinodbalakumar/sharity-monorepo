@@ -76,6 +76,23 @@ class PaymentEventOutboxServiceTest {
         assertThat(savedEvent.get().getProcessedAt()).isNotNull();
     }
 
+    @Test
+    void dispatchPendingEventsHandlesQuotedJsonPayloads() {
+        PaymentOrder order = paymentOrder();
+
+        paymentEventOutboxService.queueWalletEvent("payment-captured", order, order.getCustomerUserPublicId(), order.getCustomerChargeAmount());
+
+        PaymentEventOutbox persisted = savedEvent.get();
+        persisted.setProcessingStatus(PaymentEventOutboxService.STATUS_PENDING);
+        persisted.setProcessedAt(null);
+        persisted.setPayloadJson("\"" + persisted.getPayloadJson().replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
+
+        paymentEventOutboxService.dispatchPendingEvents();
+
+        assertThat(savedEvent.get().getProcessingStatus()).isEqualTo(PaymentEventOutboxService.STATUS_PROCESSED);
+        assertThat(savedEvent.get().getProcessedAt()).isNotNull();
+    }
+
     private static PaymentOrder paymentOrder() {
         PaymentOrder order = new PaymentOrder();
         order.setPublicId("payment-order-1");

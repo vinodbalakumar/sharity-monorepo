@@ -46,6 +46,7 @@ public class Dispute {
     private String disputeDescription;
 
     @Column(name = "dispute_status", length = 50)
+    @Builder.Default
     private String disputeStatus = "OPENED"; // OPENED, EVIDENCE_SUBMITTED, EVIDENCE_UNDER_REVIEW, RESOLVED, CLOSED
 
     @Column(name = "resolution_status", length = 50)
@@ -55,15 +56,18 @@ public class Dispute {
     private BigDecimal claimedAmount;
 
     @Column(name = "refunded_amount", precision = 19, scale = 4)
+    @Builder.Default
     private BigDecimal refundedAmount = BigDecimal.ZERO;
 
     @Column(name = "currency_code", length = 3)
+    @Builder.Default
     private String currencyCode = "USD";
 
     @Column(name = "merchant_id", length = 100)
     private String merchantId;
 
     @Column(name = "evidence_count")
+    @Builder.Default
     private Integer evidenceCount = 0;
 
     @Column(name = "notes", columnDefinition = "TEXT")
@@ -79,9 +83,11 @@ public class Dispute {
     private LocalDateTime slaDeadline; // 14 days from creation
 
     @Column(name = "sla_status", length = 50)
+    @Builder.Default
     private String slaStatus = "OPEN"; // OPEN, WARNING (3 days left), BREACHED
 
     @Column(name = "escalated", nullable = false)
+    @Builder.Default
     private Boolean escalated = false; // Auto-escalate if SLA breached
 
     @Column(name = "escalated_at")
@@ -94,9 +100,11 @@ public class Dispute {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "dispute", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<DisputeEvidence> evidenceItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "dispute", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<DisputeEvent> timeline = new ArrayList<>();
 
     @PrePersist

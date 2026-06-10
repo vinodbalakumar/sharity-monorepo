@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-public class StripeConnectMockController {
+public class StripeConnectController {
     @GetMapping("/api/payments/providers/stripe/availability")
     public StripeConnectDtos.StripeProviderAvailabilityResponse availability() {
         return StripeConnectDtos.availability();

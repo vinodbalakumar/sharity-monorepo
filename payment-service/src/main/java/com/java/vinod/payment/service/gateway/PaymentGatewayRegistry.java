@@ -17,7 +17,7 @@ import java.util.Map;
  * Resolves the active payment gateway adapter and the admin-selected country policy.
  *
  * <p>The registry keeps provider routing in one place so payment-service can
- * swap between mock, Stripe test mode, and PayPal mock behavior without wiring
+ * swap between sandbox, Stripe test mode, and PayPal sandbox behavior without wiring
  * the buyer checkout flow directly to a specific provider.</p>
  */
 @Service
@@ -80,13 +80,13 @@ public class PaymentGatewayRegistry {
      */
     public List<PaymentDtos.PaymentGatewayCatalogResponse> catalog() {
         return List.of(
-                new PaymentDtos.PaymentGatewayCatalogResponse("mock", "Mock Gateway",
-                        "Local demo gateway that always succeeds without moving real money.", gateways.containsKey("mock")),
+                new PaymentDtos.PaymentGatewayCatalogResponse("mock", "Sandbox Gateway",
+                    "Local sandbox gateway that always succeeds without moving real money.", gateways.containsKey("mock")),
                 new PaymentDtos.PaymentGatewayCatalogResponse("stripe-test", "Stripe Test Adapter",
                         "Stripe-shaped mock adapter that returns test references without calling the real Stripe API.",
                         gateways.containsKey("stripe-test")),
-                new PaymentDtos.PaymentGatewayCatalogResponse("paypal-mock", "PayPal Mock Adapter",
-                        "PayPal-shaped mock adapter for future country routing and admin previews.",
+                new PaymentDtos.PaymentGatewayCatalogResponse("paypal-mock", "PayPal Sandbox Adapter",
+                    "PayPal-shaped sandbox adapter for future country routing and admin previews.",
                         gateways.containsKey("paypal-mock"))
         );
     }

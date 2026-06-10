@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Dispute Management Integration Tests")
-public class DisputeIntegrationTest {
+public class DisputeIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private DisputeService disputeService;
@@ -45,11 +45,11 @@ public class DisputeIntegrationTest {
 
         // Assert
         assertNotNull(response);
-        assertNotNull(response.disputeId());
-        assertEquals("OPENED", response.disputeStatus());
+        assertNotNull(response.getDisputeId());
+        assertEquals("OPENED", response.getDisputeStatus());
 
         // Verify SLA was set
-        var dispute = disputeRepository.findByDisputeId(response.disputeId()).orElseThrow();
+        var dispute = disputeRepository.findByDisputeId(response.getDisputeId()).orElseThrow();
         assertNotNull(dispute.getSlaDeadline());
         assertEquals("OPEN", dispute.getSlaStatus());
         assertFalse(dispute.getEscalated());
@@ -68,21 +68,21 @@ public class DisputeIntegrationTest {
 
         DisputeDtos.DisputeResponse dispute = disputeService.createDispute("customer-456", createRequest);
 
-        DisputeDtos.UploadEvidenceRequest evidenceRequest = new DisputeDtos.UploadEvidenceRequest(
-            "SCREENSHOT",
-            "https://r2.cdn.example.com/dispute-456/screenshot.jpg",
-            "Screenshot of broken product"
-        );
+        DisputeDtos.UploadEvidenceRequest evidenceRequest = DisputeDtos.UploadEvidenceRequest.builder()
+            .evidenceType("SCREENSHOT")
+            .fileUrl("https://r2.cdn.example.com/dispute-456/screenshot.jpg")
+            .description("Screenshot of broken product")
+            .build();
 
         // Act
         DisputeDtos.DisputeEvidenceResponse response = disputeService.uploadEvidence(
-            "customer-456", dispute.disputeId(), evidenceRequest);
+            "customer-456", dispute.getDisputeId(), evidenceRequest);
 
         // Assert
         assertNotNull(response);
-        assertNotNull(response.evidenceId());
-        assertEquals("SCREENSHOT", response.evidenceType());
-        assertEquals("https://r2.cdn.example.com/dispute-456/screenshot.jpg", response.fileUrl());
+        assertNotNull(response.getEvidenceId());
+        assertEquals("SCREENSHOT", response.getEvidenceType());
+        assertEquals("https://r2.cdn.example.com/dispute-456/screenshot.jpg", response.getFileUrl());
     }
 
     @Test
@@ -111,7 +111,7 @@ public class DisputeIntegrationTest {
 
         // Assert
         assertEquals(2, disputes.size());
-        assertTrue(disputes.stream().allMatch(d -> "OPENED".equals(d.disputeStatus())));
+        assertTrue(disputes.stream().allMatch(d -> "OPENED".equals(d.getDisputeStatus())));
     }
 
     @Test
@@ -135,13 +135,13 @@ public class DisputeIntegrationTest {
 
         // Act
         DisputeDtos.DisputeResponse response = disputeService.resolveDispute(
-            dispute.disputeId(), resolveRequest);
+            dispute.getDisputeId(), resolveRequest);
 
         // Assert
         assertNotNull(response);
-        assertEquals("RESOLVED", response.disputeStatus());
-        assertEquals("WON", response.resolutionStatus());
-        assertEquals(BigDecimal.valueOf(299.99), response.refundedAmount());
+        assertEquals("RESOLVED", response.getDisputeStatus());
+        assertEquals("WON", response.getResolutionStatus());
+        assertEquals(BigDecimal.valueOf(299.99), response.getRefundedAmount());
     }
 
     @Test
@@ -164,7 +164,7 @@ public class DisputeIntegrationTest {
         // Assert
         assertTrue(openDisputes.size() >= 3);
         assertTrue(openDisputes.stream().allMatch(d ->
-            "OPENED".equals(d.disputeStatus()) || "EVIDENCE_SUBMITTED".equals(d.disputeStatus())));
+            "OPENED".equals(d.getDisputeStatus()) || "EVIDENCE_SUBMITTED".equals(d.getDisputeStatus())));
     }
 
     @Test
@@ -181,7 +181,7 @@ public class DisputeIntegrationTest {
         DisputeDtos.DisputeResponse dispute = disputeService.createDispute("escalation-customer", request);
 
         // Simulate escalation by manually updating (in production, scheduler would do this)
-        var disputeEntity = disputeRepository.findByDisputeId(dispute.disputeId()).orElseThrow();
+        var disputeEntity = disputeRepository.findByDisputeId(dispute.getDisputeId()).orElseThrow();
         disputeEntity.setEscalated(true);
         disputeEntity.setSlaStatus("BREACHED");
         disputeRepository.save(disputeEntity);
@@ -190,7 +190,7 @@ public class DisputeIntegrationTest {
         List<DisputeDtos.DisputeResponse> escalated = disputeService.getEscalatedDisputes();
 
         // Assert
-        assertTrue(escalated.stream().anyMatch(d -> d.disputeId().equals(dispute.disputeId())));
+        assertTrue(escalated.stream().anyMatch(d -> d.getDisputeId().equals(dispute.getDisputeId())));
     }
 
     @Test
@@ -205,20 +205,20 @@ public class DisputeIntegrationTest {
         );
 
         DisputeDtos.DisputeResponse dispute = disputeService.createDispute("lifecycle-customer", createRequest);
-        String disputeId = dispute.disputeId();
+        String disputeId = dispute.getDisputeId();
 
         // Upload evidence
-        DisputeDtos.UploadEvidenceRequest evidence1 = new DisputeDtos.UploadEvidenceRequest(
-            "SCREENSHOT",
-            "https://cdn.example.com/screenshot.jpg",
-            "Product defect screenshot"
-        );
+        DisputeDtos.UploadEvidenceRequest evidence1 = DisputeDtos.UploadEvidenceRequest.builder()
+            .evidenceType("SCREENSHOT")
+            .fileUrl("https://cdn.example.com/screenshot.jpg")
+            .description("Product defect screenshot")
+            .build();
 
-        DisputeDtos.UploadEvidenceRequest evidence2 = new DisputeDtos.UploadEvidenceRequest(
-            "EMAIL",
-            "https://cdn.example.com/email.txt",
-            "Email communication with seller"
-        );
+        DisputeDtos.UploadEvidenceRequest evidence2 = DisputeDtos.UploadEvidenceRequest.builder()
+            .evidenceType("EMAIL")
+            .fileUrl("https://cdn.example.com/email.txt")
+            .description("Email communication with seller")
+            .build();
 
         disputeService.uploadEvidence("lifecycle-customer", disputeId, evidence1);
         disputeService.uploadEvidence("lifecycle-customer", disputeId, evidence2);
@@ -237,11 +237,11 @@ public class DisputeIntegrationTest {
 
         // Assert - Full lifecycle complete
         assertNotNull(updated);
-        assertTrue(updated.evidenceCount() >= 2);
-        assertTrue(updated.timeline().size() >= 3); // OPENED + 2 evidence uploads
+        assertTrue(updated.getEvidenceCount() >= 2);
+        assertTrue(updated.getTimeline().size() >= 3); // OPENED + 2 evidence uploads
 
-        assertEquals("RESOLVED", resolved.disputeStatus());
-        assertEquals("SETTLED", resolved.resolutionStatus());
-        assertEquals(BigDecimal.valueOf(150.00), resolved.refundedAmount());
+        assertEquals("RESOLVED", resolved.getDisputeStatus());
+        assertEquals("SETTLED", resolved.getResolutionStatus());
+        assertEquals(BigDecimal.valueOf(150.00), resolved.getRefundedAmount());
     }
 }

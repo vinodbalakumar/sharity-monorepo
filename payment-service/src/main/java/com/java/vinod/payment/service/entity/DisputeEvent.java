@@ -39,6 +39,7 @@ public class DisputeEvent {
     private String actor; // SYSTEM, CUSTOMER, MERCHANT, ADMIN
 
     @Column(name = "visibility", length = 50)
+    @Builder.Default
     private String visibility = "BOTH"; // CUSTOMER, MERCHANT, ADMIN_ONLY, BOTH
 
     @Column(name = "created_at", nullable = false)

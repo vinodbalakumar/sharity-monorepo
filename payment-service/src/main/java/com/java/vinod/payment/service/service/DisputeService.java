@@ -32,6 +32,7 @@ public class DisputeService {
     private final DisputeRepository disputeRepository;
     private final DisputeEvidenceRepository evidenceRepository;
     private final DisputeEventRepository eventRepository;
+    private final PaymentOrderRepository paymentOrderRepository;
     private final PaymentService paymentService;
     private final NotificationService notificationService;
 
@@ -138,22 +139,38 @@ public class DisputeService {
         dispute.setNotes(request.getNotes());
 
         // Handle refund if dispute won
-        if ("WON".equalsIgnoreCase(request.getResolutionStatus())) {
+        String resolutionStatus = request.getResolutionStatus();
+        boolean refundRequested = "WON".equalsIgnoreCase(resolutionStatus)
+            || ("SETTLED".equalsIgnoreCase(resolutionStatus)
+            && request.getRefundAmount() != null
+            && request.getRefundAmount().compareTo(BigDecimal.ZERO) > 0);
+
+        if (refundRequested) {
             BigDecimal refundAmount = request.getRefundAmount() != null ?
                 request.getRefundAmount() : dispute.getClaimedAmount();
 
             dispute.setRefundedAmount(refundAmount);
 
-            // Issue refund via payment service
-            try {
-                PaymentDtos.RefundRequest refundRequest = new PaymentDtos.RefundRequest("Dispute resolved in customer favor");
-                paymentService.refund(dispute.getPaymentId(), refundRequest, null);
-                recordEvent(dispute, "REFUNDED",
-                    "Dispute won - Refund issued", "SYSTEM", "BOTH");
-            } catch (Exception e) {
-                log.error("Refund failed for disputed order: {}", dispute.getOrderId(), e);
+            String refundableOrderId = dispute.getPaymentId() != null && !dispute.getPaymentId().isBlank()
+                ? dispute.getPaymentId()
+                : dispute.getOrderId();
+
+            if (paymentOrderRepository.findByMarketplaceOrderPublicId(refundableOrderId).isPresent()) {
+                try {
+                    PaymentDtos.RefundRequest refundRequest = new PaymentDtos.RefundRequest("Dispute resolved in customer favor");
+                    paymentService.refund(refundableOrderId, refundRequest, null);
+                    recordEvent(dispute, "REFUNDED",
+                        "Dispute won - Refund issued", "SYSTEM", "BOTH");
+                } catch (Exception e) {
+                    log.error("Refund failed for disputed order: {}", dispute.getOrderId(), e);
+                    recordEvent(dispute, "REFUND_FAILED",
+                        "Refund processing failed: " + e.getMessage(), "SYSTEM", "ADMIN_ONLY");
+                }
+            } else {
+                log.warn("Refund skipped for dispute {} because payment order {} was not found",
+                    dispute.getDisputeId(), refundableOrderId);
                 recordEvent(dispute, "REFUND_FAILED",
-                    "Refund processing failed: " + e.getMessage(), "SYSTEM", "ADMIN_ONLY");
+                    "Refund processing failed: payment order not found", "SYSTEM", "ADMIN_ONLY");
             }
         }
 
@@ -169,9 +186,7 @@ public class DisputeService {
         notificationService.notifyCustomer(
             dispute.getCustomerId(),
             "customer@example.com",
-            "WON".equalsIgnoreCase(request.getResolutionStatus()) ?
-                NotificationService.NotificationType.DISPUTE_RESOLVED :
-                NotificationService.NotificationType.DISPUTE_OPENED,
+            NotificationService.NotificationType.DISPUTE_RESOLVED,
             null
         );
 

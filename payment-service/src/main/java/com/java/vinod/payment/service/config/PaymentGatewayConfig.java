@@ -2,7 +2,7 @@ package com.java.vinod.payment.service.config;
 
 import com.java.vinod.payment.service.gateway.PaymentGateway;
 import com.java.vinod.payment.service.gateway.PayPalPaymentGateway;
-import com.java.vinod.payment.service.gateway.PayPalMockPaymentGateway;
+import com.java.vinod.payment.service.gateway.PayPalSandboxPaymentGateway;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,19 +31,19 @@ public class PaymentGatewayConfig {
     @Bean
     @Primary
     @ConditionalOnProperty(name = "payment.gateway.provider", havingValue = "paypal-mock")
-    public PaymentGateway mockPayPalGateway(PayPalMockPaymentGateway mockGateway) {
-        log.warn("Initializing MOCK PayPal payment gateway (for development only)");
-        return mockGateway;
+    public PaymentGateway sandboxPayPalGateway(PayPalSandboxPaymentGateway sandboxGateway) {
+        log.warn("Initializing SANDBOX PayPal payment gateway (for development only)");
+        return sandboxGateway;
     }
 
     /**
-     * Fallback to mock if no provider specified
+     * Fallback to sandbox if no provider is specified.
      */
     @Bean
     @Primary
     @ConditionalOnProperty(name = "payment.gateway.provider", matchIfMissing = true)
-    public PaymentGateway defaultPaymentGateway(PayPalMockPaymentGateway mockGateway) {
-        log.warn("No payment gateway provider specified, using MOCK (for development)");
-        return mockGateway;
+    public PaymentGateway defaultPaymentGateway(PayPalSandboxPaymentGateway sandboxGateway) {
+        log.warn("No payment gateway provider specified, using SANDBOX (for development)");
+        return sandboxGateway;
     }
 }

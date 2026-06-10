@@ -1,7 +1,9 @@
 package com.java.vinod.payment.service.integration;
 
 import com.java.vinod.payment.service.dto.PaymentDtos;
+import com.java.vinod.payment.service.entity.PaymentEventOutbox;
 import com.java.vinod.payment.service.entity.PaymentOrder;
+import com.java.vinod.payment.service.repository.PaymentEventOutboxRepository;
 import com.java.vinod.payment.service.repository.PaymentOrderRepository;
 import com.java.vinod.payment.service.service.PaymentService;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +14,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Payment Service Integration Tests")
-public class PaymentIntegrationTest {
+public class PaymentIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private PaymentService paymentService;
@@ -30,16 +33,19 @@ public class PaymentIntegrationTest {
     @Autowired
     private PaymentOrderRepository paymentOrderRepository;
 
+    @Autowired
+    private PaymentEventOutboxRepository paymentEventOutboxRepository;
+
     @Test
     @DisplayName("Should create payment order and capture payment successfully")
     public void testPaymentFlow_Success() {
         // Arrange
         PaymentDtos.CheckoutRequest request = new PaymentDtos.CheckoutRequest(
             "marketplace-order-123",
-            "customer-user-456",
-            "seller-account-789",
             BigDecimal.valueOf(99.99),
             "USD",
+            "seller-account-789",
+            "customer-user-456",
             "US"
         );
 
@@ -50,13 +56,14 @@ public class PaymentIntegrationTest {
 
         // Assert
         assertNotNull(response);
-        assertNotNull(response.paymentOrderPublicId());
+        assertNotNull(response.publicId());
         assertEquals("CAPTURED", response.paymentStatus());
         assertEquals("ON_HOLD", response.payoutEligibilityStatus());
         assertEquals(BigDecimal.valueOf(99.99), response.customerChargeAmount());
 
         // Verify payment was persisted
         assertTrue(paymentOrderRepository.findByMarketplaceOrderPublicId("marketplace-order-123").isPresent());
+        assertProcessedOutboxEvents(response.publicId(), "payment-captured", "provider-pending-earning");
     }
 
     @Test
@@ -65,10 +72,10 @@ public class PaymentIntegrationTest {
         // Arrange
         PaymentDtos.CheckoutRequest request = new PaymentDtos.CheckoutRequest(
             "marketplace-order-456",
-            "customer-user-789",
-            "seller-account-012",
             BigDecimal.valueOf(49.99),
             "USD",
+            "seller-account-012",
+            "customer-user-789",
             "US"
         );
 
@@ -79,7 +86,7 @@ public class PaymentIntegrationTest {
         PaymentDtos.PaymentOrderResponse response2 = paymentService.checkout(request, jwt);
 
         // Assert - Both calls should return the same order (idempotent)
-        assertEquals(response1.paymentOrderPublicId(), response2.paymentOrderPublicId());
+        assertEquals(response1.publicId(), response2.publicId());
 
         // Verify only one order was created
         long orderCount = paymentOrderRepository.findByMarketplaceOrderPublicId("marketplace-order-456")
@@ -93,10 +100,10 @@ public class PaymentIntegrationTest {
         // Arrange
         PaymentDtos.CheckoutRequest request = new PaymentDtos.CheckoutRequest(
             "marketplace-order-789",
-            "customer-user-012",
-            "seller-account-345",
             BigDecimal.valueOf(199.99),
             "USD",
+            "seller-account-345",
+            "customer-user-012",
             "US"
         );
 
@@ -118,10 +125,10 @@ public class PaymentIntegrationTest {
         // Arrange - Create payment
         PaymentDtos.CheckoutRequest checkoutRequest = new PaymentDtos.CheckoutRequest(
             "marketplace-order-lifecycle",
-            "customer-user-lifecycle",
-            "seller-account-lifecycle",
             BigDecimal.valueOf(299.99),
             "USD",
+            "seller-account-lifecycle",
+            "customer-user-lifecycle",
             "US"
         );
 
@@ -145,6 +152,11 @@ public class PaymentIntegrationTest {
         assertEquals("CAPTURED", lifecycle.paymentStatus());
         assertEquals("ELIGIBLE", lifecycle.payoutEligibilityStatus());
         assertEquals("PAID", lifecycle.payoutStatus());
+        assertProcessedOutboxEvents(paymentResponse.publicId(),
+            "payment-captured",
+            "provider-pending-earning",
+            "payout-eligible",
+            "payout-paid");
     }
 
     @Test
@@ -153,10 +165,10 @@ public class PaymentIntegrationTest {
         // Arrange
         PaymentDtos.CheckoutRequest request = new PaymentDtos.CheckoutRequest(
             "marketplace-order-cancel",
-            "customer-user-cancel",
-            "seller-account-cancel",
             BigDecimal.valueOf(79.99),
             "USD",
+            "seller-account-cancel",
+            "customer-user-cancel",
             "US"
         );
 
@@ -184,10 +196,10 @@ public class PaymentIntegrationTest {
         // Arrange
         PaymentDtos.CheckoutRequest request = new PaymentDtos.CheckoutRequest(
             "marketplace-order-refund",
-            "customer-user-refund",
-            "seller-account-refund",
             BigDecimal.valueOf(150.00),
             "USD",
+            "seller-account-refund",
+            "customer-user-refund",
             "US"
         );
 
@@ -208,7 +220,7 @@ public class PaymentIntegrationTest {
         PaymentDtos.PaymentLifecycleResponse lifecycle = paymentService.lifecycle(
             "marketplace-order-refund");
         assertEquals("REFUNDED", lifecycle.paymentStatus());
-        assertEquals("REFUND_COMPLETED", lifecycle.refundStatus());
+        assertEquals("COMPLETED", lifecycle.refundStatus());
     }
 
     /**
@@ -220,5 +232,28 @@ public class PaymentIntegrationTest {
             .claim("uid", userId)
             .subject(userId)
             .build();
+    }
+
+    private void assertProcessedOutboxEvents(String paymentOrderPublicId, String... eventTypes) {
+        List<PaymentEventOutbox> events = paymentEventOutboxRepository.findAll().stream()
+            .filter(event -> paymentOrderPublicId.equals(event.getAggregatePublicId()))
+            .toList();
+
+        assertFalse(events.isEmpty(), "Expected payment outbox rows for " + paymentOrderPublicId);
+
+        for (String eventType : eventTypes) {
+            PaymentEventOutbox matchingEvent = events.stream()
+                .filter(event -> eventType.equals(event.getEventType()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Missing payment outbox event " + eventType));
+
+            assertEquals("PROCESSED", matchingEvent.getProcessingStatus(),
+                () -> "Expected processed outbox event for " + eventType + " on " + paymentOrderPublicId);
+            assertNotNull(matchingEvent.getProcessedAt(),
+                () -> "Expected processedAt for outbox event " + eventType + " on " + paymentOrderPublicId);
+        }
+
+        assertTrue(events.stream().noneMatch(event -> "FAILED".equals(event.getProcessingStatus())),
+            () -> "Did not expect failed outbox events for " + paymentOrderPublicId);
     }
 }
