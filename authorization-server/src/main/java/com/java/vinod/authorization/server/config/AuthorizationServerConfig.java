@@ -65,6 +65,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -354,7 +355,9 @@ public class AuthorizationServerConfig {
     public OAuth2TokenCustomizer<JwtEncodingContext> oauth2TokenCustomizer(AppUserRepository appUserRepository,
                                                                             UserMapper userMapper,
                                                                             @Value("${app.jwt.issuer}") String issuer,
-                                                                            @Value("${app.jwt.audience}") String audience) {
+                                                                            @Value("${app.jwt.audience}") String audience,
+                                                                            @Value("${app.jwt.audiences:}") String audiences) {
+        List<String> tokenAudiences = resolveAudiences(audience, audiences);
         return context -> {
             Authentication principal = context.getPrincipal();
             if (!(principal != null && principal.getPrincipal() instanceof AuthenticatedUser authenticatedUser)) {
@@ -369,7 +372,7 @@ public class AuthorizationServerConfig {
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
                 String preferredUsername = firstNonBlank(summary.username(), summary.email());
                 context.getClaims().issuer(issuer);
-                context.getClaims().audience(List.of(audience));
+                context.getClaims().audience(tokenAudiences);
                 context.getClaims().subject(user.getNormalizedEmail());
                 context.getClaims().claim("uid", summary.publicId());
                 context.getClaims().claim("email", summary.email());
@@ -393,6 +396,20 @@ public class AuthorizationServerConfig {
                 context.getClaims().claim("apps", summary.apps());
             }
         };
+    }
+
+    private List<String> resolveAudiences(String primaryAudience, String configuredAudiences) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        if (primaryAudience != null && !primaryAudience.isBlank()) {
+            values.add(primaryAudience.trim());
+        }
+        if (configuredAudiences != null && !configuredAudiences.isBlank()) {
+            Arrays.stream(configuredAudiences.split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .forEach(values::add);
+        }
+        return List.copyOf(values);
     }
 
     private Map<String, Object> summaryClaim(com.java.vinod.authorization.server.dto.auth.AuthDtos.UserSummary summary) {

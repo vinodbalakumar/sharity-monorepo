@@ -18,9 +18,12 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -29,6 +32,7 @@ public class JwtService {
     private final PublicKey publicKey;
     private final String issuer;
     private final String audience;
+    private final List<String> audiences;
     private final Duration accessTokenExpiration;
 
     public JwtService(@Value("${app.jwt.private-key-base64}") String privateKeyBase64,
@@ -37,6 +41,7 @@ public class JwtService {
                       @Value("${app.jwt.public-key-path}") String publicKeyPath,
                       @Value("${app.jwt.issuer}") String issuer,
                       @Value("${app.jwt.audience}") String audience,
+                      @Value("${app.jwt.audiences:}") String configuredAudiences,
                       @Value("${app.jwt.access-token-expiration}") Duration accessTokenExpiration) {
         String privatePem = loadPem(privateKeyBase64, privateKeyPath, "JWT_PRIVATE_KEY_BASE64", "JWT_PRIVATE_KEY_PATH");
         String publicPem = loadPem(publicKeyBase64, publicKeyPath, "JWT_PUBLIC_KEY_BASE64", "JWT_PUBLIC_KEY_PATH");
@@ -44,16 +49,19 @@ public class JwtService {
         this.publicKey = parsePublicKey(publicPem);
         this.issuer = issuer;
         this.audience = audience;
+        this.audiences = resolveAudiences(audience, configuredAudiences);
         this.accessTokenExpiration = accessTokenExpiration;
     }
 
     public String createAccessToken(AppUser user, AuthDtos.UserSummary userSummary) {
         Instant now = Instant.now();
         String preferredUsername = firstNonBlank(userSummary.username(), userSummary.email());
-        return Jwts.builder()
+        var audienceBuilder = Jwts.builder()
                 .issuer(issuer)
                 .subject(user.getNormalizedEmail())
-                .audience().add(audience).and()
+            .audience();
+        audiences.forEach(audienceBuilder::add);
+        return audienceBuilder.and()
                 .claim("uid", user.getPublicId())
                 .claim("email", userSummary.email())
             .claim("username", preferredUsername)
@@ -107,6 +115,20 @@ public class JwtService {
             return first;
         }
         return fallback;
+    }
+
+    private List<String> resolveAudiences(String primaryAudience, String configuredAudiences) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        if (primaryAudience != null && !primaryAudience.isBlank()) {
+            values.add(primaryAudience.trim());
+        }
+        if (configuredAudiences != null && !configuredAudiences.isBlank()) {
+            Arrays.stream(configuredAudiences.split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .forEach(values::add);
+        }
+        return List.copyOf(values);
     }
 
     public Claims parseClaims(String token) {

@@ -71,6 +71,7 @@ app:
     public-key-path: ${JWT_PUBLIC_KEY_PATH:}
     issuer: ${JWT_ISSUER:http://localhost:8083/authorization-server/api}
     audience: ${JWT_AUDIENCE:auth-clients}
+    audiences: ${JWT_AUDIENCES:auth-clients,MARKETPLACE_API,PAYMENT_API,WALLET_API}
     access-token-expiration: PT15M
   refresh-token:
     expiration: P7D
@@ -86,6 +87,8 @@ app:
     frontend-register-url: ${SHARITY_FRONTEND_REGISTER_URL:http://localhost:8083/app/register}
     frontend-complete-registration-url: ${SHARITY_FRONTEND_COMPLETE_REGISTRATION_URL:http://localhost:8083/app/complete-registration}
     frontend-login-success-url: ${SHARITY_FRONTEND_LOGIN_SUCCESS_URL:http://localhost:8083/app/}
+  web:
+    allowed-origin: ${SHARITY_WEB_ALLOWED_ORIGIN:http://localhost:3000}
   profile-image-storage:
     provider-code: ${ASSET_STORAGE_PROVIDER_CODE:CLOUDFLARE_R2_PRIMARY}
     bucket-name: ${ASSET_STORAGE_BUCKET_NAME:sharity-assets}
