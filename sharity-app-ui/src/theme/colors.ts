@@ -1,14 +1,14 @@
 export const colors = {
-  // Primary brand colors (premium purple/indigo)
-  primary: '#7c3aed',
-  primaryLight: '#a78bfa',
-  primaryDark: '#5b21b6',
+  // Primary brand colors (blue)
+  primary: '#3f88c5',
+  primaryLight: '#5fa3d5',
+  primaryDark: '#2f78b5',
   primaryContrast: '#ffffff',
 
-  // Secondary accent (indigo)
-  secondary: '#4f46e5',
-  secondaryLight: '#818cf8',
-  secondaryDark: '#3730a3',
+  // Secondary accent (blue-tinted)
+  secondary: '#3f88c5',
+  secondaryLight: '#5fa3d5',
+  secondaryDark: '#2f78b5',
   secondaryContrast: '#ffffff',
 
   // Tertiary (cyan, for highlights)
