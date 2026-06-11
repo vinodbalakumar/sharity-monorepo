@@ -1,6 +1,7 @@
 package com.java.vinod.authorization.server.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -11,7 +12,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class PageController {
-    public PageController() {
+    private final String frontendHomeUrl;
+    private final String frontendRegisterUrl;
+
+    public PageController(@Value("${app.social.frontend-login-success-url:https://vinodbalakumar.com/app/}") String frontendHomeUrl,
+                          @Value("${app.social.frontend-register-url:https://vinodbalakumar.com/app/register}") String frontendRegisterUrl) {
+        this.frontendHomeUrl = frontendHomeUrl;
+        this.frontendRegisterUrl = frontendRegisterUrl;
     }
 
     @GetMapping("/")
@@ -79,8 +86,8 @@ public class PageController {
                         :root {
                             color-scheme: light;
                             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                            background: #0b1028;
-                            color: #f8fafc;
+                            background: #f4f7fb;
+                            color: #12263a;
                         }
 
                         * {
@@ -90,9 +97,11 @@ public class PageController {
                         body {
                             margin: 0;
                             min-height: 100vh;
+                            overflow-x: hidden;
                             background:
-                                radial-gradient(circle at 18% 18%, rgba(124, 92, 255, 0.26), transparent 28rem),
-                                linear-gradient(180deg, #0d132b 0%, #0b1028 52%, #11183a 100%);
+                                radial-gradient(circle at 18% 12%, rgba(242, 154, 74, 0.12), transparent 24rem),
+                                radial-gradient(circle at 82% 8%, rgba(63, 136, 197, 0.12), transparent 24rem),
+                                linear-gradient(180deg, #f7fbff 0%, #f4f7fb 54%, #eef6fd 100%);
                         }
 
                         .topbar {
@@ -102,15 +111,15 @@ public class PageController {
                             justify-content: space-between;
                             gap: 24px;
                             padding: 0 32px;
-                            border-bottom: 1px solid #20284a;
-                            background: #0d132b;
+                            border-bottom: 1px solid #dbe4ef;
+                            background: rgba(247, 251, 255, 0.94);
                         }
 
                         .brand {
                             display: inline-flex;
                             align-items: center;
                             gap: 12px;
-                            color: #f8fafc;
+                            color: #12263a;
                             font-weight: 900;
                             font-size: 21px;
                             text-decoration: none;
@@ -122,13 +131,13 @@ public class PageController {
                             display: grid;
                             place-items: center;
                             border-radius: 10px;
-                            background: #7c5cff;
+                            background: #3f88c5;
                             color: #ffffff;
                             font-weight: 900;
                         }
 
                         .top-link {
-                            color: #f8fafc;
+                            color: #12263a;
                             font-size: 14px;
                             font-weight: 800;
                             text-decoration: none;
@@ -138,17 +147,18 @@ public class PageController {
                             min-height: calc(100vh - 74px);
                             display: grid;
                             place-items: center;
-                            padding: 48px 20px;
+                            padding: 48px 16px;
                         }
 
                         main {
-                            width: min(92vw, 520px);
-                            background: rgba(255, 255, 255, 0.98);
-                            border: 1px solid rgba(226, 232, 240, 0.72);
-                            border-radius: 20px;
+                            width: 100%;
+                            max-width: 520px;
+                            background: rgba(255, 253, 249, 0.98);
+                            border: 1px solid rgba(219, 228, 239, 0.78);
+                            border-radius: 28px;
                             padding: 34px;
-                            box-shadow: 0 28px 80px rgba(2, 6, 23, 0.28);
-                            color: #050713;
+                            box-shadow: 0 24px 64px rgba(18, 38, 58, 0.10);
+                            color: #12263a;
                         }
 
                         h1 {
@@ -160,7 +170,7 @@ public class PageController {
 
                         p {
                             margin: 0 0 26px;
-                            color: #667085;
+                            color: #64778c;
                             font-size: 17px;
                             line-height: 1.5;
                         }
@@ -173,19 +183,19 @@ public class PageController {
                             width: 100%;
                             min-height: 56px;
                             margin: 4px 0 18px;
-                            border: 1px solid #d0d5dd;
+                            border: 1px solid #dbe4ef;
                             border-radius: 999px;
                             background: #ffffff;
-                            color: #050713;
+                            color: #12263a;
                             font-size: 16px;
                             font-weight: 900;
                             text-decoration: none;
-                            box-shadow: 0 10px 24px rgba(2, 6, 23, 0.08);
+                            box-shadow: 0 10px 24px rgba(18, 38, 58, 0.08);
                         }
 
                         .social:hover {
-                            background: #f8fafc;
-                            box-shadow: 0 12px 28px rgba(2, 6, 23, 0.12);
+                            background: #f8fbff;
+                            box-shadow: 0 12px 28px rgba(18, 38, 58, 0.12);
                             transform: translateY(-1px);
                         }
 
@@ -205,7 +215,7 @@ public class PageController {
 
                         .social-note {
                             margin: 0 0 24px;
-                            color: #667085;
+                            color: #64778c;
                             font-size: 14px;
                             line-height: 1.5;
                         }
@@ -220,18 +230,18 @@ public class PageController {
                         input {
                             width: 100%;
                             padding: 18px 16px;
-                            border: 1px solid transparent;
+                            border: 1px solid #dbe4ef;
                             border-radius: 16px;
                             margin-bottom: 20px;
-                            background: #f0f0f3;
-                            color: #050713;
+                            background: #ffffff;
+                            color: #12263a;
                             font-size: 16px;
                             outline: none;
                         }
 
                         input:focus {
-                            border-color: #7c5cff;
-                            box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.14);
+                            border-color: #3f88c5;
+                            box-shadow: 0 0 0 4px rgba(63, 136, 197, 0.14);
                         }
 
                         button {
@@ -240,7 +250,7 @@ public class PageController {
                             padding: 15px 18px;
                             border: 0;
                             border-radius: 999px;
-                            background: #050713;
+                            background: #3f88c5;
                             color: #ffffff;
                             font-size: 17px;
                             font-weight: 900;
@@ -248,7 +258,7 @@ public class PageController {
                         }
 
                         button:hover {
-                            background: #11183a;
+                            background: #2f78b5;
                         }
 
                         .alert {
@@ -264,45 +274,90 @@ public class PageController {
                             margin-top: 18px;
                             font-size: 14px;
                             line-height: 1.5;
-                            color: #667085;
+                            color: #64778c;
                         }
 
                         .register {
                             margin-top: 24px;
                             text-align: center;
-                            color: #667085;
+                            color: #64778c;
                             font-size: 15px;
                         }
 
                         .register a {
-                            color: #050713;
+                            color: #12263a;
                             font-weight: 900;
                             text-decoration: none;
                         }
 
-                        @media (max-width: 640px) {
+                        @media (max-width: 768px) {
                             .topbar {
-                                padding: 0 18px;
+                                gap: 12px;
+                                padding: 0 12px;
+                            }
+
+                            .shell {
+                                padding: 20px 12px 28px;
                             }
 
                             main {
-                                padding: 26px;
-                                border-radius: 18px;
+                                padding: 24px;
+                                border-radius: 24px;
                             }
 
                             h1 {
                                 font-size: 32px;
+                            }
+
+                            p {
+                                font-size: 15px;
+                            }
+
+                            input {
+                                padding: 16px 14px;
+                            }
+                        }
+
+                        @media (max-width: 420px) {
+                            .topbar {
+                                gap: 12px;
+                                padding: 0 12px;
+                            }
+
+                            .brand {
+                                font-size: 18px;
+                                gap: 10px;
+                                min-width: 0;
+                            }
+
+                            .top-link {
+                                font-size: 13px;
+                                text-align: right;
+                            }
+
+                            main {
+                                padding: 20px;
+                                border-radius: 20px;
+                            }
+
+                            h1 {
+                                font-size: 28px;
+                            }
+
+                            .social,
+                            button {
+                                min-height: 52px;
                             }
                         }
                     </style>
                 </head>
                 <body>
                 <header class="topbar">
-                    <a class="brand" href="/app/">
+                    <a class="brand" href="__FRONTEND_HOME_URL__">
                         <span class="brand-mark">S</span>
                         <span>Sharity</span>
                     </a>
-                    <a class="top-link" href="/app/register">Create account</a>
+                    <a class="top-link" href="__FRONTEND_REGISTER_URL__">Create account</a>
                 </header>
                 <div class="shell">
                     <main>
@@ -327,17 +382,19 @@ public class PageController {
                             <button type="submit">Sign in</button>
                         </form>
                         <div class="hint">If your account is not active or not verified, sign in will be blocked.</div>
-                        <div class="register">New to Sharity? <a href="/app/register">Create an account</a></div>
+                        <div class="register">New to Sharity? <a href="__FRONTEND_REGISTER_URL__">Create an account</a></div>
                     </main>
                 </div>
                 </body>
                 </html>
                 """
-                        .replace("__ERROR_BANNER__", errorBanner)
+                .replace("__ERROR_BANNER__", errorBanner)
                 .replace("__SOCIAL_ERROR_BANNER__", socialErrorBanner)
                 .replace("__CONTINUE_INPUT__", continueInput)
                 .replace("__CSRF_INPUT__", csrfInput)
-                .replace("__LOGIN_ACTION__", loginAction);
+                .replace("__LOGIN_ACTION__", loginAction)
+                .replace("__FRONTEND_HOME_URL__", htmlAttribute(frontendHomeUrl))
+                .replace("__FRONTEND_REGISTER_URL__", htmlAttribute(frontendRegisterUrl));
     }
 
     private String htmlAttribute(String value) {
