@@ -1,5 +1,10 @@
 package com.java.vinod.marketplace.service.dto;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -1179,18 +1184,35 @@ public final class BuyerCommerceFlowDtos {
                                         boolean enabled, boolean digitalSupported, String disabledReason) {
     }
 
+        public record ListingReachScopeOption(String code, String label, String description) {
+        }
+
     public record ListingFormConfig(List<ListingMarketplaceOption> marketplaces,
                                     List<ListingCategoryOption> categories,
-                                    List<String> digitalDeliveryTypes, List<String> currencies,
+                                                                        List<String> digitalDeliveryTypes, List<String> currencies,
+                                                                        List<ListingReachScopeOption> reachScopes,
                                     List<ListingPolicyRequirement> policyRequirements,
                                     String userSafeMessage) {
     }
 
     public record ListingDraft(String draftId, String status, String title, String marketplaceCode,
-                               String categoryCode, BigDecimal price, String currency,
+                                                           String categoryCode, String reachScope, BigDecimal price, String currency,
                                List<String> mediaIds, List<String> availableActions,
                                LocalDateTime updatedAt) {
     }
+
+        public record SellerListingDraftRequest(@NotBlank String providerAccountPublicId,
+                                                                                        @NotBlank String categoryCode,
+                                                                                        @NotBlank String currency,
+                                                                                        @NotBlank String deliveryType,
+                                                                                        @NotBlank String fulfillmentScope,
+                                                                                        String longDescription,
+                                                                                        @NotBlank String marketplaceCode,
+                                                                                        @NotNull @DecimalMin("0.01") BigDecimal price,
+                                                                                        String shortDescription,
+                                                                                        @Min(1) int stockQuantity,
+                                                                                        @NotBlank String title) {
+        }
 
     public record ListingMediaUploadResponse(boolean success, String mediaId, String previewUrl,
                                              String status, String userSafeMessage) {
@@ -1229,7 +1251,7 @@ public final class BuyerCommerceFlowDtos {
     public record SellerListingCard(String listingId, String productId, String title, String imageUrl,
                                     String marketplaceCode, String marketplaceName, String categoryCode,
                                     String categoryName, String subcategoryCode, String subcategoryName,
-                                    String productType, boolean digitalProduct, BigDecimal price,
+                                    String productType, boolean digitalProduct, String reachScope, BigDecimal price,
                                     String currency, String listingStatus, String availabilityStatus,
                                     String moderationStatus, boolean couponActive, int activeOrdersCount,
                                     boolean needsAttention, String primaryStatusMessage,
@@ -2002,6 +2024,10 @@ public final class BuyerCommerceFlowDtos {
                 List.of(new ListingCategoryOption("TEMPLATES", "Templates", "DIGITAL", true, true, null),
                         new ListingCategoryOption("GAMING", "Gaming Codes", "DIGITAL", true, true, null)),
                 List.of("SECURE_REVEAL", "SECURE_DOWNLOAD"), List.of("USD"),
+                List.of(
+                        new ListingReachScopeOption("NATIONAL", "National Listing", "Visible to buyers in the seller's primary country."),
+                        new ListingReachScopeOption("GLOBAL", "Global Listing", "Visible across supported countries when fulfillment and policy checks allow.")
+                ),
                 List.of(new ListingPolicyRequirement("NO_CHAT_CODES", "No code sharing in chat", true,
                                 false, "/seller/listings/create/policy"),
                         new ListingPolicyRequirement("REFUND_REVEAL_RULES", "Refund/reveal rules", true,
@@ -2011,17 +2037,17 @@ public final class BuyerCommerceFlowDtos {
 
     public static ListingDraft mockListingDraft(String draftId) {
         return new ListingDraft(draftId, "DRAFT", "Premium Template Pack", "DIGITAL",
-                "TEMPLATES", money("39.99"), "USD", List.of("media-075"),
+                "TEMPLATES", "NATIONAL", money("39.99"), "USD", List.of("media-075"),
                 List.of("SAVE_DRAFT", "PREVIEW_LISTING", "PUBLISH_LISTING"), LocalDateTime.now());
     }
 
     public static SellerListingsResponse mockSellerListings() {
         LocalDateTime now = LocalDateTime.now();
-        SellerListingCard active = sellerListing("listing-076-active", "Premium Template Pack", "ACTIVE",
+        SellerListingCard active = sellerListing("listing-076-active", "Premium Template Pack", "GLOBAL", "ACTIVE",
                 "AVAILABLE", "APPROVED", false);
-        SellerListingCard draft = sellerListing("listing-076-draft", "Draft License Key", "DRAFT",
+        SellerListingCard draft = sellerListing("listing-076-draft", "Draft License Key", "NATIONAL", "DRAFT",
                 "DIGITAL_DELIVERY_SETUP_REQUIRED", "NOT_SUBMITTED", true);
-        SellerListingCard pending = sellerListing("listing-076-pending", "Pending Game Code", "PENDING_MODERATION",
+        SellerListingCard pending = sellerListing("listing-076-pending", "Pending Game Code", "NATIONAL", "PENDING_MODERATION",
                 "AVAILABLE", "PENDING", true);
         return new SellerListingsResponse(List.of(active, draft, pending),
                 new SellerListingsSummary(1, 1, 1, 0, 0, 0, 3, 2, now),
@@ -2335,13 +2361,13 @@ public final class BuyerCommerceFlowDtos {
                 digital ? "Secure digital delivery only." : "Physical fulfillment placeholder.");
     }
 
-    private static SellerListingCard sellerListing(String listingId, String title, String status,
-                                                   String availability, String moderation,
+        private static SellerListingCard sellerListing(String listingId, String title, String reachScope, String status,
+                                                                                                   String availability, String moderation,
                                                    boolean needsAttention) {
         return new SellerListingCard(listingId, listingId.replace("listing", "product"), title,
                 "marketplace/placeholders/gift_cards.png", "DIGITAL", "Digital Marketplace",
                 "TEMPLATES", "Templates", "PREMIUM", "Premium Templates", "DIGITAL_PRODUCT",
-                true, money("39.99"), "USD", status, availability, moderation,
+                                true, reachScope, money("39.99"), "USD", status, availability, moderation,
                 "ACTIVE".equals(status), "ACTIVE".equals(status) ? 1 : 0, needsAttention,
                 needsAttention ? "This listing needs seller attention." : "Listing is seller-safe and manageable.",
                 List.of("EDIT_LISTING", "PREVIEW_LISTING", "MANAGE_COUPONS", "VIEW_ANALYTICS"),

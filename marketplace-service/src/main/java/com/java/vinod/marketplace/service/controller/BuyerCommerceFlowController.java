@@ -1,6 +1,11 @@
 package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.BuyerCommerceFlowDtos;
+import com.java.vinod.marketplace.service.dto.MarketplaceDtos;
+import com.java.vinod.marketplace.service.service.MarketplaceService;
+import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -11,11 +16,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Mock buyer cart-to-order APIs for STORY-058, STORY-059, and STORY-060.
  */
 @RestController
 public class BuyerCommerceFlowController {
+    private static final String SELLER_MARKETPLACE_CODE = "DIGITAL";
+    private static final String SELLER_MARKETPLACE_NAME = "Digital Goods";
+
+    private final MarketplaceService marketplaceService;
+
+    public BuyerCommerceFlowController(MarketplaceService marketplaceService) {
+        this.marketplaceService = marketplaceService;
+    }
+
     @GetMapping("/api/profile/completion")
     public BuyerCommerceFlowDtos.ProfileCompletionResponse profileCompletion() {
         return BuyerCommerceFlowDtos.mockProfileCompletion();
@@ -106,18 +126,24 @@ public class BuyerCommerceFlowController {
     }
 
     @GetMapping("/api/seller/listings")
-    public BuyerCommerceFlowDtos.SellerListingsResponse sellerListings() {
-        return BuyerCommerceFlowDtos.mockSellerListings();
+    public BuyerCommerceFlowDtos.SellerListingsResponse sellerListings(
+            @RequestParam String providerAccountPublicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        return toSellerListingsResponse(marketplaceService.sellerListings(providerAccountPublicId, jwt));
     }
 
     @GetMapping("/api/seller/listings/summary")
-    public BuyerCommerceFlowDtos.SellerListingsSummary sellerListingsSummary() {
-        return BuyerCommerceFlowDtos.mockSellerListings().summary();
+    public BuyerCommerceFlowDtos.SellerListingsSummary sellerListingsSummary(
+            @RequestParam String providerAccountPublicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        return summarize(toSellerListingsResponse(marketplaceService.sellerListings(providerAccountPublicId, jwt)).listings());
     }
 
     @GetMapping("/api/seller/listings/search")
-    public BuyerCommerceFlowDtos.SellerListingsResponse searchSellerListings() {
-        return BuyerCommerceFlowDtos.mockSellerListings();
+    public BuyerCommerceFlowDtos.SellerListingsResponse searchSellerListings(
+            @RequestParam String providerAccountPublicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        return toSellerListingsResponse(marketplaceService.sellerListings(providerAccountPublicId, jwt));
     }
 
     @PostMapping("/api/seller/listings/refresh")
@@ -127,8 +153,9 @@ public class BuyerCommerceFlowController {
     }
 
     @GetMapping("/api/seller/listings/{listingId}")
-    public BuyerCommerceFlowDtos.SellerListingCard sellerListing(@PathVariable String listingId) {
-        return BuyerCommerceFlowDtos.mockSellerListing(listingId);
+    public BuyerCommerceFlowDtos.SellerListingCard sellerListing(@PathVariable String listingId,
+                                                                 @AuthenticationPrincipal Jwt jwt) {
+        return toSellerListingCard(marketplaceService.sellerListing(listingId, jwt), categoryLookup());
     }
 
     @GetMapping("/api/seller/listings/{listingId}/actions")
@@ -435,35 +462,65 @@ public class BuyerCommerceFlowController {
     }
 
     @GetMapping("/api/seller/listings/create/eligibility")
-    public BuyerCommerceFlowDtos.SellerListingCreateEligibility listingCreateEligibility() {
+    public BuyerCommerceFlowDtos.SellerListingCreateEligibility listingCreateEligibility(
+            @RequestParam String providerAccountPublicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        marketplaceService.sellerListings(providerAccountPublicId, jwt);
         return new BuyerCommerceFlowDtos.SellerListingCreateEligibility(true, true, true, true,
                 java.util.List.of(), "Seller can create digital listings.");
     }
 
     @GetMapping("/api/seller/listings/create/marketplaces")
     public java.util.List<BuyerCommerceFlowDtos.ListingMarketplaceOption> listingMarketplaces() {
-        return BuyerCommerceFlowDtos.mockListingFormConfig().marketplaces();
+        return listingFormConfig().marketplaces();
     }
 
     @GetMapping("/api/seller/listings/create/categories")
     public java.util.List<BuyerCommerceFlowDtos.ListingCategoryOption> listingCategories() {
-        return BuyerCommerceFlowDtos.mockListingFormConfig().categories();
+        return listingFormConfig().categories();
     }
 
     @GetMapping("/api/seller/listings/create/form-config")
     public BuyerCommerceFlowDtos.ListingFormConfig listingFormConfig() {
-        return BuyerCommerceFlowDtos.mockListingFormConfig();
+        List<BuyerCommerceFlowDtos.ListingCategoryOption> categories = marketplaceService.activeCategories("MARKETPLACE").stream()
+            .map(category -> new BuyerCommerceFlowDtos.ListingCategoryOption(
+                category.code(),
+                category.name(),
+                SELLER_MARKETPLACE_CODE,
+                category.active(),
+                true,
+                null))
+            .toList();
+        return new BuyerCommerceFlowDtos.ListingFormConfig(
+            List.of(new BuyerCommerceFlowDtos.ListingMarketplaceOption(SELLER_MARKETPLACE_CODE, SELLER_MARKETPLACE_NAME, true, null)),
+            categories,
+            List.of("SECURE_REVEAL", "SECURE_DIGITAL"),
+            List.of("USD", "EUR", "GBP", "INR"),
+            List.of(
+                new BuyerCommerceFlowDtos.ListingReachScopeOption("NATIONAL", "National Seller", "Visible to buyers in the seller's operating country."),
+                new BuyerCommerceFlowDtos.ListingReachScopeOption("GLOBAL", "Global Seller", "Visible to buyers across supported markets.")
+            ),
+            List.of(
+                new BuyerCommerceFlowDtos.ListingPolicyRequirement("NO_CHAT_CODE_SHARING", "Do not share digital codes in chat", true, true, "/seller/policies/digital-delivery"),
+                new BuyerCommerceFlowDtos.ListingPolicyRequirement("SELLER_MODERATION", "Listings may be reviewed before activation", true, true, "/seller/policies/moderation")
+            ),
+            "Listing options loaded from the live marketplace catalog.");
     }
 
     @PostMapping("/api/seller/listings/drafts")
-    public BuyerCommerceFlowDtos.ListingDraft createListingDraft(@RequestBody(required = false) Object request) {
-        return BuyerCommerceFlowDtos.mockListingDraft("draft-075");
+        public BuyerCommerceFlowDtos.ListingDraft createListingDraft(
+            @Valid @RequestBody BuyerCommerceFlowDtos.SellerListingDraftRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        MarketplaceDtos.ListingResponse listing = marketplaceService.createListing(toListingRequest(request, "DRAFT"), jwt);
+        return toListingDraft(listing);
     }
 
     @PatchMapping("/api/seller/listings/drafts/{draftId}")
     public BuyerCommerceFlowDtos.ListingDraft updateListingDraft(@PathVariable String draftId,
-                                                                 @RequestBody(required = false) Object request) {
-        return BuyerCommerceFlowDtos.mockListingDraft(draftId);
+                                     @Valid @RequestBody BuyerCommerceFlowDtos.SellerListingDraftRequest request,
+                                     @AuthenticationPrincipal Jwt jwt) {
+        MarketplaceDtos.ListingResponse listing = marketplaceService.updateListing(draftId, toListingRequest(request, "DRAFT"), jwt);
+        return toListingDraft(listing);
     }
 
     @PostMapping("/api/seller/listings/drafts/{draftId}/media")
@@ -480,7 +537,9 @@ public class BuyerCommerceFlowController {
     }
 
     @PostMapping("/api/seller/listings/drafts/{draftId}/preview")
-    public BuyerCommerceFlowDtos.ListingCreateActionResponse previewListingDraft(@PathVariable String draftId) {
+    public BuyerCommerceFlowDtos.ListingCreateActionResponse previewListingDraft(@PathVariable String draftId,
+                                                                                 @AuthenticationPrincipal Jwt jwt) {
+        marketplaceService.sellerListing(draftId, jwt);
         return BuyerCommerceFlowDtos.listingAction("LISTING_PREVIEW_READY",
                 "Listing preview ready.", "/seller/listings/create/review");
     }
@@ -488,15 +547,17 @@ public class BuyerCommerceFlowController {
     @PostMapping("/api/seller/listings/drafts/{draftId}/publish")
     public BuyerCommerceFlowDtos.ListingPublishResponse publishListingDraft(
             @PathVariable String draftId,
-            @RequestBody(required = false) BuyerCommerceFlowDtos.ListingPublishRequest request) {
-        return new BuyerCommerceFlowDtos.ListingPublishResponse(true, "listing-075",
-                "PENDING_MODERATION", "/seller/listings/listing-075",
+            @RequestBody(required = false) BuyerCommerceFlowDtos.ListingPublishRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        MarketplaceDtos.ListingResponse listing = marketplaceService.submitListingForModeration(draftId, jwt);
+        return new BuyerCommerceFlowDtos.ListingPublishResponse(true, listing.publicId(),
+            listing.listingStatus(), "/seller/listings/" + listing.publicId(),
                 "Listing submitted and may enter moderation.", java.time.LocalDateTime.now());
     }
 
     @GetMapping("/api/seller/listings/policy-requirements")
     public java.util.List<BuyerCommerceFlowDtos.ListingPolicyRequirement> listingPolicyRequirements() {
-        return BuyerCommerceFlowDtos.mockListingFormConfig().policyRequirements();
+        return listingFormConfig().policyRequirements();
     }
 
     @GetMapping("/api/buyer/digital-library")
@@ -1317,5 +1378,158 @@ public class BuyerCommerceFlowController {
     @GetMapping("/api/orders/{orderId}/receipt")
     public BuyerCommerceFlowDtos.ReceiptPlaceholderResponse receipt(@PathVariable String orderId) {
         return BuyerCommerceFlowDtos.mockOrderStatus(orderId, "payauth-059").receiptPlaceholder();
+    }
+
+    private BuyerCommerceFlowDtos.SellerListingsResponse toSellerListingsResponse(List<MarketplaceDtos.ListingResponse> listings) {
+        Map<String, String> categories = categoryLookup();
+        List<BuyerCommerceFlowDtos.SellerListingCard> cards = listings.stream()
+                .map(listing -> toSellerListingCard(listing, categories))
+                .toList();
+        BuyerCommerceFlowDtos.SellerListingsSummary summary = summarize(cards);
+        return new BuyerCommerceFlowDtos.SellerListingsResponse(
+                cards,
+                summary,
+                new BuyerCommerceFlowDtos.SellerListingFilters(null, null, null, null, null, null, null, null),
+                new BuyerCommerceFlowDtos.SellerListingSort("UPDATED_DESC", "Last updated", "DESC"),
+                1,
+                cards.size(),
+                cards.size(),
+                1,
+                List.of("REFRESH", "CREATE"),
+                LocalDateTime.now());
+    }
+
+    private BuyerCommerceFlowDtos.SellerListingCard toSellerListingCard(MarketplaceDtos.ListingResponse listing,
+                                                                        Map<String, String> categories) {
+        String categoryName = categories.getOrDefault(listing.categoryCode(), listing.categoryCode() == null ? "General" : listing.categoryCode());
+        String listingStatus = listing.listingStatus() == null ? "DRAFT" : listing.listingStatus();
+        boolean active = "ACTIVE".equalsIgnoreCase(listingStatus) || "PUBLISHED".equalsIgnoreCase(listingStatus);
+        boolean paused = "PAUSED".equalsIgnoreCase(listingStatus) || "INACTIVE".equalsIgnoreCase(listingStatus);
+        boolean rejected = "REJECTED".equalsIgnoreCase(listingStatus);
+        boolean draft = "DRAFT".equalsIgnoreCase(listingStatus);
+        boolean pendingModeration = "PENDING_MODERATION".equalsIgnoreCase(listingStatus);
+        boolean needsAttention = rejected || paused;
+        String availabilityStatus = active ? "AVAILABLE" : paused ? "PAUSED" : draft ? "DRAFT" : pendingModeration ? "UNDER_REVIEW" : listingStatus;
+        return new BuyerCommerceFlowDtos.SellerListingCard(
+                listing.publicId(),
+                listing.publicId(),
+                listing.title(),
+                listing.imageUrl() == null || listing.imageUrl().isBlank() ? "marketplace/placeholders/gift_cards.png" : listing.imageUrl(),
+                SELLER_MARKETPLACE_CODE,
+                SELLER_MARKETPLACE_NAME,
+                listing.categoryCode(),
+                categoryName,
+                "",
+                "",
+                listing.productType(),
+                true,
+                listing.fulfillmentScope(),
+                listing.priceAmount() == null ? BigDecimal.ZERO : listing.priceAmount(),
+                listing.currencyCode(),
+                listingStatus,
+                availabilityStatus,
+                pendingModeration ? "PENDING_REVIEW" : rejected ? "REJECTED" : "CLEAR",
+                false,
+                0,
+                needsAttention,
+                primaryStatusMessage(listingStatus),
+                availableActions(listingStatus),
+                "/seller/listings/" + listing.publicId());
+    }
+
+    private BuyerCommerceFlowDtos.ListingDraft toListingDraft(MarketplaceDtos.ListingResponse listing) {
+        return new BuyerCommerceFlowDtos.ListingDraft(
+                listing.publicId(),
+                listing.listingStatus(),
+                listing.title(),
+                SELLER_MARKETPLACE_CODE,
+                listing.categoryCode(),
+                listing.fulfillmentScope(),
+                listing.priceAmount() == null ? BigDecimal.ZERO : listing.priceAmount(),
+                listing.currencyCode(),
+                listing.imageUrl() == null || listing.imageUrl().isBlank() ? List.of() : List.of(listing.imageUrl()),
+                List.of("SAVE", "PREVIEW", "PUBLISH"),
+                listing.createdAt() == null ? LocalDateTime.now() : listing.createdAt());
+    }
+
+    private BuyerCommerceFlowDtos.SellerListingsSummary summarize(List<BuyerCommerceFlowDtos.SellerListingCard> listings) {
+        int activeCount = 0;
+        int draftCount = 0;
+        int pendingModerationCount = 0;
+        int pausedCount = 0;
+        int rejectedCount = 0;
+        int archivedCount = 0;
+        int digitalListingsCount = 0;
+        int needsAttentionCount = 0;
+        for (BuyerCommerceFlowDtos.SellerListingCard listing : listings) {
+            String status = listing.listingStatus() == null ? "DRAFT" : listing.listingStatus().toUpperCase();
+            switch (status) {
+                case "ACTIVE", "PUBLISHED" -> activeCount++;
+                case "DRAFT" -> draftCount++;
+                case "PENDING_MODERATION" -> pendingModerationCount++;
+                case "PAUSED", "INACTIVE" -> pausedCount++;
+                case "REJECTED" -> rejectedCount++;
+                case "ARCHIVED" -> archivedCount++;
+                default -> {
+                }
+            }
+            if (listing.digitalProduct()) {
+                digitalListingsCount++;
+            }
+            if (listing.needsAttention()) {
+                needsAttentionCount++;
+            }
+        }
+        return new BuyerCommerceFlowDtos.SellerListingsSummary(activeCount, draftCount, pendingModerationCount,
+                pausedCount, rejectedCount, archivedCount, digitalListingsCount, needsAttentionCount, LocalDateTime.now());
+    }
+
+    private Map<String, String> categoryLookup() {
+        Map<String, String> categories = new LinkedHashMap<>();
+        for (MarketplaceDtos.CategoryResponse category : marketplaceService.activeCategories("MARKETPLACE")) {
+            categories.put(category.code(), category.name());
+        }
+        return categories;
+    }
+
+    private String primaryStatusMessage(String listingStatus) {
+        return switch (listingStatus == null ? "DRAFT" : listingStatus.toUpperCase()) {
+            case "ACTIVE", "PUBLISHED" -> "Listing is live for buyers.";
+            case "PENDING_MODERATION" -> "Listing submitted and waiting for moderation.";
+            case "REJECTED" -> "Listing requires changes before it can go live.";
+            case "PAUSED", "INACTIVE" -> "Listing is paused and hidden from buyers.";
+            default -> "Draft saved and ready for review.";
+        };
+    }
+
+    private List<String> availableActions(String listingStatus) {
+        return switch (listingStatus == null ? "DRAFT" : listingStatus.toUpperCase()) {
+            case "ACTIVE", "PUBLISHED" -> List.of("EDIT", "PAUSE", "VIEW_ORDERS", "VIEW_ANALYTICS");
+            case "PAUSED", "INACTIVE" -> List.of("EDIT", "RESUME", "ARCHIVE");
+            case "PENDING_MODERATION" -> List.of("EDIT", "PREVIEW");
+            case "REJECTED" -> List.of("EDIT", "PREVIEW", "ARCHIVE");
+            default -> List.of("EDIT", "PREVIEW", "PUBLISH");
+        };
+    }
+
+    private MarketplaceDtos.ListingRequest toListingRequest(BuyerCommerceFlowDtos.SellerListingDraftRequest request, String listingStatus) {
+        String description = request.longDescription() != null && !request.longDescription().isBlank()
+                ? request.longDescription().trim()
+                : request.shortDescription();
+        return new MarketplaceDtos.ListingRequest(
+                request.title(),
+                description,
+                request.categoryCode(),
+                "DIGITAL",
+                request.deliveryType(),
+                request.fulfillmentScope(),
+                request.currency(),
+                request.price(),
+                request.providerAccountPublicId(),
+                null,
+                null,
+                listingStatus,
+                "MARKETPLACE",
+                request.stockQuantity());
     }
 }

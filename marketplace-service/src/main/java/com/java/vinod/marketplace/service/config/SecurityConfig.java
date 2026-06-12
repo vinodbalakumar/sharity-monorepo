@@ -135,7 +135,10 @@ public class SecurityConfig {
         @Bean
         CorsConfigurationSource corsConfigurationSource(@Value("${app.web.allowed-origin:http://localhost:3000}") String allowedOrigin) {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(List.of(allowedOrigin));
+                configuration.setAllowedOrigins(List.of(allowedOrigin.split(",")).stream()
+                                .map(String::trim)
+                                .filter(origin -> !origin.isBlank())
+                                .toList());
                 configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
                 configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-TOKEN", "X-Requested-With"));
                 configuration.setAllowCredentials(true);

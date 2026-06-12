@@ -20,7 +20,7 @@ public final class MarketplaceDtos {
     }
 
     public record ListingResponse(String publicId, String title, String description, String productType,
-                                  String deliveryType, String currencyCode, BigDecimal priceAmount,
+                                  String deliveryType, String fulfillmentScope, String currencyCode, BigDecimal priceAmount,
                                   BigDecimal originalPriceAmount, String imageUrl, String sellerDisplayName,
                                   boolean verifiedSeller, String categoryCode,
                                   String verticalCode, String providerCountryCode, String listingStatus,
@@ -72,12 +72,14 @@ public final class MarketplaceDtos {
 
     public record ListingRequest(@NotBlank String title, String description, String categoryCode,
                                  @NotBlank String productType, @NotBlank String deliveryType,
+                                 String fulfillmentScope,
                                  @NotBlank String currencyCode, @NotNull @Positive BigDecimal priceAmount,
                                  @NotBlank String providerAccountPublicId,
                                  String providerCountryCode,
                                  String imageUrl,
                                  String listingStatus,
-                                 String verticalCode) {
+                                 String verticalCode,
+                                 Integer stockQuantity) {
     }
 
     public record OrderRequest(@NotBlank String listingPublicId) {
@@ -129,7 +131,7 @@ public final class MarketplaceDtos {
 
     public static ListingResponse demoListing() {
         return new ListingResponse(UUID.randomUUID().toString(), "Demo Marketplace Listing",
-                "Local V3 marketplace listing shell", "DIGITAL", "MANUAL", "USD",
+            "Local V3 marketplace listing shell", "DIGITAL", "MANUAL", "NATIONAL", "USD",
                 BigDecimal.valueOf(25), BigDecimal.valueOf(30), "marketplace/placeholders/gift_cards.png",
                 "Sharity Demo Seller", true, "MARKETPLACE", "MARKETPLACE", "USA", "ACTIVE", "DIGITAL",
                 1, "PRESENTATION", "Sharity Demo", null,

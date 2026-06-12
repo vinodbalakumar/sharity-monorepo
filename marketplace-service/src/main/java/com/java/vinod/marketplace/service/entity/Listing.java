@@ -40,6 +40,8 @@ public class Listing {
     private String productType;
     @Column(name = "delivery_type", nullable = false, length = 30)
     private String deliveryType;
+    @Column(name = "fulfillment_scope", length = 20)
+    private String fulfillmentScope;
     @Column(name = "provider_country_code", length = 3)
     private String providerCountryCode;
     @Column(name = "currency_code", nullable = false, length = 3)

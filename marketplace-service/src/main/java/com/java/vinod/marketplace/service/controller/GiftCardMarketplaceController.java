@@ -141,13 +141,15 @@ public class GiftCardMarketplaceController {
                 request.brand(),
                 request.cardType(),
                 "SECURE_DIGITAL",
+            "NATIONAL",
                 request.currency(),
                 request.sellingPrice(),
                 request.providerAccountPublicId(),
                 request.regionCountry() == null ? request.providerCountryCode() : request.regionCountry(),
                 firstImage(request.images()),
                 "ACTIVE",
-                VERTICAL);
+            VERTICAL,
+            1);
     }
 
     private void ensureSecureDelivery(String deliveryType) {

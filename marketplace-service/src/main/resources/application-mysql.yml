@@ -1,8 +1,0 @@
-spring:
-  datasource:
-    url: ${MARKETPLACE_DB_URL:${DB_URL:jdbc:mysql://${MARKETPLACE_DB_HOST:${DB_HOST:localhost}}:${MARKETPLACE_DB_PORT:${DB_PORT:3306}}/${MARKETPLACE_DB_NAME:marketplace_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}}
-    username: ${MARKETPLACE_DB_USERNAME:${DB_USERNAME:root}}
-    password: ${MARKETPLACE_DB_PASSWORD:${DB_PASSWORD:root}}
-  flyway:
-    enabled: ${MARKETPLACE_FLYWAY_ENABLED:true}
-    locations: classpath:db/migration

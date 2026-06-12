@@ -166,13 +166,15 @@ public class JewelleryMarketplaceController {
                 request.category(),
                 request.displayMaterial(),
                 request.shippingAvailable() ? "SHIPPING" : "PICKUP_OR_LOCAL",
+            "NATIONAL",
                 request.currency(),
                 request.price(),
                 request.providerAccountPublicId(),
                 request.providerCountryCode(),
                 firstImage(request.images()),
                 "ACTIVE",
-                VERTICAL);
+            VERTICAL,
+            1);
     }
 
     private List<String> jewelleryPolicyDisclaimers() {

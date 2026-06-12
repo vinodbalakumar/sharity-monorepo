@@ -327,13 +327,14 @@ public class MarketplaceService {
      */
     @Transactional
     public MarketplaceDtos.ListingResponse createListing(MarketplaceDtos.ListingRequest request, Jwt jwt) {
-        ensureMarketplaceProviderEligible(request.providerAccountPublicId());
+        ProviderAccountSummary provider = ensureOwnedMarketplaceProvider(request.providerAccountPublicId(), jwt);
         LocalDateTime now = LocalDateTime.now();
         Listing listing = new Listing();
         listing.setPublicId(UUID.randomUUID().toString());
         listing.setProviderAccountPublicId(request.providerAccountPublicId());
         listing.setCreatedByUserPublicId(userPublicId(jwt));
         applyListingRequest(listing, request);
+        applyProviderDefaults(listing, provider, request);
         listing.setListingStatus(normalizeStatus(request.listingStatus(), "ACTIVE"));
         listing.setCreatedAt(now);
         listing.setUpdatedAt(now);
@@ -349,11 +350,15 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceDtos.ListingResponse updateListing(String listingPublicId, MarketplaceDtos.ListingRequest request, Jwt jwt) {
         Listing listing = findListing(listingPublicId);
-        ensureMarketplaceProviderEligible(listing.getProviderAccountPublicId());
+        if (!listing.getProviderAccountPublicId().equals(request.providerAccountPublicId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider account cannot be changed for an existing listing");
+        }
+        ProviderAccountSummary provider = ensureOwnedMarketplaceProvider(listing.getProviderAccountPublicId(), jwt);
         if (!listing.getCreatedByUserPublicId().equals(userPublicId(jwt))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only listing owner can update listing");
         }
         applyListingRequest(listing, request);
+        applyProviderDefaults(listing, provider, request);
         listing.setListingStatus(normalizeStatus(request.listingStatus(), listing.getListingStatus()));
         listing.setUpdatedAt(LocalDateTime.now());
         log.info("Marketplace listing updated: listingPublicId={}, providerAccountPublicId={}, categoryCode={}, status={}",
@@ -370,6 +375,29 @@ public class MarketplaceService {
         return listingRepository.findTop24ByProviderAccountPublicIdOrderByCreatedAtDesc(providerPublicId).stream()
                 .map(this::toListingResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MarketplaceDtos.ListingResponse> sellerListings(String providerPublicId, Jwt jwt) {
+        ensureOwnedMarketplaceProvider(providerPublicId, jwt);
+        String actorPublicId = userPublicId(jwt);
+        return listingRepository.findByProviderAccountPublicIdOrderByCreatedAtDesc(providerPublicId).stream()
+                .filter(listing -> actorPublicId.equals(listing.getCreatedByUserPublicId()))
+                .map(this::toListingResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MarketplaceDtos.ListingResponse sellerListing(String listingPublicId, Jwt jwt) {
+        return toListingResponse(findOwnedListing(listingPublicId, jwt));
+    }
+
+    @Transactional
+    public MarketplaceDtos.ListingResponse submitListingForModeration(String listingPublicId, Jwt jwt) {
+        Listing listing = findOwnedListing(listingPublicId, jwt);
+        listing.setListingStatus("PENDING_MODERATION");
+        listing.setUpdatedAt(LocalDateTime.now());
+        return toListingResponse(listing);
     }
 
     /**
@@ -655,10 +683,20 @@ public class MarketplaceService {
         listing.setVerticalCode(normalizeVerticalCode(request.verticalCode()));
         listing.setProductType(request.productType());
         listing.setDeliveryType(request.deliveryType());
+        listing.setFulfillmentScope(normalizeFulfillmentScope(request.fulfillmentScope()));
         listing.setProviderCountryCode(request.providerCountryCode());
         listing.setCurrencyCode(request.currencyCode());
         listing.setPriceAmount(request.priceAmount());
         listing.setImageUrl(request.imageUrl());
+        listing.setStockQuantity(normalizeStockQuantity(request.stockQuantity()));
+    }
+
+    private void applyProviderDefaults(Listing listing, ProviderAccountSummary provider, MarketplaceDtos.ListingRequest request) {
+        if (request.providerCountryCode() == null || request.providerCountryCode().isBlank()) {
+            listing.setProviderCountryCode(provider.countryCode());
+        }
+        listing.setSellerDisplayName(provider.displayName());
+        listing.setVerifiedSeller(isProviderVerified(provider));
     }
 
     private Listing findListing(String listingPublicId) {
@@ -687,6 +725,24 @@ public class MarketplaceService {
             return fallback;
         }
         return requested.trim().toUpperCase();
+    }
+
+    private String normalizeFulfillmentScope(String requested) {
+        if (requested == null || requested.isBlank()) {
+            return "NATIONAL";
+        }
+        String normalized = requested.trim().toUpperCase();
+        return switch (normalized) {
+            case "GLOBAL", "NATIONAL" -> normalized;
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported fulfillment scope");
+        };
+    }
+
+    private Integer normalizeStockQuantity(Integer requested) {
+        if (requested == null || requested < 1) {
+            return 1;
+        }
+        return requested;
     }
 
     private String normalizeVerticalCode(String requested) {
@@ -780,12 +836,51 @@ public class MarketplaceService {
 
     private MarketplaceDtos.ListingResponse toListingResponse(Listing listing) {
         return new MarketplaceDtos.ListingResponse(listing.getPublicId(), safeListingTitle(listing), listing.getDescription(),
-                listing.getProductType(), listing.getDeliveryType(), listing.getCurrencyCode(), listing.getPriceAmount(),
+                listing.getProductType(), listing.getDeliveryType(), normalizeFulfillmentScope(listing.getFulfillmentScope()), listing.getCurrencyCode(), listing.getPriceAmount(),
                 listing.getOriginalPriceAmount(), listing.getImageUrl(), safeSellerDisplayName(listing),
                 listing.isVerifiedSeller(), listing.getCategoryCode(), listing.getVerticalCode(), safeCountryCode(listing), listing.getListingStatus(),
                 listing.getConditionLabel(), listing.getStockQuantity(), listing.getSourceType(), listing.getSourceName(),
                 listing.getSourceUrl(), listing.getLicenseNote(), listing.isDemoSeed(), demoReviewsFor(listing),
                 listing.getCreatedAt());
+    }
+
+    private Listing findOwnedListing(String listingPublicId, Jwt jwt) {
+        Listing listing = findListing(listingPublicId);
+        ensureOwnedMarketplaceProvider(listing.getProviderAccountPublicId(), jwt);
+        if (!userPublicId(jwt).equals(listing.getCreatedByUserPublicId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only listing owner can access seller listing tools");
+        }
+        return listing;
+    }
+
+    private ProviderAccountSummary ensureOwnedMarketplaceProvider(String providerPublicId, Jwt jwt) {
+        ProviderAccountSummary provider = fetchProviderAccountSummary(providerPublicId);
+        if (!userPublicId(jwt).equals(provider.ownerUserPublicId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Provider account does not belong to authenticated user");
+        }
+        ensureMarketplaceProviderEligible(providerPublicId);
+        return provider;
+    }
+
+    private ProviderAccountSummary fetchProviderAccountSummary(String providerPublicId) {
+        try {
+            ProviderAccountSummary response = restClient.get()
+                    .uri(authorizationProviderEligibilityUrl + "/providers/" + providerPublicId)
+                    .header("X-Internal-Service-Token", internalServiceToken)
+                    .retrieve()
+                    .body(ProviderAccountSummary.class);
+            if (response == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Provider account lookup returned no data");
+            }
+            return response;
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unable to verify provider ownership right now", exception);
+        }
+    }
+
+    private boolean isProviderVerified(ProviderAccountSummary provider) {
+        return "APPROVED".equalsIgnoreCase(provider.overallStatus())
+                || "APPROVED".equalsIgnoreCase(provider.verificationStatus());
     }
 
     private String safeListingTitle(Listing listing) {
@@ -1049,5 +1144,11 @@ public class MarketplaceService {
     private record ProviderEligibilityResponse(boolean eligible, String providerPublicId, String moduleCode,
                                                String providerStatus, String enrollmentStatus, boolean sellingEnabled,
                                                boolean payoutEligible, boolean restricted) {
+    }
+
+    private record ProviderAccountSummary(String publicId, String ownerUserPublicId, String displayName,
+                                          String sellerScope, String countryCode, String defaultCurrencyCode,
+                                          String verificationStatus, String overallStatus,
+                                          boolean payoutsEnabled, boolean chargesEnabled) {
     }
 }
