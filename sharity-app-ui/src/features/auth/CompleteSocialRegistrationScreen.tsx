@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import type { VisitorContextResponse } from '../../services/publicContentApi';
 import {
   completeSocialRegistration,
@@ -67,8 +68,7 @@ const privacyOptions: AuthOption[] = [
 ];
 
 export function CompleteSocialRegistrationScreen({ onCancel, onNavigate, onSignIn, provider, visitorContext }: Props) {
-  const { width } = useWindowDimensions();
-  const isMobile = width < 760;
+  const { isMobile, width } = useResponsiveLayout();
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -385,32 +385,33 @@ export function CompleteSocialRegistrationScreen({ onCancel, onNavigate, onSignI
             </View>
 
             <View style={styles.photoSection}>
-              <View style={styles.photoPreview}>
-                {profileImageUrl ? (
-                  <Image contentFit="cover" source={{ uri: profileImageUrl }} style={styles.photoImage} />
-                ) : (
-                  <View style={styles.photoFallback}>
-                    <Ionicons color={authPalette.textMuted} name="camera-outline" size={28} />
+              <Pressable
+                accessibilityRole="button"
+                disabled={uploadingProfileImage}
+                onPress={pickProfileImage}
+                style={[styles.photoPreviewPressable, uploadingProfileImage && styles.photoButtonDisabled]}
+              >
+                <View style={styles.photoPreview}>
+                  {profileImageUrl ? (
+                    <Image contentFit="cover" source={{ uri: profileImageUrl }} style={styles.photoImage} />
+                  ) : (
+                    <View style={styles.photoFallback}>
+                      <Ionicons color={authPalette.textMuted} name="camera-outline" size={28} />
+                    </View>
+                  )}
+                  <View style={styles.photoEditBadge}>
+                    {uploadingProfileImage ? (
+                      <ActivityIndicator color={authPalette.white} size="small" />
+                    ) : (
+                      <Ionicons color={authPalette.white} name="camera-outline" size={16} />
+                    )}
                   </View>
-                )}
-              </View>
+                </View>
+              </Pressable>
               <View style={styles.photoCopy}>
                 <Text style={styles.photoTitle}>Profile photo</Text>
-                <Text style={styles.photoText}>Upload a clear image for your account profile.</Text>
+                <Text style={styles.photoText}>{uploadingProfileImage ? 'Uploading your profile photo...' : profileImageUrl ? 'Tap the photo to change it.' : 'Tap the avatar to upload a clear image for your account profile.'}</Text>
                 <View style={styles.photoActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={uploadingProfileImage}
-                    onPress={pickProfileImage}
-                    style={[styles.photoButton, uploadingProfileImage && styles.photoButtonDisabled]}
-                  >
-                    {uploadingProfileImage ? (
-                      <ActivityIndicator color={authPalette.white} />
-                    ) : (
-                      <Ionicons color={authPalette.white} name="cloud-upload-outline" size={18} />
-                    )}
-                    <Text style={styles.photoButtonText}>{profileImageUrl ? 'Change photo' : 'Upload photo'}</Text>
-                  </Pressable>
                   {profileImageUrl ? (
                     <Pressable onPress={removeProfileImage} style={styles.photoLinkButton}>
                       <Text style={styles.photoLinkText}>Remove</Text>
@@ -627,9 +628,6 @@ function DateField({
               type="date"
               value={browserValue}
             />
-          </View>
-          <View pointerEvents="none" style={styles.dateIconButton}>
-            <Ionicons color={authPalette.textMuted} name="calendar-outline" size={20} />
           </View>
         </View>
       ) : (
@@ -996,6 +994,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     width: 84
   },
+  photoPreviewPressable: {
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   photoImage: {
     height: '100%',
     width: '100%'
@@ -1009,6 +1011,19 @@ const styles = StyleSheet.create({
   photoCopy: {
     flex: 1,
     gap: 8
+  },
+  photoEditBadge: {
+    alignItems: 'center',
+    backgroundColor: authPalette.accent,
+    borderColor: authPalette.cardAlt,
+    borderRadius: 999,
+    borderWidth: 3,
+    bottom: 0,
+    height: 30,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 0,
+    width: 30
   },
   photoTitle: {
     color: authPalette.text,
@@ -1026,23 +1041,8 @@ const styles = StyleSheet.create({
     gap: authSpacing.sm,
     marginTop: 4
   },
-  photoButton: {
-    alignItems: 'center',
-    backgroundColor: authPalette.accent,
-    borderRadius: 999,
-    flexDirection: 'row',
-    gap: 8,
-    minHeight: 42,
-    paddingHorizontal: authSpacing.lg,
-    paddingVertical: 10
-  },
   photoButtonDisabled: {
     opacity: 0.72
-  },
-  photoButtonText: {
-    color: authPalette.white,
-    fontSize: 14,
-    fontWeight: '900'
   },
   photoLinkButton: {
     alignItems: 'center',
@@ -1121,9 +1121,11 @@ const styles = StyleSheet.create({
     paddingVertical: 18
   },
   webDateInputShell: {
-    flex: 1
+    flex: 1,
+    minWidth: 0
   },
   webDateInput: {
+    appearance: 'none' as never,
     backgroundColor: 'transparent',
     borderWidth: 0,
     color: authPalette.text,
@@ -1131,6 +1133,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     height: 62,
     outlineStyle: 'none' as never,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
     width: '100%'
   },
   datePlaceholder: {

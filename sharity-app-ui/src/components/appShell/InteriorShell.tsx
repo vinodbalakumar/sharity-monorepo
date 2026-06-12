@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { mobileTabItems, sidebarItems } from '../../features/home/dashboardConfig';
@@ -8,13 +8,12 @@ import { colors, spacing } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
 
 export function InteriorShell({ activeLabel, children, onNavigate, scrollable = true, subtitle, title }: Props) {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
+  const { isCompactPhone, isSingleColumn, showSidebar, showTabLabels, width } = useResponsiveLayout();
 
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.shell}>
-        {isDesktop ? <Sidebar activeLabel={activeLabel} onNavigate={onNavigate} /> : null}
+        {showSidebar ? <Sidebar activeLabel={activeLabel} onNavigate={onNavigate} /> : null}
         <View style={styles.main}>
           <Header onNavigate={onNavigate} subtitle={subtitle} title={title} />
           {scrollable ? (
@@ -26,7 +25,7 @@ export function InteriorShell({ activeLabel, children, onNavigate, scrollable = 
           )}
         </View>
       </View>
-      {!isDesktop ? <BottomTabs activeLabel={activeLabel} onNavigate={onNavigate} /> : null}
+      {!showSidebar ? <BottomTabs activeLabel={activeLabel} compact={isCompactPhone} onNavigate={onNavigate} showLabels={showTabLabels} /> : null}
     </SafeAreaView>
   );
 }
@@ -86,13 +85,13 @@ function Header({ onNavigate, subtitle, title }: { onNavigate: (route: AppRoute)
   );
 }
 
-function BottomTabs({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate: (route: AppRoute) => void }) {
+function BottomTabs({ activeLabel, compact, onNavigate, showLabels }: { activeLabel?: string; compact: boolean; onNavigate: (route: AppRoute) => void; showLabels: boolean }) {
   return (
-    <View style={styles.bottomTabs}>
+    <View style={[styles.bottomTabs, compact && styles.bottomTabsCompact]}>
       {mobileTabItems.map((item) => (
-        <Pressable key={item.label} onPress={() => onNavigate(routeForLabel(item.label))} style={styles.bottomTab}>
+        <Pressable key={item.label} onPress={() => onNavigate(routeForLabel(item.label))} style={[styles.bottomTab, compact && styles.bottomTabCompact]}>
           <Ionicons color={activeLabel === item.label ? colors.primary : colors.textSecondary} name={item.icon} size={19} />
-          <Text style={[styles.bottomTabText, activeLabel === item.label && styles.bottomTabTextActive]}>{item.label}</Text>
+          {showLabels ? <Text style={[styles.bottomTabText, activeLabel === item.label && styles.bottomTabTextActive]}>{item.label}</Text> : null}
         </Pressable>
       ))}
     </View>
@@ -233,24 +232,46 @@ const styles = StyleSheet.create({
     minHeight: 70,
     paddingHorizontal: spacing.xl
   },
+  headerInnerCompact: {
+    gap: spacing.sm
+  },
   headerBrand: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
-    gap: spacing.sm
+    gap: spacing.sm,
+    minWidth: 0
+  },
+  headerBrandCompact: {
+    gap: spacing.xs
+  },
+  headerCopy: {
+    flexShrink: 1,
+    minWidth: 0
   },
   headerTitle: {
     color: colors.textPrimary,
     fontSize: 22,
     fontWeight: '900'
   },
+  headerTitleCompact: {
+    fontSize: 18
+  },
   headerSubtitle: {
     color: colors.textSecondary,
     fontSize: 12,
     marginTop: 2
   },
+  headerSubtitleCompact: {
+    fontSize: 11
+  },
   headerActions: {
     flexDirection: 'row',
+    flexShrink: 0,
     gap: spacing.sm
+  },
+  headerActionsCompact: {
+    gap: spacing.xs
   },
   iconButton: {
     alignItems: 'center',
@@ -261,6 +282,11 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     width: 44
+  },
+  iconButtonCompact: {
+    borderRadius: 12,
+    height: 40,
+    width: 40
   },
   content: {
     gap: spacing.xl,

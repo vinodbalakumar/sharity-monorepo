@@ -4,8 +4,9 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PublicSiteFooter } from '../../components/publicSite/PublicSiteFooter';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { getPublicContentPage, type PublicContentPageResponse, type VisitorContextResponse } from '../../services/publicContentApi';
-import { spacing } from '../../theme';
+import { marketingColors, spacing } from '../../theme';
 import { footerGroups } from '../welcome/welcomeContent';
 
 type PublicContentScreenProps = {
@@ -18,6 +19,7 @@ type PublicContentScreenProps = {
 type SectionOffsetMap = Record<string, number>;
 
 export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug }: PublicContentScreenProps) {
+  const { isCompactPhone, isSingleColumn } = useResponsiveLayout();
   const [page, setPage] = useState<PublicContentPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,9 +81,13 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.scrollContent, isCompactPhone && styles.scrollContentCompact]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.shell}>
-          <View style={styles.header}>
+          <View style={[styles.header, isSingleColumn && styles.headerCompact]}>
             <Pressable accessibilityRole="button" onPress={onBack} style={styles.brandBlock}>
               <View style={styles.brandMark}>
                 <Text style={styles.brandLetter}>S</Text>
@@ -92,21 +98,21 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
               </View>
             </Pressable>
 
-            {Platform.OS !== 'web' ? (
+            {Platform.OS !== 'web' || isSingleColumn ? (
               <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
-                <Ionicons color={palette.white} name="arrow-back" size={18} />
+                <Ionicons color={palette.blue} name="arrow-back" size={18} />
                 <Text style={styles.backText}>Back</Text>
               </Pressable>
             ) : null}
           </View>
 
           <View style={styles.readerCard}>
-            <View style={styles.readerIntro}>
-                <View style={styles.readerBadgeRow}>
-                  <View style={styles.approvedPill}>
-                    <Ionicons color={palette.blue} name="shield-checkmark-outline" size={15} />
-                    <Text style={styles.approvedText}>Approved public content</Text>
-                  </View>
+            <View style={[styles.readerIntro, isCompactPhone && styles.readerIntroCompact]}>
+              <View style={[styles.readerBadgeRow, isSingleColumn && styles.readerBadgeRowCompact]}>
+                <View style={styles.approvedPill}>
+                  <Ionicons color={palette.blue} name="shield-checkmark-outline" size={15} />
+                  <Text style={styles.approvedText}>Approved public content</Text>
+                </View>
                 <Text style={styles.readerHint}>Region-aware edition</Text>
               </View>
 
@@ -133,7 +139,7 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
                     current and country-aware.
                   </Text>
 
-                  <View style={styles.summaryGrid}>
+                  <View style={[styles.summaryGrid, isSingleColumn && styles.summaryGridCompact]}>
                     {summaryItems.map((item) => (
                       <View key={item.label} style={styles.summaryChip}>
                         <Text style={styles.summaryLabel}>{item.label}</Text>
@@ -163,7 +169,7 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
             </View>
 
             {page && !loading ? (
-              <View style={styles.contentWrap}>
+              <View style={[styles.contentWrap, isCompactPhone && styles.contentWrapCompact]}>
                 {page.sections.map((section, index) => (
                   <View
                     key={`${section.heading}-${index}`}
@@ -208,13 +214,7 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
 }
 
 const palette = {
-  blue: '#4C8DFF',
-  border: '#20284A',
-  page: '#0B1028',
-  panel: '#111936',
-  panelDeep: '#0F1733',
-  text: '#F8FAFC',
-  textMuted: '#9AA9C7',
+  ...marketingColors,
   white: '#FFFFFF'
 };
 
@@ -229,6 +229,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20
   },
+  scrollContentCompact: {
+    paddingHorizontal: 12,
+    paddingTop: 12
+  },
   shell: {
     alignSelf: 'center',
     maxWidth: 1120,
@@ -241,6 +245,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 18
   },
+  headerCompact: {
+    alignItems: 'flex-start',
+    flexWrap: 'wrap'
+  },
   brandBlock: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -249,11 +257,11 @@ const styles = StyleSheet.create({
   },
   brandMark: {
     alignItems: 'center',
-    backgroundColor: '#7C5CFF',
-    borderRadius: 10,
-    height: 40,
+    backgroundColor: palette.blue,
+    borderRadius: 14,
+    height: 44,
     justifyContent: 'center',
-    width: 40
+    width: 44
   },
   brandLetter: {
     color: palette.white,
@@ -272,9 +280,9 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    backgroundColor: '#111A3A',
+    backgroundColor: palette.white,
     borderColor: palette.border,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
@@ -282,22 +290,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   backText: {
-    color: palette.white,
+    color: palette.blue,
     fontSize: 14,
     fontWeight: '900'
   },
   readerCard: {
-    backgroundColor: palette.panelDeep,
+    backgroundColor: palette.cardAlt,
     borderColor: palette.border,
-    borderRadius: 16,
+    borderRadius: 22,
     borderWidth: 1,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    shadowColor: '#12263a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24
   },
   readerIntro: {
-    backgroundColor: palette.panel,
+    backgroundColor: palette.header,
     borderBottomColor: palette.border,
     borderBottomWidth: 1,
     padding: 28
+  },
+  readerIntroCompact: {
+    padding: 18
   },
   readerBadgeRow: {
     alignItems: 'center',
@@ -306,10 +321,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: 'space-between'
   },
+  readerBadgeRowCompact: {
+    alignItems: 'flex-start'
+  },
   approvedPill: {
     alignItems: 'center',
-    backgroundColor: '#0F2148',
-    borderColor: '#233565',
+    backgroundColor: palette.accentSoft,
+    borderColor: '#f1d9bc',
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
@@ -318,7 +336,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8
   },
   approvedText: {
-    color: palette.text,
+    color: palette.blue,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0
@@ -357,8 +375,12 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 24
   },
+  summaryGridCompact: {
+    gap: 10,
+    marginTop: 18
+  },
   summaryChip: {
-    backgroundColor: '#0E1630',
+    backgroundColor: palette.cardAlt,
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
@@ -385,7 +407,7 @@ const styles = StyleSheet.create({
   },
   sectionNavItem: {
     alignItems: 'flex-start',
-    backgroundColor: '#0F1836',
+    backgroundColor: palette.purpleSoft,
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
@@ -410,12 +432,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingTop: 18
   },
+  contentWrapCompact: {
+    paddingHorizontal: 16,
+    paddingTop: 12
+  },
   section: {
+    backgroundColor: palette.cardAlt,
+    borderColor: palette.border,
     borderLeftColor: palette.blue,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
+    borderRadius: 18,
+    borderWidth: 1,
     marginTop: 14,
-    paddingLeft: 18,
-    paddingBottom: 2
+    paddingBottom: 18,
+    paddingHorizontal: 18,
+    paddingTop: 18
   },
   sectionHeader: {
     alignItems: 'center',
@@ -424,8 +455,8 @@ const styles = StyleSheet.create({
   },
   sectionMarker: {
     alignItems: 'center',
-    backgroundColor: '#0F2148',
-    borderColor: '#233565',
+    backgroundColor: palette.purpleSoft,
+    borderColor: palette.border,
     borderRadius: 999,
     borderWidth: 1,
     height: 28,
@@ -433,7 +464,7 @@ const styles = StyleSheet.create({
     width: 28
   },
   sectionMarkerText: {
-    color: palette.text,
+    color: palette.blue,
     fontSize: 11,
     fontWeight: '900'
   },
@@ -452,7 +483,7 @@ const styles = StyleSheet.create({
   },
   stateBox: {
     alignItems: 'center',
-    backgroundColor: '#0E1630',
+    backgroundColor: palette.cardAlt,
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
@@ -469,7 +500,7 @@ const styles = StyleSheet.create({
   },
   footerNotice: {
     alignItems: 'center',
-    backgroundColor: '#0D1634',
+    backgroundColor: palette.purpleSoft,
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,

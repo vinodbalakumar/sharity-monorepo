@@ -33,25 +33,25 @@ export const featureCards: {
 export const footerGroups = [
   {
     links: [
-      { label: 'About Us', slug: 'about-us' },
+      { label: 'About Sharity', slug: 'about-us' },
       { label: 'Careers', slug: 'careers' },
-      { label: 'Press', slug: 'press' }
+      { label: 'Press Center', slug: 'press' }
     ],
     title: 'Company'
   },
   {
     links: [
       { label: 'Help Center', slug: 'help-center' },
-      { label: 'Safety', slug: 'safety' },
-      { label: 'Contact Us', slug: 'contact-us' }
+      { label: 'Safety Center', slug: 'safety' },
+      { label: 'Contact Support', slug: 'contact-us' }
     ],
     title: 'Support'
   },
   {
     links: [
-      { label: 'Privacy', slug: 'privacy' },
-      { label: 'Terms', slug: 'terms' },
-      { label: 'Guidelines', slug: 'guidelines' }
+      { label: 'Privacy Policy', slug: 'privacy' },
+      { label: 'Terms of Use', slug: 'terms' },
+      { label: 'Community Guidelines', slug: 'guidelines' }
     ],
     title: 'Legal'
   }

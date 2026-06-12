@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import type { VisitorContextResponse } from '../../services/publicContentApi';
 import {
   getRegistrationOptions,
@@ -71,8 +72,7 @@ const privacyOptions: AuthOption[] = [
 ];
 
 export function CreateAccountScreen({ onNavigate, onSignIn, visitorContext }: Props) {
-  const { width } = useWindowDimensions();
-  const isMobile = width < 760;
+  const { isMobile, width } = useResponsiveLayout();
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -604,9 +604,6 @@ function DateField({
               value={browserValue}
             />
           </View>
-          <View pointerEvents="none" style={styles.dateIconButton}>
-            <Ionicons color={authPalette.textMuted} name="calendar-outline" size={20} />
-          </View>
         </View>
       ) : (
         <View style={[styles.dateWrap, error && styles.inputError]}>
@@ -977,9 +974,11 @@ const styles = StyleSheet.create({
     paddingVertical: 18
   },
   webDateInputShell: {
-    flex: 1
+    flex: 1,
+    minWidth: 0
   },
   webDateInput: {
+    appearance: 'none' as never,
     backgroundColor: 'transparent',
     borderWidth: 0,
     color: authPalette.text,
@@ -987,6 +986,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     height: 62,
     outlineStyle: 'none' as never,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
     width: '100%'
   },
   datePlaceholder: {
@@ -1002,7 +1005,7 @@ const styles = StyleSheet.create({
   },
   dateIconButton: {
     alignItems: 'center',
-    height: 46,
+    height: 62,
     justifyContent: 'center',
     width: 40
   },

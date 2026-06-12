@@ -105,6 +105,19 @@ function updatePublicContentPath(slug: string) {
   }
 }
 
+function resolveWebStartupSnapshot(): RouteSnapshot | null {
+  const locationSnapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search);
+  const historySnapshot = window.history.state as RouteSnapshot | null;
+
+  if (!historySnapshot) {
+    return locationSnapshot;
+  }
+
+  const currentPath = `${window.location.pathname}${window.location.search}`;
+  const historyPath = snapshotToPath(createRouteSnapshot(historySnapshot.route, historySnapshot));
+  return historyPath === currentPath ? historySnapshot : locationSnapshot;
+}
+
 export default function App() {
   const [route, setRoute] = useState<AppRoute>('splash');
   const [digitalProductId, setDigitalProductId] = useState<string | null>(null);
@@ -121,7 +134,7 @@ export default function App() {
 
   function startBrowserLogin() {
     if (Platform.OS === 'web') {
-      window.location.assign(`${bffBaseUrl}/login`);
+      window.location.assign(`${bffBaseUrl}/login?force=true`);
       return;
     }
 
@@ -141,9 +154,10 @@ export default function App() {
 
     async function resolveStartupRoute() {
       const publicRoute = publicRouteFromLocation();
-      const [session, context] = await Promise.all([
+      const [session, context, registrationOptions] = await Promise.all([
         checkSession(),
-        getVisitorContext().catch(() => null)
+        getVisitorContext().catch(() => null),
+        getRegistrationOptions().catch(() => null)
       ]);
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(minimumSplashMs - elapsed, 0);
@@ -189,8 +203,16 @@ export default function App() {
       setRoute('welcome');
     }
 
+    window.addEventListener('focus', syncBrowserSession);
+    window.addEventListener('pageshow', syncBrowserSession);
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(followUpTimer);
+      window.removeEventListener('focus', syncBrowserSession);
+      window.removeEventListener('pageshow', syncBrowserSession);
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
   function leavePublicContent() {

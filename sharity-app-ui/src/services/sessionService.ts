@@ -1,4 +1,4 @@
-import type { SessionCheckResult } from '../types/session';
+import type { BrowserSessionSummary, SessionCheckResult } from '../types/session';
 
 const sessionTimeoutMs = 2500;
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';

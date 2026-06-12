@@ -1,7 +1,8 @@
-import { ActivityIndicator, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, Column } from '../../components/ui';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors, spacing } from '../../theme';
 
 type SplashScreenProps = {
@@ -9,8 +10,8 @@ type SplashScreenProps = {
 };
 
 export function SplashScreen({ isTakingLonger }: SplashScreenProps) {
-  const { width } = useWindowDimensions();
-  const isLarge = width >= 768;
+  const { isTablet } = useResponsiveLayout();
+  const isLarge = isTablet;
   const logoSize = isLarge ? 92 : 72;
   const logoRadius = isLarge ? 30 : 24;
 

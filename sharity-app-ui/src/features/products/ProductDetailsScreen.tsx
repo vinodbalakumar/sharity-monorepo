@@ -7,12 +7,12 @@ import {
   Share,
   StyleSheet,
   Text,
-  View,
-  useWindowDimensions
+  View
 } from 'react-native';
 
 import { AppButton, AppLoadingIndicator } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { electronicsProducts, type ElectronicsProduct } from '../electronics/electronicsData';
 import { getMarketplaceListing, getMarketplaceListings } from '../../services/marketplaceApi';
 import { colors, radii, spacing } from '../../theme';
@@ -71,8 +71,7 @@ type LoadState = {
 };
 
 export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDetailsScreenProps) {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
+  const { isDesktop } = useResponsiveLayout();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [state, setState] = useState<LoadState>({
     error: false,

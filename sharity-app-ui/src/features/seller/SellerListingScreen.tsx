@@ -207,6 +207,19 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
                 <View style={styles.currencySelect}>
                   <Text>{form.currency}</Text>
                 </View>
+
+                <Text style={styles.inlineLabel}>Seller reach</Text>
+                <View style={styles.optionGrid}>
+                  {centerData.formConfig.reachScopes.map((item) => (
+                    <ScopeCard
+                      active={form.fulfillmentScope === item.code}
+                      compact={isSingleColumn}
+                      key={item.code}
+                      option={item}
+                      onPress={() => setForm((current) => ({ ...current, fulfillmentScope: item.code }))}
+                    />
+                  ))}
+                </View>
               </YStack>
             </View>
 

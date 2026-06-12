@@ -16,9 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getMarketplaceHome } from '../../services/marketplaceApi';
 import type { VisitorContextResponse } from '../../services/publicContentApi';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { PublicSiteFooter } from '../../components/publicSite/PublicSiteFooter';
 import { spacing } from '../../theme';
 import type { MarketplaceCategory, MarketplaceHomeResponse } from '../../types/marketplace';
+import { resolveMockImageUrl } from '../../utils/mockImages';
 import { featureCards, footerGroups } from './welcomeContent';
 
 type WelcomeScreenProps = {
@@ -38,13 +40,12 @@ const stats = [
 ];
 
 const webHeroGradient = Platform.OS === 'web'
-  ? ({ backgroundImage: 'linear-gradient(112deg, #681CA2 0%, #293F98 48%, #681CA2 100%)' } as never)
+  ? ({ backgroundImage: 'linear-gradient(120deg, #fff5e7 0%, #eef7ff 52%, #dcefff 100%)' } as never)
   : null;
 const ratingStat = ['4.8*', 'User Rating'];
 
 export function WelcomeScreen({ onBrowse, onGetStarted, onOpenPublicContent, onSignIn, visitorContext }: WelcomeScreenProps) {
-  const { width } = useWindowDimensions();
-  const isMobile = width < 760;
+  const { isCompactPhone, isMobile, width } = useResponsiveLayout();
   const isWeb = Platform.OS === 'web';
   const [searchQuery, setSearchQuery] = useState('');
   const [home, setHome] = useState<MarketplaceHomeResponse | null>(null);
@@ -307,27 +308,38 @@ function iconForCategory(category: MarketplaceCategory): ComponentProps<typeof I
 function imageForCategory(category: MarketplaceCategory, home: MarketplaceHomeResponse) {
   const directMatch = home.featuredListings.find((listing) => listing.categoryCode === category.code && listing.imageUrl);
   if (directMatch?.imageUrl) {
-    return directMatch.imageUrl;
+    return resolveMockImageUrl(directMatch.imageUrl, 720);
   }
 
   const verticalMatch = home.featuredListings.find((listing) => listing.verticalCode === category.verticalCode && listing.imageUrl);
-  return verticalMatch?.imageUrl ?? null;
+  if (verticalMatch?.imageUrl) {
+    return resolveMockImageUrl(verticalMatch.imageUrl, 720);
+  }
+
+  return cloudflareCategoryImage(category) ?? null;
 }
 
-const palette = {
-  blue: '#3B82F6',
-  border: '#20284A',
-  card: '#111936',
-  header: '#0D132B',
-  heroEnd: '#6D1AA5',
-  heroStart: '#243C96',
-  page: '#0B1028',
-  purple: '#A335F5',
-  purpleSoft: '#25205C',
-  text: '#F8FAFC',
-  textMuted: '#8FA0BF',
-  white: '#FFFFFF'
-};
+function cloudflareCategoryImage(category: MarketplaceCategory) {
+  const value = `${category.code} ${category.name} ${category.verticalCode} ${category.iconRef ?? ''}`.toLowerCase();
+  if (value.includes('gift')) {
+    return 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/marketplace/categories/gift-cards.svg';
+  }
+  if (value.includes('electronic') || value.includes('accessories') || value.includes('device')) {
+    return 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/marketplace/categories/electronics.svg';
+  }
+  if (value.includes('game')) {
+    return 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/marketplace/categories/gaming.svg';
+  }
+  if (value.includes('local') || value.includes('food') || value.includes('grocery') || value.includes('fresh') || value.includes('cuts')) {
+    return 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/marketplace/categories/local-deals.svg';
+  }
+  if (value.includes('wellness') || value.includes('care') || value.includes('service')) {
+    return 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/marketplace/categories/services.svg';
+  }
+  return 'https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev/marketplace/categories/collectibles.svg';
+}
+
+const palette = marketingColors;
 
 const styles = StyleSheet.create({
   screen: {
@@ -348,6 +360,10 @@ const styles = StyleSheet.create({
     minHeight: 74,
     paddingHorizontal: 32
   },
+  headerInnerMobile: {
+    alignItems: 'flex-start',
+    flexWrap: 'wrap'
+  },
   headerMobile: {
     gap: spacing.sm,
     paddingHorizontal: spacing.md
@@ -358,9 +374,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minWidth: 130
   },
+  brandWrapMobile: {
+    minWidth: 0,
+    width: '100%'
+  },
   brandMark: {
     alignItems: 'center',
-    backgroundColor: '#7C5CFF',
+    backgroundColor: palette.blue,
     borderRadius: 10,
     height: 40,
     justifyContent: 'center',
@@ -378,7 +398,7 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     alignItems: 'center',
-    backgroundColor: '#161D3B',
+    backgroundColor: palette.cardAlt,
     borderColor: palette.border,
     borderRadius: 10,
     borderWidth: 1,
@@ -401,6 +421,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginLeft: 'auto'
   },
+  headerActionsMobile: {
+    justifyContent: 'space-between',
+    marginLeft: 0,
+    width: '100%'
+  },
+  headerButtonCompact: {
+    flex: 1,
+    justifyContent: 'center'
+  },
   signInButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
@@ -411,7 +440,7 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
   headerCta: {
-    backgroundColor: palette.purple,
+    backgroundColor: palette.blue,
     borderRadius: 10,
     paddingHorizontal: spacing.lg,
     paddingVertical: 12
@@ -422,7 +451,8 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
   hero: {
-    backgroundColor: palette.heroEnd,
+    backgroundColor: palette.card,
+    borderColor: palette.border,
     borderRadius: 16,
     margin: 32,
     minHeight: 395,
@@ -435,8 +465,13 @@ const styles = StyleSheet.create({
     minHeight: 360,
     padding: spacing.xl
   },
+  heroCompactPhone: {
+    minHeight: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl
+  },
   heroTitle: {
-    color: palette.white,
+    color: palette.text,
     fontSize: 54,
     fontWeight: '900',
     lineHeight: 64,
@@ -447,7 +482,7 @@ const styles = StyleSheet.create({
     lineHeight: 48
   },
   heroSubtitle: {
-    color: '#C7D7F4',
+    color: palette.textMuted,
     fontSize: 22,
     fontWeight: '700',
     marginTop: spacing.md
@@ -458,9 +493,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: 34
   },
+  heroActionsCompact: {
+    gap: spacing.sm
+  },
   heroPrimary: {
     alignItems: 'center',
-    backgroundColor: palette.white,
+    backgroundColor: palette.blue,
     borderRadius: 10,
     justifyContent: 'center',
     minHeight: 52,
@@ -468,14 +506,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   heroPrimaryText: {
-    color: '#111827',
+    color: palette.white,
     fontSize: 16,
     fontWeight: '900'
   },
   heroSecondary: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: palette.cardAlt,
+    borderColor: palette.border,
     borderRadius: 10,
     borderWidth: 1,
     justifyContent: 'center',
@@ -484,7 +522,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   heroSecondaryText: {
-    color: palette.white,
+    color: palette.text,
     fontSize: 16,
     fontWeight: '800'
   },
@@ -495,12 +533,12 @@ const styles = StyleSheet.create({
     marginTop: 36
   },
   featuredText: {
-    color: '#D6DAFF',
+    color: '#56708a',
     fontSize: 13,
     fontWeight: '900'
   },
   featuredMuted: {
-    color: '#B2BFDB'
+    color: palette.textMuted
   },
   sectionHeader: {
     alignItems: 'center',
@@ -508,6 +546,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 32,
     paddingTop: 36
+  },
+  sectionHeaderMobile: {
+    alignItems: 'flex-start',
+    gap: spacing.sm
   },
   sectionTitle: {
     color: palette.text,
@@ -538,7 +580,13 @@ const styles = StyleSheet.create({
     minWidth: 160,
     overflow: 'hidden'
   },
+  categoryCardCompact: {
+    maxWidth: '100%',
+    minWidth: '100%'
+  },
   categoryImageWrap: {
+    borderColor: palette.border,
+    borderWidth: 1,
     height: 225,
     justifyContent: 'flex-end'
   },
@@ -546,18 +594,21 @@ const styles = StyleSheet.create({
     borderRadius: 12
   },
   categoryNoImage: {
-    backgroundColor: '#151C3A'
+    backgroundColor: palette.cardAlt
   },
   categoryOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(1,6,20,0.42)'
+    backgroundColor: 'rgba(18,38,58,0.24)'
   },
   categoryCopy: {
     padding: spacing.md
   },
+  categoryCopyNoImage: {
+    padding: spacing.md
+  },
   categoryIconPill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(59,130,246,0.72)',
+    backgroundColor: 'rgba(63,136,197,0.78)',
     borderRadius: 999,
     height: 30,
     justifyContent: 'center',
@@ -565,12 +616,32 @@ const styles = StyleSheet.create({
     width: 30
   },
   categoryCount: {
-    color: '#63B3FF',
+    color: '#e8f4ff',
     fontSize: 12,
     fontWeight: '900'
   },
   categoryName: {
     color: palette.white,
+    fontSize: 15,
+    fontWeight: '900',
+    marginTop: spacing.xs
+  },
+  categoryIconPillNoImage: {
+    alignItems: 'center',
+    backgroundColor: palette.accentSoft,
+    borderRadius: 999,
+    height: 30,
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    width: 30
+  },
+  categoryCountNoImage: {
+    color: palette.blue,
+    fontSize: 12,
+    fontWeight: '900'
+  },
+  categoryNameNoImage: {
+    color: palette.text,
     fontSize: 15,
     fontWeight: '900',
     marginTop: spacing.xs
@@ -606,10 +677,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.md
   },
+  featureCardCompact: {
+    flexBasis: '100%',
+    paddingHorizontal: 0
+  },
   featureIcon: {
     alignItems: 'center',
     backgroundColor: palette.purpleSoft,
-    borderColor: '#332A75',
+    borderColor: palette.border,
     borderRadius: 999,
     borderWidth: 1,
     height: 58,
@@ -648,8 +723,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     maxWidth: 260
   },
+  statItemCompact: {
+    flexBasis: '48%',
+    maxWidth: '50%',
+    paddingVertical: spacing.sm
+  },
   statValue: {
-    color: '#8B7CFF',
+    color: palette.blue,
     fontSize: 32,
     fontWeight: '900'
   },
@@ -674,7 +754,7 @@ const styles = StyleSheet.create({
     fontSize: 32
   },
   ctaText: {
-    color: '#C8D2EA',
+    color: palette.textMuted,
     fontSize: 17,
     lineHeight: 25,
     marginTop: spacing.lg,
@@ -682,7 +762,7 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     alignItems: 'center',
-    backgroundColor: palette.purple,
+    backgroundColor: palette.blue,
     borderRadius: 10,
     flexDirection: 'row',
     gap: spacing.sm,
@@ -720,6 +800,7 @@ const styles = StyleSheet.create({
   },
   apiState: {
     alignItems: 'center',
+    backgroundColor: palette.cardAlt,
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,

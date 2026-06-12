@@ -79,6 +79,15 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
     deal.marketplaceName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  function submitSearch() {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      return;
+    }
+
+    onOpenSearch(trimmedQuery);
+  }
+
   return (
     <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Discover trusted digital products" title="Marketplace">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -592,7 +601,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
     padding: spacing.lg,
-    paddingBottom: spacing['6xl'],
+    paddingBottom: spacing.lg,
     backgroundColor: colors.background
   },
   sectionTitle: {

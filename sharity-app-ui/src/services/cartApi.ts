@@ -2,6 +2,7 @@
 // Replaces local cartCheckoutMockApi.ts
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+const marketplaceCommerceBaseUrl = `${bffBaseUrl}/api/marketplace-service`;
 
 export type CartResponse = {
   cartId: string;

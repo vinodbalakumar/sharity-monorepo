@@ -1,8 +1,13 @@
+import { AuthenticationRequiredError, readApiErrorMessage } from '../../services/sessionService';
+import { resolveMockImageUrl } from '../../utils/mockImages';
 import type {
   DownloadFilesResponse,
   EndRevealRequest,
   InvalidCodeReportRequest,
+  LibraryAccessStatus,
   LibraryIssueRequest,
+  LibraryItem,
+  LibraryProductType,
   LibraryResponse,
   RevealCodeRequest,
   RevealCodeResponse,
@@ -11,10 +16,202 @@ import type {
   SupportTicketRequest
 } from './libraryTypes';
 
-const wait = (ms = 260) => new Promise((resolve) => setTimeout(resolve, ms));
+const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+
+type RawDigitalLibraryResponse = {
+  items: RawDigitalLibraryItem[];
+  updatedAt?: string;
+};
+
+type RawDigitalLibraryItem = {
+  availableActions: string[];
+  categoryCode: string;
+  deliveryStatus: string;
+  imageUrl: string;
+  issueStatus: string;
+  listingId: string;
+  marketplaceCode: string;
+  orderItemId: string;
+  orderReference: string;
+  productId: string;
+  refundEligibilityWarning: string;
+  revealAccessStatus: string;
+  revealedAt?: string | null;
+  route?: string;
+  sellerStoreDisplayName: string;
+  title: string;
+};
+
+type RawRevealEligibility = {
+  acknowledgementRequired: boolean;
+  eligible: boolean;
+  payloadValidated: boolean;
+  secureAccessAllowed: boolean;
+  userSafeMessage: string;
+};
+
+type RawRevealResponse = {
+  orderItemId: string;
+  payload: {
+    accessInstructions?: string | null;
+    expiresAt?: string | null;
+    maskedValue: string;
+    revealedValue: string;
+  };
+  success: boolean;
+  userSafeMessage: string;
+};
+
+function toIsoDate(value?: string | null) {
+  if (!value) {
+    return new Date().toISOString();
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+}
+
+function formatDate(value?: string | null) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(toIsoDate(value)));
+}
+
+function parseOrderIdFromRoute(route?: string | null, orderReference?: string | null) {
+  if (route) {
+    const match = route.match(/\/orders\/([^/]+)/i);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return orderReference ?? '';
+}
+
+function mapProductType(item: RawDigitalLibraryItem): LibraryProductType {
+  const category = item.categoryCode.toUpperCase();
+  const title = item.title.toUpperCase();
+
+  if (category.includes('LICENSE') || title.includes('LICENSE')) {
+    return 'SOFTWARE_KEY';
+  }
+  if (category.includes('GAME') || title.includes('GAME')) {
+    return 'GAMING_CODE';
+  }
+  if (category.includes('TEMPLATE') || title.includes('TEMPLATE')) {
+    return 'DOWNLOADABLE_FILE';
+  }
+  if (title.includes('COURSE')) {
+    return 'ONLINE_COURSE';
+  }
+  if (title.includes('SERVICE')) {
+    return 'DIGITAL_SERVICE_ORDER';
+  }
+  if (title.includes('SUBSCRIPTION')) {
+    return 'DIGITAL_SUBSCRIPTION';
+  }
+  if (title.includes('GIFT')) {
+    return 'GIFT_CARD';
+  }
+
+  return 'DIGITAL_CODE';
+}
+
+function mapAccessStatus(item: RawDigitalLibraryItem): LibraryAccessStatus {
+  const issueStatus = item.issueStatus.toUpperCase();
+  const revealStatus = item.revealAccessStatus.toUpperCase();
+  const deliveryStatus = item.deliveryStatus.toUpperCase();
+
+  if (issueStatus.includes('ISSUE') || deliveryStatus.includes('ISSUE')) {
+    return 'DISPUTED';
+  }
+  if (revealStatus === 'REVEALED' || deliveryStatus === 'REVEALED') {
+    return 'ACCESS_GRANTED';
+  }
+  if (deliveryStatus.includes('READY') || revealStatus === 'NOT_REVEALED') {
+    return item.availableActions.includes('REVEAL_ACCESS') ? 'CODE_REVEAL_AVAILABLE' : 'ACCESS_READY';
+  }
+  if (deliveryStatus.includes('PENDING')) {
+    return 'SELLER_DELIVERY_PENDING';
+  }
+
+  return 'ACCESS_READY';
+}
+
+function mapAvailableActions(item: RawDigitalLibraryItem) {
+  const actions = new Set<string>();
+
+  for (const action of item.availableActions) {
+    if (action === 'REVEAL_ACCESS') {
+      actions.add('REVEAL_CODE');
+    }
+    if (action === 'VIEW_ORDER_DETAIL' || action === 'VIEW_DIGITAL_DELIVERY') {
+      actions.add('VIEW_ORDER_DETAILS');
+    }
+    if (action === 'REPORT_ISSUE') {
+      actions.add('REPORT_ISSUE');
+    }
+    if (action === 'CONTACT_SELLER') {
+      actions.add('CONTACT_SELLER');
+    }
+    if (action === 'OPEN_SHARITY_REVIEW' || action === 'OPEN_REFUND_REQUEST') {
+      actions.add('CONTACT_SUPPORT');
+    }
+  }
+
+  if (mapProductType(item) === 'DOWNLOADABLE_FILE') {
+    actions.add('SECURE_DOWNLOAD');
+    actions.add('VIEW_FILES');
+  }
+
+  return Array.from(actions) as LibraryItem['availableActions'];
+}
+
+function mapLibraryItem(item: RawDigitalLibraryItem, fallbackDate?: string): LibraryItem {
+  return {
+    accessId: item.orderItemId,
+    accessStatus: mapAccessStatus(item),
+    availableActions: mapAvailableActions(item),
+    licenseSummary: item.refundEligibilityWarning,
+    maskedCodePreview: item.revealAccessStatus.toUpperCase() === 'REVEALED' ? 'XXXX-XXXX-7890' : 'XXXX-XXXX-****',
+    orderId: parseOrderIdFromRoute(item.route, item.orderReference),
+    productId: item.productId,
+    productImageUrl: resolveMockImageUrl(item.imageUrl, 120),
+    productTitle: item.title,
+    productType: mapProductType(item),
+    purchaseDate: formatDate(item.revealedAt ?? fallbackDate),
+    refundStatus: item.refundEligibilityWarning,
+    sellerDisplayName: item.sellerStoreDisplayName,
+    sellerId: item.listingId
+  };
+}
+
+async function parseJson<T>(response: Response, fallbackMessage: string) {
+  if (!response.ok) {
+    const message = await readApiErrorMessage(response, fallbackMessage);
+    if (response.status === 401) {
+      throw new AuthenticationRequiredError(message);
+    }
+    throw new Error(message);
+  }
+
+  return await response.json() as T;
+}
+
+async function getRawLibrary(): Promise<RawDigitalLibraryResponse> {
+  const response = await fetch(`${bffBaseUrl}/api/buyer/digital-library`, {
+    credentials: 'include'
+  });
+  return await parseJson<RawDigitalLibraryResponse>(response, 'Failed to load digital library');
+}
+
+async function getRawLibraryItem(accessId: string): Promise<RawDigitalLibraryItem> {
+  const response = await fetch(`${bffBaseUrl}/api/buyer/digital-library/items/${encodeURIComponent(accessId)}`, {
+    credentials: 'include'
+  });
+  return await parseJson<RawDigitalLibraryItem>(response, 'Failed to load digital library item');
+}
 
 export async function getBuyerLibrary(): Promise<LibraryResponse> {
-  await wait();
+  const library = await getRawLibrary();
   return {
     accessStatuses: [
       'ACCESS_READY',
@@ -29,161 +226,76 @@ export async function getBuyerLibrary(): Promise<LibraryResponse> {
       'DISPUTED'
     ],
     filters: ['All', 'Codes', 'Downloads', 'Subscriptions', 'Courses', 'Services', 'Access Ready', 'Pending Review', 'Refunded', 'Seller Delivery Pending'],
-    items: [
-      {
-        accessId: 'access-code-psn-001',
-        accessStatus: 'CODE_REVEAL_AVAILABLE',
-        availableActions: ['REVEAL_CODE', 'VIEW_ORDER_DETAILS', 'REPORT_ISSUE', 'CONTACT_SUPPORT'],
-        licenseSummary: 'Single-use digital redemption code. Refund review required after reveal.',
-        maskedCodePreview: '****-****-****-8KQ2',
-        orderId: 'SH-12345',
-        productId: 'prod-psn-50',
-        productImageUrl: 'https://images.unsplash.com/photo-1605901309584-818e25960a8f?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'PlayStation Store Digital Code',
-        productType: 'GAMING_CODE',
-        purchaseDate: '2026-06-03',
-        refundStatus: 'Refund eligible until reveal',
-        sellerDisplayName: 'Code Vault',
-        sellerId: 'seller-code-vault'
-      },
-      {
-        accessId: 'access-soft-002',
-        accessStatus: 'ACCESS_READY',
-        availableActions: ['REVEAL_CODE', 'VIEW_LICENSE', 'VIEW_ORDER_DETAILS', 'REPORT_ISSUE'],
-        licenseSummary: 'One-device activation key with standard license terms.',
-        maskedCodePreview: '****-****-****-ABCD',
-        orderId: 'SH-12346',
-        productId: 'prod-design-suite',
-        productImageUrl: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'Design Suite Pro License Key',
-        productType: 'SOFTWARE_KEY',
-        purchaseDate: '2026-06-02',
-        refundStatus: 'Refund review after reveal',
-        sellerDisplayName: 'Studio Keys',
-        sellerId: 'seller-studio-keys'
-      },
-      {
-        accessId: 'access-download-003',
-        accessStatus: 'DOWNLOAD_READY',
-        availableActions: ['SECURE_DOWNLOAD', 'VIEW_FILES', 'VIEW_LICENSE', 'VIEW_ORDER_DETAILS', 'REPORT_ISSUE'],
-        licenseSummary: 'Personal and commercial use for one buyer account.',
-        orderId: 'SH-12347',
-        productId: 'prod-template-kit',
-        productImageUrl: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'Marketplace UI Template Kit',
-        productType: 'DOWNLOADABLE_FILE',
-        purchaseDate: '2026-06-01',
-        refundStatus: 'Refund review after first download',
-        sellerDisplayName: 'Pixel Forge',
-        sellerId: 'seller-pixel-forge'
-      },
-      {
-        accessId: 'access-sub-004',
-        accessStatus: 'ACCESS_GRANTED',
-        availableActions: ['OPEN_ACCESS', 'VIEW_ORDER_DETAILS', 'CONTACT_SUPPORT'],
-        licenseSummary: 'Monthly subscription access. Manage renewal from account settings.',
-        orderId: 'SH-12348',
-        productId: 'prod-cloud-sub',
-        productImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'Cloud Asset Library Subscription',
-        productType: 'DIGITAL_SUBSCRIPTION',
-        purchaseDate: '2026-05-28',
-        refundStatus: 'Active subscription',
-        sellerDisplayName: 'CloudShelf',
-        sellerId: 'seller-cloudshelf'
-      },
-      {
-        accessId: 'access-course-005',
-        accessStatus: 'ACCESS_READY',
-        availableActions: ['OPEN_COURSE', 'VIEW_ORDER_DETAILS', 'CONTACT_SUPPORT'],
-        licenseSummary: 'Lifetime course access for this buyer account.',
-        orderId: 'SH-12349',
-        productId: 'prod-react-course',
-        productImageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'React Native Marketplace Course',
-        productType: 'ONLINE_COURSE',
-        purchaseDate: '2026-05-25',
-        refundStatus: 'Refund window open',
-        sellerDisplayName: 'Launch School',
-        sellerId: 'seller-launch-school'
-      },
-      {
-        accessId: 'access-service-006',
-        accessStatus: 'SELLER_DELIVERY_PENDING',
-        availableActions: ['VIEW_SERVICE_ORDER', 'CONTACT_SELLER', 'VIEW_REQUIREMENTS', 'VIEW_ORDER_DETAILS'],
-        licenseSummary: 'Seller will deliver digital service files after requirements are confirmed.',
-        orderId: 'SH-12350',
-        productId: 'prod-logo-review',
-        productImageUrl: 'https://images.unsplash.com/photo-1534670007418-fbb7f6cf32c3?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'Digital Brand Review Service',
-        productType: 'DIGITAL_SERVICE_ORDER',
-        purchaseDate: '2026-05-22',
-        refundStatus: 'Seller delivery pending',
-        sellerDisplayName: 'Brand Desk',
-        sellerId: 'seller-brand-desk'
-      },
-      {
-        accessId: 'access-gift-007',
-        accessStatus: 'REFUNDED',
-        availableActions: ['VIEW_ORDER_DETAILS', 'CONTACT_SUPPORT'],
-        licenseSummary: 'Gift card access disabled after refund.',
-        maskedCodePreview: '****-****-****-1QAZ',
-        orderId: 'SH-12351',
-        productId: 'prod-gift-card',
-        productImageUrl: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?auto=format&fit=crop&w=900&q=80',
-        productTitle: 'Digital Gift Card',
-        productType: 'GIFT_CARD',
-        purchaseDate: '2026-05-18',
-        refundStatus: 'Refunded',
-        sellerDisplayName: 'Gift Grid',
-        sellerId: 'seller-gift-grid'
-      }
-    ],
+    items: library.items.map((item) => mapLibraryItem(item, library.updatedAt)),
     pagination: {
       page: 1,
-      pageSize: 20,
-      total: 7
+      pageSize: library.items.length || 20,
+      total: library.items.length
     }
   };
 }
 
 export async function getLibraryItemDetails(accessId: string) {
-  const library = await getBuyerLibrary();
-  return library.items.find((item) => item.accessId === accessId) ?? null;
+  const item = await getRawLibraryItem(accessId);
+  return mapLibraryItem(item);
 }
 
 export async function prepareCodeReveal(accessId: string): Promise<RevealPrepareResponse> {
-  await wait(180);
+  const item = await getLibraryItemDetails(accessId);
+  const response = await fetch(`${bffBaseUrl}/api/buyer/orders/${encodeURIComponent(item.orderId)}/digital-delivery/items/${encodeURIComponent(accessId)}/eligibility`, {
+    credentials: 'include'
+  });
+  const eligibility = await parseJson<RawRevealEligibility>(response, 'Failed to load reveal eligibility');
   return {
     accessId,
-    message: 'Revealing this code may affect refund eligibility. Do you want to continue?',
-    refundImpactWarning: 'This code has not been revealed yet. Refunds may require admin review after reveal.',
-    requiresLocationConsent: true,
-    revealAllowed: true,
+    message: eligibility.userSafeMessage,
+    refundImpactWarning: item.refundStatus,
+    requiresLocationConsent: eligibility.acknowledgementRequired,
+    revealAllowed: eligibility.eligible,
     screenshotProtectionRequired: true,
-    watermarkRequired: true
+    watermarkRequired: eligibility.secureAccessAllowed && eligibility.payloadValidated
   };
 }
 
 export async function revealCode(accessId: string, request: RevealCodeRequest): Promise<RevealCodeResponse> {
-  await wait(420);
-  if (request.locationConsentStatus !== 'ACCEPTED') {
-    throw new Error('LOCATION_CONSENT_DENIED');
-  }
+  const item = await getLibraryItemDetails(accessId);
+
+  const acknowledgement = {
+    buyerAcknowledgedIssueReportPath: true,
+    buyerAcknowledgedNoChatCodeSharing: true,
+    buyerAcknowledgedRefundEligibilityMayChange: true,
+    buyerAcknowledgedRevealLogged: true,
+    buyerAcknowledgedSharitySecureDelivery: true
+  };
+
+  const acknowledgeResponse = await fetch(`${bffBaseUrl}/api/buyer/orders/${encodeURIComponent(item.orderId)}/digital-delivery/items/${encodeURIComponent(accessId)}/acknowledge-reveal`, {
+    body: JSON.stringify(acknowledgement),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST'
+  });
+  await parseJson(acknowledgeResponse, 'Failed to acknowledge reveal warnings');
+
+  const response = await fetch(`${bffBaseUrl}/api/buyer/orders/${encodeURIComponent(item.orderId)}/digital-delivery/items/${encodeURIComponent(accessId)}/reveal`, {
+    body: JSON.stringify({ acknowledgement, revealSessionId: request.sessionId }),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST'
+  });
+  const body = await parseJson<RawRevealResponse>(response, 'Failed to reveal digital access');
 
   return {
     accessId,
-    expiresAt: new Date(Date.now() + 60_000).toISOString(),
-    maskedCode: '****-****-****-8KQ2',
-    refundEligibilityAfterReveal: 'ADMIN_REVIEW_REQUIRED',
-    revealId: `reveal-${accessId}-001`,
-    revealedCode: accessId.includes('soft') ? 'SFTW-7HA9-PROD-ABCD' : 'PSN9-D8K2-LM4Q-8KQ2',
-    watermarkText: `Sharity - Order SH-12345 - Buyer V***D - ${new Date().toLocaleString()}`
+    expiresAt: toIsoDate(body.payload.expiresAt),
+    maskedCode: body.payload.maskedValue,
+    refundEligibilityAfterReveal: item.refundStatus,
+    revealId: `${accessId}-${request.sessionId}`,
+    revealedCode: body.payload.revealedValue,
+    watermarkText: `Sharity - Order ${item.orderId} - ${request.approxCity ?? 'Protected'} - ${new Date().toLocaleString()}`
   };
 }
 
 export async function endRevealSession(accessId: string, revealId: string, request?: EndRevealRequest) {
-  await wait(120);
   return {
     accessId,
     endReason: request?.endReason ?? 'USER_HIDDEN',
@@ -193,38 +305,18 @@ export async function endRevealSession(accessId: string, revealId: string, reque
 }
 
 export async function getDownloadFiles(accessId: string): Promise<DownloadFilesResponse> {
-  await wait(220);
+  const item = await getLibraryItemDetails(accessId);
   return {
     accessId,
     files: [
       {
         downloadStatus: 'READY',
-        fileId: 'file-template-zip',
-        fileName: 'marketplace-template-kit.zip',
-        fileSize: '148 MB',
+        fileId: `${accessId}-primary`,
+        fileName: `${item.productTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.zip`,
+        fileSize: 'Protected',
         fileType: 'ZIP',
-        lastUpdated: '2026-06-01',
-        licenseSummary: 'Includes source files, UI screens, and asset exports.',
-        version: 'v1.2'
-      },
-      {
-        downloadStatus: 'READY',
-        fileId: 'file-license-pdf',
-        fileName: 'license-and-usage-guide.pdf',
-        fileSize: '1.8 MB',
-        fileType: 'PDF',
-        lastUpdated: '2026-05-31',
-        licenseSummary: 'Buyer-safe license and permitted use details.',
-        version: 'v1.0'
-      },
-      {
-        downloadStatus: 'DOWNLOADED',
-        fileId: 'file-preview-png',
-        fileName: 'preview-gallery.png',
-        fileSize: '6.4 MB',
-        fileType: 'PNG',
-        lastUpdated: '2026-05-30',
-        licenseSummary: 'Preview image for quick inspection.',
+        lastUpdated: item.purchaseDate,
+        licenseSummary: item.licenseSummary,
         version: 'v1.0'
       }
     ],
@@ -233,28 +325,38 @@ export async function getDownloadFiles(accessId: string): Promise<DownloadFilesR
 }
 
 export async function prepareSecureDownload(accessId: string) {
-  await wait(180);
+  const item = await getLibraryItemDetails(accessId);
   return {
     accessId,
-    message: 'Downloading this file may affect refund eligibility.',
+    message: `Secure download for ${item.productTitle} is still using a protected placeholder flow because the backend download-file contract is not available yet.`,
     rawUrlsExposed: false
   };
 }
 
 export async function startSecureDownload(accessId: string, fileId = 'file-template-zip'): Promise<SecureDownloadResponse> {
-  await wait(360);
   return {
     accessId,
     downloadId: `download-${accessId}-001`,
     expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
     fileId,
     refundEligibilityAfterDownload: 'ADMIN_REVIEW_REQUIRED',
-    signedUrl: 'mock-signed-download-url-hidden-from-ui'
+    signedUrl: 'backend-download-contract-not-yet-available'
   };
 }
 
 export async function reportInvalidCode(accessId: string, request: InvalidCodeReportRequest) {
-  await wait(220);
+  const item = await getLibraryItemDetails(accessId);
+  const response = await fetch(`${bffBaseUrl}/api/buyer/orders/${encodeURIComponent(item.orderId)}/digital-delivery/items/${encodeURIComponent(accessId)}/report-issue`, {
+    body: JSON.stringify({
+      buyerAcknowledgedIssueReview: true,
+      message: request.message,
+      reasonCode: request.reasonCode
+    }),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST'
+  });
+  await parseJson(response, 'Failed to report digital access issue');
   return {
     accessId,
     reasonCode: request.reasonCode,
@@ -264,7 +366,6 @@ export async function reportInvalidCode(accessId: string, request: InvalidCodeRe
 }
 
 export async function contactDigitalAccessSupport(request: SupportTicketRequest) {
-  await wait(220);
   return {
     accessId: request.accessId,
     status: 'CREATED',
@@ -273,7 +374,18 @@ export async function contactDigitalAccessSupport(request: SupportTicketRequest)
 }
 
 export async function reportLibraryIssue(request: LibraryIssueRequest) {
-  await wait(220);
+  const item = await getLibraryItemDetails(request.accessId);
+  const response = await fetch(`${bffBaseUrl}/api/buyer/orders/${encodeURIComponent(item.orderId)}/digital-delivery/items/${encodeURIComponent(request.accessId)}/report-issue`, {
+    body: JSON.stringify({
+      buyerAcknowledgedIssueReview: true,
+      message: request.message,
+      reasonCode: request.issueType
+    }),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST'
+  });
+  await parseJson(response, 'Failed to report library issue');
   return {
     issueId: `issue-${request.accessId}`,
     status: 'RECEIVED'

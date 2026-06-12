@@ -1,7 +1,10 @@
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
+import type { AppRoute } from '../../types/navigation';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
+
+export type QuickActionAudience = 'authenticated' | 'buyer' | 'seller';
 
 export type DashboardServiceConfig = {
   activeCategoryCodes?: string[];
@@ -12,6 +15,17 @@ export type DashboardServiceConfig = {
   icon: IconName;
   name: string;
   sourceVerticalCodes: string[];
+};
+
+export type DashboardQuickActionConfig = {
+  audience?: QuickActionAudience;
+  fallbackText?: string;
+  icon: IconName;
+  label: string;
+  requiresMarketplaceAccess?: boolean;
+  requiresSellerAccess?: boolean;
+  route: AppRoute;
+  text: string;
 };
 
 export const sidebarItems: { icon: IconName; label: string }[] = [
@@ -32,12 +46,49 @@ export const mobileTabItems: { icon: IconName; label: string }[] = [
   { icon: 'person-outline', label: 'Profile' }
 ];
 
-export const quickActions: { icon: IconName; label: string; text: string }[] = [
-  { icon: 'receipt-outline', label: 'My Orders', text: 'Recent orders and digital purchases' },
-  { icon: 'gift-outline', label: 'Rewards', text: 'Coupons, cashback, points, and referral rewards' },
-  { icon: 'cart-outline', label: 'Cart', text: 'Review items before checkout' },
-  { icon: 'pricetags-outline', label: 'Sell', text: 'Open seller dashboard or become a seller' },
-  { icon: 'wallet-outline', label: 'Wallet', text: 'Balances, payouts, and transaction history' }
+export const quickActionConfigs: DashboardQuickActionConfig[] = [
+  {
+    audience: 'authenticated',
+    icon: 'receipt-outline',
+    label: 'My Orders',
+    requiresMarketplaceAccess: true,
+    route: 'orders',
+    text: 'Recent orders and digital purchases.'
+  },
+  {
+    audience: 'buyer',
+    fallbackText: 'Rewards activate when buyer marketplaces are enabled for your country.',
+    icon: 'gift-outline',
+    label: 'Rewards',
+    requiresMarketplaceAccess: true,
+    route: 'rewards',
+    text: 'Coupons, cashback, points, and referral rewards.'
+  },
+  {
+    audience: 'buyer',
+    fallbackText: 'Cart unlocks when shopping is enabled for your current country.',
+    icon: 'cart-outline',
+    label: 'Cart',
+    requiresMarketplaceAccess: true,
+    route: 'cart',
+    text: 'Review items before checkout.'
+  },
+  {
+    audience: 'seller',
+    fallbackText: 'Seller tools unlock after seller access is enabled for your role and country.',
+    icon: 'pricetags-outline',
+    label: 'Sell',
+    requiresSellerAccess: true,
+    route: 'sellerVerification',
+    text: 'Open seller dashboard, listings, and onboarding.'
+  },
+  {
+    audience: 'authenticated',
+    icon: 'wallet-outline',
+    label: 'Wallet',
+    route: 'wallet',
+    text: 'Balances, payouts, and transaction history.'
+  }
 ];
 
 export const serviceConfigs: DashboardServiceConfig[] = [

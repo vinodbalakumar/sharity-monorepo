@@ -8,7 +8,7 @@ export function getTotalCartValue(cart: CartResponse): number {
 }
 
 export function getCartItemCount(cart: CartResponse): number {
-  return cart.sellerGroups.reduce((sum, group) => sum + group.items.length, 0);
+  return cart.sellerGroups.reduce((sum, group) => sum + group.items.reduce((groupTotal, item) => groupTotal + item.quantity, 0), 0);
 }
 
 export function getGroupTotal(group: CartSellerGroup): number {
@@ -16,7 +16,9 @@ export function getGroupTotal(group: CartSellerGroup): number {
 }
 
 export function canCheckout(cart: CartResponse): boolean {
-  return cart.sellerGroups.every((group) => group.validationStatus === 'VALID' || group.validationStatus === 'SELLER_ACCEPTANCE_REQUIRED');
+  const groupsEligible = cart.sellerGroups.every((group) => group.validationStatus === 'VALID' || group.validationStatus === 'SELLER_ACCEPTANCE_REQUIRED');
+  const digitalTermsSatisfied = !cart.digitalTerms.required || cart.digitalTerms.accepted;
+  return cart.validationSummary.checkoutReady && groupsEligible && digitalTermsSatisfied;
 }
 
 export function requiresSellerAcceptance(cart: CartResponse): boolean {
@@ -28,11 +30,11 @@ export function getValidationIssues(cart: CartResponse): string[] {
 }
 
 export function hasDigitalProducts(cart: CartResponse): boolean {
-  return cart.sellerGroups.some((group) => group.marketplaceCode === 'DIGITAL');
+  return cart.sellerGroups.some((group) => group.items.some((item) => item.marketplaceCode === 'DIGITAL'));
 }
 
 export function hasPhysicalProducts(cart: CartResponse): boolean {
-  return cart.sellerGroups.some((group) => group.marketplaceCode !== 'DIGITAL');
+  return cart.sellerGroups.some((group) => group.items.some((item) => item.marketplaceCode !== 'DIGITAL'));
 }
 
 export function formatCartSubtotal(group: CartSellerGroup): string {

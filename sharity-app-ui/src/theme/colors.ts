@@ -11,10 +11,10 @@ export const colors = {
   secondaryDark: '#2f78b5',
   secondaryContrast: '#ffffff',
 
-  // Tertiary (cyan, for highlights)
-  tertiary: '#06b6d4',
-  tertiaryLight: '#22d3ee',
-  tertiaryDark: '#0891b2',
+  // Tertiary (teal, for highlights)
+  tertiary: '#14b8a6',
+  tertiaryLight: '#5eead4',
+  tertiaryDark: '#0f766e',
   tertiaryContrast: '#ffffff',
 
   // Success states (green)
@@ -44,36 +44,36 @@ export const colors = {
 
   // Neutral grayscale
   gray50: '#f9fafb',
-  gray100: '#f3f4f6',
-  gray200: '#e5e7eb',
-  gray300: '#d1d5db',
-  gray400: '#9ca3af',
-  gray500: '#6b7280',
-  gray600: '#4b5563',
-  gray700: '#334155',
+  gray100: '#eef2f7',
+  gray200: '#dde4ee',
+  gray300: '#c9d3e0',
+  gray400: '#9aa8ba',
+  gray500: '#6c7a8c',
+  gray600: '#536174',
+  gray700: '#364152',
   gray800: '#1f2937',
-  gray900: '#111827',
+  gray900: '#152033',
   gray950: '#030712',
 
   // Semantic colors
-  background: '#f8fafc',
+  background: '#f6f7fb',
   surface: '#ffffff',
-  surfaceVariant: '#f1f5f9',
-  surfaceHover: '#f0f9ff',
-  surfaceActive: '#e0f2fe',
+  surfaceVariant: '#eef2ff',
+  surfaceHover: '#f8fafc',
+  surfaceActive: '#e8f0ff',
   panel: '#ffffff',
-  panelVariant: '#f9fafb',
-  border: '#e2e8f0',
-  borderLight: '#f1f5f9',
-  borderDark: '#cbd5e1',
-  divider: '#e2e8f0',
+  panelVariant: '#fbfcff',
+  border: '#d9e1ec',
+  borderLight: '#edf2f7',
+  borderDark: '#bcc8d6',
+  divider: '#d9e1ec',
 
   // Text colors
-  textPrimary: '#111827',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  softText: '#64748b',
-  mutedText: '#94a3b8',
+  textPrimary: '#152033',
+  textSecondary: '#5f6f84',
+  textMuted: '#8f9eb1',
+  softText: '#5f6f84',
+  mutedText: '#8f9eb1',
 
   // State colors
   disabled: '#94a3b8',
@@ -94,5 +94,26 @@ export const colors = {
   black: '#000000',
   white: '#ffffff'
 };
+
+export const marketingColors = {
+  accent: '#f29a4a',
+  accentSoft: '#fff0df',
+  blue: '#3f88c5',
+  border: '#dbe4ef',
+  card: '#fffdf9',
+  cardAlt: '#ffffff',
+  danger: '#ef4444',
+  header: '#f7fbff',
+  heroEnd: '#dcefff',
+  heroStart: '#fff3e4',
+  input: '#ffffff',
+  page: '#f4f7fb',
+  purple: '#3f88c5',
+  purpleSoft: '#eef7ff',
+  success: '#246b45',
+  text: '#12263a',
+  textMuted: '#64778c',
+  white: colors.white
+} as const;
 
 export type AppColorName = keyof typeof colors;

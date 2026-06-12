@@ -24,11 +24,13 @@ export function CartScreen({ onNavigate }: Props) {
   const couponCode = useSelector(appState$.multiSellerCart.couponCode);
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [preview, setPreview] = useState<CheckoutPreviewResponse | null>(null);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const response = await getCart();
       // Ensure response has the required structure
@@ -38,6 +40,7 @@ export function CartScreen({ onNavigate }: Props) {
       }
     } catch (error) {
       console.error('Error loading cart:', error);
+      setLoadError(error instanceof Error ? error.message : 'Unable to load cart right now.');
     }
     setLoading(false);
   }, []);
@@ -48,7 +51,8 @@ export function CartScreen({ onNavigate }: Props) {
 
   async function handleCoupon() {
     try {
-      await applyCouponToCart(couponCode);
+      appState$.multiSellerCart.couponCode.set(normalizedCouponCode);
+      await applyCouponToCart(normalizedCouponCode);
       setMessage('Coupon applied successfully!');
       await load();
     } catch (error) {

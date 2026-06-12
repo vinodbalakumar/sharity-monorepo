@@ -2,14 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button, Card, Input, Paragraph, XStack } from 'tamagui';
 
 import { InteriorShell } from '../../components/appShell/InteriorShell';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors, radius, spacing } from '../../theme';
 import { authPalette } from '../auth/authTheme';
 import type { AppRoute } from '../../types/navigation';
-import { logoutBrowserSession } from '../../services/sessionService';
+import { getBrowserSessionSummary, logoutBrowserSession } from '../../services/sessionService';
 import { getRegistrationOptions } from '../../services/authApi';
 import { getCurrentUser, getCurrentUserSessions, getCurrentUserSocialLinks, revokeAllCurrentUserSessions, revokeCurrentUserSession, startGoogleLink, updateCurrentUserProfile, uploadCurrentUserProfileImage, type CurrentUser, type SocialLink, type UserSession } from '../../services/userApi';
 
@@ -33,6 +34,7 @@ const privacyOptions = ['PRIVATE', 'VISIBLE_AFTER_ORDER', 'PUBLIC_WITHIN_SHARITY
 const PROFILE_IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
 export function ProfilePrivacyScreen({ onNavigate }: Props) {
+  const { isCompactPhone, isSingleColumn } = useResponsiveLayout();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -70,9 +72,10 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
         getCurrentUserSessions(),
         getRegistrationOptions()
       ]);
+      const browserSession = await getBrowserSessionSummary();
       const links = await getCurrentUserSocialLinks().catch(() => []);
       setUser(currentUser);
-      setSessions(currentSessions);
+      setSessions(mergeSessions(currentSessions, browserSession));
       setSocialLinks(links);
       setCountries(registrationOptions.countries);
       setGenders(registrationOptions.genders);
@@ -265,7 +268,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
   return (
     <InteriorShell activeLabel="Profile" onNavigate={onNavigate} scrollable={false} subtitle="Real account profile, sessions, and privacy settings" title="Profile & Privacy">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.container}>
+        <View style={[styles.container, isCompactPhone && styles.containerCompact]}>
 
           {loading ? <StateCard title="Loading account details..." /> : null}
           {error ? <StateCard title={error} actionLabel="Reload" onAction={load} /> : null}
@@ -273,19 +276,35 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
 
           {!loading && user ? (
             <>
-              <View style={styles.grid}>
-              <View style={styles.leftColumn}>
+              <View style={[styles.grid, isSingleColumn && styles.gridStacked]}>
+              <View style={[styles.leftColumn, isSingleColumn && styles.leftColumnStacked]}>
                 <Card style={styles.card}>
                   <View style={styles.hero}>
-                    <View style={styles.avatarWrap}>
-                      {user.profile.profileImageUrl ? (
-                        <Image source={user.profile.profileImageUrl} style={styles.avatar} contentFit="cover" />
-                      ) : (
-                        <View style={styles.avatarFallback}>
-                          <Text style={styles.avatarInitials}>{initials(displayName)}</Text>
+                    <Pressable
+                      accessibilityLabel={form.profileImageUrl ? 'Change profile photo' : 'Add profile photo'}
+                      accessibilityRole="button"
+                      disabled={uploadingImage}
+                      onPress={changeProfileImage}
+                      style={[styles.avatarPressable, uploadingImage && styles.avatarPressableDisabled]}
+                    >
+                      <View style={styles.avatarWrap}>
+                        {user.profile.profileImageUrl ? (
+                          <Image source={user.profile.profileImageUrl} style={styles.avatar as never} contentFit="cover" />
+                        ) : (
+                          <View style={styles.avatarFallback}>
+                            <Text style={styles.avatarInitials}>{initials(displayName)}</Text>
+                          </View>
+                        )}
+                        <View style={styles.avatarEditBadge}>
+                          {uploadingImage ? (
+                            <ActivityIndicator color={authPalette.white} size="small" />
+                          ) : (
+                            <Ionicons color={authPalette.white} name="camera-outline" size={16} />
+                          )}
                         </View>
-                      )}
-                    </View>
+                      </View>
+                    </Pressable>
+                    <Text style={styles.avatarHint}>{uploadingImage ? 'Uploading photo...' : form.profileImageUrl ? 'Tap photo to change it' : 'Tap avatar to add a photo'}</Text>
                     <Text style={styles.displayName}>{displayName}</Text>
                     <Text style={styles.subcopy}>{user.email}</Text>
                     <XStack gap="$2" flexWrap="wrap" justifyContent="center">
@@ -311,7 +330,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                   >
                     {sessions.length === 0 ? <Paragraph color="$gray10">No active sessions found.</Paragraph> : null}
                     {sessions.map((session) => (
-                      <View key={session.id} style={styles.sessionRow}>
+                      <View key={session.id} style={[styles.sessionRow, isCompactPhone && styles.sessionRowCompact]}>
                         <View style={styles.sessionMeta}>
                           <Text style={styles.sessionTitle}>{session.deviceName ?? 'Unknown device'}</Text>
                           <Text style={styles.sessionText}>{session.ipAddress ?? 'Unknown IP'}</Text>
@@ -329,51 +348,11 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
               <View style={styles.rightColumn}>
                 <Card style={styles.card}>
                   <SectionTitle title="Profile details" />
-                  <View style={styles.formGrid}>
-                    <Field label="First name" value={form.firstName} onChangeText={(value) => setForm((current) => ({ ...current, firstName: value }))} />
-                    <Field label="Last name" value={form.lastName} onChangeText={(value) => setForm((current) => ({ ...current, lastName: value }))} />
-                    <Field label="Phone number" value={form.phoneNumber} onChangeText={setPhone} keyboardType="phone-pad" helper="10 digits only" />
-                    <Field label="Date of birth" value={form.dateOfBirth} onChangeText={(value) => setForm((current) => ({ ...current, dateOfBirth: value }))} type={Platform.OS === 'web' ? 'date' : 'text'} helper="Web uses the native date picker." />
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Profile image</Text>
-                      <View style={styles.imageControl}>
-                        <View style={styles.imagePreviewSmall}>
-                          {form.profileImageUrl ? (
-                            <Image contentFit="cover" source={{ uri: form.profileImageUrl }} style={styles.imagePreviewPhoto} />
-                          ) : (
-                            <View style={styles.imagePreviewFallback}>
-                              <Ionicons color={authPalette.textMuted} name="person-circle-outline" size={28} />
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.imageControlCopy}>
-                          <Text style={styles.imageControlTitle}>{form.profileImageUrl ? 'Photo on file' : 'No profile photo yet'}</Text>
-                          <Text style={styles.imageControlText}>Upload a JPG, PNG, or WEBP photo from your device. Max size: 5 MB.</Text>
-                          <View style={styles.imageControlActions}>
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel={form.profileImageUrl ? 'Update profile photo' : 'Add profile photo'}
-                              disabled={uploadingImage}
-                              onPress={changeProfileImage}
-                              style={[styles.photoButton, uploadingImage && styles.photoButtonDisabled]}
-                            >
-                              {uploadingImage ? (
-                                <ActivityIndicator color={authPalette.white} />
-                              ) : (
-                                <Ionicons color={authPalette.white} name="cloud-upload-outline" size={18} />
-                              )}
-                              <Text style={styles.photoButtonText}>{form.profileImageUrl ? 'Update photo' : 'Add photo'}</Text>
-                            </Pressable>
-                            {form.profileImageUrl ? (
-                              <Pressable accessibilityLabel="Remove profile photo" onPress={() => setForm((current) => ({ ...current, profileImageUrl: '' }))} style={styles.photoLinkButton}>
-                                <Text style={styles.photoLinkText}>Remove</Text>
-                              </Pressable>
-                            ) : null}
-                          </View>
-                          <Text style={styles.photoHint}>{uploadingImage ? 'Uploading...' : 'Stored in your account profile. The page refreshes after upload.'}</Text>
-                        </View>
-                      </View>
-                    </View>
+                  <View style={[styles.formGrid, isCompactPhone && styles.formGridCompact]}>
+                    <Field compact={isCompactPhone} label="First name" value={form.firstName} onChangeText={(value) => setForm((current) => ({ ...current, firstName: value }))} />
+                    <Field compact={isCompactPhone} label="Last name" value={form.lastName} onChangeText={(value) => setForm((current) => ({ ...current, lastName: value }))} />
+                    <Field compact={isCompactPhone} label="Phone number" value={form.phoneNumber} onChangeText={setPhone} keyboardType="phone-pad" helper="10 digits only" />
+                    <DateField compact={isCompactPhone} label="Date of birth" value={form.dateOfBirth} onChangeText={(value) => setForm((current) => ({ ...current, dateOfBirth: value }))} />
                   </View>
 
                   <Subsection title="Country">
@@ -391,11 +370,11 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                   </Subsection>
 
                   <Subsection title="Gender">
-                    <View style={styles.chipRow}>
+                    <View style={[styles.chipRow, isCompactPhone && styles.chipRowCompact]}>
                       {genders.map((gender) => {
                         const selected = form.gender === gender.code;
                         return (
-                          <Pressable key={gender.code} accessibilityLabel={`Gender ${gender.label}`} onPress={() => setForm((current) => ({ ...current, gender: gender.code }))} style={[styles.chip, selected && styles.chipActive]}>
+                          <Pressable key={gender.code} accessibilityLabel={`Gender ${gender.label}`} onPress={() => setForm((current) => ({ ...current, gender: gender.code }))} style={[styles.chip, isCompactPhone && styles.chipCompact, selected && styles.chipActive]}>
                             <Text style={[styles.chipTitle, selected && styles.chipTitleActive]}>{gender.label}</Text>
                           </Pressable>
                         );
@@ -404,11 +383,11 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
                   </Subsection>
 
                   <Subsection title="Privacy setting">
-                    <View style={styles.chipRow}>
+                    <View style={[styles.chipRow, isCompactPhone && styles.chipRowCompact]}>
                       {privacyOptions.map((option) => {
                         const selected = form.privacySetting === option;
                         return (
-                          <Pressable key={option} accessibilityLabel={`Privacy ${option}`} onPress={() => setForm((current) => ({ ...current, privacySetting: option }))} style={[styles.chip, selected && styles.chipActive]}>
+                          <Pressable key={option} accessibilityLabel={`Privacy ${option}`} onPress={() => setForm((current) => ({ ...current, privacySetting: option }))} style={[styles.chip, isCompactPhone && styles.chipCompact, selected && styles.chipActive]}>
                             <Text style={[styles.chipTitle, selected && styles.chipTitleActive]}>{privacyLabel(option)}</Text>
                           </Pressable>
                         );
@@ -430,7 +409,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
 
               </View>
 
-              <View style={styles.actionsFooter}>
+              <View style={[styles.actionsFooter, isCompactPhone && styles.actionsFooterCompact]}>
                 <Button accessibilityLabel="Save profile" disabled={saving || loading} icon={<Ionicons name="save-outline" size={18} />} onPress={saveProfile} theme="purple">
                   {saving ? 'Saving...' : 'Save Profile'}
                 </Button>
@@ -452,6 +431,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
 }
 
 function Field({
+  compact,
   label,
   value,
   onChangeText,
@@ -459,6 +439,7 @@ function Field({
   keyboardType,
   type
 }: {
+  compact?: boolean;
   label: string;
   value: string;
   onChangeText: (value: string) => void;
@@ -467,7 +448,7 @@ function Field({
   type?: string;
 }) {
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, compact && styles.fieldCompact]}>
       <Text style={styles.label}>{label}</Text>
       <Input
         keyboardType={keyboardType}
@@ -477,6 +458,55 @@ function Field({
         value={value}
       />
       {helper ? <Text style={styles.helper}>{helper}</Text> : null}
+    </View>
+  );
+}
+
+function DateField({
+  compact,
+  label,
+  value,
+  onChangeText
+}: {
+  compact?: boolean;
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+}) {
+  const isWeb = Platform.OS === 'web';
+  const browserValue = profileBrowserDateValue(value);
+  const displayValue = profileDisplayDateValue(value);
+
+  return (
+    <View style={[styles.field, compact && styles.fieldCompact]}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.dateWrap}>
+        {isWeb ? (
+          <View style={styles.webDateInputShell}>
+            <input
+              aria-label={label}
+              onChange={(event) => onChangeText(profileDisplayDateValue(event.currentTarget.value))}
+              style={styles.webDateInput as never}
+              type="date"
+              value={browserValue}
+            />
+          </View>
+        ) : (
+          <TextInput
+            keyboardType="number-pad"
+            onChangeText={(next) => onChangeText(profileDisplayDateValue(next))}
+            placeholder="mm/dd/yyyy"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.dateInput}
+            value={displayValue}
+          />
+        )}
+        {!isWeb ? (
+          <View pointerEvents="none" style={styles.dateIconWrap}>
+            <Ionicons color={colors.textSecondary} name="calendar-outline" size={18} />
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -526,6 +556,57 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
 
+function profileParseUsDate(value: string) {
+  if (!value.trim()) {
+    return null;
+  }
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+  const month = match[1];
+  const day = match[2];
+  const year = match[3];
+  if (!month || !day || !year) {
+    return null;
+  }
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+function profileFormatIsoToUsDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) {
+    return '';
+  }
+  const year = match[1];
+  const month = match[2];
+  const day = match[3];
+  if (!year || !month || !day) {
+    return '';
+  }
+  return `${month}/${day}/${year}`;
+}
+
+function profileBrowserDateValue(value: string) {
+  if (!value.trim()) {
+    return '';
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return value.trim();
+  }
+  return profileParseUsDate(value) ?? '';
+}
+
+function profileDisplayDateValue(value: string) {
+  if (!value.trim()) {
+    return '';
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return profileFormatIsoToUsDate(value);
+  }
+  return value;
+}
+
 function privacyLabel(value: string) {
   if (value === 'PRIVATE') {
     return 'Private';
@@ -537,6 +618,22 @@ function privacyLabel(value: string) {
     return 'Public within Sharity';
   }
   return value;
+}
+
+function mergeSessions(sessions: UserSession[], browserSession: Awaited<ReturnType<typeof getBrowserSessionSummary>>): UserSession[] {
+  if (!browserSession?.authenticated) {
+    return sessions;
+  }
+
+  const currentSession: UserSession = {
+    id: -1,
+    deviceName: 'Current browser session',
+    ipAddress: 'Managed by the web sign-in session',
+    lastUsedAt: null,
+    userAgent: browserSession.name ?? browserSession.email ?? 'Browser session'
+  };
+
+  return [currentSession, ...sessions];
 }
 
 function Pill({ label, tone }: { label: string; tone: 'success' | 'warning' | 'info' | 'neutral' }) {
@@ -553,6 +650,10 @@ const styles = StyleSheet.create({
     maxWidth: 1240,
     padding: spacing.lg,
     width: '100%'
+  },
+  containerCompact: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md
   },
   actionsRow: {
     flexDirection: 'row',
@@ -571,9 +672,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.lg
   },
+  gridStacked: {
+    flexDirection: 'column'
+  },
   leftColumn: {
     gap: spacing.lg,
     width: 380
+  },
+  leftColumnStacked: {
+    width: '100%'
   },
   rightColumn: {
     flex: 1,
@@ -588,11 +695,19 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    gap: spacing.sm
+    gap: spacing.xs
+  },
+  avatarPressable: {
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  avatarPressableDisabled: {
+    opacity: 0.8
   },
   avatarWrap: {
-    height: 84,
-    width: 84
+    height: 96,
+    position: 'relative',
+    width: 96
   },
   avatar: {
     borderRadius: 42,
@@ -602,15 +717,33 @@ const styles = StyleSheet.create({
   avatarFallback: {
     alignItems: 'center',
     backgroundColor: '#EAEAFE',
-    borderRadius: 42,
-    height: 84,
+    borderRadius: 48,
+    height: 96,
     justifyContent: 'center',
-    width: 84
+    width: 96
   },
   avatarInitials: {
     color: colors.primary,
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '900'
+  },
+  avatarEditBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderColor: colors.surface,
+    borderRadius: 999,
+    borderWidth: 3,
+    bottom: -2,
+    height: 30,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: -2,
+    width: 30
+  },
+  avatarHint: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    textAlign: 'center'
   },
   displayName: {
     color: colors.textPrimary,
@@ -640,6 +773,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: spacing.sm
   },
+  sessionRowCompact: {
+    alignItems: 'flex-start',
+    flexDirection: 'column'
+  },
   sessionMeta: {
     flex: 1,
     gap: 2
@@ -653,117 +790,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12
   },
+  currentSessionBadge: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+    paddingVertical: 10
+  },
   formGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
     justifyContent: 'space-between'
   },
+  formGridCompact: {
+    gap: spacing.sm
+  },
   field: {
     flexBasis: '48%',
     gap: 6,
     minWidth: 240
   },
-  imageControl: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md
-  },
-  imagePreviewSmall: {
-    height: 72,
-    overflow: 'hidden',
-    width: 72
-  },
-  imagePreviewPhoto: {
-    borderRadius: 14,
-    height: '100%',
-    width: '100%'
-  },
-  imagePreviewFallback: {
-    alignItems: 'center',
-    backgroundColor: '#F4F7FB',
-    borderRadius: 14,
-    height: '100%',
-    justifyContent: 'center',
-    width: '100%'
-  },
-  imageControlCopy: {
-    flex: 1,
-    gap: 6
-  },
-  inlineEditor: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm
-  },
-  inlineEditorInput: {
-    backgroundColor: '#fff',
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.textPrimary,
-    flex: 1,
-    fontSize: 14,
-    minHeight: 42,
-    paddingHorizontal: spacing.sm
-  },
-  imageControlTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800'
-  },
-  imageControlText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 16
-  },
-  imageControlActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: 2
-  },
-  photoButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    flexDirection: 'row',
-    gap: 8,
-    minHeight: 40,
-    paddingHorizontal: 14,
-    paddingVertical: 10
-  },
-  photoButtonDisabled: {
-    opacity: 0.65
-  },
-  photoButtonText: {
-    color: authPalette.white,
-    fontSize: 13,
-    fontWeight: '800'
-  },
-  photoLinkButton: {
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    justifyContent: 'center',
-    minHeight: 40,
-    paddingHorizontal: 14,
-    paddingVertical: 10
-  },
-  photoLinkText: {
-    color: colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800'
-  },
-  photoHint: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 16
+  fieldCompact: {
+    flexBasis: '100%',
+    minWidth: 0
   },
   fieldError: {
     color: authPalette.danger,
@@ -776,12 +825,51 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
     height: 48,
     paddingHorizontal: 14
+  },
+  dateWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 48,
+    paddingLeft: 14,
+    paddingRight: 8
+  },
+  webDateInputShell: {
+    flex: 1,
+    minWidth: 0
+  },
+  webDateInput: {
+    appearance: 'none' as never,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    color: colors.textPrimary,
+    fontSize: 14,
+    height: 46,
+    outlineStyle: 'none' as never,
+    width: '100%'
+  },
+  dateInput: {
+    color: colors.textPrimary,
+    flex: 1,
+    fontSize: 14,
+    minHeight: 46,
+    outlineStyle: 'none' as never,
+    paddingVertical: 10
+  },
+  dateIconWrap: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 32
   },
   helper: {
     color: colors.textSecondary,
@@ -798,11 +886,16 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     paddingRight: spacing.sm
   },
+  chipRowCompact: {
+    flexDirection: 'column',
+    paddingRight: 0
+  },
   chip: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -811,8 +904,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
+  chipCompact: {
+    minWidth: 0,
+    width: '100%'
+  },
   chipActive: {
-    backgroundColor: '#F1FBF7',
+    backgroundColor: colors.surfaceVariant,
     borderColor: colors.primary
   },
   chipTitle: {
@@ -853,6 +950,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '800'
+    ,textAlign: 'center'
+    ,width: '100%'
   },
   sectionTitle: {
     color: colors.textPrimary,

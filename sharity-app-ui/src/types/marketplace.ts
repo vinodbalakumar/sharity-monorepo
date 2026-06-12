@@ -4,8 +4,13 @@ export type MarketplaceVertical = {
   description: string;
   status: string;
   displayOrder: number;
+  iconKey?: string;
+  frontendRoute?: string;
   availableToCustomer: boolean;
   customerAccessEnabled: boolean;
+  providerAccessEnabled?: boolean;
+  requiresProviderApproval?: boolean;
+  providerAccessActive?: boolean;
 };
 
 export type MarketplaceCategory = {

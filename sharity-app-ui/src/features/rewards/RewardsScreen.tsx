@@ -8,6 +8,7 @@ import { Button, Card, H2, Paragraph, ScrollView, Text, XStack, YStack } from 't
 
 import { AppButton } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell/InteriorShell';
+import { AuthenticationRequiredError } from '../../services/sessionService';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
@@ -42,6 +43,9 @@ export function RewardsScreen({ onNavigate }: Props) {
   const selectedTab = useSelector(appState$.rewards.selectedTab) as typeof tabs[number];
   const creditApplied = useSelector(appState$.rewards.creditApplied);
   const [dashboard, setDashboard] = useState<RewardsDashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
   const load = useCallback(async () => {
@@ -69,8 +73,26 @@ export function RewardsScreen({ onNavigate }: Props) {
     setMessage(result.message);
   }
 
-  if (!dashboard) {
+  if (loading) {
     return <YStack bg="$background" f={1} p="$5"><Centered title="Loading Sharity Credit & Rewards..." /></YStack>;
+  }
+
+  if (error) {
+    return (
+      <YStack bg="$background" f={1} p="$5">
+        <Centered
+          title={error}
+          actionLabel="Retry"
+          onAction={load}
+          secondaryActionLabel="Sign In"
+          onSecondaryAction={() => onNavigate('welcome')}
+        />
+      </YStack>
+    );
+  }
+
+  if (!dashboard) {
+    return <YStack bg="$background" f={1} p="$5"><Centered title="Rewards data is currently unavailable." actionLabel="Retry" onAction={load} /></YStack>;
   }
 
   return (
@@ -162,7 +184,7 @@ function BuyerView({ dashboard, onApplyCredit, onClaim }: { dashboard: RewardsDa
           ))}
         </YStack>
       </PremiumCard>
-      <CampaignPanel campaigns={dashboard.availableRewards} onClaim={onClaim} />
+      <CampaignPanel actionLoading={actionLoading} campaigns={dashboard.availableRewards} onClaim={onClaim} />
       <Panel title="Credit History">
         <HistoryList data={dashboard.creditHistory} estimatedItemSize={108} keyExtractor={(item) => item.historyId} renderItem={({ item, index }) => <HistoryRow history={item} index={index} />} />
       </Panel>

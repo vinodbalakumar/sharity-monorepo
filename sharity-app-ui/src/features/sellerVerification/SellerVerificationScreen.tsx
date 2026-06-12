@@ -11,6 +11,20 @@ import { createProviderAccount, enrollProviderModule, getMyModules, getMyProvide
 
 type Props = { onNavigate: (route: AppRoute) => void };
 type ModuleItem = { moduleCode: string; moduleName: string; status: string; displayOrder: number; providerAccessEnabled: boolean; requiresProviderApproval: boolean; availableToCustomer: boolean; providerAccessActive: boolean };
+type SellerScope = 'GLOBAL' | 'NATIONAL';
+
+const sellerScopeOptions: Array<{ value: SellerScope; label: string; description: string }> = [
+  {
+    value: 'NATIONAL',
+    label: 'National Seller',
+    description: 'Sell only inside your registered country and onboard faster with local coverage.'
+  },
+  {
+    value: 'GLOBAL',
+    label: 'Global Seller',
+    description: 'Offer listings across supported countries and prepare for broader fulfillment and support expectations.'
+  }
+];
 
 export function SellerVerificationScreen({ onNavigate }: Props) {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -21,6 +35,7 @@ export function SellerVerificationScreen({ onNavigate }: Props) {
   const [error, setError] = useState('');
   const [selectedProviderId, setSelectedProviderId] = useState('');
   const [newProviderName, setNewProviderName] = useState('');
+  const [sellerScope, setSellerScope] = useState<SellerScope>('NATIONAL');
 
   useEffect(() => {
     void load();
@@ -42,6 +57,7 @@ export function SellerVerificationScreen({ onNavigate }: Props) {
       const chosen = accounts[0];
       setSelectedProviderId(chosen?.publicId ?? '');
       setNewProviderName(chosen?.displayName ?? user.username);
+      setSellerScope(chosen?.sellerScope ?? 'NATIONAL');
       if (!chosen && registrationOptions.countries.length > 0) {
         setMessage('Create a provider account with your live profile details to unlock seller access.');
       }
@@ -65,6 +81,7 @@ export function SellerVerificationScreen({ onNavigate }: Props) {
       const account = await createProviderAccount({
         displayName: newProviderName.trim() || currentUser.username,
         providerType: 'INDIVIDUAL',
+        sellerScope,
         countryCode,
         defaultCurrencyCode
       });
@@ -137,6 +154,7 @@ export function SellerVerificationScreen({ onNavigate }: Props) {
                   {selectedProvider ? (
                     <View style={styles.summaryRows}>
                       <SummaryRow label="Display name" value={selectedProvider.displayName} />
+                      <SummaryRow label="Selling scope" value={labelizeScope(selectedProvider.sellerScope)} />
                       <SummaryRow label="Status" value={selectedProvider.overallStatus} />
                       <SummaryRow label="Verification" value={selectedProvider.verificationStatus} />
                       <SummaryRow label="Payouts enabled" value={selectedProvider.payoutsEnabled ? 'Yes' : 'No'} />
@@ -163,6 +181,10 @@ export function SellerVerificationScreen({ onNavigate }: Props) {
       </ScrollView>
     </InteriorShell>
   );
+}
+
+function labelizeScope(scope: string) {
+  return scope === 'GLOBAL' ? 'Global Seller' : 'National Seller';
 }
 
 function ModuleRow({ module, onEnroll, selectedProvider }: { module: ModuleItem; onEnroll: (moduleCode: string) => void; selectedProvider: ProviderAccount | null }) {
@@ -288,6 +310,44 @@ const styles = StyleSheet.create({
     height: 48,
     marginBottom: spacing.md,
     paddingHorizontal: 14
+  },
+  scopeLabel: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: spacing.sm
+  },
+  scopeGrid: {
+    gap: spacing.sm,
+    marginBottom: spacing.md
+  },
+  scopeCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: spacing.md
+  },
+  scopeCardActive: {
+    backgroundColor: '#eef6ff',
+    borderColor: colors.primary
+  },
+  scopeTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  scopeTitleActive: {
+    color: colors.primary
+  },
+  scopeText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing.xs
+  },
+  scopeTextActive: {
+    color: colors.primary
   },
   actionButton: {
     marginBottom: spacing.md

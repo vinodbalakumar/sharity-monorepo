@@ -1,6 +1,7 @@
-import { breakpoints, responsiveValue } from '../theme';
+import { breakpoints, getResponsiveLayout, responsiveValue } from '../theme';
 
 export { breakpoints, responsiveValue };
+export { getResponsiveLayout };
 
 export function isMobileWidth(width: number) {
   return width < breakpoints.tablet;

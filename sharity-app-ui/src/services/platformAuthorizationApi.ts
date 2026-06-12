@@ -16,6 +16,7 @@ export type ProviderAccount = {
   publicId: string;
   displayName: string;
   providerType: string;
+  sellerScope: 'GLOBAL' | 'NATIONAL';
   countryCode: string;
   defaultCurrencyCode: string;
   verificationStatus: string;
@@ -81,6 +82,7 @@ export function getMyModules(): Promise<{ moduleCode: string; moduleName: string
 export function createProviderAccount(request: {
   displayName: string;
   providerType: 'INDIVIDUAL' | 'BUSINESS' | 'LICENSED_BUSINESS' | 'DELIVERY_PARTNER';
+  sellerScope: 'GLOBAL' | 'NATIONAL';
   countryCode: string;
   defaultCurrencyCode: string;
 }): Promise<ProviderAccount> {
