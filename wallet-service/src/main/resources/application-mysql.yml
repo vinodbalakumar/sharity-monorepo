@@ -1,8 +1,0 @@
-spring:
-  datasource:
-    url: ${WALLET_DB_URL:${DB_URL:jdbc:mysql://${WALLET_DB_HOST:${DB_HOST:localhost}}:${WALLET_DB_PORT:${DB_PORT:3306}}/${WALLET_DB_NAME:wallet_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}}
-    username: ${WALLET_DB_USERNAME:${DB_USERNAME:root}}
-    password: ${WALLET_DB_PASSWORD:${DB_PASSWORD:root}}
-  flyway:
-    enabled: ${WALLET_FLYWAY_ENABLED:true}
-    locations: classpath:db/migration
