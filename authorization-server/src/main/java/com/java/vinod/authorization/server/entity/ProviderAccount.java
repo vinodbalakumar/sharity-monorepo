@@ -39,6 +39,9 @@ public class ProviderAccount {
     @Column(name = "display_name", nullable = false, length = 150)
     private String displayName;
 
+    @Column(name = "seller_scope", length = 20)
+    private String sellerScope;
+
     @Column(name = "country_code", nullable = false, length = 3)
     private String countryCode;
 

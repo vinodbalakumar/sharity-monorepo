@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.stereotype.Controller;
@@ -294,6 +295,10 @@ public class PageController {
                             .topbar {
                                 gap: 12px;
                                 padding: 0 12px;
+                            }
+
+                            .shell {
+                                padding: 20px 12px 28px;
                             }
 
                             .shell {

@@ -25,6 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.Period;
@@ -61,6 +64,8 @@ public class UserService {
     private final String profileImageStorageAccessKeyId;
     private final String profileImageStorageSecretAccessKey;
     private final long profileImageStorageMaxFileSizeBytes;
+    private final Path localProfileImageStorageDirectory;
+    private final String localProfileImagePublicBaseUrl;
 
     public UserService(AppUserRepository appUserRepository,
                        UserProfileRepository userProfileRepository,
@@ -78,7 +83,9 @@ public class UserService {
                        @Value("${app.profile-image-storage.region:auto}") String profileImageStorageRegion,
                        @Value("${app.profile-image-storage.access-key-id:}") String profileImageStorageAccessKeyId,
                        @Value("${app.profile-image-storage.secret-access-key:}") String profileImageStorageSecretAccessKey,
-                       @Value("${app.profile-image-storage.max-file-size-bytes:5242880}") long profileImageStorageMaxFileSizeBytes) {
+                       @Value("${app.profile-image-storage.max-file-size-bytes:5242880}") long profileImageStorageMaxFileSizeBytes,
+                       @Value("${app.profile-image-storage.local-directory:}") String localProfileImageStorageDirectory,
+                       @Value("${app.profile-image-storage.local-public-base-url:}") String localProfileImagePublicBaseUrl) {
         this.appUserRepository = appUserRepository;
         this.userProfileRepository = userProfileRepository;
         this.userCredentialRepository = userCredentialRepository;
@@ -96,6 +103,10 @@ public class UserService {
         this.profileImageStorageAccessKeyId = profileImageStorageAccessKeyId;
         this.profileImageStorageSecretAccessKey = profileImageStorageSecretAccessKey;
         this.profileImageStorageMaxFileSizeBytes = profileImageStorageMaxFileSizeBytes;
+        this.localProfileImageStorageDirectory = blankToNull(localProfileImageStorageDirectory) == null
+            ? Path.of(System.getProperty("java.io.tmpdir"), "sharity-profile-images")
+            : Path.of(localProfileImageStorageDirectory);
+        this.localProfileImagePublicBaseUrl = blankToNull(localProfileImagePublicBaseUrl);
     }
 
     @Transactional(readOnly = true)
@@ -179,14 +190,12 @@ public class UserService {
                         RequestBody.fromBytes(bytes));
                 log.info("Profile image uploaded to R2 for userId={} objectKey={}", userId, objectKey);
             } catch (Exception exception) {
-                log.warn("Profile image upload to R2 failed (using fallback mode) for userId={} objectKey={}: {}", userId, objectKey, exception.getMessage(), exception);
-                // Fallback to development mode if R2 upload fails
-                publicUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+                log.warn("Profile image upload to R2 failed for userId={} objectKey={}. Falling back to local storage. message={}", userId, objectKey, exception.getMessage(), exception);
+                publicUrl = storeLocally(objectKey, bytes, contentType(file));
             }
         } else {
-            // Development mode: storage not configured, use placeholder
-            publicUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-            log.info("Profile image upload skipped (storage not configured) for userId={}, using placeholder URL", userId);
+            publicUrl = storeLocally(objectKey, bytes, contentType(file));
+            log.info("Profile image stored locally for userId={} because remote storage is not configured", userId);
         }
 
         try {
@@ -286,6 +295,23 @@ public class UserService {
                 && blankToNull(profileImageStorageRegion) != null
                 && blankToNull(profileImageStorageAccessKeyId) != null
                 && blankToNull(profileImageStorageSecretAccessKey) != null;
+    }
+
+    private String storeLocally(String objectKey, byte[] bytes, String contentType) {
+        try {
+            Path targetPath = localProfileImageStorageDirectory.resolve(objectKey).normalize();
+            Files.createDirectories(targetPath.getParent());
+            Files.write(targetPath, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+            String publicBaseUrl = localProfileImagePublicBaseUrl;
+            if (publicBaseUrl == null) {
+                String encodedKey = objectKey.replace('\\', '/');
+                return "/authorization-server/api/v1/assets/profile-images/" + encodedKey;
+            }
+            return publicBaseUrl.stripTrailing() + "/" + objectKey.replace('\\', '/');
+        } catch (IOException exception) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to store profile picture locally");
+        }
     }
 
     private void validateStorageConfigured() {

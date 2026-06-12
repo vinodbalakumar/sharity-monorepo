@@ -117,6 +117,7 @@ public class PlatformAuthorizationService {
         provider.setOwnerUser(owner);
         provider.setProviderType(request.providerType());
         provider.setDisplayName(request.displayName().trim());
+        provider.setSellerScope(request.sellerScope());
         provider.setCountryCode(request.countryCode());
         provider.setDefaultCurrencyCode(request.defaultCurrencyCode());
         provider.setVerificationStatus("NOT_STARTED");
@@ -167,6 +168,22 @@ public class PlatformAuthorizationService {
         return providerModuleEnrollmentRepository.findByProviderAccount_IdOrderByCreatedAtDesc(provider.getId()).stream()
                 .map(this::toEnrollmentResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PlatformDtos.InternalProviderAccountResponse internalProviderAccount(String providerPublicId) {
+        ProviderAccount provider = findProvider(providerPublicId);
+        return new PlatformDtos.InternalProviderAccountResponse(
+                provider.getPublicId(),
+                provider.getOwnerUser().getPublicId(),
+                provider.getDisplayName(),
+                provider.getSellerScope() == null ? "NATIONAL" : provider.getSellerScope(),
+                provider.getCountryCode(),
+                provider.getDefaultCurrencyCode(),
+                provider.getVerificationStatus(),
+                provider.getOverallStatus(),
+                provider.isPayoutsEnabled(),
+                provider.isChargesEnabled());
     }
 
     @Transactional(readOnly = true)
@@ -416,6 +433,7 @@ public class PlatformAuthorizationService {
                 provider.getPublicId(),
                 provider.getDisplayName(),
                 provider.getProviderType(),
+            provider.getSellerScope() == null ? "NATIONAL" : provider.getSellerScope(),
                 provider.getCountryCode(),
                 provider.getDefaultCurrencyCode(),
                 provider.getVerificationStatus(),

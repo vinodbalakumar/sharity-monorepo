@@ -49,6 +49,7 @@ public final class PlatformDtos {
             String publicId,
             String displayName,
             String providerType,
+            String sellerScope,
             String countryCode,
             String defaultCurrencyCode,
             String verificationStatus,
@@ -73,6 +74,7 @@ public final class PlatformDtos {
     public record CreateProviderAccountRequest(
             @NotBlank @Size(max = 150) String displayName,
             @NotBlank @Pattern(regexp = "INDIVIDUAL|BUSINESS|LICENSED_BUSINESS|DELIVERY_PARTNER") String providerType,
+            @NotBlank @Pattern(regexp = "GLOBAL|NATIONAL") String sellerScope,
             @NotBlank @Pattern(regexp = "[A-Z]{3}") String countryCode,
             @NotBlank @Pattern(regexp = "[A-Z]{3}") String defaultCurrencyCode
     ) {
@@ -168,6 +170,20 @@ public final class PlatformDtos {
             boolean sellingEnabled,
             boolean payoutEligible,
             boolean restricted
+    ) {
+    }
+
+    public record InternalProviderAccountResponse(
+            String publicId,
+            String ownerUserPublicId,
+            String displayName,
+            String sellerScope,
+            String countryCode,
+            String defaultCurrencyCode,
+            String verificationStatus,
+            String overallStatus,
+            boolean payoutsEnabled,
+            boolean chargesEnabled
     ) {
     }
 

@@ -11,7 +11,9 @@ class PageControllerTest {
 
     @BeforeEach
     void setUp() {
-        pageController = new PageController();
+        pageController = new PageController(
+                "http://localhost:9174/app/",
+                "http://localhost:9174/app/register");
     }
 
     @Test
@@ -36,6 +38,18 @@ class PageControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).doesNotContain("Invalid credentials.");
+    }
+
+    @Test
+    void loginPageUsesConfiguredFrontendLinks() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/authorization-server/api/login");
+        request.setContextPath("/authorization-server/api");
+
+        var response = pageController.login(request, null, null, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("href=\"http://localhost:9174/app/\"");
+        assertThat(response.getBody()).contains("href=\"http://localhost:9174/app/register\"");
     }
 
     @Test

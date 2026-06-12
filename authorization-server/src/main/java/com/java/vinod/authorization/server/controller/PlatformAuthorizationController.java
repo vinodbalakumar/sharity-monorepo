@@ -163,6 +163,14 @@ public class PlatformAuthorizationController {
         return platformAuthorizationService.providerEligibility(providerPublicId, moduleCode);
     }
 
+    @GetMapping("/internal/api/v1/providers/{providerPublicId}")
+    public PlatformDtos.InternalProviderAccountResponse internalProviderAccount(
+            @RequestHeader(name = "X-Internal-Service-Token", required = false) String token,
+            @PathVariable @Pattern(regexp = UUID_PATTERN) String providerPublicId) {
+        verifyInternalToken(token);
+        return platformAuthorizationService.internalProviderAccount(providerPublicId);
+    }
+
     @GetMapping("/internal/api/v1/users/{userPublicId}/restrictions/active")
     public PlatformDtos.ActiveRestrictionsResponse activeRestrictions(
             @RequestHeader(name = "X-Internal-Service-Token", required = false) String token,
