@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "marketplace_category")
+@Table(name = "category_master")
 public class MarketplaceCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

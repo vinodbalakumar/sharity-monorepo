@@ -78,6 +78,10 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
 
     List<Listing> findTop24ByProviderAccountPublicIdOrderByCreatedAtDesc(String providerAccountPublicId);
 
+    long countByListingStatusInAndVerticalCode(List<String> listingStatuses, String verticalCode);
+
+    long countByListingStatusInAndCategoryCode(List<String> listingStatuses, String categoryCode);
+
     @Query("""
             SELECT l FROM Listing l
             WHERE l.listingStatus IN :statuses

@@ -16,11 +16,11 @@ CREATE INDEX idx_listing_status_featured_updated_at
 CREATE INDEX idx_listing_provider_created_at
     ON listing (provider_account_public_id, created_at);
 
-CREATE INDEX idx_marketplace_category_active_display_order
-    ON marketplace_category (active, display_order, category_name);
+CREATE INDEX idx_category_master_active_display_order
+    ON category_master (active, display_order, category_name);
 
-CREATE INDEX idx_marketplace_category_active_vertical_display_order
-    ON marketplace_category (active, vertical_code, display_order, category_name);
+CREATE INDEX idx_category_master_active_vertical_display_order
+    ON category_master (active, vertical_code, display_order, category_name);
 
 CREATE INDEX idx_order_header_customer_created_at
     ON order_header (customer_user_public_id, created_at);

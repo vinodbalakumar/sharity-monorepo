@@ -3,6 +3,7 @@ package com.java.vinod.marketplace.service.controller;
 import com.java.vinod.marketplace.service.config.InternalServiceTokenFilter;
 import com.java.vinod.marketplace.service.config.SecurityConfig;
 import com.java.vinod.marketplace.service.dto.MarketplaceDtos;
+import com.java.vinod.marketplace.service.service.MarketplaceMasterService;
 import com.java.vinod.marketplace.service.service.MarketplaceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,8 +62,14 @@ class MarketplaceControllerSecurityTest {
         }
 
         @Bean
-        MarketplaceController marketplaceController(MarketplaceService marketplaceService) {
-            return new MarketplaceController(marketplaceService);
+        MarketplaceMasterService marketplaceMasterService() {
+            return mock(MarketplaceMasterService.class);
+        }
+
+        @Bean
+        MarketplaceController marketplaceController(MarketplaceService marketplaceService,
+                                                    MarketplaceMasterService marketplaceMasterService) {
+            return new MarketplaceController(marketplaceService, marketplaceMasterService);
         }
 
         @Bean
@@ -202,6 +209,7 @@ class MarketplaceControllerSecurityTest {
                 "Original creative service voucher",
                 "SERVICE",
                 "DIGITAL",
+                "NATIONAL",
                 "USD",
                 new java.math.BigDecimal("95.00"),
                 new java.math.BigDecimal("120.00"),

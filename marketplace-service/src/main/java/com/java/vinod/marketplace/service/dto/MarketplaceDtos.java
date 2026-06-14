@@ -66,6 +66,31 @@ public final class MarketplaceDtos {
                                    boolean providerAccessActive) {
     }
 
+    public record ListingStatusResponse(String statusCode, String displayLabel, boolean customerVisible,
+                                        int sortOrder, boolean active) {
+    }
+
+    public record SubcategoryResponse(Long id, String code, String categoryCode, String name, String slug,
+                                      String iconRef, String countryCode, boolean active) {
+    }
+
+    public record FeatureResponse(String featureCode, String displayLabel, String description,
+                                  boolean active, int sortOrder) {
+    }
+
+    public record ListingConditionResponse(String conditionCode, String displayLabel, String description,
+                                            boolean active, int sortOrder) {
+    }
+
+    public record DeliveryTypeResponse(String deliveryTypeCode, String displayLabel, String description,
+                                       boolean digitalDelivery, boolean active, int sortOrder) {
+    }
+
+    public record FeeTypeResponse(String feeTypeCode, String displayLabel, String description,
+                                  String feeBasis, BigDecimal ratePercentage,
+                                  boolean active, int sortOrder) {
+    }
+
     public record HomeResponse(List<VerticalResponse> verticals, List<CategoryResponse> categories,
                                List<ListingResponse> featuredListings) {
     }

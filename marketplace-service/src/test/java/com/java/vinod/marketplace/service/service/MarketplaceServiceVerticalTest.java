@@ -7,7 +7,9 @@ import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepositor
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
+import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
+import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MarketplaceServiceVerticalTest {
 
@@ -31,13 +34,15 @@ class MarketplaceServiceVerticalTest {
                 "PANTRY",
                 "PHYSICAL",
                 "SHIPPING",
+                "NATIONAL",
                 "USD",
                 BigDecimal.valueOf(12.50),
                 "provider-public-id",
                 "USA",
                 "https://example.com/image.png",
                 "ACTIVE",
-                " grocery ");
+                " grocery ",
+                1);
 
         invoke(service, "applyListingRequest", new Class<?>[] { Listing.class, MarketplaceDtos.ListingRequest.class }, listing, request);
 
@@ -90,7 +95,25 @@ class MarketplaceServiceVerticalTest {
 
     @Test
     void activeVerticalsReturnsSupportedCommerceVerticalsInOrder() {
-        MarketplaceService service = newService();
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
+        when(verticalRepository.findByStatusAndAvailableToCustomerTrueOrderByDisplayOrderAscModuleNameAsc("ACTIVE"))
+                .thenReturn(List.of(vertical("MARKETPLACE", "Marketplace", 10), vertical("GROCERY", "Grocery", 20),
+                        vertical("MEAT_SHOP", "Meat Shop", 30), vertical("PHARMACY", "Pharmacy", 40),
+                        vertical("AUTOMOTIVE", "Automotive", 50), vertical("JEWELLERY", "One Gram Gold & Imitation Jewellery", 60),
+                        vertical("GIFT_CARDS", "Gift Cards", 70)));
+        MarketplaceService service = new MarketplaceService(
+                mock(ListingRepository.class),
+                mock(ListingStatusMasterRepository.class),
+                mock(MarketplaceCategoryRepository.class),
+                verticalRepository,
+                mock(OrderHeaderRepository.class),
+                mock(DeliverySubmissionRepository.class),
+                mock(CustomerAcceptanceRepository.class),
+                mock(DisputeCaseRepository.class),
+                mock(MarketplaceEventOutboxService.class),
+                "http://authorization-server:8080/authorization-server/api/internal/providers",
+                "http://payment-service:8080/payment-service",
+                "test-token");
 
         List<MarketplaceDtos.VerticalResponse> response = service.activeVerticals();
 
@@ -102,7 +125,9 @@ class MarketplaceServiceVerticalTest {
     private static MarketplaceService newService() {
         return new MarketplaceService(
                 mock(ListingRepository.class),
+                mock(ListingStatusMasterRepository.class),
                 mock(MarketplaceCategoryRepository.class),
+                mock(MarketplaceVerticalRepository.class),
                 mock(OrderHeaderRepository.class),
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
@@ -111,6 +136,26 @@ class MarketplaceServiceVerticalTest {
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
                 "http://payment-service:8080/payment-service",
                 "test-token");
+    }
+
+    private static com.java.vinod.marketplace.service.entity.MarketplaceVertical vertical(String code, String name, int displayOrder) {
+        com.java.vinod.marketplace.service.entity.MarketplaceVertical vertical =
+                new com.java.vinod.marketplace.service.entity.MarketplaceVertical();
+        vertical.setModuleCode(code);
+        vertical.setModuleName(name);
+        vertical.setDescription(name);
+        vertical.setStatus("ACTIVE");
+        vertical.setDisplayOrder(displayOrder);
+        vertical.setIconKey("store");
+        vertical.setModuleType("COMMERCE_VERTICAL");
+        vertical.setFrontendRoute("/" + code.toLowerCase());
+        vertical.setApiAudience(code + "_API");
+        vertical.setCustomerAccessEnabled(true);
+        vertical.setProviderAccessEnabled(true);
+        vertical.setRequiresProviderApproval(true);
+        vertical.setAvailableToCustomer(true);
+        vertical.setProviderAccessActive(true);
+        return vertical;
     }
 
     private static Object invoke(Object target, String methodName, Class<?>[] parameterTypes, Object... args) throws Exception {

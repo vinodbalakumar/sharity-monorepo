@@ -3,8 +3,11 @@ package com.java.vinod.marketplace.service.service;
 import com.java.vinod.marketplace.service.dto.SearchExploreDtos;
 import com.java.vinod.marketplace.service.entity.Listing;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
+import com.java.vinod.marketplace.service.entity.MarketplaceVertical;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
+import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
+import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,16 +21,25 @@ import java.util.stream.Collectors;
 public class SearchService {
     private final ListingRepository listingRepository;
     private final MarketplaceCategoryRepository categoryRepository;
+    private final MarketplaceVerticalRepository verticalRepository;
+    private final ListingStatusMasterRepository listingStatusMasterRepository;
 
-    private static final List<String> ACTIVE_STATUSES = List.of("ACTIVE", "PUBLISHED");
     private static final int DEFAULT_PAGE_SIZE = 24;
+
+    private List<String> activeListingStatuses() {
+        List<String> statuses = listingStatusMasterRepository.findByActiveTrueOrderBySortOrderAscDisplayLabelAsc()
+                .stream()
+                .map(status -> status.getStatusCode())
+                .toList();
+        return statuses.isEmpty() ? List.of("ACTIVE", "PUBLISHED") : statuses;
+    }
 
     public SearchExploreDtos.SearchResultsResponse search(String query, String verticalCode,
                                                           String categoryCode, String countryCode, int page) {
         Pageable pageable = PageRequest.of(page, DEFAULT_PAGE_SIZE);
 
         List<Listing> results = listingRepository.searchActiveListings(
-            ACTIVE_STATUSES,
+            activeListingStatuses(),
             query != null ? query : "",
             categoryCode,
             verticalCode,
@@ -60,7 +72,7 @@ public class SearchService {
 
         Pageable pageable = PageRequest.of(0, 5);
         List<Listing> matches = listingRepository.searchActiveListings(
-            ACTIVE_STATUSES,
+            activeListingStatuses(),
             query,
             null,
             null,
@@ -222,14 +234,19 @@ public class SearchService {
     }
 
     private List<SearchExploreDtos.SearchMarketplaceResult> marketplaceHighlights(String countryCode) {
-        return List.of(
-            new SearchExploreDtos.SearchMarketplaceResult("DIGITAL", "Digital Marketplace",
-                "marketplace/icons/digital.png", "ACTIVE", true, true, 42, null, "/search/marketplace/DIGITAL"),
-            new SearchExploreDtos.SearchMarketplaceResult("ELECTRONICS", "Electronics", 
-                "marketplace/icons/electronics.png", "AVAILABLE", true, true, 18, null, "/search/marketplace/ELECTRONICS"),
-            new SearchExploreDtos.SearchMarketplaceResult("JEWELLERY", "Imitation Jewellery",
-                "marketplace/icons/jewellery.png", "AVAILABLE", true, true, 8, null, "/search/marketplace/JEWELLERY")
-        );
+        List<String> statuses = activeListingStatuses();
+        return verticalRepository.findByStatusAndAvailableToCustomerTrueOrderByDisplayOrderAscModuleNameAsc("ACTIVE").stream()
+                .map(vertical -> new SearchExploreDtos.SearchMarketplaceResult(
+                        vertical.getModuleCode(),
+                        vertical.getModuleName(),
+                        iconForVertical(vertical),
+                        vertical.getStatus(),
+                        true,
+                        vertical.isCustomerAccessEnabled(),
+                        (int) listingRepository.countByListingStatusInAndVerticalCode(statuses, vertical.getModuleCode()),
+                        null,
+                        "/search/marketplace/" + vertical.getModuleCode()))
+                .toList();
     }
 
     private SearchExploreDtos.SearchFilterState filters(String verticalCode, String categoryCode, String countryCode) {
@@ -249,5 +266,34 @@ public class SearchService {
             null,
             "LATER"
         );
+    }
+
+    private List<SearchExploreDtos.SearchCategoryResult> categoryHighlights(String countryCode) {
+        List<String> statuses = activeListingStatuses();
+        List<MarketplaceCategory> categories = countryCode == null || countryCode.isBlank()
+                ? categoryRepository.findByActiveTrueOrderByDisplayOrderAscCategoryNameAsc()
+                : categoryRepository.findByActiveTrueAndCountryCodeOrderByDisplayOrderAscCategoryNameAsc(countryCode.trim().toUpperCase());
+        return categories.stream()
+                .map(category -> new SearchExploreDtos.SearchCategoryResult(
+                        category.getVerticalCode(),
+                        category.getCategoryCode(),
+                        category.getCategoryName(),
+                        category.getIconRef(),
+                        (int) listingRepository.countByListingStatusInAndCategoryCode(statuses, category.getCategoryCode()),
+                        "AVAILABLE",
+                        null,
+                        "/search/category/" + category.getCategoryCode()))
+                .toList();
+    }
+
+    private List<SearchExploreDtos.SearchMarketplaceResult> digitalDiscovery(String countryCode) {
+        return marketplaceHighlights(countryCode);
+    }
+
+    private String iconForVertical(MarketplaceVertical vertical) {
+        if (vertical.getIconKey() == null || vertical.getIconKey().isBlank()) {
+            return "marketplace/icons/" + vertical.getModuleCode().toLowerCase() + ".png";
+        }
+        return "marketplace/icons/" + vertical.getIconKey() + ".png";
     }
 }

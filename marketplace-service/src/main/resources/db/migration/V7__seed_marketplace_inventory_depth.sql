@@ -1,80 +1,80 @@
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MARKETPLACE_GIFT_CARDS', 'Gift Cards', 'marketplace-gift-cards', 'MARKETPLACE', 'card_giftcard', TRUE, 1, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MARKETPLACE_GIFT_CARDS');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MARKETPLACE_GIFT_CARDS');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MARKETPLACE_GAMING', 'Gaming', 'marketplace-gaming', 'MARKETPLACE', 'sports_esports', TRUE, 2, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MARKETPLACE_GAMING');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MARKETPLACE_GAMING');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MARKETPLACE_ELECTRONICS', 'Electronics', 'marketplace-electronics', 'MARKETPLACE', 'devices', TRUE, 3, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MARKETPLACE_ELECTRONICS');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MARKETPLACE_ELECTRONICS');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MARKETPLACE_COLLECTIBLES', 'Collectibles', 'marketplace-collectibles', 'MARKETPLACE', 'auto_awesome', TRUE, 4, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MARKETPLACE_COLLECTIBLES');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MARKETPLACE_COLLECTIBLES');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MARKETPLACE_LOCAL_DEALS', 'Local Deals', 'marketplace-local-deals', 'MARKETPLACE', 'local_offer', TRUE, 5, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MARKETPLACE_LOCAL_DEALS');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MARKETPLACE_LOCAL_DEALS');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'GROCERY_PACKAGED', 'Packaged Food', 'grocery-packaged', 'GROCERY', 'inventory_2', TRUE, 1, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'GROCERY_PACKAGED');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'GROCERY_PACKAGED');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'GROCERY_EVERYDAY', 'Everyday Essentials', 'grocery-everyday', 'GROCERY', 'shopping_basket', TRUE, 2, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'GROCERY_EVERYDAY');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'GROCERY_EVERYDAY');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MEAT_SHOP_FRESH', 'Fresh Cuts', 'meat-shop-fresh', 'MEAT_SHOP', 'set_meal', TRUE, 1, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MEAT_SHOP_FRESH');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MEAT_SHOP_FRESH');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'MEAT_SHOP_SEAFOOD', 'Seafood', 'meat-shop-seafood', 'MEAT_SHOP', 'water', TRUE, 2, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'MEAT_SHOP_SEAFOOD');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'MEAT_SHOP_SEAFOOD');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'OTC_WELLNESS', 'OTC Wellness', 'otc-wellness', 'PHARMACY', 'medical_services', TRUE, 1, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'OTC_WELLNESS');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'OTC_WELLNESS');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'PERSONAL_CARE', 'Personal Care', 'personal-care', 'PHARMACY', 'spa', TRUE, 2, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'PERSONAL_CARE');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'PERSONAL_CARE');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'AUTOMOTIVE_ACCESSORIES', 'Accessories', 'automotive-accessories', 'AUTOMOTIVE', 'directions_car', TRUE, 1, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'AUTOMOTIVE_ACCESSORIES');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'AUTOMOTIVE_ACCESSORIES');
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'AUTOMOTIVE_CARE', 'Care Kits', 'automotive-care', 'AUTOMOTIVE', 'car_wash', TRUE, 2, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'AUTOMOTIVE_CARE');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'AUTOMOTIVE_CARE');
 
 INSERT IGNORE INTO listing (
     public_id, provider_account_public_id, created_by_user_public_id, title, description, product_type, delivery_type, provider_country_code, currency_code,

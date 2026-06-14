@@ -1,7 +1,7 @@
-ALTER TABLE marketplace_category ADD COLUMN IF NOT EXISTS vertical_code VARCHAR(50) NOT NULL DEFAULT 'MARKETPLACE';
+ALTER TABLE category_master ADD COLUMN IF NOT EXISTS vertical_code VARCHAR(50) NOT NULL DEFAULT 'MARKETPLACE';
 ALTER TABLE listing ADD COLUMN IF NOT EXISTS vertical_code VARCHAR(50) NOT NULL DEFAULT 'MARKETPLACE';
 
-UPDATE marketplace_category
+UPDATE category_master
 SET vertical_code = COALESCE(NULLIF(vertical_code, ''), 'MARKETPLACE')
 WHERE vertical_code IS NULL OR vertical_code = '';
 

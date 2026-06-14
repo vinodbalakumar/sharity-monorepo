@@ -5,14 +5,17 @@ import com.java.vinod.marketplace.service.entity.CustomerAcceptance;
 import com.java.vinod.marketplace.service.entity.DeliverySubmission;
 import com.java.vinod.marketplace.service.entity.DisputeCase;
 import com.java.vinod.marketplace.service.entity.Listing;
+import com.java.vinod.marketplace.service.entity.ListingStatusMaster;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
+import com.java.vinod.marketplace.service.entity.MarketplaceVertical;
 import com.java.vinod.marketplace.service.entity.OrderHeader;
-import com.java.vinod.marketplace.service.enums.MarketplaceVerticalCode;
 import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepository;
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
+import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
+import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +31,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -41,10 +43,10 @@ import org.slf4j.LoggerFactory;
 @Service
 public class MarketplaceService {
     private static final Logger log = LoggerFactory.getLogger(MarketplaceService.class);
-    private static final String MARKETPLACE_VERTICAL = "MARKETPLACE";
-    private static final List<String> PUBLIC_LISTING_STATUSES = List.of("ACTIVE", "PUBLISHED");
     private final ListingRepository listingRepository;
+    private final ListingStatusMasterRepository listingStatusMasterRepository;
     private final MarketplaceCategoryRepository marketplaceCategoryRepository;
+    private final MarketplaceVerticalRepository marketplaceVerticalRepository;
     private final OrderHeaderRepository orderHeaderRepository;
     private final DeliverySubmissionRepository deliverySubmissionRepository;
     private final CustomerAcceptanceRepository customerAcceptanceRepository;
@@ -59,7 +61,9 @@ public class MarketplaceService {
      * Creates the marketplace service with repositories and internal payment configuration.
      */
     public MarketplaceService(ListingRepository listingRepository,
+                              ListingStatusMasterRepository listingStatusMasterRepository,
                               MarketplaceCategoryRepository marketplaceCategoryRepository,
+                              MarketplaceVerticalRepository marketplaceVerticalRepository,
                               OrderHeaderRepository orderHeaderRepository,
                               DeliverySubmissionRepository deliverySubmissionRepository,
                               CustomerAcceptanceRepository customerAcceptanceRepository,
@@ -69,7 +73,9 @@ public class MarketplaceService {
                               @Value("${app.services.payment-internal-url}") String paymentInternalUrl,
                               @Value("${app.internal.service-token}") String internalServiceToken) {
         this.listingRepository = listingRepository;
+        this.listingStatusMasterRepository = listingStatusMasterRepository;
         this.marketplaceCategoryRepository = marketplaceCategoryRepository;
+        this.marketplaceVerticalRepository = marketplaceVerticalRepository;
         this.orderHeaderRepository = orderHeaderRepository;
         this.deliverySubmissionRepository = deliverySubmissionRepository;
         this.customerAcceptanceRepository = customerAcceptanceRepository;
@@ -157,10 +163,23 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public List<MarketplaceDtos.VerticalResponse> activeVerticals() {
-        return Arrays.stream(MarketplaceVerticalCode.values())
-                .sorted(Comparator.comparingInt(MarketplaceVerticalCode::ordinal))
-                .map(MarketplaceVerticalCode::toResponse)
+        return marketplaceVerticalRepository.findByStatusAndAvailableToCustomerTrueOrderByDisplayOrderAscModuleNameAsc("ACTIVE")
+                .stream()
+                .map(this::toVerticalResponse)
                 .toList();
+    }
+
+    /**
+     * Returns the primary marketplace vertical code from the database.
+     */
+    @Transactional(readOnly = true)
+    public String defaultVerticalCode() {
+        return marketplaceVerticalRepository.findByStatusAndAvailableToCustomerTrueOrderByDisplayOrderAscModuleNameAsc("ACTIVE")
+                .stream()
+                .findFirst()
+                .map(MarketplaceVertical::getModuleCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Marketplace verticals are not configured"));
     }
 
     /**
@@ -193,11 +212,12 @@ public class MarketplaceService {
     @Transactional(readOnly = true)
     public List<MarketplaceDtos.ListingResponse> featuredListings(String countryCode) {
         String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> publicStatuses = publicListingStatuses();
         List<Listing> listings = normalizedCountry == null
-                ? listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(PUBLIC_LISTING_STATUSES)
-                : listingRepository.findTop8ByListingStatusInAndFeaturedTrueAndProviderCountryCodeOrderByUpdatedAtDesc(PUBLIC_LISTING_STATUSES, normalizedCountry);
+                ? listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(publicStatuses)
+                : listingRepository.findTop8ByListingStatusInAndFeaturedTrueAndProviderCountryCodeOrderByUpdatedAtDesc(publicStatuses, normalizedCountry);
         if (listings.isEmpty() && normalizedCountry != null) {
-            listings = listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(PUBLIC_LISTING_STATUSES);
+            listings = listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(publicStatuses);
         }
         return listings.stream()
                 .map(this::toListingResponse)
@@ -283,8 +303,9 @@ public class MarketplaceService {
                 : categoryCode.trim().toUpperCase();
         String normalizedVertical = normalizeBrowseVerticalCode(verticalCode);
         String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> publicStatuses = publicListingStatuses();
         List<Listing> results = listingRepository.searchActiveListings(
-                PUBLIC_LISTING_STATUSES,
+                publicStatuses,
                 normalizedQuery,
                 normalizedCategory,
                 normalizedVertical,
@@ -292,7 +313,7 @@ public class MarketplaceService {
                 PageRequest.of(0, 24));
         if (results.isEmpty() && normalizedCountry != null) {
             results = listingRepository.searchActiveListings(
-                    PUBLIC_LISTING_STATUSES,
+                    publicStatuses,
                     normalizedQuery,
                     normalizedCategory,
                     normalizedVertical,
@@ -318,8 +339,8 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public List<MarketplaceDtos.ListingReviewResponse> listingReviews(String listingPublicId) {
-        Listing listing = findListing(listingPublicId);
-        return demoReviewsFor(listing);
+        findListing(listingPublicId);
+        return List.of();
     }
 
     /**
@@ -335,7 +356,7 @@ public class MarketplaceService {
         listing.setCreatedByUserPublicId(userPublicId(jwt));
         applyListingRequest(listing, request);
         applyProviderDefaults(listing, provider, request);
-        listing.setListingStatus(normalizeStatus(request.listingStatus(), "ACTIVE"));
+        listing.setListingStatus(normalizeStatus(request.listingStatus(), defaultListingStatusCode()));
         listing.setCreatedAt(now);
         listing.setUpdatedAt(now);
         Listing saved = listingRepository.save(listing);
@@ -406,7 +427,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceDtos.OrderResponse createOrder(MarketplaceDtos.OrderRequest request, Jwt jwt) {
         Listing listing = findListing(request.listingPublicId());
-        if (!PUBLIC_LISTING_STATUSES.contains(listing.getListingStatus())) {
+        if (!isPublicListingStatus(listing.getListingStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Listing is not available for purchase");
         }
         String customerPublicId = userPublicId(jwt);
@@ -724,7 +745,11 @@ public class MarketplaceService {
         if (requested == null || requested.isBlank()) {
             return fallback;
         }
-        return requested.trim().toUpperCase();
+        String normalized = requested.trim().toUpperCase();
+        if (!listingStatusMasterRepository.existsByStatusCodeIgnoreCaseAndActiveTrue(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported listing status");
+        }
+        return normalized;
     }
 
     private String normalizeFulfillmentScope(String requested) {
@@ -747,9 +772,13 @@ public class MarketplaceService {
 
     private String normalizeVerticalCode(String requested) {
         if (requested == null || requested.isBlank()) {
-            return MARKETPLACE_VERTICAL;
+            return defaultVerticalCode();
         }
-        return requested.trim().toUpperCase();
+        String normalized = requested.trim().toUpperCase();
+        if (!marketplaceVerticalRepository.existsByModuleCodeIgnoreCase(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported marketplace vertical code");
+        }
+        return normalized;
     }
 
     private String normalizeBrowseVerticalCode(String requested) {
@@ -792,12 +821,12 @@ public class MarketplaceService {
     private String normalizeModerationListingStatus(String requested) {
         String normalized = normalizeAdminFilter(requested);
         if (normalized == null) {
-            return "INACTIVE";
+            return defaultListingStatusCode();
         }
-        return switch (normalized) {
-            case "ACTIVE", "INACTIVE", "REJECTED", "SUSPENDED" -> normalized;
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported listing moderation status");
-        };
+        if (!listingStatusMasterRepository.existsByStatusCodeIgnoreCaseAndActiveTrue(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported listing moderation status");
+        }
+        return normalized;
     }
 
     private String normalizeModerationDisputeStatus(String requested) {
@@ -840,8 +869,13 @@ public class MarketplaceService {
                 listing.getOriginalPriceAmount(), listing.getImageUrl(), safeSellerDisplayName(listing),
                 listing.isVerifiedSeller(), listing.getCategoryCode(), listing.getVerticalCode(), safeCountryCode(listing), listing.getListingStatus(),
                 listing.getConditionLabel(), listing.getStockQuantity(), listing.getSourceType(), listing.getSourceName(),
-                listing.getSourceUrl(), listing.getLicenseNote(), listing.isDemoSeed(), demoReviewsFor(listing),
+                listing.getSourceUrl(), listing.getLicenseNote(), listing.isDemoSeed(), List.of(),
                 listing.getCreatedAt());
+    }
+
+    private MarketplaceDtos.ListingStatusResponse toListingStatusResponse(ListingStatusMaster status) {
+        return new MarketplaceDtos.ListingStatusResponse(status.getStatusCode(), status.getDisplayLabel(),
+                status.isCustomerVisible(), status.getSortOrder(), status.isActive());
     }
 
     private Listing findOwnedListing(String listingPublicId, Jwt jwt) {
@@ -908,33 +942,35 @@ public class MarketplaceService {
     }
 
     private List<Listing> localizedListings(String verticalCode, String countryCode) {
+        List<String> publicStatuses = publicListingStatuses();
         List<Listing> listings = verticalCode == null
                 ? (countryCode == null
-                ? listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES)
-                : listingRepository.findTop24ByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, countryCode))
+                ? listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(publicStatuses)
+                : listingRepository.findTop24ByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, countryCode))
                 : (countryCode == null
-                ? listingRepository.findTop24ByListingStatusInAndVerticalCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, verticalCode)
-                : listingRepository.findTop24ByListingStatusInAndVerticalCodeAndProviderCountryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, verticalCode, countryCode));
+                ? listingRepository.findTop24ByListingStatusInAndVerticalCodeOrderByCreatedAtDesc(publicStatuses, verticalCode)
+                : listingRepository.findTop24ByListingStatusInAndVerticalCodeAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, verticalCode, countryCode));
         if (listings.isEmpty() && countryCode != null) {
             return verticalCode == null
-                    ? listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES)
-                    : listingRepository.findTop24ByListingStatusInAndVerticalCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, verticalCode);
+                    ? listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(publicStatuses)
+                    : listingRepository.findTop24ByListingStatusInAndVerticalCodeOrderByCreatedAtDesc(publicStatuses, verticalCode);
         }
         return listings;
     }
 
     private List<Listing> localizedCategoryListings(String categoryCode, String verticalCode, String countryCode) {
+        List<String> publicStatuses = publicListingStatuses();
         List<Listing> listings = verticalCode == null
                 ? (countryCode == null
-                ? listingRepository.findTop24ByListingStatusInAndCategoryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, categoryCode)
-                : listingRepository.findTop24ByListingStatusInAndCategoryCodeAndProviderCountryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, categoryCode, countryCode))
+                ? listingRepository.findTop24ByListingStatusInAndCategoryCodeOrderByCreatedAtDesc(publicStatuses, categoryCode)
+                : listingRepository.findTop24ByListingStatusInAndCategoryCodeAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, categoryCode, countryCode))
                 : (countryCode == null
-                ? listingRepository.findTop24ByListingStatusInAndVerticalCodeAndCategoryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, verticalCode, categoryCode)
-                : listingRepository.findTop24ByListingStatusInAndVerticalCodeAndCategoryCodeAndProviderCountryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, verticalCode, categoryCode, countryCode));
+                ? listingRepository.findTop24ByListingStatusInAndVerticalCodeAndCategoryCodeOrderByCreatedAtDesc(publicStatuses, verticalCode, categoryCode)
+                : listingRepository.findTop24ByListingStatusInAndVerticalCodeAndCategoryCodeAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, verticalCode, categoryCode, countryCode));
         if (listings.isEmpty() && countryCode != null) {
             return verticalCode == null
-                    ? listingRepository.findTop24ByListingStatusInAndCategoryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, categoryCode)
-                    : listingRepository.findTop24ByListingStatusInAndVerticalCodeAndCategoryCodeOrderByCreatedAtDesc(PUBLIC_LISTING_STATUSES, verticalCode, categoryCode);
+                    ? listingRepository.findTop24ByListingStatusInAndCategoryCodeOrderByCreatedAtDesc(publicStatuses, categoryCode)
+                    : listingRepository.findTop24ByListingStatusInAndVerticalCodeAndCategoryCodeOrderByCreatedAtDesc(publicStatuses, verticalCode, categoryCode);
         }
         return listings;
     }
@@ -961,6 +997,57 @@ public class MarketplaceService {
     private MarketplaceDtos.CategoryResponse toCategoryResponse(MarketplaceCategory category) {
         return new MarketplaceDtos.CategoryResponse(category.getId(), category.getCategoryCode(), category.getCategoryName(),
                 category.getCategorySlug(), category.getVerticalCode(), category.getCountryCode(), category.getIconRef(), category.isActive());
+    }
+
+    private MarketplaceDtos.VerticalResponse toVerticalResponse(MarketplaceVertical vertical) {
+        return new MarketplaceDtos.VerticalResponse(
+                vertical.getModuleCode(),
+                vertical.getModuleName(),
+                vertical.getDescription(),
+                vertical.getStatus(),
+                vertical.getDisplayOrder(),
+                vertical.getIconKey(),
+                vertical.getModuleType(),
+                vertical.getFrontendRoute(),
+                vertical.getApiAudience(),
+                vertical.isCustomerAccessEnabled(),
+                vertical.isProviderAccessEnabled(),
+                vertical.isRequiresProviderApproval(),
+                vertical.isAvailableToCustomer(),
+                vertical.isProviderAccessActive()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<MarketplaceDtos.ListingStatusResponse> listingStatuses() {
+        return listingStatusMasterRepository.findByActiveTrueOrderBySortOrderAscDisplayLabelAsc().stream()
+                .map(this::toListingStatusResponse)
+                .toList();
+    }
+
+    private boolean isPublicListingStatus(String listingStatus) {
+        if (listingStatus == null || listingStatus.isBlank()) {
+            return false;
+        }
+        return listingStatusMasterRepository.findByStatusCodeIgnoreCase(listingStatus.trim().toUpperCase())
+                .map(status -> status.isActive() && status.isCustomerVisible())
+                .orElse(false);
+    }
+
+    private String defaultListingStatusCode() {
+        return listingStatusMasterRepository.findByCustomerVisibleTrueAndActiveTrueOrderBySortOrderAscDisplayLabelAsc()
+                .stream()
+                .findFirst()
+                .map(ListingStatusMaster::getStatusCode)
+                .orElse("ACTIVE");
+    }
+
+    private List<String> publicListingStatuses() {
+        List<String> statuses = listingStatusMasterRepository.findByCustomerVisibleTrueAndActiveTrueOrderBySortOrderAscDisplayLabelAsc()
+                .stream()
+                .map(ListingStatusMaster::getStatusCode)
+                .toList();
+        return statuses.isEmpty() ? List.of("ACTIVE", "PUBLISHED") : statuses;
     }
 
     private List<MarketplaceCategory> categoriesByCountry(String countryCode) {
@@ -1020,49 +1107,6 @@ public class MarketplaceService {
                 dispute.getResolvedByUserPublicId(), dispute.getOpenedAt(), dispute.getResolvedAt());
     }
 
-    private List<MarketplaceDtos.ListingReviewResponse> demoReviewsFor(Listing listing) {
-        String category = listing.getCategoryCode() == null ? "" : listing.getCategoryCode().toUpperCase();
-        String seller = listing.getSellerDisplayName() == null || listing.getSellerDisplayName().isBlank()
-                ? "Sharity Seller"
-                : listing.getSellerDisplayName();
-        LocalDateTime now = LocalDateTime.now();
-        return switch (category) {
-            case "GIFT_CARDS" -> List.of(
-                    review(listing, seller + " shopper", "Fast redemption", "Redeemed quickly and the seller kept the process clear.", 5.0, true, now.minusDays(2)),
-                    review(listing, seller + " customer", "Good value", "Exactly as described and delivery was instant.", 4.8, true, now.minusDays(5))
-            );
-            case "GROCERY" -> List.of(
-                    review(listing, seller + " buyer", "Fresh and packed well", "Items arrived neatly packed and matched the listing.", 4.7, true, now.minusDays(1)),
-                    review(listing, seller + " repeat buyer", "Reliable seller", "Repeat purchase and the seller keeps stock updated.", 4.6, true, now.minusDays(6))
-            );
-            case "MEAT_SHOP" -> List.of(
-                    review(listing, seller + " customer", "Quality matched photos", "Packaging was secure and the cuts were as listed.", 4.8, true, now.minusDays(3)),
-                    review(listing, seller + " pickup buyer", "Easy pickup", "Pickup instructions were simple and on time.", 4.6, true, now.minusDays(8))
-            );
-            case "PHARMACY" -> List.of(
-                    review(listing, seller + " buyer", "Helpful wellness pack", "Delivery was discreet and the item details were clear.", 4.7, true, now.minusDays(2)),
-                    review(listing, seller + " shopper", "As described", "The OTC listing matched the photos and the seller responded quickly.", 4.5, true, now.minusDays(7))
-            );
-            case "AUTOMOTIVE" -> List.of(
-                    review(listing, seller + " driver", "Useful accessory", "The part fit well and the seller provided a clean description.", 4.8, true, now.minusDays(4)),
-                    review(listing, seller + " buyer", "Fast shipping", "Arrived sooner than expected and was packaged well.", 4.7, true, now.minusDays(9))
-            );
-            default -> List.of(
-                    review(listing, seller + " buyer", "As described", "The listing matched the photos and description.", 4.8, listing.isVerifiedSeller(), now.minusDays(2)),
-                    review(listing, seller + " customer", "Trusted seller", "Communication was clear and the deal felt safe.", 4.7, listing.isVerifiedSeller(), now.minusDays(7))
-            );
-        };
-    }
-
-    private MarketplaceDtos.ListingReviewResponse review(Listing listing, String reviewerDisplayName, String title,
-                                                          String body, double rating, boolean verifiedPurchase,
-                                                          LocalDateTime createdAt) {
-        String seed = listing.getPublicId() + "|" + reviewerDisplayName + "|" + title;
-        String reviewId = UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).toString();
-        return new MarketplaceDtos.ListingReviewResponse(reviewId, listing.getPublicId(), reviewerDisplayName, title,
-                body, rating, verifiedPurchase, createdAt);
-    }
-
     private void createPaymentOrder(OrderHeader order) {
         marketplaceEventOutboxService.queuePaymentOrderCreate(order);
     }
@@ -1110,8 +1154,9 @@ public class MarketplaceService {
     private void ensureMarketplaceProviderEligible(String providerPublicId) {
         ProviderEligibilityResponse response;
         try {
+            String verticalCode = defaultVerticalCode();
             response = restClient.get()
-                    .uri(authorizationProviderEligibilityUrl + "/providers/" + providerPublicId + "/modules/MARKETPLACE/eligibility")
+                    .uri(authorizationProviderEligibilityUrl + "/providers/" + providerPublicId + "/modules/" + verticalCode + "/eligibility")
                     .header("X-Internal-Service-Token", internalServiceToken)
                     .retrieve()
                     .body(ProviderEligibilityResponse.class);
@@ -1119,7 +1164,7 @@ public class MarketplaceService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unable to verify provider eligibility right now", exception);
         }
         if (response == null || !response.eligible()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Provider is not eligible for MARKETPLACE");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Provider is not eligible for " + defaultVerticalCode());
         }
     }
 

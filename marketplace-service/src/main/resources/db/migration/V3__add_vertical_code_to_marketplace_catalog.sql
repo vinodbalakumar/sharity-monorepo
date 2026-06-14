@@ -1,7 +1,7 @@
 SET @sql := IF(
     (SELECT COUNT(*) FROM information_schema.columns
-     WHERE table_schema = DATABASE() AND table_name = 'marketplace_category' AND column_name = 'vertical_code') = 0,
-    'ALTER TABLE marketplace_category ADD COLUMN vertical_code VARCHAR(50) NOT NULL DEFAULT ''MARKETPLACE'' AFTER category_slug',
+     WHERE table_schema = DATABASE() AND table_name = 'category_master' AND column_name = 'vertical_code') = 0,
+    'ALTER TABLE category_master ADD COLUMN vertical_code VARCHAR(50) NOT NULL DEFAULT ''MARKETPLACE'' AFTER category_slug',
     'SELECT 1'
 );
 PREPARE stmt FROM @sql;
@@ -18,7 +18,7 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-UPDATE marketplace_category
+UPDATE category_master
 SET vertical_code = COALESCE(NULLIF(vertical_code, ''), 'MARKETPLACE')
 WHERE vertical_code IS NULL OR vertical_code = '';
 

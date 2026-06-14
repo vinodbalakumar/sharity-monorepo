@@ -7,7 +7,9 @@ import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepositor
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
+import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
+import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
 import org.junit.jupiter.api.Test;
 
@@ -25,12 +27,18 @@ class MarketplaceServiceCatalogTest {
     @Test
     void homeReturnsVerticalsCategoriesAndFeaturedListings() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
+        when(verticalRepository.findByStatusAndAvailableToCustomerTrueOrderByDisplayOrderAscModuleNameAsc("ACTIVE"))
+                .thenReturn(List.of(vertical("MARKETPLACE", "Marketplace", 10), vertical("GROCERY", "Grocery", 20),
+                        vertical("MEAT_SHOP", "Meat Shop", 30), vertical("PHARMACY", "Pharmacy", 40),
+                        vertical("AUTOMOTIVE", "Automotive", 50), vertical("JEWELLERY", "One Gram Gold & Imitation Jewellery", 60),
+                        vertical("GIFT_CARDS", "Gift Cards", 70)));
         when(categoryRepository.findByActiveTrueOrderByDisplayOrderAscCategoryNameAsc()).thenReturn(List.of(category("GROCERY", "Grocery")));
         when(listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(List.of("ACTIVE", "PUBLISHED")))
                 .thenReturn(List.of(listing("GRO-1", "Fresh basket", "GROCERY")));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         MarketplaceDtos.HomeResponse response = service.home();
 
@@ -45,11 +53,12 @@ class MarketplaceServiceCatalogTest {
     @Test
     void listingsCanBeFilteredByVertical() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         when(listingRepository.findTop24ByListingStatusInAndVerticalCodeOrderByCreatedAtDesc(List.of("ACTIVE", "PUBLISHED"), "GROCERY"))
                 .thenReturn(List.of(listing("GRO-1", "Fresh basket", "GROCERY")));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.ListingResponse> response = service.activeListings("NEWEST", "GROCERY");
 
@@ -59,12 +68,13 @@ class MarketplaceServiceCatalogTest {
     @Test
     void listingsCanBeFilteredByBrowserCountryCode() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         when(listingRepository.findTop24ByListingStatusInAndVerticalCodeAndProviderCountryCodeOrderByCreatedAtDesc(
                 List.of("ACTIVE", "PUBLISHED"), "GROCERY", "USA"))
                 .thenReturn(List.of(listing("GRO-1", "Fresh basket", "GROCERY")));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.ListingResponse> response = service.activeListings("NEWEST", "GROCERY", "us");
 
@@ -74,11 +84,12 @@ class MarketplaceServiceCatalogTest {
     @Test
     void searchCanBeScopedByVerticalAndCategory() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         when(listingRepository.searchActiveListings(List.of("ACTIVE", "PUBLISHED"), "basket", "GROCERY", "GROCERY", "USA", PageRequest.of(0, 24)))
                 .thenReturn(List.of(listing("GRO-1", "Fresh basket", "GROCERY")));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.ListingResponse> response = service.searchActiveListings("basket", "GROCERY", "NEWEST", "GROCERY", "us");
 
@@ -88,11 +99,12 @@ class MarketplaceServiceCatalogTest {
     @Test
     void categoriesCanBeFilteredByVertical() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         when(categoryRepository.findByActiveTrueAndVerticalCodeOrderByDisplayOrderAscCategoryNameAsc("GROCERY"))
                 .thenReturn(List.of(category("GROCERY", "Grocery")));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.CategoryResponse> response = service.activeCategories("GROCERY");
 
@@ -102,6 +114,7 @@ class MarketplaceServiceCatalogTest {
     @Test
     void publicListingResponsesExposeSyntheticSeedMetadata() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         Listing seedListing = listing("SEED-1", "Synthetic pantry bundle", "GROCERY", "PUBLISHED");
         seedListing.setConditionLabel("NEW");
@@ -113,7 +126,7 @@ class MarketplaceServiceCatalogTest {
         when(listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(List.of("ACTIVE", "PUBLISHED")))
                 .thenReturn(List.of(seedListing));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.ListingResponse> response = service.activeListings("NEWEST");
 
@@ -129,6 +142,7 @@ class MarketplaceServiceCatalogTest {
     @Test
     void publicListingResponsesFallbackToSafeNamesWhenDbFieldsAreBlank() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         Listing listing = listing("SEED-2", "   ", "GROCERY");
         listing.setSellerDisplayName("   ");
@@ -137,7 +151,7 @@ class MarketplaceServiceCatalogTest {
         when(listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(List.of("ACTIVE", "PUBLISHED")))
                 .thenReturn(List.of(listing));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         MarketplaceDtos.ListingResponse response = service.activeListings("NEWEST").getFirst();
 
@@ -146,28 +160,26 @@ class MarketplaceServiceCatalogTest {
     }
 
     @Test
-    void listingReviewsReturnPublicTrustSignalsForListing() {
+    void listingReviewsReturnEmptyUntilPersistedReviewsExist() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         Listing listing = listing("REV-1", "Retail gift card bundle", "GIFT_CARDS");
         listing.setSellerDisplayName("RetailCard Vault");
         listing.setVerifiedSeller(true);
         when(listingRepository.findByPublicId("REV-1")).thenReturn(java.util.Optional.of(listing));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.ListingReviewResponse> reviews = service.listingReviews("REV-1");
 
-        assertThat(reviews).hasSizeGreaterThanOrEqualTo(2);
-        assertThat(reviews).extracting(MarketplaceDtos.ListingReviewResponse::listingPublicId)
-                .containsOnly("REV-1");
-        assertThat(reviews).extracting(MarketplaceDtos.ListingReviewResponse::verifiedPurchase)
-                .containsOnly(true);
+        assertThat(reviews).isEmpty();
     }
 
     @Test
-    void listingResponsesIncludeEmbeddedPublicReviewsForBrowseAndDetailViews() {
+    void listingResponsesDoNotEmbedSyntheticPublicReviews() {
         MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
         ListingRepository listingRepository = mock(ListingRepository.class);
         Listing listing = listing("REV-1", "Retail gift card bundle", "GIFT_CARDS");
         listing.setSellerDisplayName("RetailCard Vault");
@@ -175,21 +187,22 @@ class MarketplaceServiceCatalogTest {
         when(listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(List.of("ACTIVE", "PUBLISHED")))
                 .thenReturn(List.of(listing));
 
-        MarketplaceService service = newService(listingRepository, categoryRepository);
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
 
         List<MarketplaceDtos.ListingResponse> response = service.activeListings();
 
         assertThat(response).hasSize(1);
-        assertThat(response.getFirst().publicReviews()).hasSizeGreaterThanOrEqualTo(2);
-        assertThat(response.getFirst().publicReviews()).extracting(MarketplaceDtos.ListingReviewResponse::listingPublicId)
-                .containsOnly("REV-1");
+        assertThat(response.getFirst().publicReviews()).isEmpty();
     }
 
     private static MarketplaceService newService(ListingRepository listingRepository,
-                                                 MarketplaceCategoryRepository categoryRepository) {
+                                                 MarketplaceCategoryRepository categoryRepository,
+                                                 MarketplaceVerticalRepository verticalRepository) {
         return new MarketplaceService(
                 listingRepository,
+                mock(ListingStatusMasterRepository.class),
                 categoryRepository,
+                verticalRepository,
                 mock(OrderHeaderRepository.class),
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
@@ -233,5 +246,25 @@ class MarketplaceServiceCatalogTest {
         category.setIconRef("icon");
         category.setActive(true);
         return category;
+    }
+
+    private static com.java.vinod.marketplace.service.entity.MarketplaceVertical vertical(String code, String name, int displayOrder) {
+        com.java.vinod.marketplace.service.entity.MarketplaceVertical vertical =
+                new com.java.vinod.marketplace.service.entity.MarketplaceVertical();
+        vertical.setModuleCode(code);
+        vertical.setModuleName(name);
+        vertical.setDescription(name);
+        vertical.setStatus("ACTIVE");
+        vertical.setDisplayOrder(displayOrder);
+        vertical.setIconKey("store");
+        vertical.setModuleType("COMMERCE_VERTICAL");
+        vertical.setFrontendRoute("/" + code.toLowerCase());
+        vertical.setApiAudience(code + "_API");
+        vertical.setCustomerAccessEnabled(true);
+        vertical.setProviderAccessEnabled(true);
+        vertical.setRequiresProviderApproval(true);
+        vertical.setAvailableToCustomer(true);
+        vertical.setProviderAccessActive(true);
+        return vertical;
     }
 }

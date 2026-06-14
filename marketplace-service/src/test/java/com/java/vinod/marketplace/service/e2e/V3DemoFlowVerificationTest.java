@@ -555,7 +555,7 @@ class V3DemoFlowVerificationTest {
         try (var statement = connection.prepareStatement("""
                 SELECT table_schema
                 FROM information_schema.tables
-                WHERE table_name IN ('listing', 'marketplace_category')
+                WHERE table_name IN ('listing', 'category_master')
                 GROUP BY table_schema
                 HAVING COUNT(DISTINCT table_name) = 2
                 LIMIT 1

@@ -482,17 +482,18 @@ public class BuyerCommerceFlowController {
 
     @GetMapping("/api/seller/listings/create/form-config")
     public BuyerCommerceFlowDtos.ListingFormConfig listingFormConfig() {
-        List<BuyerCommerceFlowDtos.ListingCategoryOption> categories = marketplaceService.activeCategories("MARKETPLACE").stream()
+        String marketplaceVerticalCode = marketplaceService.defaultVerticalCode();
+        List<BuyerCommerceFlowDtos.ListingCategoryOption> categories = marketplaceService.activeCategories(marketplaceVerticalCode).stream()
             .map(category -> new BuyerCommerceFlowDtos.ListingCategoryOption(
                 category.code(),
                 category.name(),
-                SELLER_MARKETPLACE_CODE,
+                marketplaceVerticalCode,
                 category.active(),
                 true,
                 null))
             .toList();
         return new BuyerCommerceFlowDtos.ListingFormConfig(
-            List.of(new BuyerCommerceFlowDtos.ListingMarketplaceOption(SELLER_MARKETPLACE_CODE, SELLER_MARKETPLACE_NAME, true, null)),
+            List.of(new BuyerCommerceFlowDtos.ListingMarketplaceOption(marketplaceVerticalCode, SELLER_MARKETPLACE_NAME, true, null)),
             categories,
             List.of("SECURE_REVEAL", "SECURE_DIGITAL"),
             List.of("USD", "EUR", "GBP", "INR"),
@@ -1486,7 +1487,7 @@ public class BuyerCommerceFlowController {
 
     private Map<String, String> categoryLookup() {
         Map<String, String> categories = new LinkedHashMap<>();
-        for (MarketplaceDtos.CategoryResponse category : marketplaceService.activeCategories("MARKETPLACE")) {
+        for (MarketplaceDtos.CategoryResponse category : marketplaceService.activeCategories(marketplaceService.defaultVerticalCode())) {
             categories.put(category.code(), category.name());
         }
         return categories;

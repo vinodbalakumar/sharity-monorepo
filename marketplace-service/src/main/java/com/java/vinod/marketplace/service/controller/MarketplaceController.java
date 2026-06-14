@@ -25,12 +25,15 @@ import java.util.List;
 @RequestMapping("/api/v1/marketplace")
 public class MarketplaceController {
     private final MarketplaceService marketplaceService;
+    private final com.java.vinod.marketplace.service.service.MarketplaceMasterService marketplaceMasterService;
 
     /**
      * Creates the controller with the marketplace workflow service.
      */
-    public MarketplaceController(MarketplaceService marketplaceService) {
+    public MarketplaceController(MarketplaceService marketplaceService,
+                                 com.java.vinod.marketplace.service.service.MarketplaceMasterService marketplaceMasterService) {
         this.marketplaceService = marketplaceService;
+        this.marketplaceMasterService = marketplaceMasterService;
     }
 
     /**
@@ -39,6 +42,40 @@ public class MarketplaceController {
     @GetMapping("/verticals")
     public List<MarketplaceDtos.VerticalResponse> verticals() {
         return marketplaceService.activeVerticals();
+    }
+
+    /**
+     * Returns marketplace listing statuses from the database master table.
+     */
+    @GetMapping("/listing-statuses")
+    public List<MarketplaceDtos.ListingStatusResponse> listingStatuses() {
+        return marketplaceService.listingStatuses();
+    }
+
+    @GetMapping("/subcategories")
+    public List<MarketplaceDtos.SubcategoryResponse> subcategories(@RequestParam(required = false) String categoryCode,
+                                                                   @RequestParam(required = false) String countryCode) {
+        return marketplaceMasterService.subcategories(categoryCode, countryCode);
+    }
+
+    @GetMapping("/features")
+    public List<MarketplaceDtos.FeatureResponse> features(@RequestParam(required = false) String countryCode) {
+        return marketplaceMasterService.features(countryCode);
+    }
+
+    @GetMapping("/listing-conditions")
+    public List<MarketplaceDtos.ListingConditionResponse> listingConditions() {
+        return marketplaceMasterService.listingConditions();
+    }
+
+    @GetMapping("/delivery-types")
+    public List<MarketplaceDtos.DeliveryTypeResponse> deliveryTypes() {
+        return marketplaceMasterService.deliveryTypes();
+    }
+
+    @GetMapping("/fee-types")
+    public List<MarketplaceDtos.FeeTypeResponse> feeTypes() {
+        return marketplaceMasterService.feeTypes();
     }
 
     /**

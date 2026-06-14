@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS marketplace_category (
+CREATE TABLE IF NOT EXISTS category_master (
     id BIGINT NOT NULL AUTO_INCREMENT,
     category_code VARCHAR(50) NOT NULL,
     category_name VARCHAR(120) NOT NULL,
@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS marketplace_category (
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uk_marketplace_category_code UNIQUE (category_code),
-    CONSTRAINT uk_marketplace_category_slug UNIQUE (category_slug)
+    CONSTRAINT uk_category_master_code UNIQUE (category_code),
+    CONSTRAINT uk_category_master_slug UNIQUE (category_slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 SET @sql := IF(
@@ -63,29 +63,29 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-INSERT INTO marketplace_category (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
+INSERT INTO category_master (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
 SELECT 'GIFT_CARDS', 'Gift Cards', 'gift-cards', 'card_giftcard', TRUE, 1, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'GIFT_CARDS');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'GIFT_CARDS');
 
-INSERT INTO marketplace_category (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
+INSERT INTO category_master (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
 SELECT 'GAMING', 'Gaming', 'gaming', 'sports_esports', TRUE, 2, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'GAMING');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'GAMING');
 
-INSERT INTO marketplace_category (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
+INSERT INTO category_master (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
 SELECT 'ELECTRONICS', 'Electronics', 'electronics', 'devices', TRUE, 3, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'ELECTRONICS');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'ELECTRONICS');
 
-INSERT INTO marketplace_category (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
+INSERT INTO category_master (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
 SELECT 'COLLECTIBLES', 'Collectibles', 'collectibles', 'auto_awesome', TRUE, 4, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'COLLECTIBLES');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'COLLECTIBLES');
 
-INSERT INTO marketplace_category (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
+INSERT INTO category_master (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
 SELECT 'FASHION', 'Fashion', 'fashion', 'checkroom', TRUE, 5, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'FASHION');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'FASHION');
 
-INSERT INTO marketplace_category (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
+INSERT INTO category_master (category_code, category_name, category_slug, icon_ref, active, display_order, created_at, updated_at)
 SELECT 'SERVICES', 'Services', 'services', 'design_services', TRUE, 6, NOW(6), NOW(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'SERVICES');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'SERVICES');
 
 INSERT INTO listing (
     public_id, provider_account_public_id, created_by_user_public_id, title, description, category_code, product_type,

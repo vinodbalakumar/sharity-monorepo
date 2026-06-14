@@ -1,14 +1,14 @@
-ALTER TABLE marketplace_category
+ALTER TABLE category_master
     ADD COLUMN country_code VARCHAR(3) NULL;
 
-CREATE INDEX idx_marketplace_category_country_scope
-    ON marketplace_category (active, country_code, vertical_code, display_order, category_name);
+CREATE INDEX idx_category_master_country_scope
+    ON category_master (active, country_code, vertical_code, display_order, category_name);
 
-INSERT INTO marketplace_category (
+INSERT INTO category_master (
     category_code, category_name, category_slug, vertical_code, country_code, icon_ref, active, display_order, created_at, updated_at
 )
 SELECT 'ONE_GRAM_JEWELLERY', 'One Gram Jewellery', 'one-gram-jewellery', 'MARKETPLACE', 'IND', 'diamond', TRUE, 6, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
-WHERE NOT EXISTS (SELECT 1 FROM marketplace_category WHERE category_code = 'ONE_GRAM_JEWELLERY');
+WHERE NOT EXISTS (SELECT 1 FROM category_master WHERE category_code = 'ONE_GRAM_JEWELLERY');
 
 INSERT INTO listing (
     public_id, provider_account_public_id, created_by_user_public_id, title, description, category_code, vertical_code,
