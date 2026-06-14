@@ -32,16 +32,28 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) {
+        return loadUserByUsername(username, true);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthenticatedUser loadUserByUsername(String username, boolean requireCredential) {
         String normalizedEmail = username.trim().toLowerCase();
         AppUser user = appUserRepository.findByNormalizedEmail(normalizedEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
-        UserCredential credential = userCredentialRepository.findByUser_Id(user.getId())
-                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
+        UserCredential credential = userCredentialRepository.findByUser_Id(user.getId()).orElse(null);
+        if (requireCredential && credential == null) {
+            throw new UsernameNotFoundException("Invalid credentials");
+        }
         var authorities = userRoleRepository.findByUser_Id(user.getId()).stream()
                 .map(userRole -> new SimpleGrantedAuthority("ROLE_" + userRole.getRole().getRoleName()))
                 .toList();
         boolean enabled = user.getStatus() == UserStatus.ACTIVE
                 && (user.getLockedUntil() == null || user.getLockedUntil().isBefore(LocalDateTime.now()));
-        return AuthenticatedUser.from(user, credential.getPasswordHash(), authorities, enabled);
+        return AuthenticatedUser.from(user, credential == null ? "" : credential.getPasswordHash(), authorities, enabled);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthenticatedUser loadUserForToken(String username) {
+        return loadUserByUsername(username, false);
     }
 }
