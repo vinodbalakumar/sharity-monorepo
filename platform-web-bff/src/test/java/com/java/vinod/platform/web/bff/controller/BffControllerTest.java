@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
         "spring.datasource.url=jdbc:h2:mem:bfftest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
+        "spring.flyway.locations=classpath:db/migration",
         "spring.flyway.table=platform_web_bff_flyway_schema_history",
         "app.security.allowed-origin=https://vinodbalakumar.com",
         "app.oauth2.client-id=sharity-web-bff",

@@ -174,6 +174,16 @@ public class BffController {
         return proxyService.proxy(request, response, authentication);
     }
 
+    /**
+     * Proxies anonymous marketplace browse calls through the BFF so the browser
+     * does not depend on a raw backend service URL.
+     */
+    @RequestMapping(value = "/bff/public/marketplace-service/**", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> publicMarketplaceProxy(HttpServletRequest request,
+                                                         HttpServletResponse response) {
+        return proxyService.proxyPublic(request, response);
+    }
+
     private String asString(Object value, String fallback) {
         return value == null ? fallback : value.toString();
     }

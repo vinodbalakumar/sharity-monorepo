@@ -60,14 +60,28 @@ public class BffProxyService {
                                         HttpServletResponse response,
                                         Authentication authentication) {
         String bearerToken = bearerToken(request, response, authentication);
-        String path = request.getRequestURI().substring("/bff/api/".length());
+        return proxyInternal(request, response, bearerToken);
+    }
+
+    public ResponseEntity<byte[]> proxyPublic(HttpServletRequest request,
+                                              HttpServletResponse response) {
+        return proxyInternal(request, response, null);
+    }
+
+    private ResponseEntity<byte[]> proxyInternal(HttpServletRequest request,
+                                                 HttpServletResponse response,
+                                                 String bearerToken) {
+        String requestUri = request.getRequestURI();
+        String prefix = requestUri.startsWith("/bff/public/") ? "/bff/public/" : "/bff/api/";
+        String path = requestUri.substring(prefix.length());
         int slash = path.indexOf('/');
         if (slash < 0) {
             throw new ResponseStatusException(NOT_FOUND, "Missing backend route");
         }
         String serviceKey = path.substring(0, slash);
+        boolean marketplaceAlias = isMarketplaceAlias(serviceKey);
         String backendBase = backendBase(serviceKey);
-        String backendPath = path.substring(slash);
+        String backendPath = marketplaceAlias ? "/api/" + path : path.substring(slash);
         String query = request.getQueryString();
         String target = backendBase + backendPath + (query == null ? "" : "?" + query);
 
@@ -80,7 +94,9 @@ public class BffProxyService {
                 headers.add(header, request.getHeader(header));
                 }
             });
-        headers.setBearerAuth(bearerToken);
+        if (bearerToken != null && !bearerToken.isBlank()) {
+            headers.setBearerAuth(bearerToken);
+        }
         if (headers.get(HttpHeaders.ACCEPT) == null) {
             headers.setAccept(MediaType.parseMediaTypes(MediaType.APPLICATION_JSON_VALUE));
         }
@@ -127,11 +143,15 @@ public class BffProxyService {
     private String backendBase(String serviceKey) {
         return switch (serviceKey) {
             case "authorization-server" -> properties.backends().authorizationServer();
-            case "marketplace-service" -> properties.backends().marketplaceService();
+            case "marketplace-service", "cart", "rewards" -> properties.backends().marketplaceService();
             case "payment-service" -> properties.backends().paymentService();
             case "wallet-service" -> properties.backends().walletService();
             default -> throw new ResponseStatusException(NOT_FOUND, "Unknown backend service");
         };
+    }
+
+    private boolean isMarketplaceAlias(String serviceKey) {
+        return "cart".equals(serviceKey) || "rewards".equals(serviceKey);
     }
 
     private byte[] readBody(HttpServletRequest request) {

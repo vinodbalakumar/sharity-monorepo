@@ -68,7 +68,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(authorizationRequestResolver))
                         .failureHandler(oauth2LoginFailureHandler())
-                        .defaultSuccessUrl(properties.web().redirectUri(), true))
+                        .defaultSuccessUrl(successRedirectUrl(properties.web().redirectUri()), true))
                 .oauth2Client(Customizer.withDefaults())
                 .build();
     }
@@ -168,11 +168,24 @@ public class SecurityConfig {
     }
 
     private String browserAuthorizationServerBaseUrl(BffProperties properties) {
-        return trimTrailingSlash(properties.oauth2().authorizationServerPublicBaseUrl());
+        String configured = trimTrailingSlash(properties.oauth2().authorizationServerPublicBaseUrl());
+        if (isLoopbackUrl(configured)) {
+            return trimTrailingSlash(properties.security().allowedOrigin()) + "/authorization-server/api";
+        }
+        return configured;
     }
 
     private String browserRedirectUri(BffProperties properties) {
-        return properties.oauth2().redirectUri();
+        String configured = properties.oauth2().redirectUri();
+        if (isLoopbackUrl(configured)) {
+            return trimTrailingSlash(properties.security().allowedOrigin()) + "/login/oauth2/code/" + REGISTRATION_ID;
+        }
+        return configured;
+    }
+
+    private String successRedirectUrl(String redirectUri) {
+        String trimmed = trimTrailingSlash(redirectUri);
+        return trimmed + (trimmed.contains("?") ? "&" : "?") + "login=success";
     }
 
     private String trimTrailingSlash(String value) {
@@ -181,6 +194,14 @@ public class SecurityConfig {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed;
+    }
+
+    private boolean isLoopbackUrl(String value) {
+        String lower = value.toLowerCase();
+        return lower.startsWith("http://localhost")
+                || lower.startsWith("https://localhost")
+                || lower.startsWith("http://127.0.0.1")
+                || lower.startsWith("https://127.0.0.1");
     }
 
     /**
