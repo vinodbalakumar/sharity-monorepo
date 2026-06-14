@@ -51,6 +51,7 @@ export function CartScreen({ onNavigate }: Props) {
 
   async function handleCoupon() {
     try {
+      const normalizedCouponCode = couponCode.trim().toUpperCase();
       appState$.multiSellerCart.couponCode.set(normalizedCouponCode);
       await applyCouponToCart(normalizedCouponCode);
       setMessage('Coupon applied successfully!');
@@ -74,6 +75,14 @@ export function CartScreen({ onNavigate }: Props) {
     return (
       <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" scrollable={true}>
         <CenteredState title="Loading cart..." />
+      </InteriorShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <InteriorShell onNavigate={onNavigate} title="Cart & Checkout" scrollable={true}>
+        <CenteredState title={loadError} action="Retry" onAction={load} />
       </InteriorShell>
     );
   }

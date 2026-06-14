@@ -1,4 +1,4 @@
-import { breakpoints, getResponsiveLayout, responsiveValue } from '../theme';
+import { breakpoints, getResponsiveLayout, responsiveValue } from '../theme/breakpoints';
 
 export { breakpoints, responsiveValue };
 export { getResponsiveLayout };

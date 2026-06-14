@@ -3,7 +3,7 @@ import type { MarketplaceHomeResponse, MarketplaceListing } from '../types/marke
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const bffPublicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL ?? '';
 const marketplaceBaseUrl = process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL
-  ?? `${bffPublicBaseUrl}/marketplace-service/api/v1/marketplace`;
+  ?? `${bffPublicBaseUrl || bffBaseUrl}/public/marketplace-service/api/v1/marketplace`;
 const requestTimeoutMs = 6000;
 
 async function getJson<T>(path: string): Promise<T> {

@@ -1,33 +1,22 @@
-// Real cart API service pointing to backend endpoints
-// Replaces local cartCheckoutMockApi.ts
+// Real cart API service pointing to backend endpoints.
+// The screen consumes the buyer-commerce cart contract returned by marketplace-service.
+
+import type { CartResponse, CartSellerGroup, CartItem, CartValidationIssue, CheckoutPreviewResponse } from '../features/cart/cartCheckoutTypes';
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const marketplaceCommerceBaseUrl = `${bffBaseUrl}/api/marketplace-service`;
-
-export type CartResponse = {
-  cartId: string;
-  buyerId: string;
-  items: Array<{
-    cartItemId: string;
-    listingId: string;
-    title: string;
-    imageUrl?: string;
-    price: number;
-    quantity: number;
-    sellerId: string;
-    sellerAlias: string;
-  }>;
-  subtotal: number;
-  fees: number;
-  tax: number;
-  total: number;
-  currency: string;
-  itemCount: number;
+export type { CartResponse, CartSellerGroup, CartItem, CartValidationIssue, CheckoutPreviewResponse };
+export type CartActionResponse = {
+  success: boolean;
+  status: string;
+  message: string;
+  cart: CartResponse;
+  updatedAt: string;
 };
 
 export async function getCart(): Promise<CartResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart`, {
       credentials: 'include'
     });
 
@@ -56,9 +45,9 @@ export async function getCart(): Promise<CartResponse> {
   }
 }
 
-export async function addToCart(listingId: string, quantity: number = 1): Promise<CartResponse> {
+export async function addToCart(listingId: string, quantity: number = 1): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/items`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/items`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -77,9 +66,9 @@ export async function addToCart(listingId: string, quantity: number = 1): Promis
   }
 }
 
-export async function updateCartItem(cartItemId: string, quantity: number): Promise<CartResponse> {
+export async function updateCartItem(cartItemId: string, quantity: number): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/items/${cartItemId}`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/items/${cartItemId}`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -97,9 +86,9 @@ export async function updateCartItem(cartItemId: string, quantity: number): Prom
   }
 }
 
-export async function removeFromCart(cartItemId: string): Promise<CartResponse> {
+export async function removeFromCart(cartItemId: string): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/items/${cartItemId}`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/items/${cartItemId}`, {
       method: 'DELETE',
       credentials: 'include'
     });
@@ -115,9 +104,9 @@ export async function removeFromCart(cartItemId: string): Promise<CartResponse> 
   }
 }
 
-export async function clearCart(): Promise<{ success: boolean; message: string }> {
+export async function clearCart(): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart`, {
       method: 'DELETE',
       credentials: 'include'
     });
@@ -133,9 +122,9 @@ export async function clearCart(): Promise<{ success: boolean; message: string }
   }
 }
 
-export async function saveItemForLater(cartItemId: string): Promise<CartResponse> {
+export async function saveItemForLater(cartItemId: string): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/items/${cartItemId}/save-for-later`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/items/${cartItemId}/save-for-later`, {
       method: 'POST',
       credentials: 'include'
     });
@@ -151,9 +140,9 @@ export async function saveItemForLater(cartItemId: string): Promise<CartResponse
   }
 }
 
-export async function applyCouponToCart(couponCode: string): Promise<CartResponse> {
+export async function applyCouponToCart(couponCode: string): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/coupons/apply`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/coupons/apply`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -172,9 +161,9 @@ export async function applyCouponToCart(couponCode: string): Promise<CartRespons
   }
 }
 
-export async function removeCouponFromCart(couponCode: string): Promise<CartResponse> {
+export async function removeCouponFromCart(couponCode: string): Promise<CartActionResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/coupons/remove`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/coupons/remove`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -192,9 +181,9 @@ export async function removeCouponFromCart(couponCode: string): Promise<CartResp
   }
 }
 
-export async function validateCart(): Promise<{ valid: boolean; issues?: string[] }> {
+export async function validateCart(): Promise<{ valid: boolean; checkoutReady?: boolean; issues?: CartValidationIssue[]; digitalTermsRequired?: boolean; pricingRefreshRequired?: boolean }> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/validate`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/validate`, {
       credentials: 'include'
     });
 
@@ -209,9 +198,9 @@ export async function validateCart(): Promise<{ valid: boolean; issues?: string[
   }
 }
 
-export async function proceedToCheckout(): Promise<{ checkoutId: string; checkoutUrl: string }> {
+export async function proceedToCheckout(): Promise<CheckoutPreviewResponse | { checkoutId: string; checkoutRoute: string; userSafeMessage?: string }> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/cart/checkout`, {
+    const response = await fetch(`${marketplaceCommerceBaseUrl}/api/cart/checkout`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }

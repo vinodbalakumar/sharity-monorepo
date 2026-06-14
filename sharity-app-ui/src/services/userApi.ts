@@ -128,6 +128,14 @@ async function getJson<T>(path: string): Promise<T> {
   return readJsonResponse<T>(response, 'Unable to load account data');
 }
 
+async function readJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new Error(fallbackMessage);
+  }
+}
+
 async function mutate<T>(path: string, method: 'DELETE' | 'PUT', body?: unknown): Promise<T> {
   const csrf = await getBffCsrfToken();
   const response = await fetchUserApi(path, {

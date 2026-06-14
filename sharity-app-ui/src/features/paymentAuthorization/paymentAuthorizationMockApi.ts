@@ -3,6 +3,7 @@ import { readApiErrorMessage } from '../../services/sessionService';
 import type { PaymentAuthorizationScreenResponse } from './paymentAuthorizationTypes';
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+const marketplaceCheckoutBaseUrl = `${bffBaseUrl}/api/marketplace-service`;
 
 type RawPaymentAuthorizationScreenResponse = PaymentAuthorizationScreenResponse;
 
@@ -60,7 +61,7 @@ async function parseResponse<T>(response: Response, fallbackMessage: string): Pr
 
 export async function getPaymentAuthorization(checkoutSessionId?: string | null): Promise<PaymentAuthorizationScreenResponse> {
   const resolvedCheckoutId = resolveCheckoutSessionId(checkoutSessionId);
-  const response = await fetch(`${bffBaseUrl}/api/checkout/sessions/${encodeURIComponent(resolvedCheckoutId)}/payment-authorization`, {
+  const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/sessions/${encodeURIComponent(resolvedCheckoutId)}/payment-authorization`, {
     credentials: 'include'
   });
   const body = await parseResponse<RawPaymentAuthorizationScreenResponse>(response, 'Failed to load payment authorization details');
@@ -70,7 +71,7 @@ export async function getPaymentAuthorization(checkoutSessionId?: string | null)
 
 export async function startPayPalAuthorization(checkoutSessionId?: string | null) {
   const resolvedCheckoutId = resolveCheckoutSessionId(checkoutSessionId);
-  const response = await fetch(`${bffBaseUrl}/api/checkout/sessions/${encodeURIComponent(resolvedCheckoutId)}/paypal/authorize`, {
+  const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/sessions/${encodeURIComponent(resolvedCheckoutId)}/paypal/authorize`, {
     method: 'POST',
     credentials: 'include'
   });
@@ -87,7 +88,7 @@ export async function startPayPalAuthorization(checkoutSessionId?: string | null
 
 export async function retryAuthorization(checkoutSessionId?: string | null) {
   const resolvedCheckoutId = resolveCheckoutSessionId(checkoutSessionId);
-  const response = await fetch(`${bffBaseUrl}/api/checkout/sessions/${encodeURIComponent(resolvedCheckoutId)}/authorization/retry`, {
+  const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/sessions/${encodeURIComponent(resolvedCheckoutId)}/authorization/retry`, {
     method: 'POST',
     credentials: 'include'
   });

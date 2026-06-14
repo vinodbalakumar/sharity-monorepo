@@ -18,7 +18,7 @@ import { getMarketplaceHome } from '../../services/marketplaceApi';
 import type { VisitorContextResponse } from '../../services/publicContentApi';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { PublicSiteFooter } from '../../components/publicSite/PublicSiteFooter';
-import { spacing } from '../../theme';
+import { marketingColors, spacing } from '../../theme';
 import type { MarketplaceCategory, MarketplaceHomeResponse } from '../../types/marketplace';
 import { resolveMockImageUrl } from '../../utils/mockImages';
 import { featureCards, footerGroups } from './welcomeContent';
@@ -144,10 +144,6 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenPublicContent, onS
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>TOP CATEGORIES</Text>
-          <Pressable onPress={onBrowse} style={styles.viewAll}>
-            <Text style={styles.viewAllText}>View All</Text>
-            <Ionicons color={palette.blue} name="arrow-forward" size={18} />
-          </Pressable>
         </View>
 
         <View style={styles.categoryGrid}>

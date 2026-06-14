@@ -2,6 +2,7 @@ import type { BrowserSessionSummary, SessionCheckResult } from '../types/session
 
 const sessionTimeoutMs = 2500;
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+const logoutOverrideKey = 'sharity_logout_override';
 
 export async function checkSession(): Promise<SessionCheckResult> {
   const controller = new AbortController();
@@ -28,6 +29,22 @@ export async function checkSession(): Promise<SessionCheckResult> {
   }
 }
 
+export async function getBrowserSessionSummary(): Promise<BrowserSessionSummary | null> {
+  try {
+    const response = await fetch(`${bffBaseUrl}/session`, {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as BrowserSessionSummary;
+  } catch {
+    return null;
+  }
+}
+
 export async function logoutBrowserSession(): Promise<void> {
   try {
     const session = await getBffCsrfToken();
@@ -47,9 +64,18 @@ export async function logoutBrowserSession(): Promise<void> {
   } catch (error) {
     console.error('Error calling logout endpoint:', error);
   } finally {
+    localStorage.setItem(logoutOverrideKey, '1');
     // Clear all tokens and authentication state
     clearAllAuthTokens();
   }
+}
+
+export function clearLogoutOverride(): void {
+  localStorage.removeItem(logoutOverrideKey);
+}
+
+export function hasLogoutOverride(): boolean {
+  return localStorage.getItem(logoutOverrideKey) === '1';
 }
 
 function clearAllAuthTokens(): void {

@@ -1,6 +1,6 @@
 import { useWindowDimensions } from 'react-native';
 
-import { getResponsiveLayout, responsiveValue } from '../theme';
+import { getResponsiveLayout, responsiveValue } from '../utils/responsive';
 
 export function useResponsiveLayout() {
   const { width } = useWindowDimensions();

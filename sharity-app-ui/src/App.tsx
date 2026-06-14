@@ -42,13 +42,27 @@ import { SellerVerificationScreen } from './features/sellerVerification/SellerVe
 import { SupportScreen } from './features/support/SupportScreen';
 import { WalletScreen } from './features/wallet/WalletScreen';
 import { WelcomeScreen } from './features/welcome/WelcomeScreen';
+import { getRegistrationOptions } from './services/authApi';
 import { getVisitorContext, type VisitorContextResponse } from './services/publicContentApi';
-import { checkSession } from './services/sessionService';
+import { checkSession, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
 const minimumSplashMs = 900;
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+
+type RouteSnapshot = {
+  disputeId?: string | null;
+  digitalProductId?: string | null;
+  electronicsProductId?: string | null;
+  electronicsRoute?: boolean;
+  orderId?: string | null;
+  publicContentSlug?: string | null;
+  receiptId?: string | null;
+  refundRequestId?: string | null;
+  route: AppRoute;
+  secureAccessId?: string | null;
+};
 
 function publicRouteFromLocation(): AppRoute | null {
   if (Platform.OS !== 'web') {
@@ -68,6 +82,13 @@ function publicRouteFromLocation(): AppRoute | null {
     return null;
   }
   return null;
+}
+
+function isLoginSuccessReturn(): boolean {
+  if (Platform.OS !== 'web') {
+    return false;
+  }
+  return new URLSearchParams(window.location.search).get('login') === 'success';
 }
 
 function publicContentSlugFromLocation(): string | null {
@@ -105,17 +126,163 @@ function updatePublicContentPath(slug: string) {
   }
 }
 
-function resolveWebStartupSnapshot(): RouteSnapshot | null {
-  const locationSnapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search);
-  const historySnapshot = window.history.state as RouteSnapshot | null;
+function routeSnapshotFromLocation(pathname: string, search: string, historyState: RouteSnapshot | null): RouteSnapshot | null {
+  const path = pathname.replace(/\/+$/, '');
+  const query = new URLSearchParams(search);
+  const fromHistory = historyState?.route ? historyState : null;
 
-  if (!historySnapshot) {
-    return locationSnapshot;
+  switch (path) {
+    case '/app/home':
+      return { route: 'home' };
+    case '/app/marketplaces':
+      return { route: 'marketplaces' };
+    case '/app/electronics':
+      return { route: 'electronics' };
+    case '/app/cart':
+      return { route: 'cart' };
+    case '/app/checkout':
+      return { route: 'checkout' };
+    case '/app/library':
+      return { route: 'library' };
+    case '/app/orders':
+      return { route: 'orders', orderId: query.get('orderId') };
+    case '/app/orders/details':
+      return { route: 'orderDetails', orderId: query.get('orderId') };
+    case '/app/orders/receipt':
+      return { route: 'receipt', orderId: query.get('orderId'), receiptId: query.get('receiptId') };
+    case '/app/orders/tracking':
+      return { route: 'tracking', orderId: query.get('orderId') };
+    case '/app/orders/refund-request':
+      return { route: 'refundRequest', orderId: query.get('orderId') };
+    case '/app/orders/refund-status':
+      return { route: 'refundStatus', orderId: query.get('orderId'), refundRequestId: query.get('refundRequestId') };
+    case '/app/orders/dispute':
+      return { route: 'openDispute', orderId: query.get('orderId'), refundRequestId: query.get('refundRequestId') };
+    case '/app/orders/dispute-status':
+      return { route: 'disputeStatus', orderId: query.get('orderId'), disputeId: query.get('disputeId') };
+    case '/app/notifications':
+      return { route: 'notifications' };
+    case '/app/app-settings':
+      return { route: 'appSettings' };
+    case '/app/login-security':
+      return { route: 'loginSecurity' };
+    case '/app/profile':
+      return { route: 'profilePrivacy' };
+    case '/app/account-switcher':
+      return { route: 'accountSwitcher' };
+    case '/app/payment-authorization':
+      return { route: 'paymentAuthorization' };
+    case '/app/pricing-promotions':
+      return { route: 'pricingPromotions' };
+    case '/app/rewards':
+      return { route: 'rewards' };
+    case '/app/wallet':
+      return { route: 'wallet' };
+    case '/app/marketplace-config':
+      return { route: 'marketplaceConfig' };
+    case '/app/sell':
+      return { route: 'sellerVerification' };
+    case '/app/seller':
+      return { route: 'seller' };
+    case '/app/policies':
+      return { route: 'policies' };
+    case '/app/support':
+      return { route: 'support' };
+    case '/app/complete-registration':
+      return { route: 'completeSocialRegistration' };
+    case '/app/register':
+      return { route: 'register' };
+    case '/app': {
+      if (fromHistory) {
+        return fromHistory;
+      }
+      return null;
+    }
+    default:
+      if (path.startsWith('/app/legal/') || path.startsWith('/app/company/') || path.startsWith('/app/support/')) {
+        return { route: 'publicContent', publicContentSlug: path.split('/').filter(Boolean)[2] ?? 'terms' };
+      }
+      return fromHistory;
   }
+}
 
-  const currentPath = `${window.location.pathname}${window.location.search}`;
-  const historyPath = snapshotToPath(createRouteSnapshot(historySnapshot.route, historySnapshot));
-  return historyPath === currentPath ? historySnapshot : locationSnapshot;
+function snapshotToPath(snapshot: RouteSnapshot): string {
+  switch (snapshot.route) {
+    case 'home':
+      return '/app/home';
+    case 'marketplaces':
+      return '/app/marketplaces';
+    case 'electronics':
+      return '/app/electronics';
+    case 'cart':
+      return '/app/cart';
+    case 'checkout':
+      return '/app/checkout';
+    case 'library':
+      return '/app/library';
+    case 'orders':
+      return `/app/orders${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
+    case 'orderDetails':
+      return `/app/orders/details${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
+    case 'receipt':
+      return `/app/orders/receipt${snapshot.orderId || snapshot.receiptId ? `?${new URLSearchParams({ ...(snapshot.orderId ? { orderId: snapshot.orderId } : {}), ...(snapshot.receiptId ? { receiptId: snapshot.receiptId } : {}) }).toString()}` : ''}`;
+    case 'tracking':
+      return `/app/orders/tracking${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
+    case 'refundRequest':
+      return `/app/orders/refund-request${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
+    case 'refundStatus':
+      return `/app/orders/refund-status${snapshot.orderId || snapshot.refundRequestId ? `?${new URLSearchParams({ ...(snapshot.orderId ? { orderId: snapshot.orderId } : {}), ...(snapshot.refundRequestId ? { refundRequestId: snapshot.refundRequestId } : {}) }).toString()}` : ''}`;
+    case 'openDispute':
+      return `/app/orders/dispute${snapshot.orderId || snapshot.refundRequestId ? `?${new URLSearchParams({ ...(snapshot.orderId ? { orderId: snapshot.orderId } : {}), ...(snapshot.refundRequestId ? { refundRequestId: snapshot.refundRequestId } : {}) }).toString()}` : ''}`;
+    case 'disputeStatus':
+      return `/app/orders/dispute-status${snapshot.orderId || snapshot.disputeId ? `?${new URLSearchParams({ ...(snapshot.orderId ? { orderId: snapshot.orderId } : {}), ...(snapshot.disputeId ? { disputeId: snapshot.disputeId } : {}) }).toString()}` : ''}`;
+    case 'notifications':
+      return '/app/notifications';
+    case 'appSettings':
+      return '/app/app-settings';
+    case 'loginSecurity':
+      return '/app/login-security';
+    case 'profilePrivacy':
+      return '/app/profile';
+    case 'accountSwitcher':
+      return '/app/account-switcher';
+    case 'paymentAuthorization':
+      return '/app/payment-authorization';
+    case 'pricingPromotions':
+      return '/app/pricing-promotions';
+    case 'rewards':
+      return '/app/rewards';
+    case 'wallet':
+      return '/app/wallet';
+    case 'marketplaceConfig':
+      return '/app/marketplace-config';
+    case 'sellerVerification':
+      return '/app/sell';
+    case 'seller':
+      return '/app/seller';
+    case 'policies':
+      return '/app/policies';
+    case 'support':
+      return '/app/support';
+    case 'publicContent':
+      return `/app/${publicSectionFromSlug(snapshot.publicContentSlug ?? 'terms')}/${snapshot.publicContentSlug ?? 'terms'}`;
+    case 'register':
+      return '/app/register';
+    case 'completeSocialRegistration':
+      return '/app/complete-registration';
+    default:
+      return '/app/';
+  }
+}
+
+function publicSectionFromSlug(slug: string): 'legal' | 'support' | 'company' {
+  if (['privacy', 'terms', 'guidelines'].includes(slug)) {
+    return 'legal';
+  }
+  if (['help-center', 'safety', 'contact-us'].includes(slug)) {
+    return 'support';
+  }
+  return 'company';
 }
 
 export default function App() {
@@ -132,7 +299,38 @@ export default function App() {
   const [visitorContext, setVisitorContext] = useState<VisitorContextResponse | null>(null);
   const [publicContentSlug, setPublicContentSlug] = useState('terms');
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || route === 'splash') {
+      return;
+    }
+
+    const snapshot: RouteSnapshot = {
+      disputeId,
+      digitalProductId,
+      electronicsProductId,
+      orderId,
+      publicContentSlug,
+      receiptId,
+      refundRequestId,
+      route,
+      secureAccessId
+    };
+    const nextPath = snapshotToPath(snapshot);
+    const currentPath = `${window.location.pathname}${window.location.search}`;
+    const historyState = window.history.state as RouteSnapshot | null;
+
+    if (currentPath !== nextPath) {
+      window.history.pushState(snapshot, '', nextPath);
+      return;
+    }
+
+    if (!historyState || historyState.route !== route) {
+      window.history.replaceState(snapshot, '', nextPath);
+    }
+  }, [digitalProductId, disputeId, electronicsProductId, orderId, publicContentSlug, receiptId, refundRequestId, route, secureAccessId]);
+
   function startBrowserLogin() {
+    clearLogoutOverride();
     if (Platform.OS === 'web') {
       window.location.assign(`${bffBaseUrl}/login?force=true`);
       return;
@@ -153,7 +351,10 @@ export default function App() {
     const startTime = Date.now();
 
     async function resolveStartupRoute() {
-      const publicRoute = publicRouteFromLocation();
+      const historySnapshot = window.history.state as RouteSnapshot | null;
+      const locationSnapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search, historySnapshot);
+      const loginSuccessReturn = isLoginSuccessReturn();
+      const logoutOverride = hasLogoutOverride();
       const [session, context, registrationOptions] = await Promise.all([
         checkSession(),
         getVisitorContext().catch(() => null),
@@ -169,10 +370,32 @@ export default function App() {
         if (context) {
           setVisitorContext(context);
         }
-        if (publicRoute === 'publicContent') {
-          setPublicContentSlug(publicContentSlugFromLocation() ?? 'terms');
+        if (locationSnapshot?.route === 'publicContent') {
+          setPublicContentSlug(locationSnapshot.publicContentSlug ?? 'terms');
         }
-        setRoute(publicRoute ?? (session.status === 'authenticated' ? 'home' : 'welcome'));
+        if (!logoutOverride && (loginSuccessReturn || session.status === 'authenticated')) {
+          const nextRoute = locationSnapshot?.route ?? 'home';
+          applyRouteSnapshot(locationSnapshot ?? { route: 'home' });
+          setRoute(nextRoute);
+          if (loginSuccessReturn) {
+            window.history.replaceState({
+              route: nextRoute,
+              ...snapshotStateForRoute(nextRoute, locationSnapshot)
+            }, '', snapshotToPath(locationSnapshot ?? { route: 'home' }));
+          }
+          return;
+        }
+        if (locationSnapshot?.route && isPublicRoute(locationSnapshot.route)) {
+          applyRouteSnapshot(locationSnapshot);
+          setRoute(locationSnapshot.route);
+          window.history.replaceState({
+            route: locationSnapshot.route,
+            ...snapshotStateForRoute(locationSnapshot.route, locationSnapshot)
+          }, '', snapshotToPath(locationSnapshot));
+          return;
+        }
+        setRoute('welcome');
+        window.history.replaceState({ route: 'welcome' }, '', '/app/');
       }, remaining);
     }
 
@@ -189,33 +412,48 @@ export default function App() {
       return undefined;
     }
 
-    function handlePopState() {
-      const publicRoute = publicRouteFromLocation();
-      if (publicRoute === 'publicContent') {
-        setPublicContentSlug(publicContentSlugFromLocation() ?? 'terms');
-        setRoute('publicContent');
+    let cancelled = false;
+
+    const syncBrowserSession = async () => {
+      const session = await checkSession();
+      if (cancelled) {
         return;
       }
-      if (publicRoute === 'register' || publicRoute === 'completeSocialRegistration') {
-        setRoute(publicRoute);
+      if (!hasLogoutOverride() && session.status === 'authenticated') {
+        setRoute((current) => (current === 'welcome' || current === 'register' || current === 'completeSocialRegistration' ? 'home' : current));
+      }
+    };
+
+    function handlePopState() {
+      const snapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search, window.history.state as RouteSnapshot | null);
+      if (snapshot) {
+        applyRouteSnapshot(snapshot);
+        setRoute(snapshot.route);
         return;
       }
       setRoute('welcome');
     }
 
-    window.addEventListener('focus', syncBrowserSession);
-    window.addEventListener('pageshow', syncBrowserSession);
+    const handleBrowserSessionSync = () => {
+      void syncBrowserSession();
+    };
+
+    handleBrowserSessionSync();
+    window.addEventListener('focus', handleBrowserSessionSync);
+    window.addEventListener('pageshow', handleBrowserSessionSync);
     window.addEventListener('popstate', handlePopState);
     return () => {
       cancelled = true;
-      window.clearTimeout(followUpTimer);
-      window.removeEventListener('focus', syncBrowserSession);
-      window.removeEventListener('pageshow', syncBrowserSession);
+      window.removeEventListener('focus', handleBrowserSessionSync);
+      window.removeEventListener('pageshow', handleBrowserSessionSync);
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
   function leavePublicContent() {
+    if (Platform.OS === 'web' && hasLogoutOverride()) {
+      clearLogoutOverride();
+    }
     updatePublicPath('welcome');
     setRoute('welcome');
   }
@@ -224,6 +462,40 @@ export default function App() {
     setPublicContentSlug(slug);
     updatePublicContentPath(slug);
     setRoute('publicContent');
+  }
+
+  function applyRouteSnapshot(snapshot: RouteSnapshot) {
+    setDigitalProductId(snapshot.digitalProductId ?? null);
+    setElectronicsProductId(snapshot.electronicsProductId ?? null);
+    setOrderId(snapshot.orderId ?? null);
+    setReceiptId(snapshot.receiptId ?? null);
+    setRefundRequestId(snapshot.refundRequestId ?? null);
+    setDisputeId(snapshot.disputeId ?? null);
+    setSecureAccessId(snapshot.secureAccessId ?? null);
+    if (snapshot.publicContentSlug) {
+      setPublicContentSlug(snapshot.publicContentSlug);
+    }
+  }
+
+  function snapshotStateForRoute(routeValue: AppRoute, snapshot?: RouteSnapshot | null): Omit<RouteSnapshot, 'route'> {
+    return {
+      disputeId: snapshot?.disputeId ?? disputeId,
+      digitalProductId: snapshot?.digitalProductId ?? digitalProductId,
+      electronicsProductId: snapshot?.electronicsProductId ?? electronicsProductId,
+      electronicsRoute: routeValue === 'electronics',
+      orderId: snapshot?.orderId ?? orderId,
+      publicContentSlug: snapshot?.publicContentSlug ?? publicContentSlug,
+      receiptId: snapshot?.receiptId ?? receiptId,
+      refundRequestId: snapshot?.refundRequestId ?? refundRequestId,
+      secureAccessId: snapshot?.secureAccessId ?? secureAccessId
+    };
+  }
+
+  function isPublicRoute(routeValue: AppRoute) {
+    return routeValue === 'welcome'
+      || routeValue === 'register'
+      || routeValue === 'completeSocialRegistration'
+      || routeValue === 'publicContent';
   }
 
   return (

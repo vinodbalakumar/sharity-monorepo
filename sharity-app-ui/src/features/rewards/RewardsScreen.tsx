@@ -12,7 +12,7 @@ import { AuthenticationRequiredError } from '../../services/sessionService';
 import { appState$ } from '../../state/appState';
 import { appStorage } from '../../storage/storage';
 import type { AppRoute } from '../../types/navigation';
-import { applyCredit, claimGiveaway, getRewardsDashboard, removeCredit } from './rewardsMockApi';
+import { applyCredit, claimGiveaway, getRewardsDashboard, removeCredit, runRewardSimulation } from '../../services/rewardsApi';
 import type {
   CreditAllocationItem,
   CreditHistoryItem,
@@ -49,28 +49,64 @@ export function RewardsScreen({ onNavigate }: Props) {
   const [message, setMessage] = useState('');
 
   const load = useCallback(async () => {
-    setDashboard(await getRewardsDashboard());
-    const stored = appStorage.getString('rewardsLastTab') as typeof tabs[number] | null;
-    if (stored && tabs.includes(stored)) appState$.rewards.selectedTab.set(stored);
+    setLoading(true);
+    setError('');
+    try {
+      const dashboardResponse = await getRewardsDashboard();
+      setDashboard(dashboardResponse);
+      const stored = appStorage.getString('rewardsLastTab') as typeof tabs[number] | null;
+      if (stored && tabs.includes(stored)) appState$.rewards.selectedTab.set(stored);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Rewards data is currently unavailable.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   async function handleClaim(campaignId: string) {
-    const result = await claimGiveaway(campaignId);
-    setMessage(result.message);
+    setActionLoading(true);
+    setMessage('');
+    try {
+      const result = await claimGiveaway(campaignId);
+      setMessage(result.message);
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Unable to claim giveaway.');
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function handleApplyCredit() {
-    const result = await applyCredit();
-    appState$.rewards.creditApplied.set(true);
-    setMessage(result.message);
+    setActionLoading(true);
+    setMessage('');
+    try {
+      const result = await applyCredit();
+      appState$.rewards.creditApplied.set(true);
+      setMessage(result.message);
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Unable to apply credit.');
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function handleRemoveCredit() {
-    const result = await removeCredit();
-    appState$.rewards.creditApplied.set(false);
-    setMessage(result.message);
+    setActionLoading(true);
+    setMessage('');
+    try {
+      const result = await removeCredit();
+      appState$.rewards.creditApplied.set(false);
+      setMessage(result.message);
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Unable to remove credit.');
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   if (loading) {
@@ -131,12 +167,12 @@ export function RewardsScreen({ onNavigate }: Props) {
 
           <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
             <YStack flex={1} gap="$4" minWidth={0}>
-              {selectedTab === 'Buyer' ? <BuyerView dashboard={dashboard} onApplyCredit={handleApplyCredit} onClaim={handleClaim} /> : null}
+              {selectedTab === 'Buyer' ? <BuyerView dashboard={dashboard} actionLoading={actionLoading} onApplyCredit={handleApplyCredit} onClaim={handleClaim} /> : null}
               {selectedTab === 'Seller Impact' ? <SellerImpact dashboard={dashboard} /> : null}
               {selectedTab === 'Admin Campaigns' ? <AdminCampaignPanel campaigns={dashboard.campaigns} /> : null}
               {selectedTab === 'Histories' ? <Histories dashboard={dashboard} /> : null}
               {selectedTab === 'Abuse Review' ? <AbuseReview reviews={dashboard.abuseQueue} /> : null}
-              {selectedTab === 'Simulator' ? <Simulator dashboard={dashboard} /> : null}
+              {selectedTab === 'Simulator' ? <Simulator dashboard={dashboard} onRun={runRewardSimulation} /> : null}
               {selectedTab === 'Audit' ? <AuditPanel audit={dashboard.auditLog} /> : null}
             </YStack>
 
@@ -170,7 +206,7 @@ export function RewardsScreen({ onNavigate }: Props) {
   );
 }
 
-function BuyerView({ dashboard, onApplyCredit, onClaim }: { dashboard: RewardsDashboardResponse; onApplyCredit: () => void; onClaim: (campaignId: string) => void }) {
+function BuyerView({ dashboard, actionLoading, onApplyCredit, onClaim }: { dashboard: RewardsDashboardResponse; actionLoading: boolean; onApplyCredit: () => void; onClaim: (campaignId: string) => void }) {
   return (
     <YStack gap="$4">
       <PremiumCard p="$5">
@@ -192,8 +228,8 @@ function BuyerView({ dashboard, onApplyCredit, onClaim }: { dashboard: RewardsDa
   );
 }
 
-function CampaignPanel({ campaigns, onClaim }: { campaigns: RewardCampaignSummary[]; onClaim: (campaignId: string) => void }) {
-  return <Panel title="Rewards & Giveaways"><CampaignList data={campaigns} estimatedItemSize={138} keyExtractor={(item) => item.campaignId} renderItem={({ item, index }) => <CampaignRow campaign={item} index={index} onClaim={() => onClaim(item.campaignId)} />} /></Panel>;
+function CampaignPanel({ campaigns, actionLoading, onClaim }: { campaigns: RewardCampaignSummary[]; actionLoading: boolean; onClaim: (campaignId: string) => void }) {
+  return <Panel title="Rewards & Giveaways"><CampaignList data={campaigns} estimatedItemSize={138} keyExtractor={(item) => item.campaignId} renderItem={({ item, index }) => <CampaignRow campaign={item} index={index} actionLoading={actionLoading} onClaim={() => onClaim(item.campaignId)} />} /></Panel>;
 }
 
 function AdminCampaignPanel({ campaigns }: { campaigns: RewardCampaignConfig[] }) {
@@ -213,7 +249,7 @@ function Histories({ dashboard }: { dashboard: RewardsDashboardResponse }) {
     <YStack gap="$4">
       <Panel title="Credit Issuance History"><HistoryList data={dashboard.creditIssuance} estimatedItemSize={108} keyExtractor={(item) => item.historyId} renderItem={({ item, index }) => <HistoryRow history={item} index={index} />} /></Panel>
       <Panel title="Credit Redemption History"><HistoryList data={dashboard.creditRedemption} estimatedItemSize={108} keyExtractor={(item) => item.historyId} renderItem={({ item, index }) => <HistoryRow history={item} index={index} />} /></Panel>
-      <CampaignPanel campaigns={dashboard.giveawayClaims} onClaim={() => undefined} />
+      <CampaignPanel campaigns={dashboard.giveawayClaims} actionLoading={false} onClaim={() => undefined} />
     </YStack>
   );
 }
@@ -235,7 +271,7 @@ function AbuseReview({ reviews }: { reviews: RewardAbuseReviewItem[] }) {
   return <Panel title="Abuse Review Queue"><AbuseList data={reviews} estimatedItemSize={116} keyExtractor={(item) => item.reviewId} renderItem={({ item, index }) => <AbuseRow review={item} index={index} />} /></Panel>;
 }
 
-function Simulator({ dashboard }: { dashboard: RewardsDashboardResponse }) {
+function Simulator({ dashboard, onRun }: { dashboard: RewardsDashboardResponse; onRun: () => Promise<unknown> }) {
   const simulation = dashboard.simulation;
   return (
     <Panel title="Campaign Simulator">
@@ -246,6 +282,7 @@ function Simulator({ dashboard }: { dashboard: RewardsDashboardResponse }) {
         <Paragraph color="$gray10">{simulation.sellerPayoutImpact}</Paragraph>
         <Paragraph color="$gray10">{simulation.antiAbuseResult}</Paragraph>
         <Paragraph color="$gray10">Warnings: {simulation.conflictWarnings.join(', ')}</Paragraph>
+        <AppButton variant="secondary" onPress={onRun}>Run Simulation</AppButton>
       </YStack>
     </Panel>
   );
@@ -255,9 +292,9 @@ function AuditPanel({ audit }: { audit: RewardsAuditLogItem[] }) {
   return <Panel title="Rewards Audit Log"><AuditList data={audit} estimatedItemSize={116} keyExtractor={(item) => item.auditId} renderItem={({ item, index }) => <AuditRow audit={item} index={index} />} /></Panel>;
 }
 
-const CampaignRow = memo(function CampaignRow({ campaign, index, onClaim }: { campaign: RewardCampaignSummary; index: number; onClaim: () => void }) {
+const CampaignRow = memo(function CampaignRow({ campaign, index, actionLoading, onClaim }: { campaign: RewardCampaignSummary; index: number; actionLoading: boolean; onClaim: () => void }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={campaign.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /><YStack flex={1}><Text fontWeight="900">{campaign.campaignName}</Text><Paragraph color="$gray10">{campaign.creditRewardType} / {campaign.fundingSource} / {campaign.antiAbuseSummary}</Paragraph></YStack><AppButton variant="secondary" onPress={onClaim}>{campaign.creditRewardType === 'GIVEAWAY_REWARD' ? 'Claim Giveaway' : 'View'}</AppButton></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={campaign.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /><YStack flex={1}><Text fontWeight="900">{campaign.campaignName}</Text><Paragraph color="$gray10">{campaign.creditRewardType} / {campaign.fundingSource} / {campaign.antiAbuseSummary}</Paragraph></YStack><AppButton variant="secondary" onPress={onClaim} disabled={actionLoading}>{campaign.creditRewardType === 'GIVEAWAY_REWARD' ? 'Claim Giveaway' : 'View'}</AppButton></XStack></Animated.View>;
 });
 
 const AdminCampaignRow = memo(function AdminCampaignRow({ campaign, index }: { campaign: RewardCampaignConfig; index: number }) {

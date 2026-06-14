@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { mobileTabItems, sidebarItems } from '../../features/home/dashboardConfig';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors, spacing } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
 

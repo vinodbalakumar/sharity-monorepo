@@ -2,6 +2,7 @@
 // Replaces local checkoutMockApi.ts
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+const marketplaceCheckoutBaseUrl = `${bffBaseUrl}/api/marketplace-service`;
 
 export type CheckoutResponse = {
   checkoutId: string;
@@ -38,7 +39,7 @@ export type PaymentAuthorizationResponse = {
 
 export async function createCheckout(cartId: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/from-cart`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/from-cart`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -59,7 +60,7 @@ export async function createCheckout(cartId: string): Promise<CheckoutResponse> 
 
 export async function getCheckout(checkoutId: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}`, {
       credentials: 'include'
     });
 
@@ -76,7 +77,7 @@ export async function getCheckout(checkoutId: string): Promise<CheckoutResponse>
 
 export async function refreshCheckout(checkoutId: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/refresh`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }
@@ -95,7 +96,7 @@ export async function refreshCheckout(checkoutId: string): Promise<CheckoutRespo
 
 export async function applyCoupon(checkoutId: string, couponCode: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/coupons/apply`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/coupons/apply`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -116,7 +117,7 @@ export async function applyCoupon(checkoutId: string, couponCode: string): Promi
 
 export async function removeCoupon(checkoutId: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/coupons/remove`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/coupons/remove`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }
@@ -135,7 +136,7 @@ export async function removeCoupon(checkoutId: string): Promise<CheckoutResponse
 
 export async function selectPaymentMethod(checkoutId: string, methodId: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/payment-method`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/payment-method`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -155,7 +156,7 @@ export async function selectPaymentMethod(checkoutId: string, methodId: string):
 
 export async function acknowledgePolicy(checkoutId: string, policyId: string): Promise<CheckoutResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/policies/acknowledge`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/policies/acknowledge`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -175,7 +176,7 @@ export async function acknowledgePolicy(checkoutId: string, policyId: string): P
 
 export async function startPaymentAuthorization(checkoutId: string): Promise<PaymentAuthorizationResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/authorize-payment`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/authorize-payment`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }
@@ -194,7 +195,7 @@ export async function startPaymentAuthorization(checkoutId: string): Promise<Pay
 
 export async function getAuthorizationStatus(checkoutId: string): Promise<PaymentAuthorizationResponse> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/authorization-status`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/authorization-status`, {
       credentials: 'include'
     });
 
@@ -211,7 +212,7 @@ export async function getAuthorizationStatus(checkoutId: string): Promise<Paymen
 
 export async function cancelCheckout(checkoutId: string): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await fetch(`${bffBaseUrl}/api/checkout/${checkoutId}/cancel`, {
+    const response = await fetch(`${marketplaceCheckoutBaseUrl}/api/checkout/${checkoutId}/cancel`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }
