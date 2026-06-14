@@ -1,8 +1,0 @@
-spring:
-  datasource:
-    url: ${WALLET_DB_URL:${DB_URL:jdbc:postgresql://${WALLET_DB_HOST:${DB_HOST:localhost}}:${WALLET_DB_PORT:${DB_PORT:5432}}/${WALLET_DB_NAME:wallet_db}}}
-    username: ${WALLET_DB_USERNAME:${DB_USERNAME:postgres}}
-    password: ${WALLET_DB_PASSWORD:${DB_PASSWORD:postgres}}
-  flyway:
-    enabled: ${WALLET_FLYWAY_ENABLED:true}
-    locations: classpath:db/migration-postgresql

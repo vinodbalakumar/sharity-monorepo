@@ -5,10 +5,14 @@ import com.java.vinod.wallet.service.entity.WalletAccount;
 import com.java.vinod.wallet.service.entity.WalletBalanceSnapshot;
 import com.java.vinod.wallet.service.entity.WalletEventInbox;
 import com.java.vinod.wallet.service.entity.WalletLedgerEntry;
+import com.java.vinod.wallet.service.entity.WalletStatusMaster;
+import com.java.vinod.wallet.service.entity.WalletTransactionTypeMaster;
 import com.java.vinod.wallet.service.repository.WalletAccountRepository;
 import com.java.vinod.wallet.service.repository.WalletBalanceSnapshotRepository;
 import com.java.vinod.wallet.service.repository.WalletEventInboxRepository;
 import com.java.vinod.wallet.service.repository.WalletLedgerEntryRepository;
+import com.java.vinod.wallet.service.repository.WalletStatusMasterRepository;
+import com.java.vinod.wallet.service.repository.WalletTransactionTypeMasterRepository;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 /**
  * Maintains wallet ledger projections from payment events without moving money.
@@ -30,6 +36,8 @@ public class WalletService {
     private final WalletLedgerEntryRepository walletLedgerEntryRepository;
     private final WalletBalanceSnapshotRepository walletBalanceSnapshotRepository;
     private final WalletEventInboxRepository walletEventInboxRepository;
+    private final WalletTransactionTypeMasterRepository walletTransactionTypeMasterRepository;
+    private final WalletStatusMasterRepository walletStatusMasterRepository;
 
     /**
      * Creates the wallet service with ledger, account, snapshot, and inbox repositories.
@@ -37,11 +45,15 @@ public class WalletService {
     public WalletService(WalletAccountRepository walletAccountRepository,
                          WalletLedgerEntryRepository walletLedgerEntryRepository,
                          WalletBalanceSnapshotRepository walletBalanceSnapshotRepository,
-                         WalletEventInboxRepository walletEventInboxRepository) {
+                         WalletEventInboxRepository walletEventInboxRepository,
+                         WalletTransactionTypeMasterRepository walletTransactionTypeMasterRepository,
+                         WalletStatusMasterRepository walletStatusMasterRepository) {
         this.walletAccountRepository = walletAccountRepository;
         this.walletLedgerEntryRepository = walletLedgerEntryRepository;
         this.walletBalanceSnapshotRepository = walletBalanceSnapshotRepository;
         this.walletEventInboxRepository = walletEventInboxRepository;
+        this.walletTransactionTypeMasterRepository = walletTransactionTypeMasterRepository;
+        this.walletStatusMasterRepository = walletStatusMasterRepository;
     }
 
     /**
@@ -97,19 +109,12 @@ public class WalletService {
         inbox.setProcessedAt(now);
         walletEventInboxRepository.save(inbox);
 
-        String ownerType = eventType.startsWith("PAYMENT") || eventType.startsWith("REFUND") ? "CUSTOMER" : "PROVIDER_ACCOUNT";
-        String entryType = switch (eventType) {
-            case "PAYMENT_CAPTURED" -> "CUSTOMER_PAYMENT";
-            case "PROVIDER_PENDING_EARNING" -> "PROVIDER_PENDING_EARNING";
-            case "PAYOUT_ELIGIBLE" -> "PROVIDER_AVAILABLE_EARNING";
-            case "PAYOUT_PAID" -> "PROVIDER_PAYOUT";
-            case "REFUND_COMPLETED" -> "CUSTOMER_REFUND";
-            default -> eventType;
-        };
-        String direction = switch (entryType) {
-            case "CUSTOMER_REFUND", "PROVIDER_PENDING_EARNING", "PROVIDER_AVAILABLE_EARNING" -> "CREDIT";
-            default -> "DEBIT";
-        };
+        WalletTransactionTypeMaster transactionType = walletTransactionTypeMasterRepository
+                .findBySourceEventTypeIgnoreCaseAndActiveTrue(eventType)
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported wallet event type"));
+        String ownerType = transactionType.getOwnerType();
+        String entryType = transactionType.getEntryType();
+        String direction = transactionType.getDirection();
         WalletAccount account = account(ownerType, request.ownerPublicId(), request.currencyCode());
         if (!walletLedgerEntryRepository.existsBySourceServiceAndSourceEventIdAndEntryType("PAYMENT", request.sourceEventId(), entryType)) {
             WalletLedgerEntry entry = new WalletLedgerEntry();
@@ -176,7 +181,7 @@ public class WalletService {
                     account.setOwnerType(ownerType);
                     account.setOwnerPublicId(ownerPublicId);
                     account.setCurrencyCode(safeCurrency);
-                    account.setWalletStatus("ACTIVE");
+                    account.setWalletStatus(defaultWalletStatus());
                     account.setCreatedAt(now);
                     account.setUpdatedAt(now);
                     WalletAccount saved = walletAccountRepository.save(account);
@@ -198,13 +203,20 @@ public class WalletService {
         BigDecimal available = BigDecimal.ZERO;
         BigDecimal paid = BigDecimal.ZERO;
         BigDecimal reversed = BigDecimal.ZERO;
+        Map<String, String> bucketByEntryType = walletTransactionTypeMasterRepository.findByActiveTrueOrderBySortOrderAscSourceEventTypeAsc()
+                .stream()
+                .collect(Collectors.toMap(WalletTransactionTypeMaster::getEntryType, WalletTransactionTypeMaster::getBalanceBucket, (left, right) -> left));
         for (WalletLedgerEntry entry : walletLedgerEntryRepository
                 .findByWalletAccount_OwnerTypeAndWalletAccount_OwnerPublicIdOrderByCreatedAtDesc(account.getOwnerType(), account.getOwnerPublicId())) {
-            switch (entry.getEntryType()) {
-                case "PROVIDER_PENDING_EARNING" -> pending = pending.add(entry.getAmount());
-                case "PROVIDER_AVAILABLE_EARNING" -> available = available.add(entry.getAmount());
-                case "PROVIDER_PAYOUT" -> paid = paid.add(entry.getAmount());
-                case "CUSTOMER_REFUND", "PROVIDER_PAYOUT_REVERSAL" -> reversed = reversed.add(entry.getAmount());
+            String bucket = bucketByEntryType.get(entry.getEntryType());
+            if (bucket == null) {
+                continue;
+            }
+            switch (bucket) {
+                case "PENDING" -> pending = pending.add(entry.getAmount());
+                case "AVAILABLE" -> available = available.add(entry.getAmount());
+                case "PAID" -> paid = paid.add(entry.getAmount());
+                case "REVERSED" -> reversed = reversed.add(entry.getAmount());
                 default -> {
                 }
             }
@@ -225,5 +237,13 @@ public class WalletService {
     private String userPublicId(Jwt jwt) {
         String uid = jwt.getClaimAsString("uid");
         return uid == null || uid.isBlank() ? jwt.getSubject() : uid;
+    }
+
+    private String defaultWalletStatus() {
+        return walletStatusMasterRepository.findByActiveTrueOrderBySortOrderAscDisplayLabelAsc()
+                .stream()
+                .findFirst()
+                .map(WalletStatusMaster::getStatusCode)
+                .orElse("ACTIVE");
     }
 }
