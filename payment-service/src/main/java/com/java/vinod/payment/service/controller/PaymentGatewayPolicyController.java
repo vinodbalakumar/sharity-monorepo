@@ -26,12 +26,15 @@ import java.util.List;
 @RequestMapping("/api/v1/payments/admin/gateways")
 public class PaymentGatewayPolicyController {
     private final PaymentGatewayPolicyService paymentGatewayPolicyService;
+    private final com.java.vinod.payment.service.service.PaymentMasterService paymentMasterService;
 
     /**
      * Creates the controller with the payment gateway policy service.
      */
-    public PaymentGatewayPolicyController(PaymentGatewayPolicyService paymentGatewayPolicyService) {
+    public PaymentGatewayPolicyController(PaymentGatewayPolicyService paymentGatewayPolicyService,
+                                          com.java.vinod.payment.service.service.PaymentMasterService paymentMasterService) {
         this.paymentGatewayPolicyService = paymentGatewayPolicyService;
+        this.paymentMasterService = paymentMasterService;
     }
 
     /**
@@ -74,5 +77,30 @@ public class PaymentGatewayPolicyController {
     @GetMapping("/recommendation")
     public PaymentDtos.PaymentGatewayRecommendationResponse recommendation(@RequestParam String countryCode) {
         return paymentGatewayPolicyService.recommendation(countryCode);
+    }
+
+    @GetMapping("/order-statuses")
+    public List<PaymentDtos.StatusResponse> orderStatuses() {
+        return paymentMasterService.orderStatuses();
+    }
+
+    @GetMapping("/payment-statuses")
+    public List<PaymentDtos.StatusResponse> paymentStatuses() {
+        return paymentMasterService.paymentStatuses();
+    }
+
+    @GetMapping("/payment-methods")
+    public List<PaymentDtos.PaymentMethodResponse> paymentMethods() {
+        return paymentMasterService.paymentMethods();
+    }
+
+    @GetMapping("/refund-reasons")
+    public List<PaymentDtos.ReasonResponse> refundReasons() {
+        return paymentMasterService.refundReasons();
+    }
+
+    @GetMapping("/dispute-reasons")
+    public List<PaymentDtos.ReasonResponse> disputeReasons() {
+        return paymentMasterService.disputeReasons();
     }
 }

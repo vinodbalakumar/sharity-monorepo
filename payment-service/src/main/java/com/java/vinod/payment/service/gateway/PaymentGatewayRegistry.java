@@ -3,6 +3,7 @@ package com.java.vinod.payment.service.gateway;
 import com.java.vinod.payment.service.dto.PaymentDtos;
 import com.java.vinod.payment.service.entity.PaymentGatewayPolicy;
 import com.java.vinod.payment.service.repository.PaymentGatewayPolicyRepository;
+import com.java.vinod.payment.service.repository.PaymentProviderMasterRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class PaymentGatewayRegistry {
     private final Map<String, PaymentGateway> gateways;
     private final PaymentGatewayPolicyRepository policyRepository;
+    private final PaymentProviderMasterRepository paymentProviderMasterRepository;
     private final String defaultGatewayMode;
 
     /**
@@ -31,9 +33,11 @@ public class PaymentGatewayRegistry {
      */
     public PaymentGatewayRegistry(Map<String, PaymentGateway> gateways,
                                   PaymentGatewayPolicyRepository policyRepository,
+                                  PaymentProviderMasterRepository paymentProviderMasterRepository,
                                   @Value("${app.payment.gateway-mode:mock}") String defaultGatewayMode) {
         this.gateways = gateways;
         this.policyRepository = policyRepository;
+        this.paymentProviderMasterRepository = paymentProviderMasterRepository;
         this.defaultGatewayMode = normalizeMode(defaultGatewayMode);
     }
 
@@ -79,16 +83,11 @@ public class PaymentGatewayRegistry {
      * Lists the gateway modes available to the admin surface.
      */
     public List<PaymentDtos.PaymentGatewayCatalogResponse> catalog() {
-        return List.of(
-                new PaymentDtos.PaymentGatewayCatalogResponse("mock", "Sandbox Gateway",
-                    "Local sandbox gateway that always succeeds without moving real money.", gateways.containsKey("mock")),
-                new PaymentDtos.PaymentGatewayCatalogResponse("stripe-test", "Stripe Test Adapter",
-                        "Stripe-shaped mock adapter that returns test references without calling the real Stripe API.",
-                        gateways.containsKey("stripe-test")),
-                new PaymentDtos.PaymentGatewayCatalogResponse("paypal-mock", "PayPal Sandbox Adapter",
-                    "PayPal-shaped sandbox adapter for future country routing and admin previews.",
-                        gateways.containsKey("paypal-mock"))
-        );
+        return paymentProviderMasterRepository.findByActiveTrueOrderBySortOrderAscDisplayNameAsc().stream()
+                .map(provider -> new PaymentDtos.PaymentGatewayCatalogResponse(provider.getGatewayMode(),
+                        provider.getDisplayName(), provider.getDescription(),
+                        gateways.containsKey(provider.getGatewayMode())))
+                .toList();
     }
 
     private PaymentGateway gateway(String gatewayMode) {

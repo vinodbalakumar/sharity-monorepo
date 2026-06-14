@@ -106,6 +106,18 @@ public final class PaymentDtos {
                                                 String description, boolean active) {
     }
 
+    public record StatusResponse(String statusCode, String displayLabel, String description,
+                                 boolean customerVisible, boolean active, int sortOrder) {
+    }
+
+    public record PaymentMethodResponse(String methodCode, String displayLabel, String description,
+                                        boolean active, int sortOrder) {
+    }
+
+    public record ReasonResponse(String reasonCode, String displayLabel, String description,
+                                 boolean active, int sortOrder) {
+    }
+
     /**
      * Summarizes the selected gateway strategy for a country.
      *
