@@ -44,6 +44,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -117,7 +118,7 @@ public class SocialRegistrationService {
                                      @Value("${app.refresh-token.expiration}") Duration refreshTokenExpiration,
                                      @Value("${app.social.frontend-complete-registration-url:https://vinodbalakumar.com/app/complete-registration}") String frontendCompleteRegistrationUrl,
                                      @Value("${app.social.frontend-register-url:https://vinodbalakumar.com/app/register}") String frontendRegisterUrl,
-                                     @Value("${app.social.frontend-login-success-url:https://vinodbalakumar.com/app/}") String frontendLoginSuccessUrl,
+                                     @Value("${app.social.frontend-login-success-url:https://vinodbalakumar.com/app/?login=success}") String frontendLoginSuccessUrl,
                                      @Value("${app.profile-image-storage.provider-code:CLOUDFLARE_R2_PRIMARY}") String profileImageStorageProviderCode,
                                      @Value("${app.profile-image-storage.bucket-name:sharity-assets}") String profileImageStorageBucketName,
                                      @Value("${app.profile-image-storage.endpoint-url:}") String profileImageStorageEndpointUrl,
@@ -616,7 +617,10 @@ public class SocialRegistrationService {
                 .region(Region.of(profileImageStorageRegion))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(profileImageStorageAccessKeyId, profileImageStorageSecretAccessKey)))
-                .forcePathStyle(true)
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .chunkedEncodingEnabled(false)
+                        .build())
                 .build();
     }
 

@@ -186,4 +186,25 @@ public final class AdminDtos {
             LocalDateTime lastUsedAt
     ) {
     }
+
+    public record MasterOptionResponse(String code, String label, String description,
+                                       boolean active, int sortOrder) {
+    }
+
+    public record RolePermissionResponse(String roleName, String permissionCode, boolean granted) {
+    }
+
+    public record NotificationTemplateMasterResponse(String templateCode, String eventCode, String channel,
+                                                     String subject, boolean active, int sortOrder) {
+    }
+
+    public record AuthMasterReferenceResponse(List<MasterOptionResponse> permissions,
+                                              List<RolePermissionResponse> rolePermissionMappings,
+                                              List<MasterOptionResponse> accountStatuses,
+                                              List<MasterOptionResponse> sellerStatuses,
+                                              List<MasterOptionResponse> sellerVerificationDocuments,
+                                              List<MasterOptionResponse> notificationEvents,
+                                              List<NotificationTemplateMasterResponse> notificationTemplates,
+                                              List<MasterOptionResponse> adminActionTypes) {
+    }
 }

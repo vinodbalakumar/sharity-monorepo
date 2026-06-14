@@ -25,9 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.Period;
@@ -40,6 +37,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -64,8 +62,6 @@ public class UserService {
     private final String profileImageStorageAccessKeyId;
     private final String profileImageStorageSecretAccessKey;
     private final long profileImageStorageMaxFileSizeBytes;
-    private final Path localProfileImageStorageDirectory;
-    private final String localProfileImagePublicBaseUrl;
 
     public UserService(AppUserRepository appUserRepository,
                        UserProfileRepository userProfileRepository,
@@ -83,9 +79,7 @@ public class UserService {
                        @Value("${app.profile-image-storage.region:auto}") String profileImageStorageRegion,
                        @Value("${app.profile-image-storage.access-key-id:}") String profileImageStorageAccessKeyId,
                        @Value("${app.profile-image-storage.secret-access-key:}") String profileImageStorageSecretAccessKey,
-                       @Value("${app.profile-image-storage.max-file-size-bytes:5242880}") long profileImageStorageMaxFileSizeBytes,
-                       @Value("${app.profile-image-storage.local-directory:}") String localProfileImageStorageDirectory,
-                       @Value("${app.profile-image-storage.local-public-base-url:}") String localProfileImagePublicBaseUrl) {
+                       @Value("${app.profile-image-storage.max-file-size-bytes:5242880}") long profileImageStorageMaxFileSizeBytes) {
         this.appUserRepository = appUserRepository;
         this.userProfileRepository = userProfileRepository;
         this.userCredentialRepository = userCredentialRepository;
@@ -95,18 +89,14 @@ public class UserService {
         this.userMapper = userMapper;
         this.auditService = auditService;
         this.emailService = emailService;
-        this.profileImageStorageProviderCode = profileImageStorageProviderCode;
-        this.profileImageStorageBucketName = profileImageStorageBucketName;
-        this.profileImageStorageEndpointUrl = profileImageStorageEndpointUrl;
-        this.profileImageStoragePublicBaseUrl = profileImageStoragePublicBaseUrl;
-        this.profileImageStorageRegion = profileImageStorageRegion;
-        this.profileImageStorageAccessKeyId = profileImageStorageAccessKeyId;
-        this.profileImageStorageSecretAccessKey = profileImageStorageSecretAccessKey;
+        this.profileImageStorageProviderCode = blankToNull(profileImageStorageProviderCode);
+        this.profileImageStorageBucketName = blankToNull(profileImageStorageBucketName);
+        this.profileImageStorageEndpointUrl = blankToNull(profileImageStorageEndpointUrl);
+        this.profileImageStoragePublicBaseUrl = blankToNull(profileImageStoragePublicBaseUrl);
+        this.profileImageStorageRegion = blankToNull(profileImageStorageRegion);
+        this.profileImageStorageAccessKeyId = blankToNull(profileImageStorageAccessKeyId);
+        this.profileImageStorageSecretAccessKey = blankToNull(profileImageStorageSecretAccessKey);
         this.profileImageStorageMaxFileSizeBytes = profileImageStorageMaxFileSizeBytes;
-        this.localProfileImageStorageDirectory = blankToNull(localProfileImageStorageDirectory) == null
-            ? Path.of(System.getProperty("java.io.tmpdir"), "sharity-profile-images")
-            : Path.of(localProfileImageStorageDirectory);
-        this.localProfileImagePublicBaseUrl = blankToNull(localProfileImagePublicBaseUrl);
     }
 
     @Transactional(readOnly = true)
@@ -148,6 +138,7 @@ public class UserService {
         log.debug("Profile found for userId={}", userId);
         validateImage(file);
         log.debug("File validation passed for userId={}", userId);
+        validateStorageConfigured();
 
         byte[] bytes;
         try {
@@ -164,38 +155,26 @@ public class UserService {
         );
         log.debug("Generated objectKey={} for userId={}", objectKey, userId);
 
-        // Support both real R2 storage and development mode
-        String publicUrl;
-        boolean storageConfigured = isStorageConfigured();
-        log.info("Storage configured={} for profile image upload userId={}", storageConfigured, userId);
+        String publicUrl = profileImageStoragePublicBaseUrl.stripTrailing() + "/" + objectKey;
+        if (publicUrl.length() > 500) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image URL is too long");
+        }
+        log.debug("Attempting R2 upload for userId={} endpoint={}", userId, profileImageStorageEndpointUrl);
 
-        // Use development mode if storage is not configured
-        if (storageConfigured) {
-            // Real R2 storage
-            publicUrl = profileImageStoragePublicBaseUrl.stripTrailing() + "/" + objectKey;
-            if (publicUrl.length() > 500) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Profile image URL is too long");
-            }
-            log.debug("Attempting R2 upload for userId={} endpoint={}", userId, profileImageStorageEndpointUrl);
-
-            try (S3Client s3Client = s3Client()) {
-                log.debug("S3Client created successfully for userId={}", userId);
-                s3Client.putObject(PutObjectRequest.builder()
-                                .bucket(profileImageStorageBucketName)
-                                .key(objectKey)
-                                .contentType(contentType(file))
-                                .contentLength((long) bytes.length)
-                                .cacheControl("public, max-age=31536000, immutable")
-                                .build(),
-                        RequestBody.fromBytes(bytes));
-                log.info("Profile image uploaded to R2 for userId={} objectKey={}", userId, objectKey);
-            } catch (Exception exception) {
-                log.warn("Profile image upload to R2 failed for userId={} objectKey={}. Falling back to local storage. message={}", userId, objectKey, exception.getMessage(), exception);
-                publicUrl = storeLocally(objectKey, bytes, contentType(file));
-            }
-        } else {
-            publicUrl = storeLocally(objectKey, bytes, contentType(file));
-            log.info("Profile image stored locally for userId={} because remote storage is not configured", userId);
+        try (S3Client s3Client = s3Client()) {
+            log.debug("S3Client created successfully for userId={}", userId);
+            s3Client.putObject(PutObjectRequest.builder()
+                            .bucket(profileImageStorageBucketName)
+                            .key(objectKey)
+                            .contentType(contentType(file))
+                            .contentLength((long) bytes.length)
+                            .cacheControl("public, max-age=31536000, immutable")
+                            .build(),
+                    RequestBody.fromBytes(bytes));
+            log.info("Profile image uploaded to R2 for userId={} objectKey={}", userId, objectKey);
+        } catch (Exception exception) {
+            log.error("Profile image upload to R2 failed for userId={} objectKey={}", userId, objectKey, exception);
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to upload profile picture");
         }
 
         try {
@@ -297,23 +276,6 @@ public class UserService {
                 && blankToNull(profileImageStorageSecretAccessKey) != null;
     }
 
-    private String storeLocally(String objectKey, byte[] bytes, String contentType) {
-        try {
-            Path targetPath = localProfileImageStorageDirectory.resolve(objectKey).normalize();
-            Files.createDirectories(targetPath.getParent());
-            Files.write(targetPath, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-
-            String publicBaseUrl = localProfileImagePublicBaseUrl;
-            if (publicBaseUrl == null) {
-                String encodedKey = objectKey.replace('\\', '/');
-                return "/authorization-server/api/v1/assets/profile-images/" + encodedKey;
-            }
-            return publicBaseUrl.stripTrailing() + "/" + objectKey.replace('\\', '/');
-        } catch (IOException exception) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "Unable to store profile picture locally");
-        }
-    }
-
     private void validateStorageConfigured() {
         if (!isStorageConfigured()) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Profile image upload is not configured");
@@ -339,7 +301,10 @@ public class UserService {
                 .region(Region.of(profileImageStorageRegion))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(profileImageStorageAccessKeyId, profileImageStorageSecretAccessKey)))
-                .forcePathStyle(true)
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .chunkedEncodingEnabled(false)
+                        .build())
                 .build();
     }
 

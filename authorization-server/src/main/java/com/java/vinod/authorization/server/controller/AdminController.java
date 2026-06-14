@@ -5,6 +5,7 @@ import com.java.vinod.authorization.server.dto.auth.AuthDtos;
 import com.java.vinod.authorization.server.util.ValidationMessages;
 import com.java.vinod.authorization.server.security.AuthenticatedUser;
 import com.java.vinod.authorization.server.service.AdminService;
+import com.java.vinod.authorization.server.service.AuthMasterDataService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,9 +29,11 @@ import java.util.List;
 @RequestMapping("/v1/admin")
 public class AdminController {
     private final AdminService adminService;
+    private final AuthMasterDataService authMasterDataService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, AuthMasterDataService authMasterDataService) {
         this.adminService = adminService;
+        this.authMasterDataService = authMasterDataService;
     }
 
     @GetMapping("/users")
@@ -136,6 +139,11 @@ public class AdminController {
     @GetMapping("/dashboard/summary")
     public AdminDtos.DashboardSummaryResponse dashboardSummary() {
         return adminService.dashboardSummary();
+    }
+
+    @GetMapping("/reference-data")
+    public AdminDtos.AuthMasterReferenceResponse referenceData() {
+        return authMasterDataService.referenceData();
     }
 
     @GetMapping("/users/{publicId}/sessions")
