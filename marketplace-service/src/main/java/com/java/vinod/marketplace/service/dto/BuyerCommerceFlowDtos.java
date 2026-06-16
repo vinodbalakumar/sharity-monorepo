@@ -1184,13 +1184,23 @@ public final class BuyerCommerceFlowDtos {
                                         boolean enabled, boolean digitalSupported, String disabledReason) {
     }
 
-        public record ListingReachScopeOption(String code, String label, String description) {
-        }
+    public record ListingProductTypeOption(String productTypeCode, String displayLabel, String description,
+                                          boolean active, int sortOrder) {
+    }
+
+    public record ListingDeliveryTypeOption(String deliveryTypeCode, String displayLabel, String description,
+                                            boolean digitalDelivery, boolean active, int sortOrder) {
+    }
+
+    public record ListingReachScopeOption(String code, String label, String description) {
+    }
 
     public record ListingFormConfig(List<ListingMarketplaceOption> marketplaces,
                                     List<ListingCategoryOption> categories,
-                                                                        List<String> digitalDeliveryTypes, List<String> currencies,
-                                                                        List<ListingReachScopeOption> reachScopes,
+                                    List<ListingProductTypeOption> productTypes,
+                                    List<ListingDeliveryTypeOption> deliveryTypes,
+                                    List<String> currencies,
+                                    List<ListingReachScopeOption> reachScopes,
                                     List<ListingPolicyRequirement> policyRequirements,
                                     String userSafeMessage) {
     }
@@ -1201,9 +1211,10 @@ public final class BuyerCommerceFlowDtos {
                                LocalDateTime updatedAt) {
     }
 
-        public record SellerListingDraftRequest(@NotBlank String providerAccountPublicId,
+    public record SellerListingDraftRequest(@NotBlank String providerAccountPublicId,
                                                                                         @NotBlank String categoryCode,
                                                                                         @NotBlank String currency,
+                                                                                        @NotBlank String productType,
                                                                                         @NotBlank String deliveryType,
                                                                                         @NotBlank String fulfillmentScope,
                                                                                         String longDescription,
@@ -2023,7 +2034,19 @@ public final class BuyerCommerceFlowDtos {
                         new ListingMarketplaceOption("GROCERY", "Grocery later", false, "COMING_LATER")),
                 List.of(new ListingCategoryOption("TEMPLATES", "Templates", "DIGITAL", true, true, null),
                         new ListingCategoryOption("GAMING", "Gaming Codes", "DIGITAL", true, true, null)),
-                List.of("SECURE_REVEAL", "SECURE_DOWNLOAD"), List.of("USD"),
+                List.of(new ListingProductTypeOption("DIGITAL", "Digital", "Digitally delivered products such as codes, downloads, and access.", true, 10),
+                        new ListingProductTypeOption("PHYSICAL", "Physical", "Items that require shipping, pickup, or local handover.", true, 20),
+                        new ListingProductTypeOption("SERVICE", "Service", "Services, appointments, or work delivered as an outcome.", true, 30),
+                        new ListingProductTypeOption("SUBSCRIPTION", "Subscription", "Recurring access or membership-based offerings.", true, 40),
+                        new ListingProductTypeOption("BUNDLE", "Bundle", "A grouped set of products or services sold together.", true, 50)),
+                List.of(new ListingDeliveryTypeOption("DIGITAL", "Instant Digital Delivery", "Delivered automatically after payment.", true, true, 10),
+                        new ListingDeliveryTypeOption("SECURE_DIGITAL", "Secure Digital Delivery", "Delivered through a protected reveal or download flow.", true, true, 15),
+                        new ListingDeliveryTypeOption("MANUAL", "Manual Delivery", "Delivered after seller action or review.", true, true, 20),
+                        new ListingDeliveryTypeOption("COORDINATED_TRANSFER", "Coordinated Transfer", "Buyer and seller coordinate the handoff or transfer.", true, true, 30),
+                        new ListingDeliveryTypeOption("TRANSFER", "Direct Transfer", "Seller transfers access or ownership directly after checkout.", true, true, 40),
+                        new ListingDeliveryTypeOption("LOCAL_PICKUP", "Local Pickup", "Buyer collects the item locally from the seller.", false, true, 50),
+                        new ListingDeliveryTypeOption("DOWNLOAD", "Secure Download", "Buyer downloads the product through a protected path.", true, true, 60)),
+                List.of("USD"),
                 List.of(
                         new ListingReachScopeOption("NATIONAL", "National Listing", "Visible to buyers in the seller's primary country."),
                         new ListingReachScopeOption("GLOBAL", "Global Listing", "Visible across supported countries when fulfillment and policy checks allow.")

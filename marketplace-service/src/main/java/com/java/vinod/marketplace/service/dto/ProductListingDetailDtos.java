@@ -125,7 +125,7 @@ public final class ProductListingDetailDtos {
                 couponSummary(), digitalDelivery(), policy(), paymentAuthorization(), reviews(), similar(),
                 safeMessaging(), ownerContext(owner),
                 List.of("Product type: Digital", "Condition: New digital access", "Region compatibility: US account"),
-                List.of("VIEW_LISTING", "ADD_TO_CART", "SAVE_LISTING", "SHARE_LISTING",
+                List.of("VIEW_LISTING", "BUY_NOW", "SAVE_LISTING", "SHARE_LISTING",
                         "VIEW_SELLER_STORE", "CONTACT_SELLER", "VIEW_COUPONS", "VIEW_REVIEWS",
                         "REPORT_LISTING", "SELLER_EDIT_LISTING", "SELLER_PAUSE_LISTING", "BACK"));
     }
@@ -162,8 +162,8 @@ public final class ProductListingDetailDtos {
     }
 
     public static AddListingToCartResponse addToCart(String listingId) {
-        return new AddListingToCartResponse(true, "cart-1000", listingId, true, false,
-                "19.99", false, "Added to cart using current backend price.", "/cart");
+        return new AddListingToCartResponse(false, null, listingId, false, false,
+                null, false, "Digital products use direct buy only.", "/listing/" + listingId + "/buy");
     }
 
     public static ListingShareLinkResponse share(String listingId) {

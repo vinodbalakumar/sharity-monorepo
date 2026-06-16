@@ -27,7 +27,9 @@ public final class MarketplaceDtos {
                                   String conditionLabel, Integer stockQuantity, String sourceType, String sourceName,
                                   String sourceUrl, String licenseNote, boolean demoSeed,
                                   List<ListingReviewResponse> publicReviews,
-                                  LocalDateTime createdAt) {
+                                  LocalDateTime createdAt,
+                                  String displayCurrencyCode, BigDecimal displayPriceAmount,
+                                  BigDecimal displayOriginalPriceAmount) {
     }
 
     /**
@@ -56,14 +58,28 @@ public final class MarketplaceDtos {
     }
 
     public record CategoryResponse(Long id, String code, String name, String slug, String verticalCode,
-                                   String countryCode, String iconRef, boolean active) {
+                                   String countryCode, String iconRef, String imageUrl, boolean active) {
+    }
+
+    public record CategoryHighlightResponse(String categoryCode, String categoryName, String slug,
+                                            String verticalCode, String iconRef, String imageUrl,
+                                            long soldCount, long activeCount, int maxDiscountPercent) {
     }
 
     public record VerticalResponse(String moduleCode, String moduleName, String description, String status,
                                    int displayOrder, String iconKey, String moduleType, String frontendRoute,
-                                   String apiAudience, boolean customerAccessEnabled, boolean providerAccessEnabled,
+                                   String apiAudience, String imageUrl, String imageKeys, boolean customerAccessEnabled, boolean providerAccessEnabled,
                                    boolean requiresProviderApproval, boolean availableToCustomer,
                                    boolean providerAccessActive) {
+        public VerticalResponse(String moduleCode, String moduleName, String description, String status,
+                                int displayOrder, String iconKey, String moduleType, String frontendRoute,
+                                String apiAudience, String imageUrl, boolean customerAccessEnabled,
+                                boolean providerAccessEnabled, boolean requiresProviderApproval,
+                                boolean availableToCustomer, boolean providerAccessActive) {
+            this(moduleCode, moduleName, description, status, displayOrder, iconKey, moduleType, frontendRoute,
+                    apiAudience, imageUrl, null, customerAccessEnabled, providerAccessEnabled,
+                    requiresProviderApproval, availableToCustomer, providerAccessActive);
+        }
     }
 
     public record ListingStatusResponse(String statusCode, String displayLabel, boolean customerVisible,
@@ -82,6 +98,10 @@ public final class MarketplaceDtos {
                                             boolean active, int sortOrder) {
     }
 
+    public record ProductTypeResponse(String productTypeCode, String displayLabel, String description,
+                                      boolean active, int sortOrder) {
+    }
+
     public record DeliveryTypeResponse(String deliveryTypeCode, String displayLabel, String description,
                                        boolean digitalDelivery, boolean active, int sortOrder) {
     }
@@ -92,7 +112,8 @@ public final class MarketplaceDtos {
     }
 
     public record HomeResponse(List<VerticalResponse> verticals, List<CategoryResponse> categories,
-                               List<ListingResponse> featuredListings) {
+                               List<ListingResponse> featuredListings,
+                               List<CategoryHighlightResponse> topCategories) {
     }
 
     public record ListingRequest(@NotBlank String title, String description, String categoryCode,
@@ -160,7 +181,8 @@ public final class MarketplaceDtos {
                 BigDecimal.valueOf(25), BigDecimal.valueOf(30), "marketplace/placeholders/gift_cards.png",
                 "Sharity Demo Seller", true, "MARKETPLACE", "MARKETPLACE", "USA", "ACTIVE", "DIGITAL",
                 1, "PRESENTATION", "Sharity Demo", null,
-                "Synthetic presentation content for browse density", true, List.of(), LocalDateTime.now());
+                "Synthetic presentation content for browse density", true, List.of(), LocalDateTime.now(),
+                "USD", BigDecimal.valueOf(25), BigDecimal.valueOf(30));
     }
 
     public static List<ListingResponse> demoListings() {

@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface DeliveryTypeMasterRepository extends JpaRepository<DeliveryTypeMaster, String> {
     List<DeliveryTypeMaster> findByActiveTrueOrderBySortOrderAscDisplayLabelAsc();
+
+    boolean existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue(String deliveryTypeCode);
 }

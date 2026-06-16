@@ -5,12 +5,14 @@ import com.java.vinod.marketplace.service.entity.Listing;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
 import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepository;
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
+import com.java.vinod.marketplace.service.repository.DeliveryTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
 import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
+import com.java.vinod.marketplace.service.repository.ProductTypeMasterRepository;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,12 +44,12 @@ class MarketplaceServiceVerticalTest {
                 "USA",
                 "https://example.com/image.png",
                 "ACTIVE",
-                " grocery ",
+                " marketplace ",
                 1);
 
         invoke(service, "applyListingRequest", new Class<?>[] { Listing.class, MarketplaceDtos.ListingRequest.class }, listing, request);
 
-        assertThat(listing.getVerticalCode()).isEqualTo("GROCERY");
+        assertThat(listing.getVerticalCode()).isEqualTo("MARKETPLACE");
     }
 
     @Test
@@ -106,11 +109,14 @@ class MarketplaceServiceVerticalTest {
                 mock(ListingStatusMasterRepository.class),
                 mock(MarketplaceCategoryRepository.class),
                 verticalRepository,
+                mock(ProductTypeMasterRepository.class),
+                mock(DeliveryTypeMasterRepository.class),
                 mock(OrderHeaderRepository.class),
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
                 mock(DisputeCaseRepository.class),
                 mock(MarketplaceEventOutboxService.class),
+                mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
                 "http://payment-service:8080/payment-service",
                 "test-token");
@@ -123,19 +129,48 @@ class MarketplaceServiceVerticalTest {
     }
 
     private static MarketplaceService newService() {
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
+        when(verticalRepository.existsByModuleCodeIgnoreCase("MARKETPLACE")).thenReturn(true);
+        ProductTypeMasterRepository productTypeRepository = mock(ProductTypeMasterRepository.class);
+        when(productTypeRepository.existsByProductTypeCodeIgnoreCaseAndActiveTrue("PHYSICAL")).thenReturn(true);
+        when(productTypeRepository.existsByProductTypeCodeIgnoreCaseAndActiveTrue("DIGITAL")).thenReturn(true);
+        DeliveryTypeMasterRepository deliveryTypeRepository = mock(DeliveryTypeMasterRepository.class);
+        when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue("SHIPPING")).thenReturn(true);
+        when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue("DIGITAL")).thenReturn(true);
         return new MarketplaceService(
                 mock(ListingRepository.class),
                 mock(ListingStatusMasterRepository.class),
                 mock(MarketplaceCategoryRepository.class),
-                mock(MarketplaceVerticalRepository.class),
+                verticalRepository,
+                productTypeRepository,
+                deliveryTypeRepository,
                 mock(OrderHeaderRepository.class),
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
                 mock(DisputeCaseRepository.class),
                 mock(MarketplaceEventOutboxService.class),
+                mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
                 "http://payment-service:8080/payment-service",
                 "test-token");
+    }
+
+    private static MarketplaceCurrencyService mockCurrencyService() {
+        MarketplaceCurrencyService currencyService = mock(MarketplaceCurrencyService.class);
+        when(currencyService.viewPrice(any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    BigDecimal amount = invocation.getArgument(0);
+                    String currency = invocation.getArgument(1);
+                    return new MarketplaceCurrencyService.CurrencyView(
+                            currency,
+                            amount == null ? null : amount.setScale(2, java.math.RoundingMode.HALF_UP));
+                });
+        when(currencyService.convert(any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    BigDecimal amount = invocation.getArgument(0);
+                    return amount == null ? null : amount.setScale(2, java.math.RoundingMode.HALF_UP);
+                });
+        return currencyService;
     }
 
     private static com.java.vinod.marketplace.service.entity.MarketplaceVertical vertical(String code, String name, int displayOrder) {

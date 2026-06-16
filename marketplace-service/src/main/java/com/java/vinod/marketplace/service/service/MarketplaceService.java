@@ -9,6 +9,7 @@ import com.java.vinod.marketplace.service.entity.ListingStatusMaster;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
 import com.java.vinod.marketplace.service.entity.MarketplaceVertical;
 import com.java.vinod.marketplace.service.entity.OrderHeader;
+import com.java.vinod.marketplace.service.repository.DeliveryTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepository;
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
@@ -17,7 +18,9 @@ import com.java.vinod.marketplace.service.repository.ListingStatusMasterReposito
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
+import com.java.vinod.marketplace.service.repository.ProductTypeMasterRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -32,6 +35,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -47,44 +51,78 @@ public class MarketplaceService {
     private final ListingStatusMasterRepository listingStatusMasterRepository;
     private final MarketplaceCategoryRepository marketplaceCategoryRepository;
     private final MarketplaceVerticalRepository marketplaceVerticalRepository;
+    private final ProductTypeMasterRepository productTypeMasterRepository;
+    private final DeliveryTypeMasterRepository deliveryTypeMasterRepository;
     private final OrderHeaderRepository orderHeaderRepository;
     private final DeliverySubmissionRepository deliverySubmissionRepository;
     private final CustomerAcceptanceRepository customerAcceptanceRepository;
     private final DisputeCaseRepository disputeCaseRepository;
     private final MarketplaceEventOutboxService marketplaceEventOutboxService;
+    private final MarketplaceCurrencyService marketplaceCurrencyService;
     private final RestClient restClient;
     private final String authorizationProviderEligibilityUrl;
     private final String paymentInternalUrl;
     private final String internalServiceToken;
+    private final String assetPublicBaseUrl;
 
     /**
      * Creates the marketplace service with repositories and internal payment configuration.
      */
+    @Autowired
     public MarketplaceService(ListingRepository listingRepository,
                               ListingStatusMasterRepository listingStatusMasterRepository,
                               MarketplaceCategoryRepository marketplaceCategoryRepository,
                               MarketplaceVerticalRepository marketplaceVerticalRepository,
+                              ProductTypeMasterRepository productTypeMasterRepository,
+                              DeliveryTypeMasterRepository deliveryTypeMasterRepository,
                               OrderHeaderRepository orderHeaderRepository,
                               DeliverySubmissionRepository deliverySubmissionRepository,
                               CustomerAcceptanceRepository customerAcceptanceRepository,
                               DisputeCaseRepository disputeCaseRepository,
                               MarketplaceEventOutboxService marketplaceEventOutboxService,
+                              MarketplaceCurrencyService marketplaceCurrencyService,
                               @Value("${app.services.authorization-provider-eligibility-url}") String authorizationProviderEligibilityUrl,
                               @Value("${app.services.payment-internal-url}") String paymentInternalUrl,
-                              @Value("${app.internal.service-token}") String internalServiceToken) {
+                              @Value("${app.internal.service-token}") String internalServiceToken,
+                              @Value("${app.assets.public-base-url:}") String assetPublicBaseUrl) {
         this.listingRepository = listingRepository;
         this.listingStatusMasterRepository = listingStatusMasterRepository;
         this.marketplaceCategoryRepository = marketplaceCategoryRepository;
         this.marketplaceVerticalRepository = marketplaceVerticalRepository;
+        this.productTypeMasterRepository = productTypeMasterRepository;
+        this.deliveryTypeMasterRepository = deliveryTypeMasterRepository;
         this.orderHeaderRepository = orderHeaderRepository;
         this.deliverySubmissionRepository = deliverySubmissionRepository;
         this.customerAcceptanceRepository = customerAcceptanceRepository;
         this.disputeCaseRepository = disputeCaseRepository;
         this.marketplaceEventOutboxService = marketplaceEventOutboxService;
+        this.marketplaceCurrencyService = marketplaceCurrencyService;
         this.restClient = RestClient.builder().build();
         this.authorizationProviderEligibilityUrl = authorizationProviderEligibilityUrl;
         this.paymentInternalUrl = paymentInternalUrl;
         this.internalServiceToken = internalServiceToken;
+        this.assetPublicBaseUrl = assetPublicBaseUrl;
+    }
+
+    public MarketplaceService(ListingRepository listingRepository,
+                              ListingStatusMasterRepository listingStatusMasterRepository,
+                              MarketplaceCategoryRepository marketplaceCategoryRepository,
+                              MarketplaceVerticalRepository marketplaceVerticalRepository,
+                              ProductTypeMasterRepository productTypeMasterRepository,
+                              DeliveryTypeMasterRepository deliveryTypeMasterRepository,
+                              OrderHeaderRepository orderHeaderRepository,
+                              DeliverySubmissionRepository deliverySubmissionRepository,
+                              CustomerAcceptanceRepository customerAcceptanceRepository,
+                              DisputeCaseRepository disputeCaseRepository,
+                              MarketplaceEventOutboxService marketplaceEventOutboxService,
+                              MarketplaceCurrencyService marketplaceCurrencyService,
+                              String authorizationProviderEligibilityUrl,
+                              String paymentInternalUrl,
+                              String internalServiceToken) {
+        this(listingRepository, listingStatusMasterRepository, marketplaceCategoryRepository, marketplaceVerticalRepository,
+                productTypeMasterRepository, deliveryTypeMasterRepository, orderHeaderRepository, deliverySubmissionRepository,
+                customerAcceptanceRepository, disputeCaseRepository, marketplaceEventOutboxService, marketplaceCurrencyService,
+                authorizationProviderEligibilityUrl, paymentInternalUrl, internalServiceToken, "");
     }
 
     /**
@@ -120,9 +158,7 @@ public class MarketplaceService {
         String normalizedVertical = normalizeBrowseVerticalCode(verticalCode);
         String normalizedCountry = normalizeCountryCode(countryCode);
         List<Listing> listings = localizedListings(normalizedVertical, normalizedCountry);
-        return sortListings(listings, sort).stream()
-                .map(this::toListingResponse)
-                .toList();
+        return toListingResponses(sortListings(listings, sort), normalizedCountry);
     }
 
     /**
@@ -195,7 +231,13 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public MarketplaceDtos.HomeResponse home(String countryCode) {
-        return new MarketplaceDtos.HomeResponse(activeVerticals(), activeCategories(null, countryCode), featuredListings(countryCode));
+        List<MarketplaceDtos.CategoryResponse> categories = activeCategories(null, countryCode);
+        List<Listing> homeListings = homeListings(countryCode);
+        return new MarketplaceDtos.HomeResponse(
+                activeVerticals(),
+                categories,
+                featuredListings(countryCode),
+                toCategoryHighlights(categories, homeListings));
     }
 
     /**
@@ -212,16 +254,14 @@ public class MarketplaceService {
     @Transactional(readOnly = true)
     public List<MarketplaceDtos.ListingResponse> featuredListings(String countryCode) {
         String normalizedCountry = normalizeCountryCode(countryCode);
-        List<String> publicStatuses = publicListingStatuses();
+        List<String> publicStatuses = homeListingStatuses();
         List<Listing> listings = normalizedCountry == null
                 ? listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(publicStatuses)
                 : listingRepository.findTop8ByListingStatusInAndFeaturedTrueAndProviderCountryCodeOrderByUpdatedAtDesc(publicStatuses, normalizedCountry);
         if (listings.isEmpty() && normalizedCountry != null) {
             listings = listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(publicStatuses);
         }
-        return listings.stream()
-                .map(this::toListingResponse)
-                .toList();
+        return toListingResponses(listings, normalizedCountry);
     }
 
     /**
@@ -260,9 +300,7 @@ public class MarketplaceService {
         String normalizedVertical = normalizeBrowseVerticalCode(verticalCode);
         String normalizedCountry = normalizeCountryCode(countryCode);
         List<Listing> listings = localizedCategoryListings(normalized, normalizedVertical, normalizedCountry);
-        return sortListings(listings, sort).stream()
-                .map(this::toListingResponse)
-                .toList();
+        return toListingResponses(sortListings(listings, sort), normalizedCountry);
     }
 
     /**
@@ -320,9 +358,7 @@ public class MarketplaceService {
                     null,
                     PageRequest.of(0, 24));
         }
-        return sortListings(results, sort).stream()
-                .map(this::toListingResponse)
-                .toList();
+        return toListingResponses(sortListings(results, sort), normalizedCountry);
     }
 
     /**
@@ -330,7 +366,15 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public MarketplaceDtos.ListingResponse listing(String listingPublicId) {
-        return toListingResponse(findListing(listingPublicId));
+        return toListingResponse(findListing(listingPublicId), null);
+    }
+
+    /**
+     * Loads a listing by public id and applies shopper-country aware display pricing.
+     */
+    @Transactional(readOnly = true)
+    public MarketplaceDtos.ListingResponse listing(String listingPublicId, String countryCode) {
+        return toListingResponse(findListing(listingPublicId), normalizeCountryCode(countryCode));
     }
 
     /**
@@ -362,7 +406,7 @@ public class MarketplaceService {
         Listing saved = listingRepository.save(listing);
         log.info("Marketplace listing created: listingPublicId={}, providerAccountPublicId={}, categoryCode={}, status={}",
                 saved.getPublicId(), saved.getProviderAccountPublicId(), saved.getCategoryCode(), saved.getListingStatus());
-        return toListingResponse(saved);
+        return toListingResponse(saved, null);
     }
 
     /**
@@ -384,7 +428,7 @@ public class MarketplaceService {
         listing.setUpdatedAt(LocalDateTime.now());
         log.info("Marketplace listing updated: listingPublicId={}, providerAccountPublicId={}, categoryCode={}, status={}",
                 listing.getPublicId(), listing.getProviderAccountPublicId(), listing.getCategoryCode(), listing.getListingStatus());
-        return toListingResponse(listing);
+        return toListingResponse(listing, null);
     }
 
     /**
@@ -393,9 +437,7 @@ public class MarketplaceService {
     @Transactional(readOnly = true)
     public List<MarketplaceDtos.ListingResponse> providerListings(String providerPublicId) {
         ensureMarketplaceProviderEligible(providerPublicId);
-        return listingRepository.findTop24ByProviderAccountPublicIdOrderByCreatedAtDesc(providerPublicId).stream()
-                .map(this::toListingResponse)
-                .toList();
+        return toListingResponses(listingRepository.findTop24ByProviderAccountPublicIdOrderByCreatedAtDesc(providerPublicId), null);
     }
 
     @Transactional(readOnly = true)
@@ -404,13 +446,13 @@ public class MarketplaceService {
         String actorPublicId = userPublicId(jwt);
         return listingRepository.findByProviderAccountPublicIdOrderByCreatedAtDesc(providerPublicId).stream()
                 .filter(listing -> actorPublicId.equals(listing.getCreatedByUserPublicId()))
-                .map(this::toListingResponse)
+                .map(listing -> toListingResponse(listing, null))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public MarketplaceDtos.ListingResponse sellerListing(String listingPublicId, Jwt jwt) {
-        return toListingResponse(findOwnedListing(listingPublicId, jwt));
+        return toListingResponse(findOwnedListing(listingPublicId, jwt), null);
     }
 
     @Transactional
@@ -418,7 +460,7 @@ public class MarketplaceService {
         Listing listing = findOwnedListing(listingPublicId, jwt);
         listing.setListingStatus("PENDING_MODERATION");
         listing.setUpdatedAt(LocalDateTime.now());
-        return toListingResponse(listing);
+        return toListingResponse(listing, null);
     }
 
     /**
@@ -702,8 +744,8 @@ public class MarketplaceService {
         listing.setDescription(request.description());
         listing.setCategoryCode(request.categoryCode());
         listing.setVerticalCode(normalizeVerticalCode(request.verticalCode()));
-        listing.setProductType(request.productType());
-        listing.setDeliveryType(request.deliveryType());
+        listing.setProductType(normalizeProductType(request.productType()));
+        listing.setDeliveryType(normalizeDeliveryType(request.deliveryType()));
         listing.setFulfillmentScope(normalizeFulfillmentScope(request.fulfillmentScope()));
         listing.setProviderCountryCode(request.providerCountryCode());
         listing.setCurrencyCode(request.currencyCode());
@@ -777,6 +819,28 @@ public class MarketplaceService {
         String normalized = requested.trim().toUpperCase();
         if (!marketplaceVerticalRepository.existsByModuleCodeIgnoreCase(normalized)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported marketplace vertical code");
+        }
+        return normalized;
+    }
+
+    private String normalizeProductType(String requested) {
+        if (requested == null || requested.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product type is required");
+        }
+        String normalized = requested.trim().toUpperCase();
+        if (!productTypeMasterRepository.existsByProductTypeCodeIgnoreCaseAndActiveTrue(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported product type");
+        }
+        return normalized;
+    }
+
+    private String normalizeDeliveryType(String requested) {
+        if (requested == null || requested.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery type is required");
+        }
+        String normalized = requested.trim().toUpperCase();
+        if (!deliveryTypeMasterRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported delivery type");
         }
         return normalized;
     }
@@ -863,14 +927,80 @@ public class MarketplaceService {
         return note.length() > 120 ? note.substring(0, 120) + "..." : note;
     }
 
+    private List<MarketplaceDtos.ListingResponse> toListingResponses(List<Listing> listings, String shopperCountryCode) {
+        return listings.stream()
+                .map(listing -> toListingResponse(listing, shopperCountryCode))
+                .toList();
+    }
+
+    private List<MarketplaceDtos.CategoryHighlightResponse> toCategoryHighlights(List<MarketplaceDtos.CategoryResponse> categories,
+                                                                                  List<Listing> listings) {
+        List<MarketplaceDtos.CategoryHighlightResponse> highlights = new ArrayList<>();
+        for (MarketplaceDtos.CategoryResponse category : categories) {
+            List<Listing> categoryListings = listings.stream()
+                    .filter(listing -> category.code().equalsIgnoreCase(listing.getCategoryCode()))
+                    .toList();
+            if (categoryListings.isEmpty()) {
+                continue;
+            }
+
+            long soldCount = categoryListings.stream()
+                    .filter(listing -> "SOLD".equalsIgnoreCase(listing.getListingStatus()))
+                    .count();
+            long activeCount = categoryListings.stream()
+                    .filter(listing -> isPublicListingStatus(listing.getListingStatus()))
+                    .count();
+            int maxDiscountPercent = categoryListings.stream()
+                    .mapToInt(this::discountPercent)
+                    .max()
+                    .orElse(0);
+            Listing highlightListing = categoryListings.stream()
+                    .filter(listing -> listing.getImageUrl() != null && !listing.getImageUrl().isBlank())
+                    .max(Comparator.comparingInt(this::discountPercent)
+                            .thenComparing(Listing::getUpdatedAt))
+                    .orElse(null);
+            String imageUrl = resolveImageUrl(category.imageUrl(), highlightListing == null ? null : highlightListing.getImageUrl());
+
+            highlights.add(new MarketplaceDtos.CategoryHighlightResponse(
+                    category.code(),
+                    category.name(),
+                    category.slug(),
+                    category.verticalCode(),
+                    category.iconRef(),
+                    imageUrl,
+                    soldCount,
+                    activeCount,
+                    maxDiscountPercent
+            ));
+        }
+
+        highlights.sort(Comparator
+                .comparingInt(MarketplaceDtos.CategoryHighlightResponse::maxDiscountPercent).reversed()
+                .thenComparing(Comparator.comparingLong(MarketplaceDtos.CategoryHighlightResponse::soldCount).reversed())
+                .thenComparing(MarketplaceDtos.CategoryHighlightResponse::categoryName, String.CASE_INSENSITIVE_ORDER));
+        return highlights;
+    }
+
     private MarketplaceDtos.ListingResponse toListingResponse(Listing listing) {
+        return toListingResponse(listing, null);
+    }
+
+    private MarketplaceDtos.ListingResponse toListingResponse(Listing listing, String shopperCountryCode) {
+        MarketplaceCurrencyService.CurrencyView priceView = marketplaceCurrencyService.viewPrice(
+                listing.getPriceAmount(),
+                listing.getCurrencyCode(),
+                normalizeFulfillmentScope(listing.getFulfillmentScope()),
+                shopperCountryCode);
+        BigDecimal displayOriginalPrice = listing.getOriginalPriceAmount() == null
+                ? null
+                : marketplaceCurrencyService.convert(listing.getOriginalPriceAmount(), listing.getCurrencyCode(), priceView.displayCurrencyCode());
         return new MarketplaceDtos.ListingResponse(listing.getPublicId(), safeListingTitle(listing), listing.getDescription(),
                 listing.getProductType(), listing.getDeliveryType(), normalizeFulfillmentScope(listing.getFulfillmentScope()), listing.getCurrencyCode(), listing.getPriceAmount(),
                 listing.getOriginalPriceAmount(), listing.getImageUrl(), safeSellerDisplayName(listing),
                 listing.isVerifiedSeller(), listing.getCategoryCode(), listing.getVerticalCode(), safeCountryCode(listing), listing.getListingStatus(),
                 listing.getConditionLabel(), listing.getStockQuantity(), listing.getSourceType(), listing.getSourceName(),
                 listing.getSourceUrl(), listing.getLicenseNote(), listing.isDemoSeed(), List.of(),
-                listing.getCreatedAt());
+                listing.getCreatedAt(), priceView.displayCurrencyCode(), priceView.displayPriceAmount(), displayOriginalPrice);
     }
 
     private MarketplaceDtos.ListingStatusResponse toListingStatusResponse(ListingStatusMaster status) {
@@ -996,10 +1126,12 @@ public class MarketplaceService {
 
     private MarketplaceDtos.CategoryResponse toCategoryResponse(MarketplaceCategory category) {
         return new MarketplaceDtos.CategoryResponse(category.getId(), category.getCategoryCode(), category.getCategoryName(),
-                category.getCategorySlug(), category.getVerticalCode(), category.getCountryCode(), category.getIconRef(), category.isActive());
+                category.getCategorySlug(), category.getVerticalCode(), category.getCountryCode(), category.getIconRef(),
+                resolveImageUrl(category.getImageUrl(), null), category.isActive());
     }
 
     private MarketplaceDtos.VerticalResponse toVerticalResponse(MarketplaceVertical vertical) {
+        String resolvedImageUrl = resolveImageUrl(firstAssetKey(vertical.getImageKeys()), vertical.getImageUrl());
         return new MarketplaceDtos.VerticalResponse(
                 vertical.getModuleCode(),
                 vertical.getModuleName(),
@@ -1010,12 +1142,42 @@ public class MarketplaceService {
                 vertical.getModuleType(),
                 vertical.getFrontendRoute(),
                 vertical.getApiAudience(),
+                resolvedImageUrl,
+                vertical.getImageKeys(),
                 vertical.isCustomerAccessEnabled(),
                 vertical.isProviderAccessEnabled(),
                 vertical.isRequiresProviderApproval(),
                 vertical.isAvailableToCustomer(),
                 vertical.isProviderAccessActive()
         );
+    }
+
+    private String resolveImageUrl(String imageKey, String fallback) {
+        if (imageKey != null && !imageKey.isBlank()) {
+            String trimmed = imageKey.trim();
+            if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
+                return trimmed;
+            }
+            if (assetPublicBaseUrl != null && !assetPublicBaseUrl.isBlank()) {
+                return assetPublicBaseUrl.stripTrailing() + "/" + trimmed;
+            }
+            return trimmed;
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback.trim();
+        }
+        return null;
+    }
+
+    private String firstAssetKey(String imageKeys) {
+        if (imageKeys == null || imageKeys.isBlank()) {
+            return null;
+        }
+        return java.util.Arrays.stream(imageKeys.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 
     @Transactional(readOnly = true)
@@ -1032,6 +1194,41 @@ public class MarketplaceService {
         return listingStatusMasterRepository.findByStatusCodeIgnoreCase(listingStatus.trim().toUpperCase())
                 .map(status -> status.isActive() && status.isCustomerVisible())
                 .orElse(false);
+    }
+
+    private List<String> homeListingStatuses() {
+        List<String> statuses = new ArrayList<>(publicListingStatuses());
+        if (!statuses.contains("SOLD")) {
+            statuses.add("SOLD");
+        }
+        return statuses;
+    }
+
+    private List<Listing> homeListings(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> statuses = homeListingStatuses();
+        List<Listing> listings = normalizedCountry == null
+                ? listingRepository.findByListingStatusInOrderByCreatedAtDesc(statuses)
+                : listingRepository.findByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(statuses, normalizedCountry);
+        if (listings.isEmpty() && normalizedCountry != null) {
+            listings = listingRepository.findByListingStatusInOrderByCreatedAtDesc(statuses);
+        }
+        return listings;
+    }
+
+    private int discountPercent(Listing listing) {
+        if (listing.getOriginalPriceAmount() == null || listing.getOriginalPriceAmount().signum() <= 0
+                || listing.getPriceAmount() == null) {
+            return 0;
+        }
+        if (listing.getOriginalPriceAmount().compareTo(listing.getPriceAmount()) <= 0) {
+            return 0;
+        }
+        BigDecimal discount = listing.getOriginalPriceAmount()
+                .subtract(listing.getPriceAmount())
+                .multiply(BigDecimal.valueOf(100))
+                .divide(listing.getOriginalPriceAmount(), 0, RoundingMode.HALF_UP);
+        return discount.intValue();
     }
 
     private String defaultListingStatusCode() {

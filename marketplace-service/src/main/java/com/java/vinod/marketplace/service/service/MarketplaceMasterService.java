@@ -6,12 +6,14 @@ import com.java.vinod.marketplace.service.entity.DeliveryTypeMaster;
 import com.java.vinod.marketplace.service.entity.FeatureMaster;
 import com.java.vinod.marketplace.service.entity.FeeTypeMaster;
 import com.java.vinod.marketplace.service.entity.ListingConditionMaster;
+import com.java.vinod.marketplace.service.entity.ProductTypeMaster;
 import com.java.vinod.marketplace.service.entity.SubcategoryMaster;
 import com.java.vinod.marketplace.service.repository.CountryFeatureMappingRepository;
 import com.java.vinod.marketplace.service.repository.DeliveryTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.FeatureMasterRepository;
 import com.java.vinod.marketplace.service.repository.FeeTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.ListingConditionMasterRepository;
+import com.java.vinod.marketplace.service.repository.ProductTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.SubcategoryMasterRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ public class MarketplaceMasterService {
     private final FeatureMasterRepository featureMasterRepository;
     private final CountryFeatureMappingRepository countryFeatureMappingRepository;
     private final ListingConditionMasterRepository listingConditionMasterRepository;
+    private final ProductTypeMasterRepository productTypeMasterRepository;
     private final DeliveryTypeMasterRepository deliveryTypeMasterRepository;
     private final FeeTypeMasterRepository feeTypeMasterRepository;
 
@@ -31,12 +34,14 @@ public class MarketplaceMasterService {
                                     FeatureMasterRepository featureMasterRepository,
                                     CountryFeatureMappingRepository countryFeatureMappingRepository,
                                     ListingConditionMasterRepository listingConditionMasterRepository,
+                                    ProductTypeMasterRepository productTypeMasterRepository,
                                     DeliveryTypeMasterRepository deliveryTypeMasterRepository,
                                     FeeTypeMasterRepository feeTypeMasterRepository) {
         this.subcategoryMasterRepository = subcategoryMasterRepository;
         this.featureMasterRepository = featureMasterRepository;
         this.countryFeatureMappingRepository = countryFeatureMappingRepository;
         this.listingConditionMasterRepository = listingConditionMasterRepository;
+        this.productTypeMasterRepository = productTypeMasterRepository;
         this.deliveryTypeMasterRepository = deliveryTypeMasterRepository;
         this.feeTypeMasterRepository = feeTypeMasterRepository;
     }
@@ -81,6 +86,13 @@ public class MarketplaceMasterService {
     }
 
     @Transactional(readOnly = true)
+    public List<MarketplaceDtos.ProductTypeResponse> productTypes() {
+        return productTypeMasterRepository.findByActiveTrueOrderBySortOrderAscDisplayLabelAsc().stream()
+                .map(this::toProductType)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<MarketplaceDtos.DeliveryTypeResponse> deliveryTypes() {
         return deliveryTypeMasterRepository.findByActiveTrueOrderBySortOrderAscDisplayLabelAsc().stream()
                 .map(this::toDeliveryType)
@@ -106,6 +118,11 @@ public class MarketplaceMasterService {
 
     private MarketplaceDtos.ListingConditionResponse toListingCondition(ListingConditionMaster value) {
         return new MarketplaceDtos.ListingConditionResponse(value.getConditionCode(), value.getDisplayLabel(),
+                value.getDescription(), value.isActive(), value.getSortOrder());
+    }
+
+    private MarketplaceDtos.ProductTypeResponse toProductType(ProductTypeMaster value) {
+        return new MarketplaceDtos.ProductTypeResponse(value.getProductTypeCode(), value.getDisplayLabel(),
                 value.getDescription(), value.isActive(), value.getSortOrder());
     }
 

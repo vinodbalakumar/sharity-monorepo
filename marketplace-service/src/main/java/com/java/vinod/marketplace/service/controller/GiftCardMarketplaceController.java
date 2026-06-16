@@ -55,8 +55,9 @@ public class GiftCardMarketplaceController {
     }
 
     @GetMapping("/api/gift-cards/items/{listingId}")
-    public PostMvpMarketplaceDtos.GiftCardItemDetail item(@PathVariable String listingId) {
-        MarketplaceDtos.ListingResponse listing = marketplaceService.listing(listingId);
+    public PostMvpMarketplaceDtos.GiftCardItemDetail item(@PathVariable String listingId,
+                                                          @RequestParam(required = false) String countryCode) {
+        MarketplaceDtos.ListingResponse listing = marketplaceService.listing(listingId, countryCode);
         return new PostMvpMarketplaceDtos.GiftCardItemDetail(
                 listing.publicId(),
                 listing.categoryCode(),
@@ -139,8 +140,8 @@ public class GiftCardMarketplaceController {
                 title,
                 description,
                 request.brand(),
-                request.cardType(),
-                "SECURE_DIGITAL",
+                "DIGITAL",
+                request.deliveryType(),
             "NATIONAL",
                 request.currency(),
                 request.sellingPrice(),

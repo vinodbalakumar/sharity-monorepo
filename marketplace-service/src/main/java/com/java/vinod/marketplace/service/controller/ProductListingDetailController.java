@@ -1,6 +1,8 @@
 package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.ProductListingDetailDtos;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -69,7 +71,7 @@ public class ProductListingDetailController {
 
     @PostMapping("/api/listings/{listingId}/add-to-cart")
     public ProductListingDetailDtos.AddListingToCartResponse addToCart(@PathVariable String listingId) {
-        return ProductListingDetailDtos.addToCart(listingId);
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Digital products use direct buy only.");
     }
 
     @PostMapping({"/api/listings/{listingId}/report", "/api/seller/listings/{listingId}/pause",

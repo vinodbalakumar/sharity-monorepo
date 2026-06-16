@@ -5,12 +5,14 @@ import com.java.vinod.marketplace.service.entity.Listing;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
 import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepository;
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
+import com.java.vinod.marketplace.service.repository.DeliveryTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
 import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
+import com.java.vinod.marketplace.service.repository.ProductTypeMasterRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.springframework.data.domain.PageRequest;
@@ -35,7 +38,9 @@ class MarketplaceServiceCatalogTest {
                         vertical("AUTOMOTIVE", "Automotive", 50), vertical("JEWELLERY", "One Gram Gold & Imitation Jewellery", 60),
                         vertical("GIFT_CARDS", "Gift Cards", 70)));
         when(categoryRepository.findByActiveTrueOrderByDisplayOrderAscCategoryNameAsc()).thenReturn(List.of(category("GROCERY", "Grocery")));
-        when(listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(List.of("ACTIVE", "PUBLISHED")))
+        when(listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(List.of("ACTIVE", "PUBLISHED", "SOLD")))
+                .thenReturn(List.of(listing("GRO-1", "Fresh basket", "GROCERY")));
+        when(listingRepository.findByListingStatusInOrderByCreatedAtDesc(List.of("ACTIVE", "PUBLISHED", "SOLD")))
                 .thenReturn(List.of(listing("GRO-1", "Fresh basket", "GROCERY")));
 
         MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
@@ -203,14 +208,35 @@ class MarketplaceServiceCatalogTest {
                 mock(ListingStatusMasterRepository.class),
                 categoryRepository,
                 verticalRepository,
+                mock(ProductTypeMasterRepository.class),
+                mock(DeliveryTypeMasterRepository.class),
                 mock(OrderHeaderRepository.class),
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
                 mock(DisputeCaseRepository.class),
                 mock(MarketplaceEventOutboxService.class),
+                mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
                 "http://payment-service:8080/payment-service",
                 "test-token");
+    }
+
+    private static MarketplaceCurrencyService mockCurrencyService() {
+        MarketplaceCurrencyService currencyService = mock(MarketplaceCurrencyService.class);
+        when(currencyService.viewPrice(any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    BigDecimal amount = invocation.getArgument(0);
+                    String currency = invocation.getArgument(1);
+                    return new MarketplaceCurrencyService.CurrencyView(
+                            currency,
+                            amount == null ? null : amount.setScale(2, java.math.RoundingMode.HALF_UP));
+                });
+        when(currencyService.convert(any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    BigDecimal amount = invocation.getArgument(0);
+                    return amount == null ? null : amount.setScale(2, java.math.RoundingMode.HALF_UP);
+                });
+        return currencyService;
     }
 
     private static Listing listing(String publicId, String title, String verticalCode) {

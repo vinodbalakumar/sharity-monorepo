@@ -46,8 +46,9 @@ public class JewelleryMarketplaceController {
     }
 
     @GetMapping("/api/jewellery/items/{listingId}")
-    public PostMvpMarketplaceDtos.JewelleryItemDetail item(@PathVariable String listingId) {
-        MarketplaceDtos.ListingResponse listing = marketplaceService.listing(listingId);
+    public PostMvpMarketplaceDtos.JewelleryItemDetail item(@PathVariable String listingId,
+                                                           @RequestParam(required = false) String countryCode) {
+        MarketplaceDtos.ListingResponse listing = marketplaceService.listing(listingId, countryCode);
         return jewelleryDetail(listing);
     }
 
@@ -164,8 +165,8 @@ public class JewelleryMarketplaceController {
                 request.title(),
                 request.description(),
                 request.category(),
-                request.displayMaterial(),
-                request.shippingAvailable() ? "SHIPPING" : "PICKUP_OR_LOCAL",
+                "PHYSICAL",
+                request.shippingAvailable() ? "SHIPPING" : "LOCAL_PICKUP",
             "NATIONAL",
                 request.currency(),
                 request.price(),

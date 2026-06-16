@@ -48,7 +48,7 @@ public enum MarketplaceVerticalCode {
      */
     public MarketplaceDtos.VerticalResponse toResponse() {
         return new MarketplaceDtos.VerticalResponse(code, displayName, description, "ACTIVE", displayOrder, iconKey,
-                "COMMERCE_VERTICAL", frontendRoute, apiAudience, customerAccessEnabled, providerAccessEnabled,
+                "COMMERCE_VERTICAL", frontendRoute, apiAudience, null, null, customerAccessEnabled, providerAccessEnabled,
                 requiresProviderApproval, customerAccessEnabled, providerAccessEnabled);
     }
 }

@@ -2,6 +2,7 @@ package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.BuyerCommerceFlowDtos;
 import com.java.vinod.marketplace.service.dto.MarketplaceDtos;
+import com.java.vinod.marketplace.service.service.MarketplaceMasterService;
 import com.java.vinod.marketplace.service.service.MarketplaceService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,13 +28,13 @@ import java.util.Map;
  */
 @RestController
 public class BuyerCommerceFlowController {
-    private static final String SELLER_MARKETPLACE_CODE = "DIGITAL";
-    private static final String SELLER_MARKETPLACE_NAME = "Digital Goods";
-
     private final MarketplaceService marketplaceService;
+    private final MarketplaceMasterService marketplaceMasterService;
 
-    public BuyerCommerceFlowController(MarketplaceService marketplaceService) {
+    public BuyerCommerceFlowController(MarketplaceService marketplaceService,
+                                       MarketplaceMasterService marketplaceMasterService) {
         this.marketplaceService = marketplaceService;
+        this.marketplaceMasterService = marketplaceMasterService;
     }
 
     @GetMapping("/api/profile/completion")
@@ -483,6 +484,24 @@ public class BuyerCommerceFlowController {
     @GetMapping("/api/seller/listings/create/form-config")
     public BuyerCommerceFlowDtos.ListingFormConfig listingFormConfig() {
         String marketplaceVerticalCode = marketplaceService.defaultVerticalCode();
+        String marketplaceDisplayName = marketplaceDisplayName(marketplaceVerticalCode);
+        List<BuyerCommerceFlowDtos.ListingProductTypeOption> productTypes = marketplaceMasterService.productTypes().stream()
+                .map(productType -> new BuyerCommerceFlowDtos.ListingProductTypeOption(
+                        productType.productTypeCode(),
+                        productType.displayLabel(),
+                        productType.description(),
+                        productType.active(),
+                        productType.sortOrder()))
+                .toList();
+        List<BuyerCommerceFlowDtos.ListingDeliveryTypeOption> deliveryTypes = marketplaceMasterService.deliveryTypes().stream()
+                .map(deliveryType -> new BuyerCommerceFlowDtos.ListingDeliveryTypeOption(
+                        deliveryType.deliveryTypeCode(),
+                        deliveryType.displayLabel(),
+                        deliveryType.description(),
+                        deliveryType.digitalDelivery(),
+                        deliveryType.active(),
+                        deliveryType.sortOrder()))
+                .toList();
         List<BuyerCommerceFlowDtos.ListingCategoryOption> categories = marketplaceService.activeCategories(marketplaceVerticalCode).stream()
             .map(category -> new BuyerCommerceFlowDtos.ListingCategoryOption(
                 category.code(),
@@ -493,9 +512,10 @@ public class BuyerCommerceFlowController {
                 null))
             .toList();
         return new BuyerCommerceFlowDtos.ListingFormConfig(
-            List.of(new BuyerCommerceFlowDtos.ListingMarketplaceOption(marketplaceVerticalCode, SELLER_MARKETPLACE_NAME, true, null)),
+            List.of(new BuyerCommerceFlowDtos.ListingMarketplaceOption(marketplaceVerticalCode, marketplaceDisplayName, true, null)),
             categories,
-            List.of("SECURE_REVEAL", "SECURE_DIGITAL"),
+            productTypes,
+            deliveryTypes,
             List.of("USD", "EUR", "GBP", "INR"),
             List.of(
                 new BuyerCommerceFlowDtos.ListingReachScopeOption("NATIONAL", "National Seller", "Visible to buyers in the seller's operating country."),
@@ -1416,8 +1436,8 @@ public class BuyerCommerceFlowController {
                 listing.publicId(),
                 listing.title(),
                 listing.imageUrl() == null || listing.imageUrl().isBlank() ? "marketplace/placeholders/gift_cards.png" : listing.imageUrl(),
-                SELLER_MARKETPLACE_CODE,
-                SELLER_MARKETPLACE_NAME,
+                listing.verticalCode(),
+                marketplaceDisplayName(listing.verticalCode()),
                 listing.categoryCode(),
                 categoryName,
                 "",
@@ -1443,7 +1463,7 @@ public class BuyerCommerceFlowController {
                 listing.publicId(),
                 listing.listingStatus(),
                 listing.title(),
-                SELLER_MARKETPLACE_CODE,
+                listing.verticalCode(),
                 listing.categoryCode(),
                 listing.fulfillmentScope(),
                 listing.priceAmount() == null ? BigDecimal.ZERO : listing.priceAmount(),
@@ -1451,6 +1471,16 @@ public class BuyerCommerceFlowController {
                 listing.imageUrl() == null || listing.imageUrl().isBlank() ? List.of() : List.of(listing.imageUrl()),
                 List.of("SAVE", "PREVIEW", "PUBLISH"),
                 listing.createdAt() == null ? LocalDateTime.now() : listing.createdAt());
+    }
+
+    private String marketplaceDisplayName(String marketplaceCode) {
+        return marketplaceService.activeVerticals().stream()
+                .filter(vertical -> vertical.moduleCode().equalsIgnoreCase(marketplaceCode))
+                .map(MarketplaceDtos.VerticalResponse::moduleName)
+                .findFirst()
+                .orElseGet(() -> marketplaceCode == null || marketplaceCode.isBlank()
+                        ? "Marketplace"
+                        : marketplaceCode.replace('_', ' '));
     }
 
     private BuyerCommerceFlowDtos.SellerListingsSummary summarize(List<BuyerCommerceFlowDtos.SellerListingCard> listings) {
@@ -1521,7 +1551,7 @@ public class BuyerCommerceFlowController {
                 request.title(),
                 description,
                 request.categoryCode(),
-                "DIGITAL",
+                request.productType(),
                 request.deliveryType(),
                 request.fulfillmentScope(),
                 request.currency(),
@@ -1530,7 +1560,7 @@ public class BuyerCommerceFlowController {
                 null,
                 null,
                 listingStatus,
-                "MARKETPLACE",
+                request.marketplaceCode(),
                 request.stockQuantity());
     }
 }

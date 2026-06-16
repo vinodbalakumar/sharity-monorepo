@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -62,6 +65,10 @@ public class CartService {
 
         Listing listing = listingRepository.findByPublicId(request.getListingId())
             .orElseThrow(() -> new RuntimeException("Listing not found: " + request.getListingId()));
+
+        if (isDigitalListing(listing)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Digital products cannot be added to cart. Use Buy Now.");
+        }
 
         // Check if item already in cart
         Optional<CartItem> existing = cartItemRepository.findByCartCartIdAndListingId(cartId, listing.getPublicId());
@@ -203,6 +210,15 @@ public class CartService {
             .currencyCode(cart.getCurrencyCode())
             .items(items.stream().map(this::mapToCartItemResponse).toList())
             .build();
+    }
+
+    private boolean isDigitalListing(Listing listing) {
+        String productType = listing.getProductType() == null ? "" : listing.getProductType().trim().toUpperCase();
+        String deliveryType = listing.getDeliveryType() == null ? "" : listing.getDeliveryType().trim().toUpperCase();
+        return "DIGITAL".equals(productType)
+            || "INSTANT".equals(deliveryType)
+            || "MANUAL".equals(deliveryType)
+            || "DOWNLOAD".equals(deliveryType);
     }
 
     private CartDtos.CartItemResponse mapToCartItemResponse(CartItem item) {

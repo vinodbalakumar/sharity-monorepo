@@ -117,7 +117,7 @@ class MarketplaceControllerSecurityTest {
         MarketplaceService service = context.getBean(MarketplaceService.class);
         when(service.activeVerticals()).thenReturn(List.of(
                 new MarketplaceDtos.VerticalResponse("MARKETPLACE", "Marketplace", "Protected resale and everyday commerce",
-                        "ACTIVE", 10, "store", "COMMERCE_VERTICAL", "/marketplace", "MARKETPLACE_API",
+                        "ACTIVE", 10, "store", "COMMERCE_VERTICAL", "/marketplace", "MARKETPLACE_API", null,
                         true, true, true, true, true)));
 
         mockMvc.perform(get("/api/v1/marketplace/verticals"))
@@ -130,9 +130,10 @@ class MarketplaceControllerSecurityTest {
         MarketplaceService service = context.getBean(MarketplaceService.class);
         when(service.home((String) null)).thenReturn(new MarketplaceDtos.HomeResponse(
                 List.of(new MarketplaceDtos.VerticalResponse("MARKETPLACE", "Marketplace", "Protected resale and everyday commerce",
-                        "ACTIVE", 10, "store", "COMMERCE_VERTICAL", "/marketplace", "MARKETPLACE_API",
+                        "ACTIVE", 10, "store", "COMMERCE_VERTICAL", "/marketplace", "MARKETPLACE_API", null,
                         true, true, true, true, true)),
-                List.of(new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", true)),
+                List.of(new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", null, true)),
+                List.of(),
                 List.of()));
 
         mockMvc.perform(get("/api/v1/marketplace/home"))
@@ -145,7 +146,7 @@ class MarketplaceControllerSecurityTest {
     void anonymousBrowseCategoriesIsPublic() throws Exception {
         MarketplaceService service = context.getBean(MarketplaceService.class);
         when(service.activeCategories()).thenReturn(List.of(
-                new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", true)));
+                new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", null, true)));
 
         mockMvc.perform(get("/api/v1/marketplace/categories"))
                 .andExpect(status().isOk())
@@ -167,7 +168,7 @@ class MarketplaceControllerSecurityTest {
     void anonymousBrowseCategoriesByVerticalIsPublic() throws Exception {
         MarketplaceService service = context.getBean(MarketplaceService.class);
         when(service.activeCategories("GROCERY")).thenReturn(List.of(
-                new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", true)));
+                new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", null, true)));
 
         mockMvc.perform(get("/api/v1/marketplace/categories/by-vertical").param("verticalCode", "GROCERY"))
                 .andExpect(status().isOk())
@@ -203,7 +204,7 @@ class MarketplaceControllerSecurityTest {
     @Test
     void anonymousListingDetailIsPublic() throws Exception {
         MarketplaceService service = context.getBean(MarketplaceService.class);
-        when(service.listing("LISTING-3")).thenReturn(new MarketplaceDtos.ListingResponse(
+        when(service.listing("LISTING-3", null)).thenReturn(new MarketplaceDtos.ListingResponse(
                 "LISTING-3",
                 "Digital Design Service Voucher",
                 "Original creative service voucher",
@@ -228,7 +229,10 @@ class MarketplaceControllerSecurityTest {
                 "Original synthetic listing created for Sharity browse depth.",
                 true,
                 List.of(),
-                java.time.LocalDateTime.now()));
+                java.time.LocalDateTime.now(),
+                "USD",
+                new java.math.BigDecimal("95.00"),
+                new java.math.BigDecimal("120.00")));
 
         mockMvc.perform(get("/api/v1/marketplace/listings/LISTING-3"))
                 .andExpect(status().isOk())

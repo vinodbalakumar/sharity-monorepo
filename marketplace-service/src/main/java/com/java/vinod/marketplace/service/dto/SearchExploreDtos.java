@@ -129,7 +129,7 @@ public final class SearchExploreDtos {
         return new SearchResultsResponse(query == null ? "digital" : query, filters, "DIGITAL_FIRST", 4,
                 List.of("DIGITAL_PRODUCTS", "STORES", "COUPONS", "SPONSORED_PLACEHOLDER"),
                 List.of(new SearchResultItem("result-listing-1", "LISTING", listing(), null, null, null,
-                                null, null, null, "Digital-first match", List.of("OPEN_LISTING", "SAVE", "MOVE_TO_CART")),
+                                null, null, null, "Digital-first match", List.of("OPEN_LISTING", "SAVE", "BUY_NOW")),
                         new SearchResultItem("result-store-1", "STORE", null, store(), null, null,
                                 null, null, null, "Verified seller store", List.of("OPEN_STORE", "SAVE_STORE")),
                         new SearchResultItem("result-coupon-1", "COUPON", null, null, null, null,
@@ -183,8 +183,8 @@ public final class SearchExploreDtos {
     }
 
     public static MoveSearchResultToCartResponse moveToCart(String listingId) {
-        return new MoveSearchResultToCartResponse(true, "cart-1000", listingId, true, false,
-                "19.99", false, "Moved to cart using current backend price.", "/cart");
+        return new MoveSearchResultToCartResponse(false, null, listingId, false, false,
+                null, false, "Digital products use direct buy only.", "/listing/" + listingId + "/buy");
     }
 
     public static SearchActionResponse action(String message) {

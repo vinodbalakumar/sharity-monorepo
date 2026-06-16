@@ -68,6 +68,11 @@ public class MarketplaceController {
         return marketplaceMasterService.listingConditions();
     }
 
+    @GetMapping("/product-types")
+    public List<MarketplaceDtos.ProductTypeResponse> productTypes() {
+        return marketplaceMasterService.productTypes();
+    }
+
     @GetMapping("/delivery-types")
     public List<MarketplaceDtos.DeliveryTypeResponse> deliveryTypes() {
         return marketplaceMasterService.deliveryTypes();
@@ -154,8 +159,9 @@ public class MarketplaceController {
      * Returns details for a single listing by public id.
      */
     @GetMapping("/listings/{listingPublicId}")
-    public MarketplaceDtos.ListingResponse listing(@PathVariable String listingPublicId) {
-        return marketplaceService.listing(listingPublicId);
+    public MarketplaceDtos.ListingResponse listing(@PathVariable String listingPublicId,
+                                                   @RequestParam(required = false) String countryCode) {
+        return marketplaceService.listing(listingPublicId, countryCode);
     }
 
     /**

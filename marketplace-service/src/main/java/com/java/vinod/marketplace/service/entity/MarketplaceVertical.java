@@ -44,6 +44,12 @@ public class MarketplaceVertical {
     @Column(name = "api_audience", nullable = false, length = 80)
     private String apiAudience;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Column(name = "image_keys", length = 1000)
+    private String imageKeys;
+
     @Column(name = "customer_access_enabled", nullable = false)
     private boolean customerAccessEnabled;
 
