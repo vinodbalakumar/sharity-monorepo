@@ -5,8 +5,10 @@ import com.java.vinod.authorization.server.entity.RegistrationGenderOption;
 import com.java.vinod.authorization.server.entity.SupportedCountry;
 import com.java.vinod.authorization.server.repository.RegistrationGenderOptionRepository;
 import com.java.vinod.authorization.server.repository.SupportedCountryRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -34,6 +36,17 @@ public class AuthReferenceDataService {
                 .map(this::toGenderOption)
                 .toList();
         return new AuthDtos.RegistrationOptionsResponse(countries, genders);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthDtos.SupportedCountryResponse supportedCountry(String countryCode) {
+        SupportedCountry country = supportedCountryRepository.findByCountryCode(countryCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Supported country not found"));
+        return new AuthDtos.SupportedCountryResponse(
+                country.getCountryCode(),
+                country.getCountryName(),
+                country.getPhoneDialCode(),
+                country.getDefaultCurrencyCode());
     }
 
     private AuthDtos.RegistrationCountryOption toCountryOption(SupportedCountry country) {

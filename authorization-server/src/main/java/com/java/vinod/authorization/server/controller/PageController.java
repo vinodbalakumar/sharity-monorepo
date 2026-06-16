@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.stereotype.Controller;
@@ -15,11 +14,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class PageController {
     private final String frontendHomeUrl;
     private final String frontendRegisterUrl;
+    private final String frontendForgotPasswordUrl;
 
     public PageController(@Value("${app.social.frontend-login-success-url:https://vinodbalakumar.com/app/}") String frontendHomeUrl,
-                          @Value("${app.social.frontend-register-url:https://vinodbalakumar.com/app/register}") String frontendRegisterUrl) {
+                          @Value("${app.social.frontend-register-url:https://vinodbalakumar.com/app/register}") String frontendRegisterUrl,
+                          @Value("${app.social.frontend-forgot-password-url:https://vinodbalakumar.com/app/forgot-password}") String frontendForgotPasswordUrl) {
         this.frontendHomeUrl = frontendHomeUrl;
         this.frontendRegisterUrl = frontendRegisterUrl;
+        this.frontendForgotPasswordUrl = frontendForgotPasswordUrl;
     }
 
     @GetMapping("/")
@@ -285,6 +287,26 @@ public class PageController {
                             font-size: 15px;
                         }
 
+                        .links {
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            gap: 12px;
+                            margin: 10px 0 0;
+                            font-size: 14px;
+                            flex-wrap: wrap;
+                        }
+
+                        .links a {
+                            color: #3f88c5;
+                            font-weight: 800;
+                            text-decoration: none;
+                        }
+
+                        .links a:hover {
+                            text-decoration: underline;
+                        }
+
                         .register a {
                             color: #12263a;
                             font-weight: 900;
@@ -387,7 +409,10 @@ public class PageController {
                             <button type="submit">Sign in</button>
                         </form>
                         <div class="hint">If your account is not active or not verified, sign in will be blocked.</div>
-                        <div class="register">New to Sharity? <a href="__FRONTEND_REGISTER_URL__">Create an account</a></div>
+                        <div class="links">
+                            <a href="__FORGOT_PASSWORD_URL__">Forgot password?</a>
+                            <a href="__FRONTEND_REGISTER_URL__">Create an account</a>
+                        </div>
                     </main>
                 </div>
                 </body>
@@ -399,7 +424,8 @@ public class PageController {
                 .replace("__CSRF_INPUT__", csrfInput)
                 .replace("__LOGIN_ACTION__", loginAction)
                 .replace("__FRONTEND_HOME_URL__", htmlAttribute(frontendHomeUrl))
-                .replace("__FRONTEND_REGISTER_URL__", htmlAttribute(frontendRegisterUrl));
+                .replace("__FRONTEND_REGISTER_URL__", htmlAttribute(frontendRegisterUrl))
+                .replace("__FORGOT_PASSWORD_URL__", htmlAttribute(frontendForgotPasswordUrl));
     }
 
     private String htmlAttribute(String value) {

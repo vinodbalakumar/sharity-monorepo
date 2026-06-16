@@ -13,7 +13,8 @@ class PageControllerTest {
     void setUp() {
         pageController = new PageController(
                 "http://localhost:9174/app/",
-                "http://localhost:9174/app/register");
+                "http://localhost:9174/app/register",
+                "http://localhost:9174/app/forgot-password");
     }
 
     @Test
@@ -50,6 +51,7 @@ class PageControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("href=\"http://localhost:9174/app/\"");
         assertThat(response.getBody()).contains("href=\"http://localhost:9174/app/register\"");
+        assertThat(response.getBody()).contains("href=\"http://localhost:9174/app/forgot-password\"");
     }
 
     @Test

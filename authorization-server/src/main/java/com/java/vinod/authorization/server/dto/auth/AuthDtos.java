@@ -196,6 +196,14 @@ public final class AuthDtos {
     ) {
     }
 
+    public record SupportedCountryResponse(
+            String countryCode,
+            String countryName,
+            String phoneDialCode,
+            String defaultCurrencyCode
+    ) {
+    }
+
     public record RegistrationGenderOption(
             String code,
             String label

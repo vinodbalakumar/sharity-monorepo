@@ -3,6 +3,7 @@ package com.java.vinod.authorization.server.service;
 import com.java.vinod.authorization.server.dto.auth.AuthDtos;
 import com.java.vinod.authorization.server.entity.AppUser;
 import com.java.vinod.authorization.server.entity.Role;
+import com.java.vinod.authorization.server.entity.PasswordResetToken;
 import com.java.vinod.authorization.server.entity.UserCredential;
 import com.java.vinod.authorization.server.entity.UserLoginMethod;
 import com.java.vinod.authorization.server.entity.UserProfile;
@@ -311,6 +312,118 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.register(request, mock(HttpServletRequest.class)))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("User must be at least 13 years old");
+    }
+
+    @Test
+    void forgotPasswordGeneratesResetTokenAndSendsEmail() {
+        AppUserRepository appUserRepository = mock(AppUserRepository.class);
+        PasswordResetTokenRepository passwordResetTokenRepository = mock(PasswordResetTokenRepository.class);
+        EmailService emailService = mock(EmailService.class);
+        AppUser user = new AppUser();
+        user.setEmail("person@example.com");
+        user.setNormalizedEmail("person@example.com");
+        user.setPublicId("user-public-id");
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        when(appUserRepository.findByNormalizedEmail("person@example.com")).thenReturn(Optional.of(user));
+        when(passwordResetTokenRepository.save(any(PasswordResetToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthService authService = new AuthService(
+                appUserRepository,
+                mock(UserCredentialRepository.class),
+                mock(UserLoginMethodRepository.class),
+                mock(UserProfileRepository.class),
+                mock(RoleRepository.class),
+                mock(UserRoleRepository.class),
+                mock(RefreshTokenRepository.class),
+                mock(EmailVerificationTokenRepository.class),
+                passwordResetTokenRepository,
+                mock(LoginAttemptRepository.class),
+                mock(PasswordEncoder.class),
+                mock(DaoAuthenticationProvider.class),
+                mock(JwtService.class),
+                new TokenHashing(),
+                mock(UserMapper.class),
+                mock(AuditService.class),
+                emailService,
+                Duration.ofDays(7),
+                true
+        );
+
+        AuthDtos.ForgotPasswordResponse response = authService.forgotPassword(new AuthDtos.ForgotPasswordRequest("person@example.com"));
+
+        assertThat(response.message()).contains("If the email is registered");
+        assertThat(response.resetToken()).isNotBlank();
+        verify(emailService).sendPasswordResetEmail(user, response.resetToken());
+    }
+
+    @Test
+    void resetPasswordUpdatesCredentialAndConsumesToken() {
+        AppUserRepository appUserRepository = mock(AppUserRepository.class);
+        UserCredentialRepository userCredentialRepository = mock(UserCredentialRepository.class);
+        PasswordResetTokenRepository passwordResetTokenRepository = mock(PasswordResetTokenRepository.class);
+        RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
+        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+        EmailService emailService = mock(EmailService.class);
+
+        AppUser user = new AppUser();
+        user.setId(77L);
+        user.setPublicId("user-public-id");
+        user.setEmail("person@example.com");
+        user.setNormalizedEmail("person@example.com");
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+
+        UserCredential credential = new UserCredential();
+        credential.setUser(user);
+        credential.setPasswordHash("old-hash");
+        credential.setPasswordChangedAt(LocalDateTime.now().minusDays(1));
+        credential.setPasswordResetRequired(true);
+        credential.setCreatedAt(LocalDateTime.now().minusDays(10));
+        credential.setUpdatedAt(LocalDateTime.now().minusDays(1));
+
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(user);
+        token.setTokenHash(new TokenHashing().sha256("reset-token"));
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        token.setCreatedAt(LocalDateTime.now().minusMinutes(5));
+
+        when(passwordResetTokenRepository.findByTokenHash(token.getTokenHash())).thenReturn(Optional.of(token));
+        when(userCredentialRepository.findByUser_Id(77L)).thenReturn(Optional.of(credential));
+        when(refreshTokenRepository.findByUser_IdAndRevokedAtIsNull(77L)).thenReturn(java.util.List.of());
+        when(passwordEncoder.encode("N3wPassw0rd!")).thenReturn("encoded-new-password");
+
+        AuthService authService = new AuthService(
+                appUserRepository,
+                userCredentialRepository,
+                mock(UserLoginMethodRepository.class),
+                mock(UserProfileRepository.class),
+                mock(RoleRepository.class),
+                mock(UserRoleRepository.class),
+                refreshTokenRepository,
+                mock(EmailVerificationTokenRepository.class),
+                passwordResetTokenRepository,
+                mock(LoginAttemptRepository.class),
+                passwordEncoder,
+                mock(DaoAuthenticationProvider.class),
+                mock(JwtService.class),
+                new TokenHashing(),
+                mock(UserMapper.class),
+                mock(AuditService.class),
+                emailService,
+                Duration.ofDays(7),
+                true
+        );
+
+        AuthDtos.MessageResponse response = authService.resetPassword(new AuthDtos.ResetPasswordRequest("reset-token", "N3wPassw0rd!"));
+
+        assertThat(response.message()).isEqualTo("Password reset complete");
+        assertThat(credential.getPasswordHash()).isEqualTo("encoded-new-password");
+        assertThat(credential.isPasswordResetRequired()).isFalse();
+        assertThat(token.getUsedAt()).isNotNull();
+        verify(refreshTokenRepository).findByUser_IdAndRevokedAtIsNull(77L);
+        verify(emailService).sendPasswordChangedNotification(user);
+        verify(passwordEncoder).encode("N3wPassw0rd!");
     }
 
     private AuthDtos.RegisterRequest validRegisterRequest() {

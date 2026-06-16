@@ -4,6 +4,7 @@ import com.java.vinod.authorization.server.dto.auth.AuthDtos;
 import com.java.vinod.authorization.server.dto.platform.PlatformDtos;
 import com.java.vinod.authorization.server.security.AuthenticatedUser;
 import com.java.vinod.authorization.server.service.PlatformAuthorizationService;
+import com.java.vinod.authorization.server.service.AuthReferenceDataService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,11 +32,14 @@ public class PlatformAuthorizationController {
     private static final String UUID_PATTERN = "[0-9a-fA-F-]{36}";
 
     private final PlatformAuthorizationService platformAuthorizationService;
+    private final AuthReferenceDataService authReferenceDataService;
     private final String internalServiceToken;
 
     public PlatformAuthorizationController(PlatformAuthorizationService platformAuthorizationService,
+                                           AuthReferenceDataService authReferenceDataService,
                                            @Value("${app.internal.service-token}") String internalServiceToken) {
         this.platformAuthorizationService = platformAuthorizationService;
+        this.authReferenceDataService = authReferenceDataService;
         this.internalServiceToken = internalServiceToken;
     }
 
@@ -121,6 +125,14 @@ public class PlatformAuthorizationController {
     @GetMapping("/v1/admin/supported-countries")
     public List<PlatformDtos.SupportedCountryResponse> supportedCountries() {
         return platformAuthorizationService.supportedCountries();
+    }
+
+    @GetMapping("/internal/api/v1/supported-countries/{countryCode}")
+    public AuthDtos.SupportedCountryResponse supportedCountry(
+            @RequestHeader(name = "X-Internal-Service-Token", required = false) String token,
+            @PathVariable @Pattern(regexp = "[A-Z]{3}") String countryCode) {
+        verifyInternalToken(token);
+        return authReferenceDataService.supportedCountry(countryCode);
     }
 
     @PutMapping("/v1/admin/supported-countries/{countryCode}")
