@@ -75,13 +75,22 @@ public class BffProxyService {
         String prefix = requestUri.startsWith("/bff/public/") ? "/bff/public/" : "/bff/api/";
         String path = requestUri.substring(prefix.length());
         int slash = path.indexOf('/');
-        if (slash < 0) {
-            throw new ResponseStatusException(NOT_FOUND, "Missing backend route");
-        }
-        String serviceKey = path.substring(0, slash);
+        String serviceKey = slash < 0 ? path : path.substring(0, slash);
         boolean marketplaceAlias = isMarketplaceAlias(serviceKey);
         String backendBase = backendBase(serviceKey);
-        String backendPath = marketplaceAlias ? "/api/" + path : path.substring(slash);
+        String backendPath;
+        if (marketplaceAlias) {
+            if (slash < 0) {
+                backendPath = "/api/" + serviceKey;
+            } else {
+                backendPath = path.substring(slash);
+            }
+        } else {
+            if (slash < 0) {
+                throw new ResponseStatusException(NOT_FOUND, "Missing backend route");
+            }
+            backendPath = path.substring(slash);
+        }
         String query = request.getQueryString();
         String target = backendBase + backendPath + (query == null ? "" : "?" + query);
 
