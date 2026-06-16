@@ -17,8 +17,10 @@ export function getGroupTotal(group: CartSellerGroup): number {
 
 export function canCheckout(cart: CartResponse): boolean {
   const groupsEligible = cart.sellerGroups.every((group) => group.validationStatus === 'VALID' || group.validationStatus === 'SELLER_ACCEPTANCE_REQUIRED');
-  const digitalTermsSatisfied = !cart.digitalTerms.required || cart.digitalTerms.accepted;
-  return cart.validationSummary.checkoutReady && groupsEligible && digitalTermsSatisfied;
+  const digitalTerms = cart.digitalTerms ?? { required: false, accepted: true };
+  const validationSummary = cart.validationSummary ?? { checkoutReady: false };
+  const digitalTermsSatisfied = !digitalTerms.required || digitalTerms.accepted;
+  return Boolean(validationSummary.checkoutReady) && groupsEligible && digitalTermsSatisfied;
 }
 
 export function requiresSellerAcceptance(cart: CartResponse): boolean {

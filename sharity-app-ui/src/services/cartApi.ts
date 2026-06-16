@@ -38,7 +38,8 @@ export async function getCart(): Promise<CartResponse> {
       throw new Error(`Failed to load cart: ${response.statusText}`);
     }
 
-    return await response.json();
+    const raw = await response.json();
+    return normalizeCartResponse(raw);
   } catch (error) {
     console.error('Error fetching cart:', error);
     throw error;
@@ -216,4 +217,93 @@ export async function proceedToCheckout(): Promise<CheckoutPreviewResponse | { c
     console.error('Error proceeding to checkout:', error);
     throw error;
   }
+}
+
+function normalizeCartResponse(raw: unknown): CartResponse {
+  const fallback: CartResponse = {
+    cartId: '',
+    buyerId: '',
+    currency: 'USD',
+    sellerGroups: [],
+    savedForLaterItems: [],
+    pricingSummary: {
+      itemsTotal: 0,
+      sellerCouponDiscountTotal: 0,
+      platformCouponDiscountTotal: 0,
+      buyerServiceFee: 0,
+      taxAmount: 0,
+      shippingAmount: 0,
+      sharityCreditApplied: 0,
+      freePromotionApplied: 0,
+      totalAuthorizationAmount: 0,
+      totalDueNow: 0,
+      currency: 'USD'
+    },
+    validationSummary: {
+      valid: true,
+      checkoutReady: false,
+      issues: [],
+      digitalTermsRequired: false,
+      pricingRefreshRequired: false
+    },
+    digitalTerms: {
+      required: false,
+      accepted: false,
+      termsVersion: '',
+      summary: '',
+      requiredForItemIds: []
+    }
+  };
+
+  if (!raw || typeof raw !== 'object') {
+    return fallback;
+  }
+
+  const value = raw as Partial<CartResponse> & {
+    cartSummary?: { subtotal?: number; sellerCouponDiscountTotal?: number; platformCouponDiscountTotal?: number; estimatedServiceFee?: number; estimatedTaxes?: number; estimatedTotal?: number };
+    digitalTermsAccepted?: boolean;
+    digitalTermsRequired?: boolean;
+  };
+
+  const sellerGroups = Array.isArray(value.sellerGroups) ? value.sellerGroups : [];
+  const savedForLaterItems = Array.isArray(value.savedForLaterItems) ? value.savedForLaterItems : [];
+  const validationIssues = value.validationSummary && Array.isArray(value.validationSummary.issues) ? value.validationSummary.issues : [];
+
+  const cart: CartResponse = {
+    ...fallback,
+    ...value,
+    sellerGroups,
+    savedForLaterItems,
+    pricingSummary: value.pricingSummary ?? {
+      ...fallback.pricingSummary,
+      itemsTotal: value.cartSummary?.subtotal ?? 0,
+      sellerCouponDiscountTotal: value.cartSummary?.sellerCouponDiscountTotal ?? 0,
+      platformCouponDiscountTotal: value.cartSummary?.platformCouponDiscountTotal ?? 0,
+      buyerServiceFee: value.cartSummary?.estimatedServiceFee ?? 0,
+      taxAmount: value.cartSummary?.estimatedTaxes ?? 0,
+      shippingAmount: 0,
+      sharityCreditApplied: 0,
+      freePromotionApplied: 0,
+      totalAuthorizationAmount: value.cartSummary?.estimatedTotal ?? 0,
+      totalDueNow: value.cartSummary?.estimatedTotal ?? 0,
+      currency: value.currency ?? 'USD'
+    },
+    validationSummary: {
+      valid: value.validationSummary?.valid ?? sellerGroups.length > 0,
+      checkoutReady: value.validationSummary?.checkoutReady ?? false,
+      issues: validationIssues,
+      digitalTermsRequired: value.validationSummary?.digitalTermsRequired ?? Boolean(value.digitalTermsRequired),
+      pricingRefreshRequired: value.validationSummary?.pricingRefreshRequired ?? false
+    },
+    digitalTerms: {
+      required: value.digitalTerms?.required ?? Boolean(value.digitalTermsRequired),
+      accepted: value.digitalTerms?.accepted ?? Boolean(value.digitalTermsAccepted),
+      termsVersion: value.digitalTerms?.termsVersion ?? '',
+      summary: value.digitalTerms?.summary ?? '',
+      acceptedAt: value.digitalTerms?.acceptedAt,
+      requiredForItemIds: value.digitalTerms?.requiredForItemIds ?? []
+    }
+  };
+
+  return cart;
 }

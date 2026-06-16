@@ -102,22 +102,13 @@ export const serviceConfigs: DashboardServiceConfig[] = [
     sourceVerticalCodes: ['MARKETPLACE', 'GIFT_CARDS']
   },
   {
-    activeCategoryCodes: ['ELECTRONICS', 'MARKETPLACE_ELECTRONICS'],
-    code: 'ELECTRONICS',
-    ctaLabel: 'Browse',
-    description: 'Buy and sell electronics, gadgets, devices, and accessories.',
-    icon: 'phone-portrait-outline',
-    name: 'Electronics Marketplace',
-    sourceVerticalCodes: ['ELECTRONICS', 'MARKETPLACE']
-  },
-  {
+    activeCategoryCodes: ['ONE_GRAM_JEWELLERY', 'IMITATION_JEWELLERY'],
     code: 'IMITATION_JEWELLERY',
-    ctaLabel: 'Notify Me',
-    description: 'Fashion jewellery and one-gram gold-style products.',
-    forceComingSoon: true,
+    ctaLabel: 'Browse',
+    description: 'Imitation jewellery, fashion jewellery, and one-gram gold style pieces.',
     icon: 'diamond-outline',
     name: 'Imitation Jewellery',
-    sourceVerticalCodes: ['IMITATION_JEWELLERY']
+    sourceVerticalCodes: ['JEWELLERY']
   },
   {
     code: 'AUTOMOTIVE',
@@ -138,12 +129,12 @@ export const serviceConfigs: DashboardServiceConfig[] = [
     sourceVerticalCodes: ['GROCERY']
   },
   {
-    code: 'MEAT',
+    code: 'FRESH_CUTS',
     ctaLabel: 'Notify Me',
-    description: 'Premium quality fresh meat marketplace.',
+    description: 'Premium quality fresh cuts and seafood marketplace.',
     forceComingSoon: true,
     icon: 'restaurant-outline',
-    name: 'Fresh Meat',
+    name: 'Fresh Cuts',
     sourceVerticalCodes: ['MEAT_SHOP']
   },
   {

@@ -73,6 +73,24 @@ export type ProfileImageUploadResponse = {
   profileImageUrl: string;
 };
 
+export type ForgotPasswordResponse = {
+  message: string;
+  resetToken?: string;
+};
+
+export type ResetPasswordRequest = {
+  newPassword: string;
+  token: string;
+};
+
+export type VerifyEmailRequest = {
+  token: string;
+};
+
+export type MessageResponse = {
+  message: string;
+};
+
 export async function registerAccount(request: RegisterRequest): Promise<RegisterResponse> {
   const response = await fetch(`${authBaseUrl}/register`, {
     body: JSON.stringify(request),
@@ -152,6 +170,60 @@ export async function uploadSocialProfileImage(file: File): Promise<ProfileImage
   const response = await fetch(`${authBaseUrl}/social/profile-image`, {
     body: formData,
     credentials: 'include',
+    method: 'POST'
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+  const response = await fetch(`${authBaseUrl}/forgot-password`, {
+    body: JSON.stringify({ email }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    method: 'POST'
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function resetPassword(request: ResetPasswordRequest): Promise<MessageResponse> {
+  const response = await fetch(`${authBaseUrl}/reset-password`, {
+    body: JSON.stringify(request),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    method: 'POST'
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function verifyEmail(request: VerifyEmailRequest): Promise<MessageResponse> {
+  const response = await fetch(`${authBaseUrl}/verify-email`, {
+    body: JSON.stringify(request),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     method: 'POST'
   });
 

@@ -10,8 +10,9 @@ import { InteriorShell } from '../../components/appShell';
 import { appState$ } from '../../state/appState';
 import type { AppRoute } from '../../types/navigation';
 import { getMarketplaceListings } from '../../services/marketplaceApi';
+import { getCurrentUser } from '../../services/userApi';
 import type { MarketplaceListing } from '../../types/marketplace';
-import { searchListings, filterListingsByPrice, filterListingsByVerifiedSellers, sortListingsByPrice, sortListingsByRating, sortListingsByNewest, getDiscountPercentage, getAverageRating, isAvailable } from '../../utils/marketplaceUtils';
+import { searchListings, filterListingsByPrice, filterListingsByVerifiedSellers, sortListingsByPrice, sortListingsByRating, sortListingsByNewest, getDiscountPercentage, getAverageRating, isAvailable, getListingDisplayCurrencyCode, getListingDisplayOriginalPriceAmount, getListingDisplayPriceAmount } from '../../utils/marketplaceUtils';
 
 type Props = {
   onNavigate: (route: AppRoute) => void;
@@ -32,18 +33,37 @@ export function DigitalMarketplaceListingsScreen({ onNavigate, onOpenListing }: 
   const sortBy = useSelector(appState$.marketplace.sortBy);
 
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [countryCode, setCountryCode] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let disposed = false;
+    void getCurrentUser()
+      .then((user) => {
+        if (!disposed) {
+          setCountryCode(user.profile.countryCode ?? undefined);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setCountryCode(undefined);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const loadListings = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getMarketplaceListings();
-      setListings(data);
+      const data = await getMarketplaceListings(countryCode);
+      setListings(data.filter((listing) => isDigitalMarketplaceListing(listing)));
     } catch (error) {
       console.error('Failed to load listings:', error);
     }
     setLoading(false);
-  }, []);
+  }, [countryCode]);
 
   useEffect(() => {
     loadListings();
@@ -86,7 +106,7 @@ export function DigitalMarketplaceListingsScreen({ onNavigate, onOpenListing }: 
   }
 
   return (
-    <InteriorShell onNavigate={onNavigate} title="Digital Marketplace" subtitle="Games, software, ebooks, music, and more" scrollable={true}>
+    <InteriorShell onNavigate={onNavigate} title="Digital Marketplace" subtitle="Instant delivery codes, gift cards, and gaming products" scrollable={true}>
       <YStack gap="$5" maxWidth={1220} mx="auto" width="100%">
         <SearchAndFilters searchQuery={searchQuery} filtersState={filtersState} sortBy={sortBy} />
 
@@ -117,6 +137,16 @@ export function DigitalMarketplaceListingsScreen({ onNavigate, onOpenListing }: 
       </YStack>
     </InteriorShell>
   );
+}
+
+function isDigitalMarketplaceListing(listing: MarketplaceListing) {
+  const value = `${listing.verticalCode} ${listing.categoryCode} ${listing.productType} ${listing.deliveryType}`.toUpperCase();
+  return value.includes('MARKETPLACE')
+    || value.includes('GIFT_CARDS')
+    || value.includes('GAMING')
+    || value.includes('DIGITAL')
+    || value.includes('INSTANT')
+    || value.includes('MANUAL');
 }
 
 function SearchAndFilters({
@@ -253,7 +283,7 @@ function ListingCard({ listing, index, onOpenListing }: { listing: MarketplaceLi
 
             <XStack gap="$2" alignItems="center">
               <Text fontSize="$4" fontWeight="900">
-                ${listing.priceAmount.toFixed(2)}
+                {getListingDisplayCurrencyCode(listing)} {getListingDisplayPriceAmount(listing).toFixed(2)}
               </Text>
               {discount > 0 ? (
                 <>
@@ -262,7 +292,7 @@ function ListingCard({ listing, index, onOpenListing }: { listing: MarketplaceLi
                     fontSize="$3"
                     textDecorationLine="line-through"
                   >
-                    ${listing.originalPriceAmount?.toFixed(2) ?? listing.priceAmount.toFixed(2)}
+                    {getListingDisplayCurrencyCode(listing)} {getListingDisplayOriginalPriceAmount(listing)?.toFixed(2) ?? getListingDisplayPriceAmount(listing).toFixed(2)}
                   </Text>
                   <Text color="$green10" fontSize="$3" fontWeight="900">
                     {discount}% OFF

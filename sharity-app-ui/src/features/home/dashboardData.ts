@@ -1,6 +1,7 @@
 import { quickActionConfigs, serviceConfigs, type QuickActionAudience } from './dashboardConfig';
 import type { AppRoute } from '../../types/navigation';
 import type { MarketplaceHomeResponse, MarketplaceListing, MarketplaceVertical } from '../../types/marketplace';
+import { getListingDisplayCurrencyCode, getListingDisplayOriginalPriceAmount, getListingDisplayPriceAmount } from '../../utils/marketplaceUtils';
 
 const HERO_IMAGE_HOST_HINTS = ['r2.dev', 'cloudflare'];
 
@@ -108,19 +109,19 @@ export function buildDashboardQuickActions(
 export function buildDashboardDeals(listings: MarketplaceListing[], countryCode?: string): DashboardDeal[] {
   return listings
     .filter((listing) => isActiveMarketplaceDeal(listing))
-    .filter((listing) => listing.priceAmount > 0)
+    .filter((listing) => getListingDisplayPriceAmount(listing) > 0)
     .filter((listing) => !countryCode || listing.providerCountryCode === countryCode)
     .sort((left, right) => discountValue(right) - discountValue(left))
     .slice(0, 6)
     .map((listing) => {
-      const original = listing.originalPriceAmount && listing.originalPriceAmount > listing.priceAmount
-        ? listing.originalPriceAmount
+      const original = getListingDisplayOriginalPriceAmount(listing) && getListingDisplayOriginalPriceAmount(listing)! > getListingDisplayPriceAmount(listing)
+        ? getListingDisplayOriginalPriceAmount(listing)
         : null;
 
       return {
-        badge: original ? `${Math.round(((original - listing.priceAmount) / original) * 100)}% OFF` : 'Deal',
-        currencyCode: listing.currencyCode,
-        discountedPrice: listing.priceAmount,
+        badge: original ? `${Math.round(((original - getListingDisplayPriceAmount(listing)) / original) * 100)}% OFF` : 'Deal',
+        currencyCode: getListingDisplayCurrencyCode(listing),
+        discountedPrice: getListingDisplayPriceAmount(listing),
         id: listing.publicId,
         imageUrl: listing.imageUrl,
         marketplaceCode: marketplaceCodeFor(listing),
@@ -147,11 +148,11 @@ export function buildHeroOffers(listings: MarketplaceListing[], countryCode?: st
   return heroCandidates.map((listing) => ({
     badge: badgeForHero(listing),
     countryCode: listing.providerCountryCode,
-    currencyCode: listing.currencyCode,
+    currencyCode: getListingDisplayCurrencyCode(listing),
     id: listing.publicId,
     imageUrl: listing.imageUrl,
     marketplaceName: marketplaceNameFor(listing.verticalCode),
-    priceLabel: formatCompactMoney(listing.priceAmount, listing.currencyCode),
+    priceLabel: formatCompactMoney(getListingDisplayPriceAmount(listing), getListingDisplayCurrencyCode(listing)),
     sellerDisplayName: listing.sellerDisplayName,
     title: listing.title
   }));
@@ -172,7 +173,7 @@ function audienceEnabled(audience: QuickActionAudience | undefined, roles: Set<s
 }
 
 function isActiveMarketplaceDeal(listing: MarketplaceListing) {
-  return isDigitalDeal(listing) || isElectronicsDeal(listing);
+  return isDigitalDeal(listing) || isJewelleryDeal(listing);
 }
 
 function badgeForHero(listing: MarketplaceListing) {
@@ -221,22 +222,33 @@ function isElectronicsDeal(listing: MarketplaceListing) {
   return listing.categoryCode === 'ELECTRONICS' || listing.categoryCode === 'MARKETPLACE_ELECTRONICS';
 }
 
+function isJewelleryDeal(listing: MarketplaceListing) {
+  return listing.categoryCode === 'ONE_GRAM_JEWELLERY'
+    || listing.categoryCode === 'IMITATION_JEWELLERY'
+    || listing.verticalCode === 'JEWELLERY';
+}
+
 function marketplaceNameFor(verticalCode: string) {
   if (verticalCode === 'GIFT_CARDS') {
     return 'Digital Marketplace';
+  }
+  if (verticalCode === 'JEWELLERY') {
+    return 'Imitation Jewellery';
   }
   return verticalCode === 'MARKETPLACE' ? 'Digital Marketplace' : verticalCode.replaceAll('_', ' ');
 }
 
 function marketplaceCodeFor(listing: MarketplaceListing) {
-  return isElectronicsDeal(listing) ? 'ELECTRONICS' : 'DIGITAL';
+  return isJewelleryDeal(listing) ? 'JEWELLERY' : 'DIGITAL';
 }
 
 function discountValue(listing: MarketplaceListing) {
-  if (!listing.originalPriceAmount || listing.originalPriceAmount <= listing.priceAmount) {
+  const original = getListingDisplayOriginalPriceAmount(listing);
+  const price = getListingDisplayPriceAmount(listing);
+  if (!original || original <= price) {
     return 0;
   }
-  return (listing.originalPriceAmount - listing.priceAmount) / listing.originalPriceAmount;
+  return (original - price) / original;
 }
 
 function averageRating(listing: MarketplaceListing) {

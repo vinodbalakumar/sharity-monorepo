@@ -31,6 +31,23 @@ type ListingCategoryOption = {
   reason?: string | null;
 };
 
+type ListingProductTypeOption = {
+  productTypeCode: string;
+  displayLabel: string;
+  description: string;
+  active: boolean;
+  sortOrder: number;
+};
+
+type ListingDeliveryTypeOption = {
+  deliveryTypeCode: string;
+  displayLabel: string;
+  description: string;
+  digitalDelivery: boolean;
+  active: boolean;
+  sortOrder: number;
+};
+
 type ListingReachScopeOption = {
   code: 'NATIONAL' | 'GLOBAL';
   label: string;
@@ -48,7 +65,8 @@ type ListingPolicyRequirement = {
 type ListingFormConfig = {
   marketplaces: ListingMarketplaceOption[];
   categories: ListingCategoryOption[];
-  deliveryTypes: string[];
+  productTypes: ListingProductTypeOption[];
+  deliveryTypes: ListingDeliveryTypeOption[];
   currencies: string[];
   reachScopes: ListingReachScopeOption[];
   policyRequirements: ListingPolicyRequirement[];
@@ -59,6 +77,7 @@ type SellerListingDraftRequest = {
   providerAccountPublicId: string;
   categoryCode: string;
   currency: string;
+  productType: string;
   deliveryType: string;
   fulfillmentScope: 'NATIONAL' | 'GLOBAL';
   longDescription?: string;
@@ -111,10 +130,11 @@ const initialForm = {
   shortDescription: '',
   longDescription: '',
   price: '',
-  currency: 'USD',
+  currency: '',
   marketplaceCode: '',
   categoryCode: '',
-  deliveryType: 'DIGITAL',
+  deliveryType: '',
+  productType: '',
   fulfillmentScope: 'NATIONAL' as const,
   stockQuantity: '1'
 };
@@ -158,7 +178,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
       const firstProvider = accounts[0] ?? null;
       setSelectedProviderId(firstProvider?.publicId ?? '');
 
-      const marketplaceCode = config.marketplaces.find((marketplace) => marketplace.enabled)?.marketplaceCode ?? 'DIGITAL';
+      const marketplaceCode = config.marketplaces.find((marketplace) => marketplace.enabled)?.marketplaceCode ?? '';
       const categoryCode = config.categories.find((category) => category.marketplaceCode === marketplaceCode && category.enabled)?.categoryCode
         ?? config.categories.find((category) => category.enabled)?.categoryCode
         ?? '';
@@ -168,7 +188,8 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
         marketplaceCode,
         categoryCode,
         currency: config.currencies[0] ?? current.currency,
-        deliveryType: config.deliveryTypes[0] ?? current.deliveryType
+        productType: config.productTypes[0]?.productTypeCode ?? current.productType,
+        deliveryType: config.deliveryTypes[0]?.deliveryTypeCode ?? current.deliveryType
       }));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load seller workspace.');
@@ -268,6 +289,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
           providerAccountPublicId: selectedProvider.publicId,
           categoryCode: form.categoryCode,
           currency: form.currency,
+          productType: form.productType,
           deliveryType: form.deliveryType,
           fulfillmentScope: form.fulfillmentScope,
           longDescription: form.longDescription || undefined,
@@ -440,10 +462,36 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
 
                   <XStack gap="$3" flexWrap="wrap">
                     <View style={styles.halfField}>
-                      <SelectField label="Currency" value={form.currency} options={formConfig?.currencies ?? ['USD']} onChange={(value) => setForm((current) => ({ ...current, currency: value }))} />
+                      <SelectField
+                        label="Currency"
+                        value={form.currency}
+                        options={(formConfig?.currencies ?? ['USD']).map((option) => ({ value: option, label: option, description: '' }))}
+                        onChange={(value) => setForm((current) => ({ ...current, currency: value }))}
+                      />
                     </View>
                     <View style={styles.halfField}>
-                      <SelectField label="Delivery type" value={form.deliveryType} options={formConfig?.deliveryTypes ?? ['DIGITAL']} onChange={(value) => setForm((current) => ({ ...current, deliveryType: value }))} />
+                      <SelectField
+                        label="Product type"
+                        value={form.productType}
+                        options={(formConfig?.productTypes ?? []).map((option) => ({
+                          value: option.productTypeCode,
+                          label: option.displayLabel,
+                          description: option.description
+                        }))}
+                        onChange={(value) => setForm((current) => ({ ...current, productType: value }))}
+                      />
+                    </View>
+                    <View style={styles.halfField}>
+                      <SelectField
+                        label="Delivery type"
+                        value={form.deliveryType}
+                        options={(formConfig?.deliveryTypes ?? []).map((option) => ({
+                          value: option.deliveryTypeCode,
+                          label: option.displayLabel,
+                          description: option.description
+                        }))}
+                        onChange={(value) => setForm((current) => ({ ...current, deliveryType: value }))}
+                      />
                     </View>
                   </XStack>
 
@@ -546,7 +594,7 @@ function SelectField({
 }: {
   label: string;
   value: string;
-  options: string[];
+  options: Array<{ value: string; label: string; description?: string }>;
   onChange: (value: string) => void;
 }) {
   return (
@@ -556,12 +604,12 @@ function SelectField({
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectScroll}>
           {options.map((option) => (
             <Pressable
-              key={option}
-              accessibilityLabel={`${label} ${option}`}
-              onPress={() => onChange(option)}
-              style={[styles.selectChip, value === option && styles.selectChipActive]}
+              key={option.value}
+              accessibilityLabel={`${label} ${option.label}`}
+              onPress={() => onChange(option.value)}
+              style={[styles.selectChip, value === option.value && styles.selectChipActive]}
             >
-              <Text style={[styles.selectChipText, value === option && styles.selectChipTextActive]}>{option}</Text>
+              <Text style={[styles.selectChipText, value === option.value && styles.selectChipTextActive]}>{option.label}</Text>
             </Pressable>
           ))}
         </ScrollView>

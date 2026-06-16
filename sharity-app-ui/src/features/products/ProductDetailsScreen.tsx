@@ -7,7 +7,8 @@ import {
   Share,
   StyleSheet,
   Text,
-  View
+  View,
+  Platform
 } from 'react-native';
 
 import { AppButton, AppLoadingIndicator } from '../../components/ui';
@@ -15,9 +16,11 @@ import { InteriorShell } from '../../components/appShell';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { electronicsProducts, type ElectronicsProduct } from '../electronics/electronicsData';
 import { getMarketplaceListing, getMarketplaceListings } from '../../services/marketplaceApi';
+import { getCurrentUser } from '../../services/userApi';
 import { colors, radii, spacing } from '../../theme';
 import type { MarketplaceListing, MarketplaceReview } from '../../types/marketplace';
 import type { AppRoute } from '../../types/navigation';
+import { getListingDisplayCurrencyCode, getListingDisplayOriginalPriceAmount, getListingDisplayPriceAmount } from '../../utils/marketplaceUtils';
 
 type ProductDetailsMode = 'digital' | 'electronics';
 type ProductAction = 'cart' | 'contact' | 'purchase' | 'report' | 'share' | 'wishlist';
@@ -73,12 +76,34 @@ type LoadState = {
 export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDetailsScreenProps) {
   const { isDesktop } = useResponsiveLayout();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string | undefined>(undefined);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [state, setState] = useState<LoadState>({
     error: false,
     loading: true,
     product: null,
     related: []
   });
+
+  useEffect(() => {
+    let disposed = false;
+    void getCurrentUser()
+      .then((user) => {
+        if (!disposed) {
+          setCountryCode(user.profile.countryCode ?? undefined);
+          setIsAuthenticated(true);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setCountryCode(undefined);
+          setIsAuthenticated(false);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const loadProduct = useCallback(async () => {
     setState((current) => ({ ...current, error: false, loading: true }));
@@ -99,10 +124,10 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
         return;
       }
 
-      const allListings = await getMarketplaceListings();
+      const allListings = await getMarketplaceListings(countryCode);
       const fallbackListing = allListings.find(isDigitalListing) ?? allListings[0] ?? null;
       const selectedId = productId ?? fallbackListing?.publicId;
-      const listing = selectedId ? await getMarketplaceListing(selectedId) : fallbackListing;
+      const listing = selectedId ? await getMarketplaceListing(selectedId, countryCode) : fallbackListing;
 
       setState({
         error: !listing,
@@ -123,7 +148,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
         related: []
       });
     }
-  }, [mode, productId]);
+  }, [mode, productId, countryCode]);
 
   useEffect(() => {
     loadProduct();
@@ -136,6 +161,8 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
     const total = state.product.reviews.reduce((sum, review) => sum + review.rating, 0);
     return Math.round((total / state.product.reviews.length) * 10) / 10;
   }, [state.product]);
+  const isDigitalProduct = state.product?.isDigital ?? mode === 'digital';
+  const canAddToCart = !isDigitalProduct;
 
   const handleAction = useCallback(
     async (action: ProductAction) => {
@@ -146,17 +173,27 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
         return;
       }
 
+      if (action === 'cart' && isDigitalProduct) {
+        setActionMessage('Digital products use direct buy only.');
+        return;
+      }
+
+      if (!isAuthenticated) {
+        redirectToLogin(onNavigate);
+        return;
+      }
+
       const messages: Record<Exclude<ProductAction, 'share'>, string> = {
-        cart: 'Added to guest cart. Please sign in before checkout.',
-        contact: 'Please sign in to contact the seller.',
-        purchase: 'Please sign in to complete your purchase.',
-        report: 'Please sign in to report this listing.',
-        wishlist: 'Please sign in to add this product to your wishlist.'
+        cart: 'Added to your cart.',
+        contact: 'Opening seller contact.',
+        purchase: 'Opening secure purchase flow.',
+        report: 'Opening report flow.',
+        wishlist: 'Added to your wishlist.'
       };
 
       setActionMessage(messages[action]);
     },
-    [state.product]
+    [isAuthenticated, isDigitalProduct, onNavigate, state.product]
   );
 
   return (
@@ -193,6 +230,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
               <ProductSummaryCard
                 actionMessage={actionMessage}
                 averageRating={averageRating}
+                canAddToCart={canAddToCart}
                 onAction={handleAction}
                 product={state.product}
               />
@@ -209,7 +247,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
 
             <ReviewsSection averageRating={averageRating} product={state.product} />
             <RelatedProductsSection products={state.related} />
-          {!isDesktop ? <ProductActionBar onAction={handleAction} /> : null}
+          {!isDesktop ? <ProductActionBar canAddToCart={canAddToCart} onAction={handleAction} /> : null}
         </>
       ) : null}
     </InteriorShell>
@@ -247,11 +285,13 @@ function ProductImageGallery({ isDesktop, product }: { isDesktop: boolean; produ
 function ProductSummaryCard({
   actionMessage,
   averageRating,
+  canAddToCart,
   onAction,
   product
 }: {
   actionMessage: string | null;
   averageRating: number | null;
+  canAddToCart: boolean;
   onAction: (action: ProductAction) => void;
   product: UnifiedProduct;
 }) {
@@ -282,9 +322,11 @@ function ProductSummaryCard({
         <AppButton onPress={() => onAction('purchase')} variant="primary">
           Buy Now
         </AppButton>
-        <AppButton onPress={() => onAction('cart')} variant="outline">
-          Add to Cart
-        </AppButton>
+        {canAddToCart ? (
+          <AppButton onPress={() => onAction('cart')} variant="outline">
+            Add to Cart
+          </AppButton>
+        ) : null}
         <AppButton onPress={() => onAction('wishlist')} variant="outline">
           Add to Wishlist
         </AppButton>
@@ -456,15 +498,17 @@ function RelatedProductsSection({ products }: { products: UnifiedProduct[] }) {
   );
 }
 
-function ProductActionBar({ onAction }: { onAction: (action: ProductAction) => void }) {
+function ProductActionBar({ canAddToCart, onAction }: { canAddToCart: boolean; onAction: (action: ProductAction) => void }) {
   return (
     <View style={styles.stickyBar}>
       <AppButton onPress={() => onAction('purchase')} variant="primary" size="small">
         Buy Now
       </AppButton>
-      <AppButton onPress={() => onAction('cart')} variant="outline" size="small">
-        Add to Cart
-      </AppButton>
+      {canAddToCart ? (
+        <AppButton onPress={() => onAction('cart')} variant="outline" size="small">
+          Add to Cart
+        </AppButton>
+      ) : null}
     </View>
   );
 }
@@ -495,15 +539,15 @@ function mapDigitalListing(listing: MarketplaceListing): UnifiedProduct {
     availability: statusLabel(listing.listingStatus),
     category: listing.categoryCode,
     country: listing.providerCountryCode || 'Global',
-    currencyCode: listing.currencyCode,
+    currencyCode: getListingDisplayCurrencyCode(listing),
     deliveryType: deliveryLabelFor(listing),
     description: listing.description || 'Digital access details and instructions after purchase.',
     id: listing.publicId,
     isDigital: true,
     licenseNote: listing.licenseNote,
     marketplaceName: 'Digital Marketplace',
-    originalPrice: listing.originalPriceAmount,
-    price: listing.priceAmount,
+    originalPrice: getListingDisplayOriginalPriceAmount(listing),
+    price: getListingDisplayPriceAmount(listing),
     productType: listing.productType,
     reviews: listing.publicReviews.map(mapReview),
     sellerName: listing.sellerDisplayName || 'Seller alias',
@@ -604,6 +648,16 @@ function formatDate(value: string) {
   }
 
   return new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+
+function redirectToLogin(onNavigate: (route: AppRoute) => void) {
+  if (Platform.OS !== 'web') {
+    onNavigate('welcome');
+    return;
+  }
+
+  const base = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+  window.location.assign(`${base}/login?force=true`);
 }
 
 const styles = StyleSheet.create({

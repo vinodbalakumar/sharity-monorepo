@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { AppButton, AppLoadingIndicator } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -68,6 +68,8 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }) {
         const total = state.product.reviews.reduce((sum, review) => sum + review.rating, 0);
         return Math.round((total / state.product.reviews.length) * 10) / 10;
     }, [state.product]);
+    const isDigitalProduct = state.product?.isDigital ?? mode === 'digital';
+    const canAddToCart = !isDigitalProduct;
     const handleAction = useCallback(async (action) => {
         if (action === 'share') {
             await Share.share({
@@ -75,15 +77,23 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }) {
             });
             return;
         }
+        if (action === 'cart' && isDigitalProduct) {
+            setActionMessage('Digital products use direct buy only.');
+            return;
+        }
+        if (!isAuthenticated) {
+            redirectToLogin(onNavigate);
+            return;
+        }
         const messages = {
-            cart: 'Added to guest cart. Please sign in before checkout.',
-            contact: 'Please sign in to contact the seller.',
-            purchase: 'Please sign in to complete your purchase.',
-            report: 'Please sign in to report this listing.',
-            wishlist: 'Please sign in to add this product to your wishlist.'
+            cart: 'Added to your cart.',
+            contact: 'Opening seller contact.',
+            purchase: 'Opening secure purchase flow.',
+            report: 'Opening report flow.',
+            wishlist: 'Added to your wishlist.'
         };
         setActionMessage(messages[action]);
-    }, [state.product]);
+    }, [isAuthenticated, isDigitalProduct, onNavigate, state.product]);
     return (<InteriorShell onNavigate={onNavigate} title="Product Details" scrollable={true}>
       {state.loading ? (<View style={styles.centerState}>
           <AppLoadingIndicator />
@@ -107,7 +117,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }) {
       {!state.loading && !state.error && state.product ? (<>
             <View style={[styles.topLayout, !isDesktop && styles.topLayoutMobile]}>
               <ProductImageGallery isDesktop={isDesktop} product={state.product}/>
-              <ProductSummaryCard actionMessage={actionMessage} averageRating={averageRating} onAction={handleAction} product={state.product}/>
+              <ProductSummaryCard actionMessage={actionMessage} averageRating={averageRating} canAddToCart={canAddToCart} onAction={handleAction} product={state.product}/>
             </View>
 
             <View style={styles.detailGrid}>
@@ -121,7 +131,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }) {
 
             <ReviewsSection averageRating={averageRating} product={state.product}/>
             <RelatedProductsSection products={state.related}/>
-          {!isDesktop ? <ProductActionBar onAction={handleAction}/> : null}
+          {!isDesktop ? <ProductActionBar canAddToCart={canAddToCart} onAction={handleAction}/> : null}
         </>) : null}
     </InteriorShell>);
 }
@@ -147,7 +157,7 @@ function ProductImageGallery({ isDesktop, product }) {
       </Text>
     </View>);
 }
-function ProductSummaryCard({ actionMessage, averageRating, onAction, product }) {
+function ProductSummaryCard({ actionMessage, averageRating, canAddToCart, onAction, product }) {
     const discount = product.originalPrice && product.originalPrice > product.price
         ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
         : null;
@@ -173,9 +183,9 @@ function ProductSummaryCard({ actionMessage, averageRating, onAction, product })
         <AppButton onPress={() => onAction('purchase')} variant="primary">
           Buy Now
         </AppButton>
-        <AppButton onPress={() => onAction('cart')} variant="outline">
+        {canAddToCart ? <AppButton onPress={() => onAction('cart')} variant="outline">
           Add to Cart
-        </AppButton>
+        </AppButton> : null}
         <AppButton onPress={() => onAction('wishlist')} variant="outline">
           Add to Wishlist
         </AppButton>
@@ -305,14 +315,14 @@ function RelatedProductsSection({ products }) {
       </View>
     </View>);
 }
-function ProductActionBar({ onAction }) {
+function ProductActionBar({ canAddToCart, onAction }) {
     return (<View style={styles.stickyBar}>
       <AppButton onPress={() => onAction('purchase')} variant="primary" size="small">
         Buy Now
       </AppButton>
-      <AppButton onPress={() => onAction('cart')} variant="outline" size="small">
+      {canAddToCart ? <AppButton onPress={() => onAction('cart')} variant="outline" size="small">
         Add to Cart
-      </AppButton>
+      </AppButton> : null}
     </View>);
 }
 function DetailRow({ label, value }) {
@@ -436,6 +446,14 @@ function formatDate(value) {
         return value;
     }
     return new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+function redirectToLogin(onNavigate) {
+    if (Platform.OS !== 'web') {
+        onNavigate('welcome');
+        return;
+    }
+    const base = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+    window.location.assign(`${base}/login?force=true`);
 }
 const styles = StyleSheet.create({
     screen: {

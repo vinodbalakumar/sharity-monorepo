@@ -32,26 +32,56 @@ export async function getMarketplaceHome(query = ''): Promise<MarketplaceHomeRes
   return getJson<MarketplaceHomeResponse>(`/home${query}`);
 }
 
-export async function getMarketplaceListings(): Promise<MarketplaceListing[]> {
-  return getJson<MarketplaceListing[]>('/listings?sort=discount');
+export async function getMarketplaceListings(countryCode?: string): Promise<MarketplaceListing[]> {
+  const params = new URLSearchParams();
+  params.set('sort', 'discount');
+  if (countryCode) {
+    params.set('countryCode', countryCode);
+  }
+  return getJson<MarketplaceListing[]>(`/listings?${params.toString()}`);
 }
 
-export async function getMarketplaceListing(publicId: string): Promise<MarketplaceListing> {
-  return getJson<MarketplaceListing>(`/listings/${publicId}`);
+export async function getMarketplaceListing(publicId: string, countryCode?: string): Promise<MarketplaceListing> {
+  const params = new URLSearchParams();
+  if (countryCode) {
+    params.set('countryCode', countryCode);
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return getJson<MarketplaceListing>(`/listings/${publicId}${suffix}`);
 }
 
-export async function searchMarketplaceListings(query: string): Promise<MarketplaceListing[]> {
-  return getJson<MarketplaceListing[]>(`/listings/search?q=${encodeURIComponent(query)}`);
+export async function searchMarketplaceListings(query: string, countryCode?: string): Promise<MarketplaceListing[]> {
+  const params = new URLSearchParams();
+  params.set('query', query);
+  if (countryCode) {
+    params.set('countryCode', countryCode);
+  }
+  return getJson<MarketplaceListing[]>(`/listings/search?${params.toString()}`);
 }
 
-export async function getMarketplaceListingsByCategory(categoryCode: string): Promise<MarketplaceListing[]> {
-  return getJson<MarketplaceListing[]>(`/listings?category=${categoryCode}`);
+export async function getMarketplaceListingsByCategory(categoryCode: string, countryCode?: string): Promise<MarketplaceListing[]> {
+  const params = new URLSearchParams();
+  params.set('categoryCode', categoryCode);
+  if (countryCode) {
+    params.set('countryCode', countryCode);
+  }
+  return getJson<MarketplaceListing[]>(`/listings/by-category?${params.toString()}`);
 }
 
-export async function getMarketplaceListingsByVertical(verticalCode: string): Promise<MarketplaceListing[]> {
-  return getJson<MarketplaceListing[]>(`/listings?vertical=${verticalCode}`);
+export async function getMarketplaceListingsByVertical(verticalCode: string, countryCode?: string): Promise<MarketplaceListing[]> {
+  const params = new URLSearchParams();
+  params.set('verticalCode', verticalCode);
+  if (countryCode) {
+    params.set('countryCode', countryCode);
+  }
+  return getJson<MarketplaceListing[]>(`/listings?${params.toString()}`);
 }
 
-export async function getMarketplaceListingsSorted(sortBy: 'price' | 'rating' | 'newest' | 'discount'): Promise<MarketplaceListing[]> {
-  return getJson<MarketplaceListing[]>(`/listings?sort=${sortBy}`);
+export async function getMarketplaceListingsSorted(sortBy: 'price' | 'rating' | 'newest' | 'discount', countryCode?: string): Promise<MarketplaceListing[]> {
+  const params = new URLSearchParams();
+  params.set('sort', sortBy);
+  if (countryCode) {
+    params.set('countryCode', countryCode);
+  }
+  return getJson<MarketplaceListing[]>(`/listings?${params.toString()}`);
 }

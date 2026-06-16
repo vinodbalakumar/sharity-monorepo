@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from '@legendapp/state/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View
 } from 'react-native';
 
@@ -12,6 +14,8 @@ import { InteriorShell } from '../../components/appShell/InteriorShell';
 import { AppLoadingIndicator } from '../../components/ui';
 import { buildDashboardDeals, buildDashboardServices, type DashboardDeal, type DashboardService } from '../home/dashboardData';
 import { getMarketplaceHome, getMarketplaceListings } from '../../services/marketplaceApi';
+import { getCurrentUser } from '../../services/userApi';
+import { appState$ } from '../../state/appState';
 import { colors, radii, spacing } from '../../theme';
 import type { MarketplaceHomeResponse, MarketplaceListing } from '../../types/marketplace';
 import type { AppRoute } from '../../types/navigation';
@@ -31,8 +35,9 @@ type LoadState = {
 
 export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: MarketplaceSwitcherScreenProps) {
   const [notice, setNotice] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string | undefined>(undefined);
   const [selectedMarketplaceCode, setSelectedMarketplaceCode] = useState<'ALL' | string>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchQuery = useSelector(appState$.marketplace.searchQuery);
   const [state, setState] = useState<LoadState>({
     dealsError: false,
     home: null,
@@ -41,9 +46,30 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
     loading: true
   });
 
+  useEffect(() => {
+    let disposed = false;
+    void getCurrentUser()
+      .then((user) => {
+        if (!disposed) {
+          setCountryCode(user.profile.countryCode ?? undefined);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          setCountryCode(undefined);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
+
   const loadMarketplaces = useCallback(async () => {
     setState((current) => ({ ...current, dealsError: false, homeError: false, loading: true }));
-    const [homeResult, listingsResult] = await Promise.allSettled([getMarketplaceHome(), getMarketplaceListings()]);
+    const [homeResult, listingsResult] = await Promise.allSettled([
+      getMarketplaceHome(countryCode ? `?countryCode=${encodeURIComponent(countryCode)}` : ''),
+      getMarketplaceListings(countryCode)
+    ]);
 
     setState({
       dealsError: listingsResult.status === 'rejected',
@@ -52,7 +78,7 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
       listings: listingsResult.status === 'fulfilled' ? listingsResult.value : [],
       loading: false
     });
-  }, []);
+  }, [countryCode]);
 
   useEffect(() => {
     loadMarketplaces();
@@ -79,37 +105,41 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
     deal.marketplaceName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  function submitSearch() {
-    const trimmedQuery = searchQuery.trim();
-    if (!trimmedQuery) {
+  const openMarketplace = useCallback((serviceCode: string) => {
+    if (serviceCode === 'DIGITAL') {
+      onNavigate('digitalMarketplace');
       return;
     }
-
-    onOpenSearch(trimmedQuery);
-  }
+    if (serviceCode === 'IMITATION_JEWELLERY') {
+      onNavigate('jewelryMarketplace');
+    }
+  }, [onNavigate]);
 
   return (
-    <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Discover trusted digital products" title="Marketplace">
+    <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} scrollable={false} subtitle="Explore the live Sharity marketplaces" title="Marketplace">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Premium Hero Section */}
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Discover Premium Digital Products</Text>
-          <Text style={styles.heroSubtitle}>Secure, verified, and trusted marketplace for digital goods</Text>
+          <Text style={styles.heroTitle}>Choose a live marketplace</Text>
+          <Text style={styles.heroSubtitle}>Digital products and imitation jewellery open into real listing pages. Everything else stays marked coming soon.</Text>
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color={colors.textMuted} />
-            <Pressable style={styles.searchInput} onPress={() => {}}>
-              <Text style={styles.searchPlaceholder}>Search products...</Text>
-            </Pressable>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={(value) => appState$.marketplace.searchQuery.set(value)}
+              placeholder="Search products..."
+              placeholderTextColor={colors.textMuted}
+              style={styles.searchInput}
+              value={searchQuery}
+            />
           </View>
         </View>
 
-        {/* Trust Badge */}
         <View style={styles.trustBadge}>
           <Ionicons name="shield-checkmark" size={16} color={colors.success} />
-          <Text style={styles.trustText}>Buyer Protection • Secure Delivery • Verified Sellers</Text>
+          <Text style={styles.trustText}>Buyer protection • secure delivery • verified sellers</Text>
         </View>
 
-        {/* Category Selector */}
         <MarketplaceSelector
           onSelectMarketplace={setSelectedMarketplaceCode}
           selectedMarketplaceCode={selectedMarketplaceCode}
@@ -120,11 +150,8 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
           <SelectedMarketplaceCard
             onBrowse={() => {
               setSelectedMarketplaceCode(selectedService.code);
-              if (selectedService.code === 'ELECTRONICS') {
-                onNavigate('electronics');
-                return;
-              }
-              setNotice(`${selectedService.name} selected. Browse featured deals below.`);
+              openMarketplace(selectedService.code);
+              setNotice(`${selectedService.name} opened. Browse the listings below.`);
             }}
             onNotify={() => setNotice(`You're on the list for ${selectedService.name}. We'll notify you when it is available.`)}
             service={selectedService}
@@ -139,11 +166,8 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
           loading={state.loading}
           onBrowse={(service) => {
             setSelectedMarketplaceCode(service.code);
-            if (service.code === 'ELECTRONICS') {
-              onNavigate('electronics');
-              return;
-            }
-            setNotice(`${service.name} selected. Browse featured deals below.`);
+            openMarketplace(service.code);
+            setNotice(`${service.name} opened. Browse the listings below.`);
           }}
           onNavigate={onNavigate}
           onRetry={loadMarketplaces}
@@ -162,9 +186,8 @@ export function MarketplaceSwitcherScreen({ onNavigate, onOpenDigitalProduct }: 
           title="Coming Soon"
         />
 
-        {/* Featured Listings Section */}
         <Text style={styles.sectionTitle}>Featured Listings</Text>
-        <Text style={styles.sectionSubtitle}>Popular digital products from verified sellers</Text>
+        <Text style={styles.sectionSubtitle}>Popular live listings from the active marketplaces</Text>
         <DealsSection
           deals={filteredDealsBySearch}
           error={state.dealsError}
@@ -240,14 +263,14 @@ function MarketplaceCard({
       {service.code === 'DIGITAL' ? (
         <Text style={styles.rulesText}>Proof/source review may be required for codes, gift cards, keys, and subscriptions.</Text>
       ) : null}
-      {service.code === 'ELECTRONICS' ? (
-        <Text style={styles.rulesText}>Seller conditions: New, Used, Refurbished.</Text>
+      {service.code === 'IMITATION_JEWELLERY' ? (
+        <Text style={styles.rulesText}>Jewellery listings include imitation gold, fashion sets, and accessory bundles.</Text>
       ) : null}
       <View style={styles.actions}>
         {service.enabled ? (
           <>
             <Pressable onPress={() => onBrowse?.(service)}>
-              <Text style={styles.actionButton}>Browse</Text>
+              <Text style={styles.actionButton}>{service.code === 'DIGITAL' ? 'Open Digital Marketplace' : 'Open Jewellery Marketplace'}</Text>
             </Pressable>
             <Text style={styles.actionButton}>View Deals</Text>
             <Pressable onPress={() => onNavigate?.('seller')}>
@@ -296,7 +319,7 @@ function DealsSection({
               <Text style={styles.badge}>{deal.badge}</Text>
               <Text style={styles.cardTitle}>{deal.title}</Text>
               <Text style={styles.cardText}>{deal.marketplaceName}</Text>
-              <Text style={styles.filterPill}>{deal.marketplaceCode === 'ELECTRONICS' ? 'Electronics' : 'Digital'}</Text>
+              <Text style={styles.filterPill}>{deal.marketplaceCode === 'JEWELLERY' ? 'Jewellery' : 'Digital'}</Text>
               <Text style={styles.cardText}>
                 {deal.originalPrice ? `${formatMoney(deal.originalPrice, deal.currencyCode)} -> ` : ''}
                 {formatMoney(deal.discountedPrice, deal.currencyCode)}
@@ -378,7 +401,7 @@ function SelectedMarketplaceCard({
         {service.enabled ? (
           <>
             <Pressable onPress={onBrowse}>
-              <Text style={styles.actionButton}>{service.code === 'ELECTRONICS' ? 'Open Electronics' : 'Browse Deals'}</Text>
+              <Text style={styles.actionButton}>{service.code === 'DIGITAL' ? 'Open Digital Marketplace' : 'Open Jewellery Marketplace'}</Text>
             </Pressable>
             <Text style={styles.actionButton}>View More</Text>
           </>

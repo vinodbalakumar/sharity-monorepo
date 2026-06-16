@@ -8,10 +8,13 @@ import { AccountSwitcherScreen } from './features/accountSwitcher/AccountSwitche
 import { AppSettingsScreen } from './features/appSettings/AppSettingsScreen';
 import { CompleteSocialRegistrationScreen } from './features/auth/CompleteSocialRegistrationScreen';
 import { CreateAccountScreen } from './features/auth/CreateAccountScreen';
+import { ForgotPasswordScreen, ResetPasswordScreen } from './features/auth/PasswordRecoveryScreen';
+import { VerifyEmailScreen } from './features/auth/VerifyEmailScreen';
 import { CartScreen } from './features/cart/CartScreen';
 import { CheckoutScreen } from './features/checkout/CheckoutScreen';
 import { DigitalProductDetailsScreen } from './features/digital/DigitalProductDetailsScreen';
 import { SplashScreen } from './features/splash/SplashScreen';
+import { DigitalMarketplaceListingsScreen } from './features/marketplace/DigitalMarketplaceListingsScreen';
 import { ElectronicsMarketplaceHomeScreen } from './features/electronics/ElectronicsMarketplaceHomeScreen';
 import { HomeScreen } from './features/home/HomeScreen';
 import { BuyerLibraryScreen } from './features/library/BuyerLibraryScreen';
@@ -19,6 +22,7 @@ import { LoginSecurityScreen } from './features/loginSecurity/LoginSecurityScree
 import { CodeRevealScreen, SecureDownloadScreen } from './features/library/SecureAccessScreens';
 import { MarketplaceSwitcherScreen } from './features/marketplace/MarketplaceSwitcherScreen';
 import { MarketplaceConfigScreen } from './features/marketplaceConfig/MarketplaceConfigScreen';
+import { JewelryMarketplaceListingsScreen } from './features/marketplace/JewelryMarketplaceListingsScreen';
 import { NotificationCenterScreen } from './features/notifications/NotificationCenterScreen';
 import { DisputeStatusScreen } from './features/orders/DisputeStatusScreen';
 import { OpenDisputeScreen } from './features/orders/OpenDisputeScreen';
@@ -45,6 +49,7 @@ import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { getRegistrationOptions } from './services/authApi';
 import { getVisitorContext, type VisitorContextResponse } from './services/publicContentApi';
 import { checkSession, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
+import { appState$ } from './state/appState';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
@@ -57,6 +62,7 @@ type RouteSnapshot = {
   electronicsProductId?: string | null;
   electronicsRoute?: boolean;
   orderId?: string | null;
+  authToken?: string | null;
   publicContentSlug?: string | null;
   receiptId?: string | null;
   refundRequestId?: string | null;
@@ -71,6 +77,15 @@ function publicRouteFromLocation(): AppRoute | null {
   const path = window.location.pathname.replace(/\/+$/, '');
   if (path === '/app/register') {
     return 'register';
+  }
+  if (path === '/app/forgot-password') {
+    return 'forgotPassword';
+  }
+  if (path === '/app/reset-password') {
+    return 'resetPassword';
+  }
+  if (path === '/app/verify-email') {
+    return 'verifyEmail';
   }
   if (path === '/app/complete-registration') {
     return 'completeSocialRegistration';
@@ -136,6 +151,10 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
       return { route: 'home' };
     case '/app/marketplaces':
       return { route: 'marketplaces' };
+    case '/app/marketplace/digital':
+      return { route: 'digitalMarketplace' };
+    case '/app/marketplace/jewellery':
+      return { route: 'jewelryMarketplace' };
     case '/app/electronics':
       return { route: 'electronics' };
     case '/app/cart':
@@ -160,6 +179,12 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
       return { route: 'openDispute', orderId: query.get('orderId'), refundRequestId: query.get('refundRequestId') };
     case '/app/orders/dispute-status':
       return { route: 'disputeStatus', orderId: query.get('orderId'), disputeId: query.get('disputeId') };
+    case '/app/forgot-password':
+      return { route: 'forgotPassword' };
+    case '/app/reset-password':
+      return { route: 'resetPassword', authToken: query.get('token') };
+    case '/app/verify-email':
+      return { route: 'verifyEmail', authToken: query.get('token') };
     case '/app/notifications':
       return { route: 'notifications' };
     case '/app/app-settings':
@@ -212,6 +237,10 @@ function snapshotToPath(snapshot: RouteSnapshot): string {
       return '/app/home';
     case 'marketplaces':
       return '/app/marketplaces';
+    case 'digitalMarketplace':
+      return '/app/marketplace/digital';
+    case 'jewelryMarketplace':
+      return '/app/marketplace/jewellery';
     case 'electronics':
       return '/app/electronics';
     case 'cart':
@@ -268,6 +297,12 @@ function snapshotToPath(snapshot: RouteSnapshot): string {
       return `/app/${publicSectionFromSlug(snapshot.publicContentSlug ?? 'terms')}/${snapshot.publicContentSlug ?? 'terms'}`;
     case 'register':
       return '/app/register';
+    case 'forgotPassword':
+      return '/app/forgot-password';
+    case 'resetPassword':
+      return `/app/reset-password${snapshot.authToken ? `?token=${encodeURIComponent(snapshot.authToken)}` : ''}`;
+    case 'verifyEmail':
+      return `/app/verify-email${snapshot.authToken ? `?token=${encodeURIComponent(snapshot.authToken)}` : ''}`;
     case 'completeSocialRegistration':
       return '/app/complete-registration';
     default:
@@ -294,6 +329,7 @@ export default function App() {
   const [refundRequestId, setRefundRequestId] = useState<string | null>(null);
   const [disputeId, setDisputeId] = useState<string | null>(null);
   const [secureAccessId, setSecureAccessId] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [socialProvider] = useState<'Google'>('Google');
   const [isTakingLonger, setIsTakingLonger] = useState(false);
   const [visitorContext, setVisitorContext] = useState<VisitorContextResponse | null>(null);
@@ -309,6 +345,7 @@ export default function App() {
       digitalProductId,
       electronicsProductId,
       orderId,
+      authToken,
       publicContentSlug,
       receiptId,
       refundRequestId,
@@ -327,7 +364,7 @@ export default function App() {
     if (!historyState || historyState.route !== route) {
       window.history.replaceState(snapshot, '', nextPath);
     }
-  }, [digitalProductId, disputeId, electronicsProductId, orderId, publicContentSlug, receiptId, refundRequestId, route, secureAccessId]);
+  }, [authToken, digitalProductId, disputeId, electronicsProductId, orderId, publicContentSlug, receiptId, refundRequestId, route, secureAccessId]);
 
   function startBrowserLogin() {
     clearLogoutOverride();
@@ -372,6 +409,9 @@ export default function App() {
         }
         if (locationSnapshot?.route === 'publicContent') {
           setPublicContentSlug(locationSnapshot.publicContentSlug ?? 'terms');
+        }
+        if (locationSnapshot?.route === 'forgotPassword' || locationSnapshot?.route === 'resetPassword' || locationSnapshot?.route === 'verifyEmail') {
+          setAuthToken(locationSnapshot.authToken ?? null);
         }
         if (!logoutOverride && (loginSuccessReturn || session.status === 'authenticated')) {
           const nextRoute = locationSnapshot?.route ?? 'home';
@@ -468,6 +508,7 @@ export default function App() {
     setDigitalProductId(snapshot.digitalProductId ?? null);
     setElectronicsProductId(snapshot.electronicsProductId ?? null);
     setOrderId(snapshot.orderId ?? null);
+    setAuthToken(snapshot.authToken ?? null);
     setReceiptId(snapshot.receiptId ?? null);
     setRefundRequestId(snapshot.refundRequestId ?? null);
     setDisputeId(snapshot.disputeId ?? null);
@@ -484,6 +525,7 @@ export default function App() {
       electronicsProductId: snapshot?.electronicsProductId ?? electronicsProductId,
       electronicsRoute: routeValue === 'electronics',
       orderId: snapshot?.orderId ?? orderId,
+      authToken: snapshot?.authToken ?? authToken,
       publicContentSlug: snapshot?.publicContentSlug ?? publicContentSlug,
       receiptId: snapshot?.receiptId ?? receiptId,
       refundRequestId: snapshot?.refundRequestId ?? refundRequestId,
@@ -494,6 +536,9 @@ export default function App() {
   function isPublicRoute(routeValue: AppRoute) {
     return routeValue === 'welcome'
       || routeValue === 'register'
+      || routeValue === 'forgotPassword'
+      || routeValue === 'resetPassword'
+      || routeValue === 'verifyEmail'
       || routeValue === 'completeSocialRegistration'
       || routeValue === 'publicContent';
   }
@@ -510,6 +555,13 @@ export default function App() {
                 updatePublicPath('register');
                 setRoute('register');
               }}
+              onOpenMarketplace={(routeName) => {
+                setRoute(routeName);
+              }}
+              onSearchMarketplace={(query) => {
+                appState$.marketplace.searchQuery.set(query);
+                setRoute('marketplaces');
+              }}
               onSignIn={startBrowserLogin}
               onOpenPublicContent={openPublicContent}
               visitorContext={visitorContext}
@@ -523,6 +575,23 @@ export default function App() {
               }}
               onSignIn={startBrowserLogin}
               visitorContext={visitorContext}
+            />
+          ) : null}
+          {route === 'forgotPassword' ? (
+            <ForgotPasswordScreen
+              onSignIn={startBrowserLogin}
+            />
+          ) : null}
+          {route === 'resetPassword' ? (
+            <ResetPasswordScreen
+              onSignIn={startBrowserLogin}
+              resetToken={authToken}
+            />
+          ) : null}
+          {route === 'verifyEmail' ? (
+            <VerifyEmailScreen
+              onSignIn={startBrowserLogin}
+              token={authToken}
             />
           ) : null}
           {route === 'completeSocialRegistration' ? (
@@ -541,6 +610,7 @@ export default function App() {
                 setDigitalProductId(productId);
                 setRoute('digitalProduct');
               }}
+              visitorContext={visitorContext}
             />
           ) : null}
           {route === 'marketplaces' ? (
@@ -548,6 +618,24 @@ export default function App() {
               onNavigate={setRoute}
               onOpenDigitalProduct={(productId) => {
                 setDigitalProductId(productId);
+                setRoute('digitalProduct');
+              }}
+            />
+          ) : null}
+          {route === 'digitalMarketplace' ? (
+            <DigitalMarketplaceListingsScreen
+              onNavigate={setRoute}
+              onOpenListing={(listingId) => {
+                setDigitalProductId(listingId);
+                setRoute('digitalProduct');
+              }}
+            />
+          ) : null}
+          {route === 'jewelryMarketplace' ? (
+            <JewelryMarketplaceListingsScreen
+              onNavigate={setRoute}
+              onOpenListing={(listingId) => {
+                setDigitalProductId(listingId);
                 setRoute('digitalProduct');
               }}
             />

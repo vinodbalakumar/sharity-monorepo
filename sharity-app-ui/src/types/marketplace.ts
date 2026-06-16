@@ -5,6 +5,8 @@ export type MarketplaceVertical = {
   status: string;
   displayOrder: number;
   iconKey?: string;
+  imageUrl?: string | null;
+  imageKeys?: string | null;
   frontendRoute?: string;
   availableToCustomer: boolean;
   customerAccessEnabled: boolean;
@@ -21,6 +23,7 @@ export type MarketplaceCategory = {
   verticalCode: string;
   countryCode: string | null;
   iconRef: string | null;
+  imageUrl?: string | null;
   active: boolean;
 };
 
@@ -60,10 +63,26 @@ export type MarketplaceListing = {
   demoSeed: boolean;
   publicReviews: MarketplaceReview[];
   createdAt: string;
+  displayCurrencyCode?: string | null;
+  displayPriceAmount?: number | null;
+  displayOriginalPriceAmount?: number | null;
 };
 
 export type MarketplaceHomeResponse = {
   verticals: MarketplaceVertical[];
   categories: MarketplaceCategory[];
   featuredListings: MarketplaceListing[];
+  topCategories?: MarketplaceCategoryHighlight[];
+};
+
+export type MarketplaceCategoryHighlight = {
+  categoryCode: string;
+  categoryName: string;
+  slug: string;
+  verticalCode: string;
+  iconRef: string | null;
+  imageUrl: string | null;
+  soldCount: number;
+  activeCount: number;
+  maxDiscountPercent: number;
 };

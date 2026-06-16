@@ -78,7 +78,10 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
     setState((current) => ({ ...current, dealsError: false, homeError: false, loading: true }));
 
     const countryQuery = selectedCountryCode ? `?countryCode=${encodeURIComponent(selectedCountryCode)}` : '';
-    const [homeResult, listingsResult] = await Promise.allSettled([getMarketplaceHome(countryQuery), getMarketplaceListings()]);
+    const [homeResult, listingsResult] = await Promise.allSettled([
+      getMarketplaceHome(countryQuery),
+      getMarketplaceListings(selectedCountryCode || undefined)
+    ]);
 
     setState({
       dealsError: listingsResult.status === 'rejected',
