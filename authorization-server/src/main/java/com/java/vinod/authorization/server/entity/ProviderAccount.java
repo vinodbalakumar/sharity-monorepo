@@ -66,6 +66,12 @@ public class ProviderAccount {
     @Column(name = "charges_enabled", nullable = false)
     private boolean chargesEnabled;
 
+    @Column(name = "seller_rating", precision = 3, scale = 2)
+    private java.math.BigDecimal sellerRating;
+
+    @Column(name = "completed_orders", nullable = false)
+    private Integer completedOrders = 0;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
