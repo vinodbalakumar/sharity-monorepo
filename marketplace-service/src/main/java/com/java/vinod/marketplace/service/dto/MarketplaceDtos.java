@@ -111,9 +111,23 @@ public final class MarketplaceDtos {
                                   boolean active, int sortOrder) {
     }
 
+    public record SubcategoryHighlightResponse(String subcategoryCode, String subcategoryName,
+                                               String categoryName, int discountPercentage,
+                                               String listingImageUrl, String listingTitle,
+                                               BigDecimal originalPrice, BigDecimal discountedPrice,
+                                               String currencyCode) {
+    }
+
+    public record SellerHighlightResponse(String sellerPublicId, String sellerName,
+                                          BigDecimal sellerRating, int completedOrders,
+                                          List<ListingResponse> listings) {
+    }
+
     public record HomeResponse(List<VerticalResponse> verticals, List<CategoryResponse> categories,
                                List<ListingResponse> featuredListings,
-                               List<CategoryHighlightResponse> topCategories) {
+                               List<CategoryHighlightResponse> topCategories,
+                               List<SubcategoryHighlightResponse> discountedSubcategories,
+                               List<SellerHighlightResponse> topRatedSellers) {
     }
 
     public record ListingRequest(@NotBlank String title, String description, String categoryCode,

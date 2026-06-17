@@ -33,6 +33,8 @@ public class MarketplaceCategory {
     private String countryCode;
     @Column(name = "icon_ref", length = 255)
     private String iconRef;
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
     @Column(nullable = false)
     private boolean active;
     @Column(name = "display_order", nullable = false)

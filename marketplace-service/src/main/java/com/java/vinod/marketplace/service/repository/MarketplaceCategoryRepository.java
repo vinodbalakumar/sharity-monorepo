@@ -4,6 +4,7 @@ import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MarketplaceCategoryRepository extends JpaRepository<MarketplaceCategory, Long> {
     List<MarketplaceCategory> findByActiveTrueOrderByDisplayOrderAscCategoryNameAsc();
@@ -17,4 +18,6 @@ public interface MarketplaceCategoryRepository extends JpaRepository<Marketplace
     List<MarketplaceCategory> findByActiveTrueAndVerticalCodeAndCountryCodeIsNullOrderByDisplayOrderAscCategoryNameAsc(String verticalCode);
 
     List<MarketplaceCategory> findByActiveTrueAndVerticalCodeAndCountryCodeOrderByDisplayOrderAscCategoryNameAsc(String verticalCode, String countryCode);
+
+    Optional<MarketplaceCategory> findByCategoryCode(String categoryCode);
 }

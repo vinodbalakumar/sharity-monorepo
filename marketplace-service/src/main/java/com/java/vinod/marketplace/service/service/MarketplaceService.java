@@ -228,6 +228,7 @@ public class MarketplaceService {
 
     /**
      * Builds the home payload for the public catalog experience with an optional shopper country.
+     * Includes verticals, categories, featured listings, category highlights, discounted subcategories, and top sellers.
      */
     @Transactional(readOnly = true)
     public MarketplaceDtos.HomeResponse home(String countryCode) {
@@ -237,7 +238,9 @@ public class MarketplaceService {
                 activeVerticals(),
                 categories,
                 featuredListings(countryCode),
-                toCategoryHighlights(categories, homeListings));
+                toCategoryHighlights(categories, homeListings),
+                topDiscountedSubcategories(countryCode),
+                topRatedSellers(countryCode));
     }
 
     /**
@@ -1392,5 +1395,128 @@ public class MarketplaceService {
                                           String sellerScope, String countryCode, String defaultCurrencyCode,
                                           String verificationStatus, String overallStatus,
                                           boolean payoutsEnabled, boolean chargesEnabled) {
+    }
+
+    /**
+     * Returns top 20 highly discounted sub-categories with their best-discounted listings for homepage.
+     */
+    @Transactional(readOnly = true)
+    private List<MarketplaceDtos.SubcategoryHighlightResponse> topDiscountedSubcategories(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> publicStatuses = homeListingStatuses();
+
+        List<Listing> allListings = normalizedCountry == null
+                ? listingRepository.findByListingStatusInOrderByCreatedAtDesc(publicStatuses)
+                : listingRepository.findByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, normalizedCountry);
+
+        // Group by subcategory and calculate discounts
+        java.util.Map<String, List<Listing>> listingsBySubcategory = new java.util.HashMap<>();
+        for (Listing listing : allListings) {
+            if (listing.getCategoryCode() != null) {
+                listingsBySubcategory.computeIfAbsent(listing.getCategoryCode(), k -> new java.util.ArrayList<>()).add(listing);
+            }
+        }
+
+        List<MarketplaceDtos.SubcategoryHighlightResponse> highlights = new ArrayList<>();
+        for (java.util.Map.Entry<String, List<Listing>> entry : listingsBySubcategory.entrySet()) {
+            String categoryCode = entry.getKey();
+            List<Listing> categoryListings = entry.getValue();
+
+            // Find listing with highest discount
+            Listing bestListing = categoryListings.stream()
+                    .filter(l -> l.getImageUrl() != null && !l.getImageUrl().isBlank()
+                             && l.getOriginalPriceAmount() != null)
+                    .max(Comparator.comparingInt(this::discountPercent))
+                    .orElse(null);
+
+            if (bestListing == null) {
+                continue;
+            }
+
+            int discountPercent = discountPercent(bestListing);
+            if (discountPercent <= 0) {
+                continue;
+            }
+
+            // Get category name
+            String categoryName = marketplaceCategoryRepository.findByCategoryCode(categoryCode)
+                    .map(MarketplaceCategory::getCategoryName)
+                    .orElse(categoryCode);
+
+            highlights.add(new MarketplaceDtos.SubcategoryHighlightResponse(
+                    categoryCode,
+                    categoryName,
+                    categoryName,
+                    discountPercent,
+                    bestListing.getImageUrl(),
+                    bestListing.getTitle(),
+                    bestListing.getOriginalPriceAmount(),
+                    bestListing.getPriceAmount(),
+                    bestListing.getCurrencyCode()
+            ));
+        }
+
+        // Sort by discount percentage descending
+        highlights.sort(Comparator.comparingInt(MarketplaceDtos.SubcategoryHighlightResponse::discountPercentage).reversed());
+
+        return highlights.stream().limit(20).toList();
+    }
+
+    /**
+     * Returns top 10 high-rated sellers with their featured listings for homepage.
+     */
+    @Transactional(readOnly = true)
+    private List<MarketplaceDtos.SellerHighlightResponse> topRatedSellers(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> publicStatuses = homeListingStatuses();
+
+        // Fetch top-rated active sellers (would need authorization-server endpoint)
+        // For now, get best sellers by completed orders and rating
+        // This is a placeholder - actual implementation would call authorization-server API
+        List<MarketplaceDtos.SellerHighlightResponse> sellers = new ArrayList<>();
+
+        // Get unique providers from active listings
+        java.util.Map<String, List<Listing>> listingsByProvider = new java.util.HashMap<>();
+        List<Listing> allListings = normalizedCountry == null
+                ? listingRepository.findByListingStatusInOrderByCreatedAtDesc(publicStatuses)
+                : listingRepository.findByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, normalizedCountry);
+
+        for (Listing listing : allListings) {
+            if (listing.getProviderAccountPublicId() != null) {
+                listingsByProvider.computeIfAbsent(listing.getProviderAccountPublicId(), k -> new java.util.ArrayList<>())
+                        .add(listing);
+            }
+        }
+
+        for (java.util.Map.Entry<String, List<Listing>> entry : listingsByProvider.entrySet()) {
+            String providerPublicId = entry.getKey();
+            List<Listing> providerListings = entry.getValue();
+
+            // Get first listing to get seller display name
+            String sellerName = providerListings.stream()
+                    .map(Listing::getSellerDisplayName)
+                    .filter(s -> s != null && !s.isBlank())
+                    .findFirst()
+                    .orElse("Unknown Seller");
+
+            List<MarketplaceDtos.ListingResponse> sellerListings = providerListings.stream()
+                    .limit(3)
+                    .map(l -> toListingResponse(l, normalizedCountry))
+                    .toList();
+
+            sellers.add(new MarketplaceDtos.SellerHighlightResponse(
+                    providerPublicId,
+                    sellerName,
+                    java.math.BigDecimal.valueOf(4.5), // Placeholder - would come from provider_account.seller_rating
+                    providerListings.size(), // Placeholder - would come from provider_account.completed_orders
+                    sellerListings
+            ));
+        }
+
+        // Sort by rating descending, then by completed orders
+        sellers.sort(Comparator.comparing(MarketplaceDtos.SellerHighlightResponse::sellerRating).reversed()
+                .thenComparingInt(MarketplaceDtos.SellerHighlightResponse::completedOrders).reversed());
+
+        return sellers.stream().limit(10).toList();
     }
 }

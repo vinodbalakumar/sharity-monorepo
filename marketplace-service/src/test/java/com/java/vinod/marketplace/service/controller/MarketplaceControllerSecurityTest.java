@@ -134,6 +134,8 @@ class MarketplaceControllerSecurityTest {
                         true, true, true, true, true)),
                 List.of(new MarketplaceDtos.CategoryResponse(1L, "GROCERY", "Grocery", "grocery", "GROCERY", "USA", "shopping_basket", null, true)),
                 List.of(),
+                List.of(),
+                List.of(),
                 List.of()));
 
         mockMvc.perform(get("/api/v1/marketplace/home"))
