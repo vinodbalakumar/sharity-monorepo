@@ -73,6 +73,8 @@ export type MarketplaceHomeResponse = {
   categories: MarketplaceCategory[];
   featuredListings: MarketplaceListing[];
   topCategories?: MarketplaceCategoryHighlight[];
+  discountedSubcategories?: SubcategoryHighlight[];
+  topRatedSellers?: SellerHighlight[];
 };
 
 export type MarketplaceCategoryHighlight = {
@@ -85,4 +87,24 @@ export type MarketplaceCategoryHighlight = {
   soldCount: number;
   activeCount: number;
   maxDiscountPercent: number;
+};
+
+export type SubcategoryHighlight = {
+  subcategoryCode: string;
+  subcategoryName: string;
+  categoryName: string;
+  discountPercentage: number;
+  listingImageUrl: string | null;
+  listingTitle: string;
+  originalPrice: number;
+  discountedPrice: number;
+  currencyCode: string;
+};
+
+export type SellerHighlight = {
+  sellerPublicId: string;
+  sellerName: string;
+  sellerRating: number;
+  completedOrders: number;
+  listings: MarketplaceListing[];
 };

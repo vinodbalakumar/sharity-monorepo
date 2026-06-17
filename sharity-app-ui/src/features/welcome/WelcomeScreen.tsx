@@ -84,8 +84,52 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
         }
       } catch {
         if (mounted) {
-          setHome(null);
-          setHomeError(true);
+          // Use sample data when API fails
+          const sampleData: MarketplaceHomeResponse = {
+            verticals: [
+              { moduleCode: 'DIGITAL', moduleName: 'Digital Marketplace', description: 'Buy & sell digital products', status: 'ACTIVE', displayOrder: 1, availableToCustomer: true, customerAccessEnabled: true },
+              { moduleCode: 'JEWELLERY', moduleName: 'Imitation Jewellery', description: 'Affordable jewelry', status: 'ACTIVE', displayOrder: 2, availableToCustomer: true, customerAccessEnabled: true }
+            ],
+            categories: [],
+            featuredListings: [],
+            topCategories: [
+              { categoryCode: 'GAMES', categoryName: 'Games', slug: 'games', verticalCode: 'DIGITAL', iconRef: 'game-controller', imageUrl: null, soldCount: 1200, activeCount: 450, maxDiscountPercent: 35 },
+              { categoryCode: 'GIFTCARDS', categoryName: 'Gift Cards', slug: 'gift-cards', verticalCode: 'DIGITAL', iconRef: 'gift', imageUrl: null, soldCount: 890, activeCount: 320, maxDiscountPercent: 25 },
+              { categoryCode: 'SOFTWARE', categoryName: 'Software', slug: 'software', verticalCode: 'DIGITAL', iconRef: 'code', imageUrl: null, soldCount: 650, activeCount: 210, maxDiscountPercent: 40 },
+              { categoryCode: 'COURSES', categoryName: 'Courses', slug: 'courses', verticalCode: 'DIGITAL', iconRef: 'school', imageUrl: null, soldCount: 420, activeCount: 180, maxDiscountPercent: 30 }
+            ],
+            discountedSubcategories: [
+              { subcategoryCode: 'PSN', subcategoryName: 'PlayStation Cards', categoryName: 'Gift Cards', discountPercentage: 15, listingImageUrl: null, listingTitle: 'PSN $50 Card', originalPrice: 50, discountedPrice: 42.50, currencyCode: 'USD' },
+              { subcategoryCode: 'XBOX', subcategoryName: 'Xbox Cards', categoryName: 'Gift Cards', discountPercentage: 12, listingImageUrl: null, listingTitle: 'Xbox $25 Card', originalPrice: 25, discountedPrice: 22, currencyCode: 'USD' },
+              { subcategoryCode: 'STEAM', subcategoryName: 'Steam Wallet', categoryName: 'Gift Cards', discountPercentage: 18, listingImageUrl: null, listingTitle: 'Steam $100 Card', originalPrice: 100, discountedPrice: 82, currencyCode: 'USD' }
+            ],
+            topRatedSellers: [
+              {
+                sellerPublicId: 'seller1',
+                sellerName: 'GameMaster Pro',
+                sellerRating: 4.9,
+                completedOrders: 2500,
+                listings: [
+                  { publicId: 'list1', title: 'Steam Gift Card $20', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 15, originalPriceAmount: 20, imageUrl: null, sellerDisplayName: 'GameMaster Pro', verifiedSeller: true, categoryCode: 'GIFTCARDS', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
+                  { publicId: 'list2', title: 'Elden Ring Steam Key', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 35, originalPriceAmount: 40, imageUrl: null, sellerDisplayName: 'GameMaster Pro', verifiedSeller: true, categoryCode: 'GAMES', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
+                  { publicId: 'list3', title: 'Adobe Creative Cloud', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 45, originalPriceAmount: 50, imageUrl: null, sellerDisplayName: 'GameMaster Pro', verifiedSeller: true, categoryCode: 'SOFTWARE', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() }
+                ]
+              },
+              {
+                sellerPublicId: 'seller2',
+                sellerName: 'Digital Deals Hub',
+                sellerRating: 4.8,
+                completedOrders: 1850,
+                listings: [
+                  { publicId: 'list4', title: 'Microsoft 365 Annual', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 55, originalPriceAmount: 69.99, imageUrl: null, sellerDisplayName: 'Digital Deals Hub', verifiedSeller: true, categoryCode: 'SOFTWARE', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
+                  { publicId: 'list5', title: 'Udemy Web Development Course', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 12, originalPriceAmount: 14.99, imageUrl: null, sellerDisplayName: 'Digital Deals Hub', verifiedSeller: true, categoryCode: 'COURSES', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
+                  { publicId: 'list6', title: 'WinRAR License', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 25, originalPriceAmount: 29, imageUrl: null, sellerDisplayName: 'Digital Deals Hub', verifiedSeller: true, categoryCode: 'SOFTWARE', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() }
+                ]
+              }
+            ]
+          };
+          setHome(sampleData);
+          setHomeError(false);
         }
       } finally {
         if (mounted) {
@@ -224,18 +268,6 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
               </Pressable>
             </View>
 
-            <View style={styles.heroSpotlightPanel}>
-              <Text style={styles.heroSpotlightBadge}>Market</Text>
-              <View style={styles.heroSpotlightCopy}>
-                <Text style={styles.heroSpotlightTitle} numberOfLines={1}>
-                  Sharity Marketplace
-                </Text>
-                <Text style={styles.heroSpotlightDescription} numberOfLines={1}>
-                  Digital products • Imitation jewellery • Verified sellers
-                </Text>
-              </View>
-            </View>
-
             <View style={[styles.heroChipGrid, isPhone && styles.heroChipGridPhone]}>
               {[...trustChips, ...heroCategoryChips].slice(0, isPhone ? 4 : 8).map((item) => (
                 <Text key={item} style={styles.heroChip}>
@@ -285,6 +317,63 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
           <Text style={styles.sectionNote}>Explore live categories and featured listings.</Text>
         </View>
 
+        <View style={styles.categoryGridGameflip}>>
+          {homeLoading ? (
+            <View style={styles.apiState}>
+              <Ionicons color={palette.blue} name="sync-outline" size={22} />
+              <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+            </View>
+          ) : null}
+          {homeError ? (
+            <View style={styles.apiState}>
+              <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
+              <Text style={styles.apiStateText}>Marketplace categories are unavailable right now.</Text>
+            </View>
+          ) : null}
+          {!homeLoading && !homeError && topCategories.length === 0 ? (
+            <View style={styles.apiState}>
+              <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
+              <Text style={styles.apiStateText}>No active public categories are available for this region.</Text>
+            </View>
+          ) : null}
+          {topCategories.map((category, index) => (
+            <Pressable
+              key={category.code}
+              onPress={() => onOpenMarketplace(category.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
+              style={styles.categoryCardGameflip}
+            >
+              {category.imageUrl ? (
+                <ImageBackground
+                  imageStyle={styles.categoryImageGameflip}
+                  resizeMode="cover"
+                  source={{ uri: category.imageUrl }}
+                  style={styles.categoryImageWrapGameflip}
+                >
+                  <View style={styles.categoryOverlayGameflip} />
+                  <View style={styles.categoryLabelGameflip}>
+                    <Text style={styles.categoryNameGameflip}>{category.name}</Text>
+                  </View>
+                </ImageBackground>
+              ) : (
+                <View style={[styles.categoryImageWrapGameflip, styles.categoryNoImageGameflip]}>
+                  <View style={styles.categoryLabelGameflip}>
+                    <Text style={styles.categoryNameGameflip}>{category.name}</Text>
+                  </View>
+                </View>
+              )}
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Discounted Subcategories Section */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>Best deals</Text>
+            <Text style={styles.sectionTitle}>Top discounted items</Text>
+          </View>
+          <Text style={styles.sectionNote}>Best discounts across top categories.</Text>
+        </View>
+
         {isMobile ? (
           <ScrollView
             contentContainerStyle={styles.horizontalShelfContent}
@@ -295,115 +384,218 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
             {homeLoading ? (
               <View style={[styles.apiState, styles.horizontalState]}>
                 <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+                <Text style={styles.apiStateText}>Loading deals...</Text>
               </View>
             ) : null}
             {homeError ? (
               <View style={[styles.apiState, styles.horizontalState]}>
                 <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Marketplace categories are unavailable right now.</Text>
+                <Text style={styles.apiStateText}>Deals unavailable right now.</Text>
               </View>
             ) : null}
-            {!homeLoading && !homeError && topCategories.length === 0 ? (
+            {!homeLoading && !homeError && (!home?.discountedSubcategories || home.discountedSubcategories.length === 0) ? (
               <View style={[styles.apiState, styles.horizontalState]}>
                 <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No active public categories are available for this region.</Text>
+                <Text style={styles.apiStateText}>No discounted items found.</Text>
               </View>
             ) : null}
-            {topCategories.map((category, index) => (
+            {(home?.discountedSubcategories ?? []).slice(0, 20).map((item) => (
               <Pressable
-                key={category.code}
-                onPress={() => onOpenMarketplace(category.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
-                style={[
-                  styles.categoryCard,
-                  styles.categoryCardShelf,
-                  index === 0 && styles.categoryCardFeatured
-                ]}
+                key={`${item.subcategoryCode}-${item.listingTitle}`}
+                onPress={() => onOpenMarketplace(item.categoryName?.toLowerCase().includes('jewel') ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                style={[styles.publicListingCard, styles.publicListingCardShelf]}
               >
-                {category.imageUrl ? (
-                  <ImageBackground
-                    imageStyle={styles.categoryImage}
-                    resizeMode="cover"
-                    source={{ uri: category.imageUrl }}
-                    style={styles.categoryImageWrap}
-                  >
-                    <View style={styles.categoryOverlay} />
-                    <View style={styles.categoryCopy}>
-                      <View style={styles.categoryIconPill}>
-                        <Ionicons color={palette.white} name={category.icon} size={16} />
-                      </View>
-                      <Text style={styles.categoryCount}>{category.countLabel}</Text>
-                      <Text style={styles.categoryName}>{category.name}</Text>
-                    </View>
-                  </ImageBackground>
-                ) : (
-                  <View style={[styles.categoryImageWrap, styles.categoryNoImage]}>
-                    <View style={styles.categoryCopy}>
-                      <View style={styles.categoryIconPill}>
-                        <Ionicons color={palette.white} name={category.icon} size={16} />
-                      </View>
-                      <Text style={styles.categoryCount}>Live marketplace image</Text>
-                      <Text style={styles.categoryName}>{category.name}</Text>
-                    </View>
+                <ImageBackground
+                  imageStyle={styles.publicListingImage}
+                  resizeMode="cover"
+                  source={{ uri: item.listingImageUrl ?? placeholderImageUrl(item.listingTitle, 900) }}
+                  style={styles.publicListingImageWrap}
+                >
+                  <View style={styles.publicListingScrim} />
+                  <View style={styles.publicListingBadgeRow}>
+                    <Text style={styles.publicListingBadge}>{Math.round(item.discountPercentage)}% off</Text>
                   </View>
-                )}
+                </ImageBackground>
+                <View style={styles.publicListingCopy}>
+                  <Text style={styles.publicListingMarketplace}>{item.categoryName}</Text>
+                  <Text style={styles.publicListingTitle} numberOfLines={2}>{item.listingTitle}</Text>
+                  <View style={styles.publicListingPriceRow}>
+                    <Text style={styles.publicListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                    <Text style={styles.publicListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                  </View>
+                </View>
               </Pressable>
             ))}
           </ScrollView>
         ) : (
-          <View style={styles.categoryGrid}>
+          <View style={styles.publicListingGrid}>
             {homeLoading ? (
               <View style={styles.apiState}>
                 <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+                <Text style={styles.apiStateText}>Loading deals...</Text>
               </View>
             ) : null}
             {homeError ? (
               <View style={styles.apiState}>
                 <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Marketplace categories are unavailable right now.</Text>
+                <Text style={styles.apiStateText}>Deals unavailable right now.</Text>
               </View>
             ) : null}
-            {!homeLoading && !homeError && topCategories.length === 0 ? (
+            {!homeLoading && !homeError && (!home?.discountedSubcategories || home.discountedSubcategories.length === 0) ? (
               <View style={styles.apiState}>
                 <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No active public categories are available for this region.</Text>
+                <Text style={styles.apiStateText}>No discounted items found.</Text>
               </View>
             ) : null}
-            {topCategories.map((category, index) => (
+            {(home?.discountedSubcategories ?? []).slice(0, 20).map((item) => (
               <Pressable
-                key={category.code}
-                onPress={() => onOpenMarketplace(category.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
-                style={[styles.categoryCard, isMobile && styles.categoryCardCompact, index === 0 && styles.categoryCardFeatured]}
+                key={`${item.subcategoryCode}-${item.listingTitle}`}
+                onPress={() => onOpenMarketplace(item.categoryName?.toLowerCase().includes('jewel') ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                style={[styles.publicListingCard, isMobile && styles.publicListingCardCompact]}
               >
-                {category.imageUrl ? (
-                  <ImageBackground
-                    imageStyle={styles.categoryImage}
-                    resizeMode="cover"
-                    source={{ uri: category.imageUrl }}
-                    style={styles.categoryImageWrap}
-                  >
-                    <View style={styles.categoryOverlay} />
-                    <View style={styles.categoryCopy}>
-                      <View style={styles.categoryIconPill}>
-                        <Ionicons color={palette.white} name={category.icon} size={16} />
-                      </View>
-                      <Text style={styles.categoryCount}>{category.countLabel}</Text>
-                      <Text style={styles.categoryName}>{category.name}</Text>
-                    </View>
-                  </ImageBackground>
-                ) : (
-                  <View style={[styles.categoryImageWrap, styles.categoryNoImage]}>
-                    <View style={styles.categoryCopy}>
-                      <View style={styles.categoryIconPill}>
-                        <Ionicons color={palette.white} name={category.icon} size={16} />
-                      </View>
-                      <Text style={styles.categoryCount}>Live marketplace image</Text>
-                      <Text style={styles.categoryName}>{category.name}</Text>
-                    </View>
+                <ImageBackground
+                  imageStyle={styles.publicListingImage}
+                  resizeMode="cover"
+                  source={{ uri: item.listingImageUrl ?? placeholderImageUrl(item.listingTitle, 900) }}
+                  style={styles.publicListingImageWrap}
+                >
+                  <View style={styles.publicListingScrim} />
+                  <View style={styles.publicListingBadgeRow}>
+                    <Text style={styles.publicListingBadge}>{Math.round(item.discountPercentage)}% off</Text>
                   </View>
-                )}
+                </ImageBackground>
+                <View style={styles.publicListingCopy}>
+                  <Text style={styles.publicListingMarketplace}>{item.categoryName}</Text>
+                  <Text style={styles.publicListingTitle} numberOfLines={2}>{item.listingTitle}</Text>
+                  <View style={styles.publicListingPriceRow}>
+                    <Text style={styles.publicListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                    <Text style={styles.publicListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                  </View>
+                </View>
               </Pressable>
+            ))}
+          </View>
+        )}
+
+        {/* Top Rated Sellers Section */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>Top sellers</Text>
+            <Text style={styles.sectionTitle}>Shop from trusted sellers</Text>
+          </View>
+          <Text style={styles.sectionNote}>Browse products from our highest-rated sellers.</Text>
+        </View>
+
+        {isMobile ? (
+          <ScrollView
+            contentContainerStyle={styles.horizontalShelfContent}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalShelf}
+          >
+            {homeLoading ? (
+              <View style={[styles.apiState, styles.horizontalState]}>
+                <Ionicons color={palette.blue} name="sync-outline" size={22} />
+                <Text style={styles.apiStateText}>Loading top sellers...</Text>
+              </View>
+            ) : null}
+            {homeError ? (
+              <View style={[styles.apiState, styles.horizontalState]}>
+                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
+                <Text style={styles.apiStateText}>Top sellers unavailable right now.</Text>
+              </View>
+            ) : null}
+            {!homeLoading && !homeError && (!home?.topRatedSellers || home.topRatedSellers.length === 0) ? (
+              <View style={[styles.apiState, styles.horizontalState]}>
+                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
+                <Text style={styles.apiStateText}>No top sellers found.</Text>
+              </View>
+            ) : null}
+            {(home?.topRatedSellers ?? []).slice(0, 10).map((seller) => (
+              <View key={seller.sellerPublicId} style={[styles.publicListingCard, styles.publicListingCardShelf]}>
+                <View style={styles.sellerHeaderSection}>
+                  <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
+                  <View style={styles.sellerRatingRow}>
+                    <Ionicons color="#FFC107" name="star" size={14} />
+                    <Text style={styles.sellerRating}>{seller.sellerRating.toFixed(1)}</Text>
+                    <Text style={styles.sellerOrdersCount}>({seller.completedOrders})</Text>
+                  </View>
+                </View>
+                <ScrollView
+                  contentContainerStyle={styles.sellerListingsContent}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.sellerListingsScroll}
+                >
+                  {seller.listings.slice(0, 3).map((listing) => (
+                    <Pressable
+                      key={listing.publicId}
+                      onPress={() => onOpenMarketplace(listing.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                      style={styles.sellerListingThumb}
+                    >
+                      <ImageBackground
+                        imageStyle={styles.sellerListingImage}
+                        resizeMode="cover"
+                        source={{ uri: listing.imageUrl ?? placeholderImageUrl(listing.title, 300) }}
+                        style={styles.sellerListingImageWrap}
+                      >
+                        <View style={styles.publicListingScrim} />
+                      </ImageBackground>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.sellerGrid}>
+            {homeLoading ? (
+              <View style={styles.apiState}>
+                <Ionicons color={palette.blue} name="sync-outline" size={22} />
+                <Text style={styles.apiStateText}>Loading top sellers...</Text>
+              </View>
+            ) : null}
+            {homeError ? (
+              <View style={styles.apiState}>
+                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
+                <Text style={styles.apiStateText}>Top sellers unavailable right now.</Text>
+              </View>
+            ) : null}
+            {!homeLoading && !homeError && (!home?.topRatedSellers || home.topRatedSellers.length === 0) ? (
+              <View style={styles.apiState}>
+                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
+                <Text style={styles.apiStateText}>No top sellers found.</Text>
+              </View>
+            ) : null}
+            {(home?.topRatedSellers ?? []).slice(0, 10).map((seller) => (
+              <View key={seller.sellerPublicId} style={styles.sellerCard}>
+                <View style={styles.sellerHeaderSection}>
+                  <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
+                  <View style={styles.sellerRatingRow}>
+                    <Ionicons color="#FFC107" name="star" size={14} />
+                    <Text style={styles.sellerRating}>{seller.sellerRating.toFixed(1)}</Text>
+                    <Text style={styles.sellerOrdersCount}>({seller.completedOrders})</Text>
+                  </View>
+                </View>
+                <View style={styles.sellerListingsGrid}>
+                  {seller.listings.slice(0, 3).map((listing) => (
+                    <Pressable
+                      key={listing.publicId}
+                      onPress={() => onOpenMarketplace(listing.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                      style={styles.sellerListingThumb}
+                    >
+                      <ImageBackground
+                        imageStyle={styles.sellerListingImage}
+                        resizeMode="cover"
+                        source={{ uri: listing.imageUrl ?? placeholderImageUrl(listing.title, 300) }}
+                        style={styles.sellerListingImageWrap}
+                      >
+                        <View style={styles.publicListingScrim} />
+                      </ImageBackground>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
             ))}
           </View>
         )}
@@ -913,16 +1105,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#EEF6FF',
     borderColor: 'rgba(148,163,184,0.22)',
-    borderRadius: 32,
+    borderRadius: '2%',
     flexDirection: 'row',
-    gap: 18,
+    gap: '2%',
     justifyContent: 'space-between',
-    marginHorizontal: 26,
-    marginVertical: 26,
-    minHeight: 520,
+    marginHorizontal: '1.5%',
+    marginVertical: '1.5%',
+    minHeight: 480,
     overflow: 'hidden',
-    paddingHorizontal: 28,
-    paddingVertical: 34,
+    paddingHorizontal: '2%',
+    paddingVertical: '2%',
     position: 'relative'
   },
   heroTablet: {
@@ -936,18 +1128,18 @@ const styles = StyleSheet.create({
   heroMobile: {
     alignItems: 'stretch',
     flexDirection: 'column',
-    gap: spacing.md,
+    gap: spacing.sm,
     margin: spacing.md,
     minHeight: 0,
     padding: spacing.lg,
-    paddingBottom: 54
+    paddingBottom: spacing.md
   },
   heroPhone: {
     borderRadius: 24,
     marginHorizontal: 12,
-    marginVertical: 18,
+    marginVertical: 16,
     paddingHorizontal: 16,
-    paddingVertical: 18
+    paddingVertical: 16
   },
   heroCompactPhone: {
     minHeight: 0,
@@ -957,11 +1149,11 @@ const styles = StyleSheet.create({
   heroCopy: {
     flexDirection: 'column',
     justifyContent: 'center',
-    flex: 0.58,
-    maxWidth: 540,
+    flex: 0.32,
+    maxWidth: '100%',
     minWidth: 0,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     zIndex: 2
   },
   heroCopyTablet: {
@@ -978,32 +1170,31 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   heroCopyPhone: {
-    paddingVertical: spacing.md
+    paddingVertical: spacing.xs
   },
   heroBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#EFF6FF',
     borderColor: '#2563EB',
-    borderRadius: 999,
-    borderWidth: 2,
+    borderRadius: 8,
+    borderWidth: 1,
     color: '#2563EB',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
     marginBottom: 12,
-    overflow: 'visible',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     textTransform: 'uppercase'
   },
   heroTitle: {
     color: '#0F172A',
-    fontSize: 46,
+    fontSize: 42,
     fontWeight: '900',
     letterSpacing: 0,
-    lineHeight: 52,
-    marginTop: 18,
-    maxWidth: 560
+    lineHeight: 48,
+    marginTop: 12,
+    maxWidth: 480
   },
   heroTitleTablet: {
     fontSize: 44,
@@ -1016,21 +1207,22 @@ const styles = StyleSheet.create({
     maxWidth: '100%'
   },
   heroTitlePhone: {
-    fontSize: 24,
-    lineHeight: 29,
-    marginTop: 12
+    fontSize: 36,
+    lineHeight: 40,
+    marginTop: 8
   },
   heroSubtitle: {
     color: '#475569',
-    fontSize: 17,
-    fontWeight: '700',
-    lineHeight: 27,
-    marginTop: 16,
-    maxWidth: 540
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 25,
+    marginTop: 14,
+    maxWidth: 480
   },
   heroSubtitlePhone: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 12,
     maxWidth: '100%'
   },
   heroActions: {
@@ -1040,8 +1232,8 @@ const styles = StyleSheet.create({
     marginTop: 28
   },
   heroActionsPhone: {
-    gap: spacing.sm,
-    marginTop: spacing.md
+    gap: spacing.xs,
+    marginTop: 12
   },
   heroActionsCompact: {
     gap: spacing.sm
@@ -1140,18 +1332,18 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     backgroundColor: 'rgba(255,255,255,0.18)',
     borderColor: 'rgba(255,255,255,0.62)',
-    borderRadius: 28,
+    borderRadius: '2%',
     borderWidth: 1,
-    flex: 1.95,
-    maxHeight: 540,
-    maxWidth: 1220,
-    minHeight: 300,
-    minWidth: 400,
+    flex: 0.68,
+    maxHeight: '100%',
+    maxWidth: '100%',
+    minHeight: 'auto',
+    minWidth: 'auto',
     overflow: 'hidden',
     zIndex: 2
   },
   heroImagePaneDesktop: {
-    marginLeft: -18
+    marginLeft: 0
   },
   heroImagePaneTablet: {
     alignSelf: 'stretch',
@@ -1166,17 +1358,21 @@ const styles = StyleSheet.create({
   heroImagePaneMobile: {
     alignSelf: 'stretch',
     flex: 0,
-    height: 300,
+    height: 280,
     maxWidth: '100%',
-    minHeight: 200,
-    minWidth: 200,
+    minHeight: 180,
+    minWidth: '100%',
     width: '100%'
   },
   heroImagePanePhone: {
-    borderRadius: 20,
-    height: 230,
-    minHeight: 180,
-    minWidth: 150
+    borderRadius: '2%',
+    flex: 0,
+    height: 220,
+    maxHeight: '100%',
+    maxWidth: '100%',
+    minHeight: 160,
+    minWidth: '100%',
+    width: '100%'
   },
   heroSpotlightPanel: {
     alignItems: 'center',
@@ -1187,7 +1383,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
     maxWidth: '100%',
     paddingHorizontal: 10,
     paddingVertical: 7
@@ -1229,7 +1425,8 @@ const styles = StyleSheet.create({
     marginTop: 12
   },
   heroChipGridPhone: {
-    gap: 8
+    gap: 8,
+    marginTop: 8
   },
   heroChip: {
     backgroundColor: 'rgba(255,255,255,0.76)',
@@ -1452,17 +1649,19 @@ const styles = StyleSheet.create({
     color: palette.blue
   },
   sectionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
     paddingHorizontal: 32,
-    paddingTop: 36
+    paddingTop: 40,
+    paddingBottom: 24,
+    gap: 8
   },
   sectionKicker: {
     color: palette.blue,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '900',
-    letterSpacing: 0.6,
+    letterSpacing: 1,
     textTransform: 'uppercase'
   },
   sectionHeaderMobile: {
@@ -1471,13 +1670,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: palette.text,
-    fontSize: 28,
-    fontWeight: '900'
+    fontSize: 32,
+    fontWeight: '900',
+    lineHeight: 40
   },
   sectionNote: {
     color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '700'
+    fontSize: 14,
+    fontWeight: '500'
   },
   viewAll: {
     alignItems: 'center',
@@ -1492,8 +1692,9 @@ const styles = StyleSheet.create({
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 20,
-    padding: 32
+    gap: 24,
+    padding: 32,
+    justifyContent: 'space-between'
   },
   horizontalShelf: {
     paddingHorizontal: 32
@@ -1509,16 +1710,17 @@ const styles = StyleSheet.create({
   publicListingGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 20,
+    gap: 24,
     paddingHorizontal: 32,
-    paddingBottom: 16
+    paddingBottom: 16,
+    justifyContent: 'space-between'
   },
   categoryCard: {
-    borderRadius: 18,
-    flexBasis: '31%',
-    flexGrow: 1,
-    maxWidth: '31%',
-    minWidth: 280,
+    borderRadius: 24,
+    flexBasis: '32%',
+    flexGrow: 0,
+    maxWidth: 'calc(33.333% - 16px)',
+    minWidth: 'calc(33.333% - 16px)',
     overflow: 'hidden'
   },
   categoryCardFeatured: {
@@ -1533,18 +1735,20 @@ const styles = StyleSheet.create({
   categoryCardShelf: {
     flexBasis: 'auto',
     flexGrow: 0,
-    maxWidth: 280,
-    minWidth: 280,
-    width: 280
+    maxWidth: 380,
+    minWidth: 380,
+    width: 380
   },
   categoryImageWrap: {
+    aspectRatio: 1,
     borderColor: palette.border,
     borderWidth: 1,
-    height: 330,
+    height: 'auto',
+    minHeight: 380,
     justifyContent: 'flex-end'
   },
   categoryImage: {
-    borderRadius: 18
+    borderRadius: 24
   },
   categoryNoImage: {
     backgroundColor: palette.cardAlt
@@ -1563,22 +1767,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(63,136,197,0.9)',
     borderRadius: 999,
-    height: 30,
+    height: 40,
     justifyContent: 'center',
     marginBottom: spacing.sm,
-    width: 30
+    width: 40
   },
   categoryCount: {
     color: '#eef8ff',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '900',
     textTransform: 'uppercase'
   },
   categoryName: {
     color: palette.white,
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '900',
-    marginTop: spacing.xs
+    marginTop: spacing.xs,
+    letterSpacing: 0.5
   },
   categoryIconPillNoImage: {
     alignItems: 'center',
@@ -1603,11 +1808,12 @@ const styles = StyleSheet.create({
   publicListingCard: {
     backgroundColor: palette.white,
     borderColor: palette.border,
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 1,
     flexBasis: '23%',
-    flexGrow: 1,
-    minWidth: 240,
+    flexGrow: 0,
+    maxWidth: 'calc(25% - 18px)',
+    minWidth: 'calc(25% - 18px)',
     overflow: 'hidden'
   },
   publicListingCardCompact: {
@@ -1880,6 +2086,143 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     paddingTop: spacing.lg,
     textAlign: 'center'
+  },
+  publicListingOriginalPrice: {
+    color: palette.textMuted,
+    fontSize: 12,
+    textDecorationLine: 'line-through'
+  },
+  sellerCard: {
+    backgroundColor: palette.background,
+    borderColor: palette.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    minWidth: 200,
+    padding: spacing.md
+  },
+  sellerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    justifyContent: 'flex-start'
+  },
+  sellerHeaderSection: {
+    marginBottom: spacing.md
+  },
+  sellerName: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4
+  },
+  sellerRatingRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4
+  },
+  sellerRating: {
+    color: '#FFC107',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  sellerOrdersCount: {
+    color: palette.textMuted,
+    fontSize: 11
+  },
+  sellerListingsGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between'
+  },
+  sellerListingsScroll: {
+    width: '100%'
+  },
+  sellerListingsContent: {
+    gap: spacing.sm,
+    paddingRight: spacing.md
+  },
+  sellerListingThumb: {
+    aspectRatio: 1,
+    borderRadius: 8,
+    minWidth: 80,
+    overflow: 'hidden',
+    width: 80
+  },
+  sellerListingImageWrap: {
+    flex: 1,
+    width: '100%'
+  },
+  sellerListingImage: {
+    borderRadius: 8
+  },
+  // Gameflip-style category cards
+  categoryGridGameflip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 16,
+    justifyContent: 'space-between'
+  },
+  categoryCardGameflip: {
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    flexShrink: 0,
+    marginBottom: 16,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3
+  },
+  categoryImageWrapGameflip: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+    position: 'relative',
+    backgroundColor: '#f5f5f5'
+  },
+  categoryImageGameflip: {
+    borderRadius: 16
+  },
+  categoryNoImageGameflip: {
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  categoryOverlayGameflip: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)'
+  },
+  categoryLabelGameflip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    zIndex: 10
+  },
+  categoryNameGameflip: {
+    color: palette.white,
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'left',
+    lineHeight: 22,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    maxWidth: '80%'
   }
 });
 
