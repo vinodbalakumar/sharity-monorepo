@@ -62,6 +62,9 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
   const isPhone = viewportWidth < 560;
   const isCompactHero = viewportWidth < 900;
   const isTabletHero = viewportWidth >= 900 && viewportWidth < 1180;
+  const isCompactMarketplaceGrid = viewportWidth >= 768 && viewportWidth < 1024;
+  const categoryColumns = viewportWidth < 360 ? 1 : viewportWidth < 1024 ? 2 : 4;
+  const categoryGutter = viewportWidth < 560 ? 8 : 6;
   const [searchQuery, setSearchQuery] = useState('');
   const [heroCarouselIndex, setHeroCarouselIndex] = useState(0);
   const [home, setHome] = useState<MarketplaceHomeResponse | null>(null);
@@ -96,7 +99,11 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
               { categoryCode: 'GAMES', categoryName: 'Games', slug: 'games', verticalCode: 'DIGITAL', iconRef: 'game-controller', imageUrl: null, soldCount: 1200, activeCount: 450, maxDiscountPercent: 35 },
               { categoryCode: 'GIFTCARDS', categoryName: 'Gift Cards', slug: 'gift-cards', verticalCode: 'DIGITAL', iconRef: 'gift', imageUrl: null, soldCount: 890, activeCount: 320, maxDiscountPercent: 25 },
               { categoryCode: 'SOFTWARE', categoryName: 'Software', slug: 'software', verticalCode: 'DIGITAL', iconRef: 'code', imageUrl: null, soldCount: 650, activeCount: 210, maxDiscountPercent: 40 },
-              { categoryCode: 'COURSES', categoryName: 'Courses', slug: 'courses', verticalCode: 'DIGITAL', iconRef: 'school', imageUrl: null, soldCount: 420, activeCount: 180, maxDiscountPercent: 30 }
+              { categoryCode: 'COURSES', categoryName: 'Courses', slug: 'courses', verticalCode: 'DIGITAL', iconRef: 'school', imageUrl: null, soldCount: 420, activeCount: 180, maxDiscountPercent: 30 },
+              { categoryCode: 'EARRINGS', categoryName: 'Earrings', slug: 'earrings', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 680, activeCount: 290, maxDiscountPercent: 22 },
+              { categoryCode: 'NECKLACES', categoryName: 'Necklaces', slug: 'necklaces', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 520, activeCount: 210, maxDiscountPercent: 18 },
+              { categoryCode: 'RINGS', categoryName: 'Rings', slug: 'rings', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 430, activeCount: 175, maxDiscountPercent: 25 },
+              { categoryCode: 'BANGLES', categoryName: 'Bangles', slug: 'bangles', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 380, activeCount: 145, maxDiscountPercent: 20 }
             ],
             discountedSubcategories: [
               { subcategoryCode: 'PSN', subcategoryName: 'PlayStation Cards', categoryName: 'Gift Cards', discountPercentage: 15, listingImageUrl: null, listingTitle: 'PSN $50 Card', originalPrice: 50, discountedPrice: 42.50, currencyCode: 'USD' },
@@ -210,7 +217,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         <View style={[styles.header, isCompactHero && styles.headerMobile, isPhone && styles.headerPhone]}>
-          <View style={[styles.brandWrap, isPhone && styles.brandWrapPhone]}>
+          <View style={[styles.brandWrap, isCompactHero && styles.brandWrapMobile, isPhone && styles.brandWrapPhone]}>
             <View style={styles.brandMark}>
               <Text style={styles.brandLetter}>S</Text>
             </View>
@@ -237,11 +244,11 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
             />
           </View>
 
-          <View style={[styles.headerActions, isPhone && styles.headerActionsPhone]}>
-            <Pressable onPress={onSignIn} style={[styles.signInButton, isPhone && styles.headerButtonPhone]}>
+          <View style={[styles.headerActions, isCompactHero && styles.headerActionsMobile, isPhone && styles.headerActionsPhone]}>
+            <Pressable onPress={onSignIn} style={[styles.signInButton, isCompactHero && styles.headerButtonCompact, isPhone && styles.headerButtonPhone]}>
               <Text style={styles.signInText}>Sign In</Text>
             </Pressable>
-            <Pressable onPress={onGetStarted} style={[styles.headerCta, isPhone && styles.headerButtonPhone]}>
+            <Pressable onPress={onGetStarted} style={[styles.headerCta, isCompactHero && styles.headerButtonCompact, isPhone && styles.headerButtonPhone]}>
               <Text style={styles.headerCtaText}>Get Started</Text>
             </Pressable>
           </View>
@@ -281,7 +288,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
             {currentHeroImage ? (
               <ImageBackground
                 imageStyle={styles.heroBannerImage}
-                resizeMode={isPhone ? 'contain' : 'cover'}
+                resizeMode="cover"
                 source={{ uri: currentHeroImage }}
                 style={styles.heroBannerImageWrap}
               />
@@ -311,58 +318,64 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionKicker}>Top categories</Text>
-            <Text style={styles.sectionTitle}>Browse the live catalog</Text>
+            <Text style={styles.sectionKicker}>Browse By Category</Text>
           </View>
-          <Text style={styles.sectionNote}>Explore live categories and featured listings.</Text>
         </View>
 
-        <View style={styles.categoryGridGameflip}>>
+        <View style={styles.categoryGridGameflip}>
           {homeLoading ? (
             <View style={styles.apiState}>
               <Ionicons color={palette.blue} name="sync-outline" size={22} />
-              <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+              <Text style={styles.apiStateText}>Loading categories...</Text>
             </View>
           ) : null}
           {homeError ? (
             <View style={styles.apiState}>
               <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-              <Text style={styles.apiStateText}>Marketplace categories are unavailable right now.</Text>
+              <Text style={styles.apiStateText}>Categories unavailable</Text>
             </View>
           ) : null}
           {!homeLoading && !homeError && topCategories.length === 0 ? (
             <View style={styles.apiState}>
               <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-              <Text style={styles.apiStateText}>No active public categories are available for this region.</Text>
+              <Text style={styles.apiStateText}>No categories available for this region.</Text>
             </View>
           ) : null}
-          {topCategories.map((category, index) => (
-            <Pressable
-              key={category.code}
-              onPress={() => onOpenMarketplace(category.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
-              style={styles.categoryCardGameflip}
-            >
-              {category.imageUrl ? (
-                <ImageBackground
-                  imageStyle={styles.categoryImageGameflip}
-                  resizeMode="cover"
-                  source={{ uri: category.imageUrl }}
-                  style={styles.categoryImageWrapGameflip}
-                >
-                  <View style={styles.categoryOverlayGameflip} />
-                  <View style={styles.categoryLabelGameflip}>
-                    <Text style={styles.categoryNameGameflip}>{category.name}</Text>
+          {topCategories.map((category, index) => {
+            const cardSize = Math.floor((viewportWidth - 16 - (categoryColumns - 1) * categoryGutter) / categoryColumns);
+            return (
+            <View key={category.code} style={{ width: cardSize, height: cardSize, marginBottom: 8 }}>
+              <Pressable
+                onPress={() => {
+                  const route = getMarketplaceRoute(category.verticalCode, home?.verticals ?? []);
+                  onOpenMarketplace(route);
+                }}
+                style={styles.categoryCardGameflipInnerWrapper}
+              >
+                {category.imageUrl ? (
+                  <ImageBackground
+                    imageStyle={styles.categoryImageGameflip}
+                    resizeMode="cover"
+                    source={{ uri: category.imageUrl }}
+                    style={styles.categoryImageWrapGameflip}
+                  >
+                    <View style={styles.categoryOverlayGameflip} />
+                    <View style={styles.categoryLabelGameflip}>
+                      <Text style={styles.categoryNameGameflip}>{category.name}</Text>
+                    </View>
+                  </ImageBackground>
+                ) : (
+                  <View style={[styles.categoryImageWrapGameflip, styles.categoryNoImageGameflip]}>
+                    <Ionicons color={palette.brandPrimary} name="grid-outline" size={32} />
+                    <View style={styles.categoryLabelGameflip}>
+                      <Text style={styles.categoryNameGameflip}>{category.name}</Text>
+                    </View>
                   </View>
-                </ImageBackground>
-              ) : (
-                <View style={[styles.categoryImageWrapGameflip, styles.categoryNoImageGameflip]}>
-                  <View style={styles.categoryLabelGameflip}>
-                    <Text style={styles.categoryNameGameflip}>{category.name}</Text>
-                  </View>
-                </View>
-              )}
-            </Pressable>
-          ))}
+                )}
+              </Pressable>
+            </View>
+          );
+          })}
         </View>
 
         {/* Discounted Subcategories Section */}
@@ -402,7 +415,10 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
             {(home?.discountedSubcategories ?? []).slice(0, 20).map((item) => (
               <Pressable
                 key={`${item.subcategoryCode}-${item.listingTitle}`}
-                onPress={() => onOpenMarketplace(item.categoryName?.toLowerCase().includes('jewel') ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                onPress={() => {
+                  const route = getMarketplaceRoute(item.verticalCode, home?.verticals ?? []);
+                  onOpenMarketplace(route);
+                }}
                 style={[styles.publicListingCard, styles.publicListingCardShelf]}
               >
                 <ImageBackground
@@ -450,8 +466,11 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
             {(home?.discountedSubcategories ?? []).slice(0, 20).map((item) => (
               <Pressable
                 key={`${item.subcategoryCode}-${item.listingTitle}`}
-                onPress={() => onOpenMarketplace(item.categoryName?.toLowerCase().includes('jewel') ? 'jewelryMarketplace' : 'digitalMarketplace')}
-                style={[styles.publicListingCard, isMobile && styles.publicListingCardCompact]}
+                onPress={() => {
+                  const route = getMarketplaceRoute(item.verticalCode, home?.verticals ?? []);
+                  onOpenMarketplace(route);
+                }}
+                style={[styles.publicListingCard, isCompactMarketplaceGrid && styles.publicListingCardCompactGrid]}
               >
                 <ImageBackground
                   imageStyle={styles.publicListingImage}
@@ -530,7 +549,10 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
                   {seller.listings.slice(0, 3).map((listing) => (
                     <Pressable
                       key={listing.publicId}
-                      onPress={() => onOpenMarketplace(listing.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                      onPress={() => {
+                        const route = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
+                        onOpenMarketplace(route);
+                      }}
                       style={styles.sellerListingThumb}
                     >
                       <ImageBackground
@@ -568,7 +590,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
               </View>
             ) : null}
             {(home?.topRatedSellers ?? []).slice(0, 10).map((seller) => (
-              <View key={seller.sellerPublicId} style={styles.sellerCard}>
+              <View key={seller.sellerPublicId} style={[styles.sellerCard, isCompactMarketplaceGrid && styles.sellerCardCompactGrid]}>
                 <View style={styles.sellerHeaderSection}>
                   <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
                   <View style={styles.sellerRatingRow}>
@@ -581,7 +603,10 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
                   {seller.listings.slice(0, 3).map((listing) => (
                     <Pressable
                       key={listing.publicId}
-                      onPress={() => onOpenMarketplace(listing.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace')}
+                      onPress={() => {
+                        const route = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
+                        onOpenMarketplace(route);
+                      }}
                       style={styles.sellerListingThumb}
                     >
                       <ImageBackground
@@ -634,7 +659,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
               </View>
             ) : null}
             {publicListings.slice(0, 8).map((listing) => {
-              const marketplaceRoute = listing.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace';
+              const marketplaceRoute = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
               const price = formatMoney(listing.displayPriceAmount ?? listing.priceAmount, listing.displayCurrencyCode ?? listing.currencyCode);
               const original = listing.displayOriginalPriceAmount ?? listing.originalPriceAmount;
               const discount = original && original > (listing.displayPriceAmount ?? listing.priceAmount)
@@ -693,7 +718,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
               </View>
             ) : null}
             {publicListings.slice(0, 8).map((listing) => {
-              const marketplaceRoute = listing.verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace';
+              const marketplaceRoute = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
               const price = formatMoney(listing.displayPriceAmount ?? listing.priceAmount, listing.displayCurrencyCode ?? listing.currencyCode);
               const original = listing.displayOriginalPriceAmount ?? listing.originalPriceAmount;
               const discount = original && original > (listing.displayPriceAmount ?? listing.priceAmount)
@@ -704,7 +729,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
                 <Pressable
                   key={listing.publicId}
                   onPress={() => onOpenMarketplace(marketplaceRoute)}
-                  style={[styles.publicListingCard, isMobile && styles.publicListingCardCompact]}
+                  style={[styles.publicListingCard, isCompactMarketplaceGrid && styles.publicListingCardCompactGrid]}
                 >
                   <ImageBackground
                     imageStyle={styles.publicListingImage}
@@ -753,7 +778,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
           {(activeVerticals.length > 0
             ? [
                 [`${activeVerticals.length}`, 'Active Marketplaces'],
-                [`${home?.categories.filter((category) => category.active).length ?? 0}`, 'Live Categories'],
+                [`${(home?.categories ?? []).filter((category) => category.active).length || topCategories.length}`, 'Live Categories'],
                 [`${home?.featuredListings.length ?? 0}`, 'Featured Listings'],
                 ratingStat
               ]
@@ -796,7 +821,7 @@ function buildTopCategories(home: MarketplaceHomeResponse | null): LandingCatego
   }
 
   if ((home.topCategories ?? []).length > 0) {
-    return (home.topCategories ?? []).slice(0, 6).map((category) => ({
+    return (home.topCategories ?? []).slice(0, 12).map((category) => ({
       code: category.categoryCode,
       countLabel: countLabelFor(category.soldCount, category.activeCount, category.maxDiscountPercent),
       icon: iconForCategory({
@@ -823,7 +848,7 @@ function buildTopCategories(home: MarketplaceHomeResponse | null): LandingCatego
     featuredCountByCategory.set(listing.categoryCode, (featuredCountByCategory.get(listing.categoryCode) ?? 0) + 1);
   });
 
-  return home.categories
+  return (home.categories ?? [])
     .filter((category) => category.active)
     .filter((category) => {
       const key = category.name.toLowerCase();
@@ -850,7 +875,7 @@ function buildHeroCategoryChips(home: MarketplaceHomeResponse | null) {
   }
 
   const seen = new Set<string>();
-  return home.categories
+  return (home.categories ?? [])
     .filter((category) => category.active && category.verticalCode === 'MARKETPLACE')
     .map((category) => category.name.trim())
     .filter(Boolean)
@@ -863,6 +888,16 @@ function buildHeroCategoryChips(home: MarketplaceHomeResponse | null) {
       return true;
     })
     .slice(0, 5);
+}
+
+function getMarketplaceRoute(verticalCode: string, verticals: MarketplaceHomeResponse['verticals']): 'digitalMarketplace' | 'jewelryMarketplace' {
+  const vertical = verticals.find(v => v.moduleCode === verticalCode);
+  const route = vertical?.frontendRoute;
+  if (route === 'jewelryMarketplace' || route === 'digitalMarketplace') {
+    return route;
+  }
+  // Fallback to code-based mapping if frontendRoute not available
+  return verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace';
 }
 
 function buildHeroCarouselImages(verticals: MarketplaceHomeResponse['verticals'], viewportWidth: number) {
@@ -963,11 +998,11 @@ const palette = marketingColors;
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: palette.page,
+    backgroundColor: '#fafafa',
     flex: 1
   },
   page: {
-    backgroundColor: palette.page,
+    backgroundColor: '#fafafa',
     paddingBottom: 0
   },
   header: {
@@ -977,6 +1012,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: 'row',
     gap: spacing.lg,
+    justifyContent: 'space-between',
     minHeight: 74,
     paddingHorizontal: 32
   },
@@ -985,14 +1021,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap'
   },
   headerMobile: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
     gap: spacing.sm,
-    flexWrap: 'wrap',
+    marginBottom: spacing.sm,
     minHeight: 0,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
   headerPhone: {
-    gap: spacing.sm,
+    gap: spacing.xs,
     paddingHorizontal: 12
   },
   brandWrap: {
@@ -1043,10 +1081,10 @@ const styles = StyleSheet.create({
     flexBasis: '100%',
     marginLeft: 0,
     marginTop: spacing.sm,
-    order: 3,
     width: '100%'
   },
   searchBarPhone: {
+    flexBasis: '100%',
     maxWidth: '100%',
     minWidth: 0
   },
@@ -1069,14 +1107,17 @@ const styles = StyleSheet.create({
   },
   headerActionsPhone: {
     flexShrink: 0,
+    justifyContent: 'space-between',
     gap: 6,
-    marginLeft: 'auto'
+    marginLeft: 0,
+    width: '100%'
   },
   headerButtonCompact: {
     flex: 1,
     justifyContent: 'center'
   },
   headerButtonPhone: {
+    flex: 1,
     minHeight: 38,
     paddingHorizontal: 10,
     paddingVertical: 8
@@ -1111,7 +1152,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: '1.5%',
     marginVertical: '1.5%',
-    minHeight: 480,
+    minHeight: 280,
     overflow: 'hidden',
     paddingHorizontal: '2%',
     paddingVertical: '2%',
@@ -1129,15 +1170,20 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     flexDirection: 'column',
     gap: spacing.sm,
+    justifyContent: 'flex-start',
+    marginTop: spacing.xs,
     margin: spacing.md,
     minHeight: 0,
     padding: spacing.lg,
     paddingBottom: spacing.md
   },
   heroPhone: {
+    alignItems: 'stretch',
     borderRadius: 24,
     marginHorizontal: 12,
-    marginVertical: 16,
+    marginVertical: 8,
+    marginTop: 12,
+    justifyContent: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 16
   },
@@ -1207,8 +1253,8 @@ const styles = StyleSheet.create({
     maxWidth: '100%'
   },
   heroTitlePhone: {
-    fontSize: 36,
-    lineHeight: 40,
+    fontSize: 32,
+    lineHeight: 36,
     marginTop: 8
   },
   heroSubtitle: {
@@ -1358,20 +1404,22 @@ const styles = StyleSheet.create({
   heroImagePaneMobile: {
     alignSelf: 'stretch',
     flex: 0,
-    height: 280,
+    height: 320,
     maxWidth: '100%',
-    minHeight: 180,
-    minWidth: '100%',
+    marginTop: spacing.lg,
+    minHeight: 220,
+    minWidth: 0,
     width: '100%'
   },
   heroImagePanePhone: {
     borderRadius: '2%',
     flex: 0,
-    height: 220,
+    height: 280,
     maxHeight: '100%',
     maxWidth: '100%',
-    minHeight: 160,
-    minWidth: '100%',
+    marginTop: spacing.lg,
+    minHeight: 200,
+    minWidth: 0,
     width: '100%'
   },
   heroSpotlightPanel: {
@@ -1652,32 +1700,36 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flexDirection: 'column',
     justifyContent: 'flex-start',
-    paddingHorizontal: 32,
-    paddingTop: 40,
-    paddingBottom: 24,
-    gap: 8
+    paddingHorizontal: 12,
+    paddingTop: 20,
+    paddingBottom: 12,
+    gap: 4,
+    borderBottomWidth: 0
   },
   sectionKicker: {
-    color: palette.blue,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
+    color: palette.brandPrimary,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
     textTransform: 'uppercase'
   },
   sectionHeaderMobile: {
     alignItems: 'flex-start',
-    gap: spacing.sm
+    gap: spacing.xs,
+    flexDirection: 'column'
   },
   sectionTitle: {
     color: palette.text,
-    fontSize: 32,
-    fontWeight: '900',
-    lineHeight: 40
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 24,
+    marginTop: 2
   },
   sectionNote: {
     color: palette.textMuted,
-    fontSize: 14,
-    fontWeight: '500'
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 18
   },
   viewAll: {
     alignItems: 'center',
@@ -1819,6 +1871,12 @@ const styles = StyleSheet.create({
   publicListingCardCompact: {
     flexBasis: '100%',
     minWidth: '100%'
+  },
+  publicListingCardCompactGrid: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    maxWidth: '48%',
+    minWidth: 0
   },
   publicListingCardShelf: {
     flexBasis: 'auto',
@@ -2101,6 +2159,12 @@ const styles = StyleSheet.create({
     minWidth: 200,
     padding: spacing.md
   },
+  sellerCardCompactGrid: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    maxWidth: '48%',
+    minWidth: 0
+  },
   sellerGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2156,73 +2220,76 @@ const styles = StyleSheet.create({
   sellerListingImage: {
     borderRadius: 8
   },
-  // Gameflip-style category cards
+  // Gameflip-style category cards - 4 column responsive grid
   categoryGridGameflip: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 16,
-    justifyContent: 'space-between'
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    justifyContent: 'flex-start',
+    gap: 6
   },
-  categoryCardGameflip: {
-    width: '48%',
-    aspectRatio: 1,
-    borderRadius: 16,
+  categoryCardGameflipInnerWrapper: {
+    flex: 1,
+    borderRadius: 12,
     overflow: 'hidden',
-    flexShrink: 0,
-    marginBottom: 16,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3
+    shadowRadius: 6,
+    elevation: 2,
+    width: '100%',
+    height: '100%'
   },
   categoryImageWrapGameflip: {
     flex: 1,
     width: '100%',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 6,
     position: 'relative',
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f8f8'
   },
   categoryImageGameflip: {
     borderRadius: 16
   },
   categoryNoImageGameflip: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f0f4f8',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: 12
   },
   categoryOverlayGameflip: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)'
+    backgroundColor: 'rgba(0, 0, 0, 0.3)'
   },
   categoryLabelGameflip: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
-    top: 0,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
+    bottom: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 10
   },
   categoryNameGameflip: {
     color: palette.white,
-    fontSize: 18,
-    fontWeight: '900',
-    textAlign: 'left',
-    lineHeight: 22,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 16,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-    maxWidth: '80%'
+    maxWidth: '95%'
+  },
+  sectionTitleSmall: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4
   }
 });
-

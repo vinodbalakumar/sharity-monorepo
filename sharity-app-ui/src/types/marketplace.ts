@@ -93,6 +93,7 @@ export type SubcategoryHighlight = {
   subcategoryCode: string;
   subcategoryName: string;
   categoryName: string;
+  verticalCode: string;
   discountPercentage: number;
   listingImageUrl: string | null;
   listingTitle: string;

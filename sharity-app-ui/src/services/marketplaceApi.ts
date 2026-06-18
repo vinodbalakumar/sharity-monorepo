@@ -3,7 +3,9 @@ import type { MarketplaceHomeResponse, MarketplaceListing } from '../types/marke
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const bffPublicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL ?? '';
 const marketplaceBaseUrl = process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL
-  ?? `${bffPublicBaseUrl || bffBaseUrl}/public/marketplace-service/api/v1/marketplace`;
+  ?? (bffPublicBaseUrl
+    ? `${bffPublicBaseUrl}/public/marketplace-service/api/v1/marketplace`
+    : '/marketplace-service/api/v1/marketplace');
 const requestTimeoutMs = 6000;
 
 async function getJson<T>(path: string): Promise<T> {
@@ -29,7 +31,16 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export async function getMarketplaceHome(query = ''): Promise<MarketplaceHomeResponse> {
-  return getJson<MarketplaceHomeResponse>(`/home${query}`);
+  const response = await getJson<MarketplaceHomeResponse>(`/home${query}`);
+  return {
+    ...response,
+    verticals: response.verticals ?? [],
+    categories: response.categories ?? [],
+    featuredListings: response.featuredListings ?? [],
+    topCategories: response.topCategories ?? [],
+    discountedSubcategories: response.discountedSubcategories ?? [],
+    topRatedSellers: response.topRatedSellers ?? []
+  };
 }
 
 export async function getMarketplaceListings(countryCode?: string): Promise<MarketplaceListing[]> {

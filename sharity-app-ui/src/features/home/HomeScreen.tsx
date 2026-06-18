@@ -115,7 +115,7 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
       codes.add(visitorContext.countryCode);
     }
 
-    state.home?.categories.forEach((category) => {
+    (state.home?.categories ?? []).forEach((category) => {
       if (category.countryCode) {
         codes.add(category.countryCode);
       }
