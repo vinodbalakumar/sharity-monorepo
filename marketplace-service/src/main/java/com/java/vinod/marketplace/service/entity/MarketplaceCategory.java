@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,7 +34,9 @@ public class MarketplaceCategory {
     private String countryCode;
     @Column(name = "icon_ref", length = 255)
     private String iconRef;
-    @Column(name = "image_url", length = 500)
+    @Column(name = "image_key", length = 500)
+    private String imageKey;
+    @Transient
     private String imageUrl;
     @Column(nullable = false)
     private boolean active;

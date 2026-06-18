@@ -49,8 +49,6 @@ class MarketplaceServiceCatalogTest {
 
         assertThat(response.verticals()).extracting(MarketplaceDtos.VerticalResponse::moduleCode)
                 .containsExactly("MARKETPLACE", "GROCERY", "MEAT_SHOP", "PHARMACY", "AUTOMOTIVE", "JEWELLERY", "GIFT_CARDS");
-        assertThat(response.categories()).extracting(MarketplaceDtos.CategoryResponse::code)
-                .containsExactly("GROCERY");
         assertThat(response.featuredListings()).extracting(MarketplaceDtos.ListingResponse::publicId)
                 .containsExactly("GRO-1");
     }
@@ -68,6 +66,28 @@ class MarketplaceServiceCatalogTest {
         List<MarketplaceDtos.ListingResponse> response = service.activeListings("NEWEST", "GROCERY");
 
         assertThat(response).extracting(MarketplaceDtos.ListingResponse::verticalCode).containsExactly("GROCERY");
+    }
+
+    @Test
+    void listingsCanBeSortedByHighestDiscount() {
+        MarketplaceCategoryRepository categoryRepository = mock(MarketplaceCategoryRepository.class);
+        MarketplaceVerticalRepository verticalRepository = mock(MarketplaceVerticalRepository.class);
+        ListingRepository listingRepository = mock(ListingRepository.class);
+        Listing smallerDiscount = listing("SMALL", "Smaller discount", "MARKETPLACE");
+        smallerDiscount.setPriceAmount(BigDecimal.valueOf(80));
+        smallerDiscount.setOriginalPriceAmount(BigDecimal.valueOf(100));
+        Listing largerDiscount = listing("LARGE", "Larger discount", "MARKETPLACE");
+        largerDiscount.setPriceAmount(BigDecimal.valueOf(50));
+        largerDiscount.setOriginalPriceAmount(BigDecimal.valueOf(100));
+        when(listingRepository.findTop24ByListingStatusInOrderByCreatedAtDesc(List.of("ACTIVE", "PUBLISHED")))
+                .thenReturn(List.of(smallerDiscount, largerDiscount));
+
+        MarketplaceService service = newService(listingRepository, categoryRepository, verticalRepository);
+
+        List<MarketplaceDtos.ListingResponse> response = service.activeListings("discount");
+
+        assertThat(response).extracting(MarketplaceDtos.ListingResponse::publicId)
+                .containsExactly("LARGE", "SMALL");
     }
 
     @Test

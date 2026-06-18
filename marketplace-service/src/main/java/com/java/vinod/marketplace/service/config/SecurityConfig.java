@@ -43,20 +43,18 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
+
     private static final PathPatternRequestMatcher.Builder MARKETPLACE_BASE_PATH_MATCHER =
             PathPatternRequestMatcher.withDefaults().basePath("/marketplace-service");
 
     @Bean
     @Order(1)
-        SecurityFilterChain securityFilterChain(HttpSecurity http, InternalServiceTokenFilter internalServiceTokenFilter) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, InternalServiceTokenFilter internalServiceTokenFilter) throws Exception {
         return http
-                                .cors(Customizer.withDefaults())
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/listings/{listingPublicId}")).permitAll()
-                        .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/listings/{listingPublicId}/reviews")).permitAll()
-                        .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/reviews")).permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/marketplace/verticals",
                                 "/api/v1/marketplace/home",
@@ -107,6 +105,9 @@ public class SecurityConfig {
                                 "/marketplace-service/api/v1/marketplace/listings/*/reviews",
                                 "/marketplace-service/api/v1/marketplace/reviews",
                                 "/marketplace-service/api/v1/marketplace/reviews/**").permitAll()
+                        .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/listings/{listingPublicId}")).permitAll()
+                        .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/listings/{listingPublicId}/reviews")).permitAll()
+                        .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/reviews")).permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/marketplace/orders/purchases",
                                 "/api/v1/marketplace/orders/purchases/**",
@@ -119,15 +120,9 @@ public class SecurityConfig {
                                 "/marketplace-service/api/v1/marketplace/provider/orders",
                                 "/marketplace-service/api/v1/marketplace/provider/orders/**").authenticated()
                         .requestMatchers("/api/admin/**", "/api/v1/marketplace/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "MODULE_ADMIN", "SUPPORT_AGENT")
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/v1/marketplace/**",
-                                "/marketplace-service/api/v1/marketplace/**").permitAll()
-                        .requestMatchers(HttpMethod.HEAD,
-                                "/api/v1/marketplace/**",
-                                "/marketplace-service/api/v1/marketplace/**").permitAll()
                         .requestMatchers("/internal/**", "/api/internal/**").permitAll()
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                        .anyRequest().permitAll())
+                //.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .addFilterBefore(internalServiceTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

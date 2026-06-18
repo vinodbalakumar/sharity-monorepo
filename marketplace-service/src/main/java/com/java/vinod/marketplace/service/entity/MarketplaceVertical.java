@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -44,7 +45,7 @@ public class MarketplaceVertical {
     @Column(name = "api_audience", nullable = false, length = 80)
     private String apiAudience;
 
-    @Column(name = "image_url", length = 500)
+    @Transient
     private String imageUrl;
 
     @Column(name = "image_keys", length = 1000)

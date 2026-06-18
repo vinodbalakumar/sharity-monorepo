@@ -4,6 +4,7 @@ import com.java.vinod.marketplace.service.dto.MarketplaceDtos;
 import com.java.vinod.marketplace.service.service.MarketplaceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -87,8 +88,8 @@ public class MarketplaceController {
      * Returns the public home payload for the multi-vertical catalog experience.
      */
     @GetMapping("/home")
-    public MarketplaceDtos.HomeResponse home(@RequestParam(required = false) String countryCode) {
-        return marketplaceService.home(countryCode);
+    public ResponseEntity<MarketplaceDtos.HomeResponse> home(@RequestParam(required = false) String countryCode) {
+        return ResponseEntity.ok(marketplaceService.home(countryCode));
     }
 
     /**

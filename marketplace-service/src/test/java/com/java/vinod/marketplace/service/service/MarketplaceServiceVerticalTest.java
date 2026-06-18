@@ -64,7 +64,7 @@ class MarketplaceServiceVerticalTest {
         listing.setCurrencyCode("USD");
         listing.setPriceAmount(BigDecimal.valueOf(49.99));
         listing.setOriginalPriceAmount(BigDecimal.valueOf(59.99));
-        listing.setImageUrl("https://example.com/headset.png");
+        listing.setImageKey("marketplace/headset.png");
         listing.setSellerDisplayName("Nova Store");
         listing.setVerifiedSeller(true);
         listing.setCategoryCode("ELECTRONICS");
@@ -76,6 +76,7 @@ class MarketplaceServiceVerticalTest {
                 "toListingResponse", new Class<?>[] { Listing.class }, listing);
 
         assertThat(response.verticalCode()).isEqualTo("MARKETPLACE");
+        assertThat(response.imageUrl()).isEqualTo("https://pub.example/marketplace/headset.png");
     }
 
     @Test
@@ -88,12 +89,14 @@ class MarketplaceServiceVerticalTest {
         category.setCategorySlug("grocery");
         category.setVerticalCode("GROCERY");
         category.setIconRef("shopping_basket_outlined");
+        category.setImageKey("marketplace/categories/grocery.png");
         category.setActive(true);
 
         MarketplaceDtos.CategoryResponse response = (MarketplaceDtos.CategoryResponse) invoke(service,
                 "toCategoryResponse", new Class<?>[] { MarketplaceCategory.class }, category);
 
         assertThat(response.verticalCode()).isEqualTo("GROCERY");
+        assertThat(response.imageUrl()).isEqualTo("https://pub.example/marketplace/categories/grocery.png");
     }
 
     @Test
@@ -119,7 +122,8 @@ class MarketplaceServiceVerticalTest {
                 mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
                 "http://payment-service:8080/payment-service",
-                "test-token");
+                "test-token",
+                "https://pub.example");
 
         List<MarketplaceDtos.VerticalResponse> response = service.activeVerticals();
 
@@ -152,7 +156,8 @@ class MarketplaceServiceVerticalTest {
                 mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
                 "http://payment-service:8080/payment-service",
-                "test-token");
+                "test-token",
+                "https://pub.example");
     }
 
     private static MarketplaceCurrencyService mockCurrencyService() {

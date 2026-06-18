@@ -1,0 +1,1 @@
+-- Intentionally empty. image_url fields are transient and do not require database columns.

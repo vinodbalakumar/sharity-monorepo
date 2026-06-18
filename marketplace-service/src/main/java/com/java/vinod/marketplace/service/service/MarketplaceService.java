@@ -236,7 +236,6 @@ public class MarketplaceService {
         List<Listing> homeListings = homeListings(countryCode);
         return new MarketplaceDtos.HomeResponse(
                 activeVerticals(),
-                categories,
                 featuredListings(countryCode),
                 toCategoryHighlights(categories, homeListings),
                 topDiscountedSubcategories(countryCode),
@@ -753,7 +752,7 @@ public class MarketplaceService {
         listing.setProviderCountryCode(request.providerCountryCode());
         listing.setCurrencyCode(request.currencyCode());
         listing.setPriceAmount(request.priceAmount());
-        listing.setImageUrl(request.imageUrl());
+        listing.setImageKey(request.imageUrl());
         listing.setStockQuantity(normalizeStockQuantity(request.stockQuantity()));
     }
 
@@ -958,11 +957,12 @@ public class MarketplaceService {
                     .max()
                     .orElse(0);
             Listing highlightListing = categoryListings.stream()
-                    .filter(listing -> listing.getImageUrl() != null && !listing.getImageUrl().isBlank())
+                    .filter(listing -> listing.getImageKey() != null && !listing.getImageKey().isBlank())
                     .max(Comparator.comparingInt(this::discountPercent)
                             .thenComparing(Listing::getUpdatedAt))
                     .orElse(null);
-            String imageUrl = resolveImageUrl(category.imageUrl(), highlightListing == null ? null : highlightListing.getImageUrl());
+            String imageUrl = resolveImageUrl(category.imageUrl(),
+                    highlightListing == null ? null : resolveImageUrl(highlightListing.getImageKey(), null));
 
             highlights.add(new MarketplaceDtos.CategoryHighlightResponse(
                     category.code(),
@@ -999,7 +999,7 @@ public class MarketplaceService {
                 : marketplaceCurrencyService.convert(listing.getOriginalPriceAmount(), listing.getCurrencyCode(), priceView.displayCurrencyCode());
         return new MarketplaceDtos.ListingResponse(listing.getPublicId(), safeListingTitle(listing), listing.getDescription(),
                 listing.getProductType(), listing.getDeliveryType(), normalizeFulfillmentScope(listing.getFulfillmentScope()), listing.getCurrencyCode(), listing.getPriceAmount(),
-                listing.getOriginalPriceAmount(), listing.getImageUrl(), safeSellerDisplayName(listing),
+                listing.getOriginalPriceAmount(), resolveImageUrl(listing.getImageKey(), null), safeSellerDisplayName(listing),
                 listing.isVerifiedSeller(), listing.getCategoryCode(), listing.getVerticalCode(), safeCountryCode(listing), listing.getListingStatus(),
                 listing.getConditionLabel(), listing.getStockQuantity(), listing.getSourceType(), listing.getSourceName(),
                 listing.getSourceUrl(), listing.getLicenseNote(), listing.isDemoSeed(), List.of(),
@@ -1120,6 +1120,10 @@ public class MarketplaceService {
             case "PRICE_DESC" -> listings.stream()
                     .sorted((left, right) -> right.getPriceAmount().compareTo(left.getPriceAmount()))
                     .toList();
+            case "DISCOUNT" -> listings.stream()
+                    .sorted(Comparator.comparingInt(this::discountPercent).reversed()
+                            .thenComparing(Listing::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .toList();
             case "NEWEST", "RECENT" -> listings.stream()
                     .sorted((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()))
                     .toList();
@@ -1130,7 +1134,7 @@ public class MarketplaceService {
     private MarketplaceDtos.CategoryResponse toCategoryResponse(MarketplaceCategory category) {
         return new MarketplaceDtos.CategoryResponse(category.getId(), category.getCategoryCode(), category.getCategoryName(),
                 category.getCategorySlug(), category.getVerticalCode(), category.getCountryCode(), category.getIconRef(),
-                resolveImageUrl(category.getImageUrl(), null), category.isActive());
+                resolveImageUrl(category.getImageKey(), null), category.isActive());
     }
 
     private MarketplaceDtos.VerticalResponse toVerticalResponse(MarketplaceVertical vertical) {
@@ -1424,7 +1428,7 @@ public class MarketplaceService {
 
             // Find listing with highest discount
             Listing bestListing = categoryListings.stream()
-                    .filter(l -> l.getImageUrl() != null && !l.getImageUrl().isBlank()
+                    .filter(l -> l.getImageKey() != null && !l.getImageKey().isBlank()
                              && l.getOriginalPriceAmount() != null)
                     .max(Comparator.comparingInt(this::discountPercent))
                     .orElse(null);
@@ -1438,17 +1442,24 @@ public class MarketplaceService {
                 continue;
             }
 
-            // Get category name
-            String categoryName = marketplaceCategoryRepository.findByCategoryCode(categoryCode)
-                    .map(MarketplaceCategory::getCategoryName)
-                    .orElse(categoryCode);
+            // Get category name and vertical code
+            String categoryName = categoryCode;
+            String verticalCode = bestListing.getVerticalCode();
+            var category = marketplaceCategoryRepository.findByCategoryCode(categoryCode);
+            if (category.isPresent()) {
+                categoryName = category.get().getCategoryName();
+                if (category.get().getVerticalCode() != null) {
+                    verticalCode = category.get().getVerticalCode();
+                }
+            }
 
             highlights.add(new MarketplaceDtos.SubcategoryHighlightResponse(
                     categoryCode,
+                    categoryCode,
                     categoryName,
-                    categoryName,
+                    verticalCode,
                     discountPercent,
-                    bestListing.getImageUrl(),
+                    resolveImageUrl(bestListing.getImageKey(), null),
                     bestListing.getTitle(),
                     bestListing.getOriginalPriceAmount(),
                     bestListing.getPriceAmount(),

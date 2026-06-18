@@ -1,5 +1,6 @@
 package com.java.vinod.marketplace.service.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -112,7 +113,7 @@ public final class MarketplaceDtos {
     }
 
     public record SubcategoryHighlightResponse(String subcategoryCode, String subcategoryName,
-                                               String categoryName, int discountPercentage,
+                                               String categoryName, String verticalCode, int discountPercentage,
                                                String listingImageUrl, String listingTitle,
                                                BigDecimal originalPrice, BigDecimal discountedPrice,
                                                String currencyCode) {
@@ -123,7 +124,7 @@ public final class MarketplaceDtos {
                                           List<ListingResponse> listings) {
     }
 
-    public record HomeResponse(List<VerticalResponse> verticals, List<CategoryResponse> categories,
+    public record HomeResponse(List<VerticalResponse> verticals,
                                List<ListingResponse> featuredListings,
                                List<CategoryHighlightResponse> topCategories,
                                List<SubcategoryHighlightResponse> discountedSubcategories,

@@ -91,8 +91,8 @@ public class AssetStorageService {
                 safeFileName(file.getOriginalFilename(), contentType(file)));
         Asset asset = uploadAndPersist(assetPublicId, objectKey, "LISTING_IMAGE", "LISTING", listing.getPublicId(),
                 actorUserPublicId, file, altText, "PUBLIC");
-        if (listing.getImageUrl() == null || listing.getImageUrl().isBlank()) {
-            listing.setImageUrl(asset.getPublicUrl());
+        if (listing.getImageKey() == null || listing.getImageKey().isBlank()) {
+            listing.setImageKey(asset.getObjectKey());
         }
         listing.setUpdatedAt(LocalDateTime.now());
         return toResponse(asset);

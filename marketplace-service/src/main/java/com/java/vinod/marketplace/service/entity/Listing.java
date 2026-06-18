@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -50,7 +51,9 @@ public class Listing {
     private BigDecimal priceAmount;
     @Column(name = "original_price_amount", precision = 12, scale = 2)
     private BigDecimal originalPriceAmount;
-    @Column(name = "image_url", length = 500)
+    @Column(name = "image_key", length = 500)
+    private String imageKey;
+    @Transient
     private String imageUrl;
     @Column(name = "condition_label", length = 30)
     private String conditionLabel;
