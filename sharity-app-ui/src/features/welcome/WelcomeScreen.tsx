@@ -45,28 +45,18 @@ const stats = [
 const webHeroGradient = Platform.OS === 'web'
   ? ({ backgroundImage: 'linear-gradient(120deg, #fff0df 0%, #eef7ff 36%, #e8fff4 68%, #e5edff 100%)' } as never)
   : null;
-const webFrostedCard = Platform.OS === 'web'
-  ? ({
-      backdropFilter: 'blur(18px)',
-      boxShadow: '0 24px 80px rgba(30,64,175,0.12)',
-      WebkitBackdropFilter: 'blur(18px)'
-    } as never)
-  : null;
 const ratingStat = ['4.8/5', 'User Rating'];
-const trustChips = ['Protected Checkout', 'Verified Sellers', 'Secure Delivery', 'Imitation Jewellery'];
 
 export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpenPublicContent, onSearchMarketplace, onSignIn, visitorContext }: WelcomeScreenProps) {
   const { isMobile } = useResponsiveLayout();
   const { width: viewportWidth } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
-  const isPhone = viewportWidth < 560;
-  const isCompactHero = viewportWidth < 900;
-  const isTabletHero = viewportWidth >= 900 && viewportWidth < 1180;
-  const isCompactMarketplaceGrid = viewportWidth >= 768 && viewportWidth < 1024;
+  const isCompact = viewportWidth < 1024;
+  const isCompactMarketplaceGrid = viewportWidth < 960;
   const categoryColumns = viewportWidth < 360 ? 1 : viewportWidth < 1024 ? 2 : 4;
   const categoryGutter = viewportWidth < 560 ? 8 : 6;
   const [searchQuery, setSearchQuery] = useState('');
-  const [heroCarouselIndex, setHeroCarouselIndex] = useState(0);
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const [home, setHome] = useState<MarketplaceHomeResponse | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
   const [homeError, setHomeError] = useState(false);
@@ -87,56 +77,8 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
         }
       } catch {
         if (mounted) {
-          // Use sample data when API fails
-          const sampleData: MarketplaceHomeResponse = {
-            verticals: [
-              { moduleCode: 'DIGITAL', moduleName: 'Digital Marketplace', description: 'Buy & sell digital products', status: 'ACTIVE', displayOrder: 1, availableToCustomer: true, customerAccessEnabled: true },
-              { moduleCode: 'JEWELLERY', moduleName: 'Imitation Jewellery', description: 'Affordable jewelry', status: 'ACTIVE', displayOrder: 2, availableToCustomer: true, customerAccessEnabled: true }
-            ],
-            categories: [],
-            featuredListings: [],
-            topCategories: [
-              { categoryCode: 'GAMES', categoryName: 'Games', slug: 'games', verticalCode: 'DIGITAL', iconRef: 'game-controller', imageUrl: null, soldCount: 1200, activeCount: 450, maxDiscountPercent: 35 },
-              { categoryCode: 'GIFTCARDS', categoryName: 'Gift Cards', slug: 'gift-cards', verticalCode: 'DIGITAL', iconRef: 'gift', imageUrl: null, soldCount: 890, activeCount: 320, maxDiscountPercent: 25 },
-              { categoryCode: 'SOFTWARE', categoryName: 'Software', slug: 'software', verticalCode: 'DIGITAL', iconRef: 'code', imageUrl: null, soldCount: 650, activeCount: 210, maxDiscountPercent: 40 },
-              { categoryCode: 'COURSES', categoryName: 'Courses', slug: 'courses', verticalCode: 'DIGITAL', iconRef: 'school', imageUrl: null, soldCount: 420, activeCount: 180, maxDiscountPercent: 30 },
-              { categoryCode: 'EARRINGS', categoryName: 'Earrings', slug: 'earrings', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 680, activeCount: 290, maxDiscountPercent: 22 },
-              { categoryCode: 'NECKLACES', categoryName: 'Necklaces', slug: 'necklaces', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 520, activeCount: 210, maxDiscountPercent: 18 },
-              { categoryCode: 'RINGS', categoryName: 'Rings', slug: 'rings', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 430, activeCount: 175, maxDiscountPercent: 25 },
-              { categoryCode: 'BANGLES', categoryName: 'Bangles', slug: 'bangles', verticalCode: 'JEWELLERY', iconRef: 'sparkles', imageUrl: null, soldCount: 380, activeCount: 145, maxDiscountPercent: 20 }
-            ],
-            discountedSubcategories: [
-              { subcategoryCode: 'PSN', subcategoryName: 'PlayStation Cards', categoryName: 'Gift Cards', discountPercentage: 15, listingImageUrl: null, listingTitle: 'PSN $50 Card', originalPrice: 50, discountedPrice: 42.50, currencyCode: 'USD' },
-              { subcategoryCode: 'XBOX', subcategoryName: 'Xbox Cards', categoryName: 'Gift Cards', discountPercentage: 12, listingImageUrl: null, listingTitle: 'Xbox $25 Card', originalPrice: 25, discountedPrice: 22, currencyCode: 'USD' },
-              { subcategoryCode: 'STEAM', subcategoryName: 'Steam Wallet', categoryName: 'Gift Cards', discountPercentage: 18, listingImageUrl: null, listingTitle: 'Steam $100 Card', originalPrice: 100, discountedPrice: 82, currencyCode: 'USD' }
-            ],
-            topRatedSellers: [
-              {
-                sellerPublicId: 'seller1',
-                sellerName: 'GameMaster Pro',
-                sellerRating: 4.9,
-                completedOrders: 2500,
-                listings: [
-                  { publicId: 'list1', title: 'Steam Gift Card $20', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 15, originalPriceAmount: 20, imageUrl: null, sellerDisplayName: 'GameMaster Pro', verifiedSeller: true, categoryCode: 'GIFTCARDS', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
-                  { publicId: 'list2', title: 'Elden Ring Steam Key', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 35, originalPriceAmount: 40, imageUrl: null, sellerDisplayName: 'GameMaster Pro', verifiedSeller: true, categoryCode: 'GAMES', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
-                  { publicId: 'list3', title: 'Adobe Creative Cloud', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 45, originalPriceAmount: 50, imageUrl: null, sellerDisplayName: 'GameMaster Pro', verifiedSeller: true, categoryCode: 'SOFTWARE', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() }
-                ]
-              },
-              {
-                sellerPublicId: 'seller2',
-                sellerName: 'Digital Deals Hub',
-                sellerRating: 4.8,
-                completedOrders: 1850,
-                listings: [
-                  { publicId: 'list4', title: 'Microsoft 365 Annual', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 55, originalPriceAmount: 69.99, imageUrl: null, sellerDisplayName: 'Digital Deals Hub', verifiedSeller: true, categoryCode: 'SOFTWARE', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
-                  { publicId: 'list5', title: 'Udemy Web Development Course', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 12, originalPriceAmount: 14.99, imageUrl: null, sellerDisplayName: 'Digital Deals Hub', verifiedSeller: true, categoryCode: 'COURSES', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() },
-                  { publicId: 'list6', title: 'WinRAR License', description: '', productType: 'DIGITAL', deliveryType: 'INSTANT', currencyCode: 'USD', priceAmount: 25, originalPriceAmount: 29, imageUrl: null, sellerDisplayName: 'Digital Deals Hub', verifiedSeller: true, categoryCode: 'SOFTWARE', verticalCode: 'DIGITAL', providerCountryCode: 'US', listingStatus: 'ACTIVE', conditionLabel: null, stockQuantity: null, sourceType: null, sourceName: null, sourceUrl: null, licenseNote: null, demoSeed: false, publicReviews: [], createdAt: new Date().toISOString() }
-                ]
-              }
-            ]
-          };
-          setHome(sampleData);
-          setHomeError(false);
+          setHome(null);
+          setHomeError(true);
         }
       } finally {
         if (mounted) {
@@ -187,132 +129,138 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
     () => (home?.verticals ?? []).filter((vertical) => vertical.status === 'ACTIVE' && vertical.availableToCustomer),
     [home]
   );
-  const digitalVertical = useMemo(
-    () => activeVerticals.find((vertical) => vertical.moduleCode === 'MARKETPLACE') ?? activeVerticals[0] ?? null,
-    [activeVerticals]
-  );
-  const heroCategoryChips = useMemo(() => buildHeroCategoryChips(home), [home]);
-  const heroCarouselImages = useMemo(() => buildHeroCarouselImages(activeVerticals, viewportWidth), [activeVerticals, viewportWidth]);
-  const currentHeroImage = heroCarouselImages[heroCarouselIndex] ?? heroCarouselImages[0] ?? null;
 
   useEffect(() => {
-    if (heroCarouselImages.length <= 1) {
-      return undefined;
+    if (activeHeroIndex >= activeVerticals.length) {
+      setActiveHeroIndex(0);
     }
-
-    const interval = setInterval(() => {
-      setHeroCarouselIndex((current) => (current + 1) % heroCarouselImages.length);
-    }, 4200);
-
-    return () => clearInterval(interval);
-  }, [heroCarouselImages.length]);
+  }, [activeHeroIndex, activeVerticals.length]);
 
   useEffect(() => {
-    if (heroCarouselImages.length > 0 && heroCarouselIndex >= heroCarouselImages.length) {
-      setHeroCarouselIndex(0);
+    if (activeVerticals.length <= 1) {
+      return;
     }
-  }, [heroCarouselImages.length, heroCarouselIndex]);
+
+    const timer = setInterval(() => {
+      setActiveHeroIndex((current) => (current + 1) % activeVerticals.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [activeVerticals.length]);
+
+  const activeHeroVertical = activeVerticals[activeHeroIndex] ?? null;
+  const activeHeroImageUrl = activeHeroVertical && home ? imageForVertical(activeHeroVertical, home) : null;
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
-        <View style={[styles.header, isCompactHero && styles.headerMobile, isPhone && styles.headerPhone]}>
-          <View style={[styles.brandWrap, isCompactHero && styles.brandWrapMobile, isPhone && styles.brandWrapPhone]}>
+        <View style={styles.header}>
+          <View style={styles.brandWrap}>
             <View style={styles.brandMark}>
               <Text style={styles.brandLetter}>S</Text>
             </View>
             <Text style={styles.brandName}>Sharity</Text>
           </View>
-
-          <View style={[styles.searchBar, isCompactHero && styles.searchBarMobile, isPhone && styles.searchBarPhone]}>
-            <Ionicons color={palette.textMuted} name="search-outline" size={18} />
-            <TextInput
-              onChangeText={setSearchQuery}
-              onSubmitEditing={() => {
-                const trimmedQuery = searchQuery.trim();
-                if (!trimmedQuery) {
-                  return;
-                }
-                appState$.marketplace.searchQuery.set(trimmedQuery);
-                onSearchMarketplace(trimmedQuery);
-              }}
-              placeholder="Search for products, categories"
-              placeholderTextColor={palette.textMuted}
-              returnKeyType="search"
-              style={styles.searchInput}
-              value={searchQuery}
-            />
-          </View>
-
-          <View style={[styles.headerActions, isCompactHero && styles.headerActionsMobile, isPhone && styles.headerActionsPhone]}>
-            <Pressable onPress={onSignIn} style={[styles.signInButton, isCompactHero && styles.headerButtonCompact, isPhone && styles.headerButtonPhone]}>
+          {!isCompact ? (
+            <View style={styles.searchBar}>
+              <Ionicons color={palette.textMuted} name="search-outline" size={18} />
+              <TextInput
+                onChangeText={setSearchQuery}
+                onSubmitEditing={() => submitSearch(searchQuery, onSearchMarketplace)}
+                placeholder="Search for products, categories"
+                placeholderTextColor={palette.textMuted}
+                returnKeyType="search"
+                style={[styles.searchInput, isWeb && styles.searchInputWeb]}
+                value={searchQuery}
+              />
+            </View>
+          ) : null}
+          <View style={styles.headerActions}>
+            <Pressable onPress={onSignIn} style={styles.signInButton}>
               <Text style={styles.signInText}>Sign In</Text>
             </Pressable>
-            <Pressable onPress={onGetStarted} style={[styles.headerCta, isCompactHero && styles.headerButtonCompact, isPhone && styles.headerButtonPhone]}>
-              <Text style={styles.headerCtaText}>Get Started</Text>
+            <Pressable onPress={onGetStarted} style={styles.headerCta}>
+              <Text style={styles.headerCtaText}>{isCompact ? 'Start' : 'Get Started'}</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={[styles.hero, webHeroGradient, isTabletHero && styles.heroTablet, isCompactHero && styles.heroMobile, isPhone && styles.heroPhone]}>
-          <View style={styles.heroDecorOne} />
-          <View style={styles.heroDecorTwo} />
+        {isCompact ? (
+          <View style={styles.compactSearchSection}>
+            <View style={styles.searchBarCompact}>
+              <Ionicons color={palette.textMuted} name="search-outline" size={18} />
+              <TextInput
+                onChangeText={setSearchQuery}
+                onSubmitEditing={() => submitSearch(searchQuery, onSearchMarketplace)}
+                placeholder="Search for products, categories"
+                placeholderTextColor={palette.textMuted}
+                returnKeyType="search"
+                style={[styles.searchInput, styles.searchInputCompact, isWeb && styles.searchInputWeb]}
+                value={searchQuery}
+              />
+            </View>
+          </View>
+        ) : null}
 
-          <View style={[styles.heroCopy, isTabletHero && styles.heroCopyTablet, isCompactHero && styles.heroCopyMobile, isPhone && styles.heroCopyPhone]}>
-            <Text style={styles.heroBadge}>Trusted Marketplace</Text>
-            <Text style={[styles.heroTitle, isTabletHero && styles.heroTitleTablet, isCompactHero && styles.heroTitleMobile, isPhone && styles.heroTitlePhone]}>
+        <View style={[styles.heroSection, webHeroGradient, isCompact && styles.heroSectionCompact]}>
+          <View style={[styles.heroContentCard, isCompact && styles.heroContentCardCompact]}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>TRUSTED MARKETPLACE</Text>
+            </View>
+            <Text style={[styles.heroTitle, isCompact && styles.heroTitleMobile]}>
               Buy & Sell Digital Goods and Imitation Jewellery
             </Text>
-            <Text style={[styles.heroSubtitle, isPhone && styles.heroSubtitlePhone]}>
+            <Text style={styles.heroDescription}>
               Sharity helps buyers and sellers trade gift cards, subscriptions, game codes, software licenses, and imitation jewellery through verified sellers, protected checkout, and clear delivery rules.
             </Text>
-            <View style={[styles.heroActions, isPhone && styles.heroActionsPhone]}>
-              <Pressable onPress={onGetStarted} style={[styles.heroPrimary, isPhone && styles.heroActionPhone]}>
-                <Text style={styles.heroPrimaryText}>Get Started Free</Text>
+            <View style={[styles.heroActions, isCompact && styles.heroActionsMobile]}>
+              <Pressable onPress={onGetStarted} style={styles.heroPrimary}>
+                <Text numberOfLines={1} style={styles.heroPrimaryText}>Get Started Free</Text>
               </Pressable>
-              <Pressable onPress={onSignIn} style={[styles.heroSecondary, isPhone && styles.heroActionPhone]}>
-                <Text style={styles.heroSecondaryText}>Sign In</Text>
+              <Pressable onPress={onSignIn} style={styles.heroSecondary}>
+                <Text numberOfLines={1} style={styles.heroSecondaryText}>Sign In</Text>
               </Pressable>
             </View>
-
-            <View style={[styles.heroChipGrid, isPhone && styles.heroChipGridPhone]}>
-              {[...trustChips, ...heroCategoryChips].slice(0, isPhone ? 4 : 8).map((item) => (
-                <Text key={item} style={styles.heroChip}>
-                  {item}
-                </Text>
+            <View style={styles.heroChips}>
+              {['Protected Checkout', 'Verified Sellers', 'Secure Delivery', 'Imitation Jewellery'].map((item) => (
+                <View key={item} style={styles.heroChip}>
+                  <Text style={styles.heroChipText}>{item}</Text>
+                </View>
               ))}
             </View>
           </View>
-
-          <View style={[styles.heroImagePane, !isTabletHero && !isCompactHero && styles.heroImagePaneDesktop, isTabletHero && styles.heroImagePaneTablet, isCompactHero && styles.heroImagePaneMobile, isPhone && styles.heroImagePanePhone]}>
-            {currentHeroImage ? (
+          <View style={[styles.heroCarouselWrapper, isCompact && styles.heroCarouselWrapperCompact]}>
+            {activeHeroImageUrl ? (
               <ImageBackground
-                imageStyle={styles.heroBannerImage}
-                resizeMode="cover"
-                source={{ uri: currentHeroImage }}
-                style={styles.heroBannerImageWrap}
-              />
+                imageStyle={styles.heroCarouselImage}
+                resizeMode="contain"
+                source={{ uri: activeHeroImageUrl }}
+                style={styles.heroCarouselMedia}
+              >
+                <View style={styles.heroCarouselImageFallbackBackground} />
+              </ImageBackground>
+            ) : homeLoading ? (
+              <View style={styles.heroCarouselState}>
+                <Ionicons color={palette.blue} name="sync-outline" size={28} />
+                <Text style={styles.heroCarouselStateText}>Loading marketplace...</Text>
+              </View>
             ) : (
-              <View style={styles.heroVisualFallback}>
-                <View style={styles.heroVisualIconCircle}>
-                  <Ionicons color={palette.white} name="shield-checkmark-outline" size={30} />
-                </View>
-                <Text style={styles.heroVisualKicker}>Protected checkout</Text>
-                <Text style={styles.heroVisualTitle}>Instant digital delivery</Text>
-                <Text style={styles.heroVisualText}>Codes, subscriptions, and licenses stay organized in one trusted marketplace.</Text>
+              <View style={styles.heroCarouselState}>
+                <Ionicons color={palette.blue} name="images-outline" size={28} />
+                <Text style={styles.heroCarouselStateText}>No hero image configured</Text>
               </View>
             )}
-          </View>
-
-          <View style={styles.heroCarouselDots}>
-            {heroCarouselImages.map((imageUrl, index) => (
-              <Pressable
-                key={`${imageUrl}-${index}`}
-                accessibilityLabel={`Go to marketplace image ${index + 1}`}
-                onPress={() => setHeroCarouselIndex(index)}
-                style={[styles.heroCarouselDot, index === heroCarouselIndex && styles.heroCarouselDotActive]}
-              />
-            ))}
+            {activeVerticals.length > 1 ? (
+              <View style={styles.heroDots}>
+                {activeVerticals.map((vertical, index) => (
+                  <Pressable
+                    key={vertical.moduleCode}
+                    onPress={() => setActiveHeroIndex(index)}
+                    style={[styles.heroDot, index === activeHeroIndex && styles.heroDotActive]}
+                  />
+                ))}
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -869,25 +817,14 @@ function buildTopCategories(home: MarketplaceHomeResponse | null): LandingCatego
     }));
 }
 
-function buildHeroCategoryChips(home: MarketplaceHomeResponse | null) {
-  if (!home) {
-    return [];
+function submitSearch(query: string, onSearchMarketplace: (value: string) => void) {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return;
   }
 
-  const seen = new Set<string>();
-  return (home.categories ?? [])
-    .filter((category) => category.active && category.verticalCode === 'MARKETPLACE')
-    .map((category) => category.name.trim())
-    .filter(Boolean)
-    .filter((name) => {
-      const key = name.toLowerCase();
-      if (seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    })
-    .slice(0, 5);
+  appState$.marketplace.searchQuery.set(trimmedQuery);
+  onSearchMarketplace(trimmedQuery);
 }
 
 function getMarketplaceRoute(verticalCode: string, verticals: MarketplaceHomeResponse['verticals']): 'digitalMarketplace' | 'jewelryMarketplace' {
@@ -900,22 +837,40 @@ function getMarketplaceRoute(verticalCode: string, verticals: MarketplaceHomeRes
   return verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace';
 }
 
-function buildHeroCarouselImages(verticals: MarketplaceHomeResponse['verticals'], viewportWidth: number) {
-  let imageWidth = 1200;
-  if (viewportWidth < 560) {
-    imageWidth = 480;
-  } else if (viewportWidth < 900) {
-    imageWidth = 768;
-  } else if (viewportWidth < 1180) {
-    imageWidth = 1000;
+function imageForVertical(
+  vertical: MarketplaceHomeResponse['verticals'][number],
+  home: MarketplaceHomeResponse
+): string | null {
+  if (vertical.imageUrl) {
+    return resolveMockImageUrl(vertical.imageUrl, 1200);
   }
 
-  const images = verticals
-    .flatMap((vertical) => splitAssetSources(vertical.imageKeys ?? vertical.imageUrl))
-    .map((imageSource) => resolveMockImageUrl(imageSource, imageWidth))
-    .filter(Boolean);
+  const directKeyImage = splitAssetSources(vertical.imageKeys)
+    .map((imageSource) => resolveMockImageUrl(imageSource, 1200))
+    .find(Boolean);
 
-  return Array.from(new Set(images)).slice(0, 8);
+  if (directKeyImage) {
+    return directKeyImage;
+  }
+
+  const categoryImage = home.categories.find(
+    (category) =>
+      category.verticalCode === vertical.moduleCode &&
+      category.active &&
+      Boolean(category.imageUrl)
+  )?.imageUrl;
+
+  if (categoryImage) {
+    return resolveMockImageUrl(categoryImage, 1200);
+  }
+
+  const listingImage = home.featuredListings.find(
+    (listing) =>
+      listing.verticalCode === vertical.moduleCode &&
+      Boolean(listing.imageUrl)
+  )?.imageUrl;
+
+  return listingImage ? resolveMockImageUrl(listingImage, 1200) : null;
 }
 
 function splitAssetSources(value?: string | null) {
@@ -964,11 +919,6 @@ function imageForCategory(category: MarketplaceCategory, home: MarketplaceHomeRe
   const directMatch = home.featuredListings.find((listing) => listing.categoryCode === category.code && listing.imageUrl);
   if (directMatch?.imageUrl) {
     return resolveMockImageUrl(directMatch.imageUrl, 720);
-  }
-
-  const verticalMatch = home.featuredListings.find((listing) => listing.verticalCode === category.verticalCode && listing.imageUrl);
-  if (verticalMatch?.imageUrl) {
-    return resolveMockImageUrl(verticalMatch.imageUrl, 720);
   }
 
   return placeholderImageUrl(category.name, 720);
@@ -1023,15 +973,96 @@ const styles = StyleSheet.create({
   headerMobile: {
     alignItems: 'stretch',
     flexDirection: 'column',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    gap: 12,
+    marginBottom: 0,
     minHeight: 0,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 0
   },
   headerPhone: {
     gap: spacing.xs,
-    paddingHorizontal: 12
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 0
+  },
+  mobileSearchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 14
+  },
+  mobileSearchSectionTiny: {
+    paddingHorizontal: 12,
+    paddingTop: 12
+  },
+  mobileHeroSection: {
+    alignItems: 'stretch',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+    backgroundColor: '#EEF6FF',
+    borderColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 24,
+    borderWidth: 1,
+    margin: 0,
+    marginHorizontal: 16,
+    overflow: 'visible',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 16,
+    width: '100%'
+  },
+  mobileHeroSectionTiny: {
+    gap: 14,
+    marginHorizontal: 12,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 14
+  },
+  mobileHeroCard: {
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 24,
+    borderWidth: 1,
+    flex: 0,
+    margin: 0,
+    overflow: 'visible',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    width: '100%'
+  },
+  mobileHeroCardTiny: {
+    paddingHorizontal: 18,
+    paddingVertical: 20
+  },
+  mobileHeroCarousel: {
+    alignSelf: 'stretch',
+    aspectRatio: 16 / 9,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 24,
+    borderWidth: 1,
+    flex: 0,
+    margin: 0,
+    marginTop: 2,
+    overflow: 'hidden',
+    padding: 10,
+    width: '100%'
+  },
+  mobileHeroCarouselTiny: {
+    aspectRatio: 16 / 9,
+    borderRadius: 22,
+    padding: 8
+  },
+  headerTopRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    justifyContent: 'space-between',
+    width: '100%'
+  },
+  headerTopRowPhone: {
+    gap: spacing.sm
   },
   brandWrap: {
     alignItems: 'center',
@@ -1041,7 +1072,8 @@ const styles = StyleSheet.create({
   },
   brandWrapMobile: {
     minWidth: 0,
-    width: '100%'
+    flexShrink: 1,
+    width: 'auto'
   },
   brandWrapPhone: {
     minWidth: 0
@@ -1078,21 +1110,68 @@ const styles = StyleSheet.create({
     width: '28%'
   },
   searchBarMobile: {
+    alignSelf: 'stretch',
     flexBasis: '100%',
+    height: 56,
     marginLeft: 0,
-    marginTop: spacing.sm,
+    marginTop: 0,
+    marginBottom: 18,
+    maxWidth: '100%',
+    borderRadius: 24,
+    paddingHorizontal: 16,
     width: '100%'
   },
   searchBarPhone: {
     flexBasis: '100%',
+    height: 56,
     maxWidth: '100%',
-    minWidth: 0
+    minWidth: 0,
+    marginTop: 0,
+    marginBottom: 18,
+    paddingHorizontal: 16,
+    width: '100%'
+  },
+  searchBarTiny: {
+    height: 52,
+    marginBottom: 14,
+    paddingHorizontal: 14
   },
   searchInput: {
     color: palette.text,
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
+    margin: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     outlineStyle: 'none' as never
+  },
+  searchInputWeb: {
+    fontSize: 16,
+    lineHeight: 20,
+    minHeight: 48
+  },
+  searchInputCompact: {
+    minHeight: 48
+  },
+  compactSearchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
+    width: '100%'
+  },
+  searchBarCompact: {
+    alignItems: 'center',
+    backgroundColor: palette.cardAlt,
+    borderColor: palette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    height: 54,
+    minHeight: 48,
+    maxWidth: '100%',
+    paddingHorizontal: spacing.md,
+    width: '100%'
   },
   headerActions: {
     alignItems: 'center',
@@ -1102,32 +1181,45 @@ const styles = StyleSheet.create({
   },
   headerActionsMobile: {
     justifyContent: 'space-between',
+    gap: 10,
     marginLeft: 0,
-    width: '100%'
+    width: 'auto'
   },
   headerActionsPhone: {
     flexShrink: 0,
     justifyContent: 'space-between',
     gap: 6,
     marginLeft: 0,
-    width: '100%'
+    width: 'auto'
   },
   headerButtonCompact: {
-    flex: 1,
-    justifyContent: 'center'
+    flexGrow: 0,
+    flexShrink: 0,
+    justifyContent: 'center',
+    width: 'auto'
   },
   headerButtonPhone: {
-    flex: 1,
-    minHeight: 38,
+    flexGrow: 0,
+    flexShrink: 0,
+    minHeight: 34,
+    minWidth: 62,
     paddingHorizontal: 10,
-    paddingVertical: 8
+    paddingVertical: 6
+  },
+  headerButtonTextPhone: {
+    fontSize: 13,
+    lineHeight: 15
   },
   signInButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    backgroundColor: 'rgba(59,130,246,0.12)',
+    borderColor: 'rgba(59,130,246,0.28)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 10
   },
   signInText: {
-    color: palette.text,
+    color: palette.blue,
     fontSize: 14,
     fontWeight: '900'
   },
@@ -1169,23 +1261,28 @@ const styles = StyleSheet.create({
   heroMobile: {
     alignItems: 'stretch',
     flexDirection: 'column',
-    gap: spacing.sm,
-    justifyContent: 'flex-start',
-    marginTop: spacing.xs,
-    margin: spacing.md,
+    gap: 16,
+    marginHorizontal: 0,
+    marginTop: 0,
+    marginBottom: 0,
     minHeight: 0,
-    padding: spacing.lg,
-    paddingBottom: spacing.md
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    overflow: 'visible',
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 20
   },
   heroPhone: {
     alignItems: 'stretch',
-    borderRadius: 24,
-    marginHorizontal: 12,
-    marginVertical: 8,
-    marginTop: 12,
-    justifyContent: 'flex-start',
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    marginHorizontal: 0,
+    marginTop: 0,
+    marginBottom: 0,
     paddingHorizontal: 16,
-    paddingVertical: 16
+    paddingVertical: 0
   },
   heroCompactPhone: {
     minHeight: 0,
@@ -1209,80 +1306,66 @@ const styles = StyleSheet.create({
   },
   heroCopyMobile: {
     alignSelf: 'stretch',
+    flex: 0,
     minWidth: 0,
     maxWidth: '100%',
-    paddingHorizontal: 0,
-    paddingVertical: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     width: '100%'
   },
   heroCopyPhone: {
-    paddingVertical: spacing.xs
+    paddingVertical: 24
+  },
+  heroCopyTiny: {
+    paddingHorizontal: 18,
+    paddingVertical: 20
   },
   heroBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
-    borderRadius: 8,
+    backgroundColor: palette.cardAlt,
+    borderColor: palette.blue,
+    borderRadius: 10,
     borderWidth: 1,
-    color: '#2563EB',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    textTransform: 'uppercase'
+    paddingHorizontal: 14,
+    paddingVertical: 8
+  },
+  heroBadgeText: {
+    color: palette.blue,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5
   },
   heroTitle: {
     color: '#0F172A',
-    fontSize: 42,
+    fontSize: 50,
     fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 48,
-    marginTop: 12,
-    maxWidth: 480
-  },
-  heroTitleTablet: {
-    fontSize: 44,
-    lineHeight: 50,
-    maxWidth: 760
+    letterSpacing: -1.8,
+    lineHeight: 55,
+    marginTop: 18,
+    maxWidth: 520
   },
   heroTitleMobile: {
-    fontSize: 31,
-    lineHeight: 37,
+    fontSize: 30,
+    lineHeight: 35,
     maxWidth: '100%'
   },
-  heroTitlePhone: {
-    fontSize: 32,
-    lineHeight: 36,
-    marginTop: 8
-  },
-  heroSubtitle: {
+  heroDescription: {
     color: '#475569',
     fontSize: 16,
     fontWeight: '600',
-    lineHeight: 25,
-    marginTop: 14,
-    maxWidth: 480
-  },
-  heroSubtitlePhone: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 12,
-    maxWidth: '100%'
+    lineHeight: 24,
+    marginTop: 16
   },
   heroActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: 28
+    gap: 12,
+    marginTop: 22
   },
-  heroActionsPhone: {
-    gap: spacing.xs,
-    marginTop: 12
-  },
-  heroActionsCompact: {
-    gap: spacing.sm
+  heroActionsMobile: {
+    width: '100%'
   },
   heroPrimary: {
     alignItems: 'center',
@@ -1296,8 +1379,12 @@ const styles = StyleSheet.create({
   heroActionPhone: {
     flexGrow: 1,
     minHeight: 48,
-    minWidth: 130,
+    minWidth: 0,
     paddingHorizontal: spacing.md
+  },
+  heroActionTiny: {
+    minHeight: 44,
+    paddingHorizontal: 12
   },
   heroPrimaryText: {
     color: palette.white,
@@ -1319,6 +1406,113 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 16,
     fontWeight: '800'
+  },
+  heroSection: {
+    backgroundColor: palette.heroEnd,
+    borderRadius: 30,
+    alignItems: 'stretch',
+    flexDirection: 'row',
+    gap: 24,
+    marginBottom: 28,
+    marginHorizontal: 24,
+    marginTop: 0,
+    overflow: 'hidden',
+    padding: 24,
+    width: 'auto'
+  },
+  heroSectionCompact: {
+    flexDirection: 'column',
+    gap: 16,
+    marginHorizontal: 12,
+    padding: 12
+  },
+  heroContentCard: {
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 24,
+    borderWidth: 1,
+    flexBasis: '34%',
+    flexGrow: 0,
+    flexShrink: 1,
+    justifyContent: 'center',
+    minHeight: 0,
+    minWidth: 0,
+    padding: 28
+  },
+  heroContentCardCompact: {
+    flexBasis: 'auto',
+    flexGrow: 0,
+    flexShrink: 0,
+    minHeight: 0,
+    padding: 20,
+    width: '100%'
+  },
+  heroChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 14
+  },
+  heroCarouselWrapper: {
+    backgroundColor: palette.cardAlt,
+    borderRadius: 24,
+    alignSelf: 'flex-start',
+    flexBasis: '66%',
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+    minWidth: 0,
+    overflow: 'hidden',
+    width: '100%'
+  },
+  heroCarouselWrapperCompact: {
+    flexBasis: 'auto',
+    flexGrow: 0,
+    flexShrink: 0,
+    width: '100%'
+  },
+  heroCarouselMedia: {
+    aspectRatio: 16 / 9,
+    backgroundColor: palette.cardAlt,
+    width: '100%'
+  },
+  heroCarouselImage: {
+    borderRadius: 24
+  },
+  heroCarouselImageFallbackBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.08)'
+  },
+  heroCarouselState: {
+    alignItems: 'center',
+    aspectRatio: 16 / 9,
+    backgroundColor: palette.cardAlt,
+    justifyContent: 'center',
+    width: '100%'
+  },
+  heroCarouselStateText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 10
+  },
+  heroDots: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingBottom: 10,
+    paddingTop: 8
+  },
+  heroDot: {
+    backgroundColor: '#CBD5E1',
+    borderRadius: 999,
+    height: 8,
+    width: 8
+  },
+  heroDotActive: {
+    backgroundColor: palette.blue,
+    width: 24
   },
   heroBackgroundShell: {
     ...StyleSheet.absoluteFillObject,
@@ -1406,20 +1600,30 @@ const styles = StyleSheet.create({
     flex: 0,
     height: 320,
     maxWidth: '100%',
-    marginTop: spacing.lg,
-    minHeight: 220,
+    marginTop: 16,
+    minHeight: 240,
     minWidth: 0,
     width: '100%'
   },
   heroImagePanePhone: {
-    borderRadius: '2%',
+    borderRadius: 24,
     flex: 0,
-    height: 280,
+    height: 300,
     maxHeight: '100%',
     maxWidth: '100%',
-    marginTop: spacing.lg,
-    minHeight: 200,
+    marginTop: 16,
+    minHeight: 220,
     minWidth: 0,
+    width: '100%'
+  },
+  mobileHeroImagePane: {
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderRadius: 24,
+    flex: 0,
+    marginTop: 0,
+    overflow: 'hidden',
+    padding: 0,
     width: '100%'
   },
   heroSpotlightPanel: {
@@ -1477,16 +1681,17 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   heroChip: {
-    backgroundColor: 'rgba(255,255,255,0.76)',
-    borderColor: 'rgba(37,99,235,0.16)',
+    backgroundColor: palette.cardAlt,
+    borderColor: palette.border,
     borderRadius: 999,
     borderWidth: 1,
-    color: '#0F172A',
-    fontSize: 12,
-    fontWeight: '800',
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 8
+    paddingHorizontal: 13,
+    paddingVertical: 9
+  },
+  heroChipText: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '800'
   },
   heroVisual: {
     alignItems: 'center',
@@ -1627,6 +1832,14 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
     right: 0
+  },
+  heroCarouselDotsMobile: {
+    alignSelf: 'center',
+    marginTop: 12,
+    position: 'relative'
+  },
+  heroCarouselDotsTiny: {
+    marginTop: 10
   },
   heroCarouselDot: {
     backgroundColor: 'rgba(255,255,255,0.78)',
