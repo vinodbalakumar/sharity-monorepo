@@ -1,7 +1,8 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Image,
   ImageBackground,
   Platform,
   Pressable,
@@ -14,15 +15,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getMarketplaceHome, getMarketplaceListings } from '../../services/marketplaceApi';
-import type { VisitorContextResponse } from '../../services/publicContentApi';
-import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { PublicSiteFooter } from '../../components/publicSite/PublicSiteFooter';
-import { appState$ } from '../../state/appState';
-import { marketingColors, spacing } from '../../theme';
+import { getMarketplaceHome } from '../../services/marketplaceApi';
+import type { VisitorContextResponse } from '../../services/publicContentApi';
+import { spacing } from '../../theme';
 import type { MarketplaceCategory, MarketplaceHomeResponse, MarketplaceListing } from '../../types/marketplace';
-import { resolveMockImageUrl } from '../../utils/mockImages';
-import { placeholderImageUrl } from '../../utils/mockImages';
 import { featureCards, footerGroups } from './welcomeContent';
 
 type WelcomeScreenProps = {
@@ -35,39 +32,177 @@ type WelcomeScreenProps = {
   visitorContext: VisitorContextResponse | null;
 };
 
-const stats = [
-  ['10M+', 'Active Users'],
-  ['50K+', 'Sellers'],
-  ['100M+', 'Products'],
-  ['4.8/5', 'User Rating']
-];
+type TopCategoryCard = {
+  activeCount: number;
+  categoryCode: string;
+  categoryName: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  imageUrl: string | null;
+  maxDiscountPercent: number;
+  soldCount: number;
+  slug: string;
+  verticalCode: string;
+};
 
+type DealCard = {
+  categoryName: string;
+  currencyCode: string;
+  discountedPrice: number;
+  discountPercentage: number;
+  imageUrl: string | null;
+  originalPrice: number;
+  title: string;
+  verticalCode: string;
+};
+
+type FeaturedProductCard = {
+  categoryName: string;
+  currencyCode: string;
+  imageUrl: string | null;
+  originalPrice: number;
+  price: number;
+  sellerName: string;
+  title: string;
+  verticalCode: string;
+  verifiedSeller: boolean;
+};
+
+type SellerCard = {
+  completedOrders: number;
+  listings: MarketplaceListing[];
+  name: string;
+  rating: number;
+};
+
+type HeroSlide = {
+  id: string;
+  imageUrl: string;
+  kicker: string;
+  meta: string;
+  sortOrder?: number;
+  subtitle: string;
+  title: string;
+  verticalCode: string;
+};
+
+const heroPills = ['Protected checkout', 'Verified sellers', 'Secure delivery'];
 const webHeroGradient = Platform.OS === 'web'
-  ? ({ backgroundImage: 'linear-gradient(120deg, #fff0df 0%, #eef7ff 36%, #e8fff4 68%, #e5edff 100%)' } as never)
+  ? ({ backgroundImage: 'linear-gradient(120deg, #fff8ee 0%, #f7fbff 38%, #eefcf2 72%, #edf3ff 100%)' } as never)
   : null;
-const ratingStat = ['4.8/5', 'User Rating'];
+const webHeroCardGradient = Platform.OS === 'web'
+  ? ({
+      backgroundImage:
+        'radial-gradient(circle at 12% 10%, rgba(59,130,246,0.10), transparent 30%), radial-gradient(circle at 88% 8%, rgba(245,158,11,0.08), transparent 28%), linear-gradient(135deg, #ffffff 0%, #f8fbff 50%, #fff8ec 100%)'
+    } as never)
+  : null;
+const webHeroContentGradient = Platform.OS === 'web'
+  ? ({
+      backgroundImage:
+        'radial-gradient(circle at 12% 10%, rgba(59,130,246,0.12), transparent 30%), radial-gradient(circle at 88% 8%, rgba(245,158,11,0.10), transparent 28%), linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.98) 50%, rgba(255,248,236,0.98) 100%)'
+    } as never)
+  : null;
+const webGlassPanel = Platform.OS === 'web'
+  ? ({
+      backdropFilter: 'blur(18px)',
+      backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(248,251,255,0.76) 100%)'
+    } as never)
+  : null;
 
-export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpenPublicContent, onSearchMarketplace, onSignIn, visitorContext }: WelcomeScreenProps) {
-  const { isMobile } = useResponsiveLayout();
-  const { width: viewportWidth } = useWindowDimensions();
+export function WelcomeScreen({
+  onBrowse,
+  onGetStarted,
+  onOpenMarketplace,
+  onOpenPublicContent,
+  onSearchMarketplace,
+  onSignIn,
+  visitorContext
+}: WelcomeScreenProps) {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 992;
+  const isMobile = width < 760;
+  const isTinyPhone = width < 480;
+  const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
-  const isCompact = viewportWidth < 992;
-  const isCompactMarketplaceGrid = viewportWidth < 992;
-  const categoryColumns = viewportWidth < 360 ? 1 : viewportWidth < 992 ? 2 : 4;
-  const categoryGutter = viewportWidth < 560 ? 8 : 6;
+  const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
+  const heroCardHeight = isMobile ? 380 : width < 992 ? 440 : 520;
+  const collectionGridWebStyle =
+    isWeb
+      ? ({
+          display: 'grid',
+          gridTemplateColumns: width >= 1200 ? 'repeat(3, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gap: 24,
+          width: '100%'
+        } as never)
+      : null;
+  const categoryGridWebStyle =
+    isWeb
+      ? ({
+          display: 'grid',
+          gridTemplateColumns: width >= 1200 ? 'repeat(4, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gap: 24,
+          width: '100%'
+        } as never)
+      : null;
+  const productGridWebStyle =
+    isWeb
+      ? ({
+          display: 'grid',
+          gridTemplateColumns:
+            width >= 1600
+              ? 'repeat(5, minmax(0, 1fr))'
+              : width >= 1200
+                ? 'repeat(4, minmax(0, 1fr))'
+                : width >= 992
+                  ? 'repeat(3, minmax(0, 1fr))'
+                  : width >= 768
+                    ? 'repeat(2, minmax(0, 1fr))'
+                    : '1fr',
+          gap: 24,
+          width: '100%'
+        } as never)
+      : null;
+  const featureGridWebStyle =
+    isWeb
+      ? ({
+          display: 'grid',
+          gridTemplateColumns: width >= 992 ? 'repeat(4, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gap: 24,
+          width: '100%'
+        } as never)
+      : null;
+  const metricGridWebStyle =
+    isWeb
+      ? ({
+          display: 'grid',
+          gridTemplateColumns: width >= 992 ? 'repeat(4, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gap: 24,
+          width: '100%'
+        } as never)
+      : null;
+  const heroGridWebStyle =
+    isWeb
+      ? ({
+          display: 'grid',
+          gridTemplateColumns: isCompact ? '1fr' : 'minmax(0, 42fr) minmax(0, 58fr)',
+          gap: 32,
+          alignItems: 'stretch',
+          width: '100%'
+        } as never)
+      : null;
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const [home, setHome] = useState<MarketplaceHomeResponse | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
   const [homeError, setHomeError] = useState(false);
-  const [publicListings, setPublicListings] = useState<MarketplaceListing[]>([]);
-  const [publicListingsLoading, setPublicListingsLoading] = useState(true);
-  const [publicListingsError, setPublicListingsError] = useState(false);
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const [heroViewportWidth, setHeroViewportWidth] = useState(0);
+  const [isHeroPaused, setIsHeroPaused] = useState(false);
+  const heroScrollRef = useRef<ScrollView | null>(null);
+  const heroResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadPublicMarketplaceHome() {
+    async function loadHome() {
       try {
         const countryQuery = visitorContext?.countryCode ? `?countryCode=${encodeURIComponent(visitorContext.countryCode)}` : '';
         const response = await getMarketplaceHome(countryQuery);
@@ -87,789 +222,930 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
       }
     }
 
-    loadPublicMarketplaceHome();
+    loadHome();
 
     return () => {
       mounted = false;
     };
   }, [visitorContext?.countryCode]);
 
-  useEffect(() => {
-    let mounted = true;
+  const normalizedCategories = useMemo(() => buildTopCategories(home), [home]);
+  const topCategories = normalizedCategories;
+  const discountedItems = useMemo(() => buildDiscountedItems(home), [home]);
+  const featuredProducts = useMemo(() => buildFeaturedProducts(home), [home]);
+  const sellerCards = useMemo(() => buildSellerCards(home), [home]);
+  const metrics = useMemo(() => buildMetrics(home, sellerCards.length), [home, sellerCards.length]);
+  const heroVerticalSource = useMemo(() => extractHeroVerticalSource(home), [home]);
+  const heroSlides = useMemo(() => normalizeHeroSlides(home), [home]);
+  const topDiscounts = discountedItems;
+  const trustedSellers = sellerCards;
+  const sellerCarouselRef = useRef<ScrollView | null>(null);
+  const sellerScrollOffsetRef = useRef(0);
+  const sellerCardWidth = isMobile ? 260 : 300;
+  const sellerCarouselStep = sellerCardWidth + 24;
 
-    async function loadPublicListings() {
-      try {
-        const countryCode = visitorContext?.countryCode;
-        const listings = await getMarketplaceListings(countryCode);
-        if (mounted) {
-          setPublicListings(listings);
-          setPublicListingsError(false);
-        }
-      } catch {
-        if (mounted) {
-          setPublicListings([]);
-          setPublicListingsError(true);
-        }
-      } finally {
-        if (mounted) {
-          setPublicListingsLoading(false);
-        }
+  const scrollHeroToIndex = useCallback(
+    (index: number) => {
+      if (heroViewportWidth <= 0 || heroSlides.length === 0) {
+        return;
       }
-    }
 
-    loadPublicListings();
-
-    return () => {
-      mounted = false;
-    };
-  }, [visitorContext?.countryCode]);
-
-  const topCategories = useMemo(() => buildTopCategories(home), [home]);
-  const activeVerticals = useMemo(
-    () => (home?.verticals ?? []).filter((vertical) => vertical.status === 'ACTIVE' && vertical.availableToCustomer),
-    [home]
+      heroScrollRef.current?.scrollTo({ animated: true, x: index * heroViewportWidth, y: 0 });
+    },
+    [heroSlides.length, heroViewportWidth]
   );
 
   useEffect(() => {
-    if (activeHeroIndex >= activeVerticals.length) {
-      setActiveHeroIndex(0);
+    if (__DEV__) {
+      console.log('Marketplace home response:', home);
+      console.log('Marketplace home category data:', normalizedCategories);
+      console.log('Hero vertical source:', heroVerticalSource);
+      console.log('Normalized hero slides:', heroSlides);
+      console.log('Top discounts count:', topDiscounts.length);
+      console.log('Featured products count:', featuredProducts.length);
+      console.log('Trusted sellers count:', trustedSellers.length);
+      console.log('Hero slides count:', heroSlides.length, 'activeIndex:', activeHeroIndex);
     }
-  }, [activeHeroIndex, activeVerticals.length]);
+  }, [activeHeroIndex, featuredProducts.length, heroSlides, heroVerticalSource, normalizedCategories, topDiscounts.length, trustedSellers.length, home]);
 
   useEffect(() => {
-    if (activeVerticals.length <= 1) {
+    if (heroSlides.length <= 1 || isHeroPaused) {
       return;
     }
 
     const timer = setInterval(() => {
-      setActiveHeroIndex((current) => (current + 1) % activeVerticals.length);
-    }, 5000);
+      setActiveHeroIndex((current) => {
+        return (current + 1) % heroSlides.length;
+      });
+    }, 3500);
 
     return () => clearInterval(timer);
-  }, [activeVerticals.length]);
+  }, [heroSlides.length, isHeroPaused]);
 
-  const activeHeroVertical = activeVerticals[activeHeroIndex] ?? null;
-  const activeHeroImageUrl = activeHeroVertical && home ? imageForVertical(activeHeroVertical, home) : null;
+  useEffect(() => {
+    scrollHeroToIndex(activeHeroIndex);
+  }, [activeHeroIndex, scrollHeroToIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (heroResumeTimeoutRef.current) {
+        clearTimeout(heroResumeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const pauseHeroAutoplay = useCallback(() => {
+    setIsHeroPaused(true);
+    if (heroResumeTimeoutRef.current) {
+      clearTimeout(heroResumeTimeoutRef.current);
+    }
+
+    heroResumeTimeoutRef.current = setTimeout(() => {
+      setIsHeroPaused(false);
+    }, 2500);
+  }, []);
+
+  const handleHeroSlidePress = useCallback(
+    (index: number) => {
+      pauseHeroAutoplay();
+      setActiveHeroIndex(index);
+      scrollHeroToIndex(index);
+    },
+    [pauseHeroAutoplay, scrollHeroToIndex]
+  );
+
+  const scrollTrustedSellers = useCallback(
+    (direction: 'previous' | 'next') => {
+      const delta = direction === 'next' ? sellerCarouselStep : -sellerCarouselStep;
+      const nextOffset = Math.max(0, sellerScrollOffsetRef.current + delta);
+      sellerScrollOffsetRef.current = nextOffset;
+      sellerCarouselRef.current?.scrollTo({ animated: true, x: nextOffset, y: 0 });
+    },
+    [sellerCarouselStep]
+  );
+
+  const handleHeroMomentumScrollEnd = useCallback(
+    (event: { nativeEvent: { contentOffset: { x: number } } }) => {
+      if (heroViewportWidth <= 0 || heroSlides.length === 0) {
+        return;
+      }
+
+      const nextIndex = Math.max(0, Math.min(heroSlides.length - 1, Math.round(event.nativeEvent.contentOffset.x / heroViewportWidth)));
+      setActiveHeroIndex(nextIndex);
+      pauseHeroAutoplay();
+    },
+    [heroSlides.length, heroViewportWidth, pauseHeroAutoplay]
+  );
+
+  function submitSearch() {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      return;
+    }
+    onSearchMarketplace(trimmed);
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.brandWrap}>
-            <View style={styles.brandMark}>
-              <Text style={styles.brandLetter}>S</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.pageWrapper}>
+          <View style={[styles.contentContainer, { paddingHorizontal: contentPadding }]}>
+          <View style={[styles.header, isMobile && styles.headerMobile]}>
+            <View style={styles.brandWrap}>
+              <View style={styles.brandMark}>
+                <Text style={styles.brandLetter}>S</Text>
+              </View>
+              <View>
+                <Text style={styles.brandName}>Sharity</Text>
+              </View>
             </View>
-            <Text style={styles.brandName}>Sharity</Text>
+
+            {!isMobile ? (
+              <View style={styles.searchBar}>
+                <Ionicons color={palette.body} name="search-outline" size={18} />
+                <TextInput
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={submitSearch}
+                  placeholder="Search for products, categories"
+                  placeholderTextColor={palette.body}
+                  returnKeyType="search"
+                  style={styles.searchInput}
+                  value={searchQuery}
+                />
+              </View>
+            ) : null}
+
+            <View style={styles.headerActions}>
+              <Pressable onPress={onSignIn} style={styles.signInButton}>
+                <Text numberOfLines={1} style={styles.signInText}>
+                  Sign In
+                </Text>
+              </Pressable>
+              <Pressable onPress={onGetStarted} style={styles.headerCta}>
+                <Text numberOfLines={1} style={styles.headerCtaText}>
+                  Get Started
+                </Text>
+              </Pressable>
+            </View>
           </View>
-          {!isCompact ? (
-            <View style={styles.searchBar}>
-              <Ionicons color={palette.textMuted} name="search-outline" size={18} />
-              <TextInput
-                onChangeText={setSearchQuery}
-                onSubmitEditing={() => submitSearch(searchQuery, onSearchMarketplace)}
-                placeholder="Search for products, categories"
-                placeholderTextColor={palette.textMuted}
-                returnKeyType="search"
-                style={[styles.searchInput, isWeb && styles.searchInputWeb]}
-                value={searchQuery}
-              />
+
+          {isMobile ? (
+            <View style={styles.mobileSearchWrap}>
+              <View style={styles.searchBarMobile}>
+                <Ionicons color={palette.body} name="search-outline" size={18} />
+                <TextInput
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={submitSearch}
+                  placeholder="Search for products, categories"
+                  placeholderTextColor={palette.body}
+                  returnKeyType="search"
+                  style={styles.searchInput}
+                  value={searchQuery}
+                />
+              </View>
             </View>
           ) : null}
-          <View style={styles.headerActions}>
-            <Pressable onPress={onSignIn} style={styles.signInButton}>
-              <Text style={styles.signInText}>Sign In</Text>
-            </Pressable>
-            <Pressable onPress={onGetStarted} style={styles.headerCta}>
-              <Text style={styles.headerCtaText}>{isCompact ? 'Start' : 'Get Started'}</Text>
-            </Pressable>
-          </View>
-        </View>
 
-        {isCompact ? (
-          <View style={styles.compactSearchSection}>
-            <View style={styles.searchBarCompact}>
-              <Ionicons color={palette.textMuted} name="search-outline" size={18} />
-              <TextInput
-                onChangeText={setSearchQuery}
-                onSubmitEditing={() => submitSearch(searchQuery, onSearchMarketplace)}
-                placeholder="Search for products, categories"
-                placeholderTextColor={palette.textMuted}
-                returnKeyType="search"
-                style={[styles.searchInput, styles.searchInputCompact, isWeb && styles.searchInputWeb]}
-                value={searchQuery}
-              />
+          <View style={[styles.heroGrid, !isCompact && styles.heroGridSplit, heroGridWebStyle, { minHeight: heroCardHeight }]}>
+            <View
+              style={[
+                styles.heroCopyCard,
+                webHeroContentGradient,
+                isDesktop && styles.heroCopyCardDesktop,
+                !isCompact && styles.heroCopyCardSplit,
+                { minHeight: heroCardHeight }
+              ]}
+            >
+              <View style={styles.heroCopyInner}>
+                <View style={styles.heroEyebrow}>
+                  <Ionicons color={palette.blue} name="shield-checkmark-outline" size={14} />
+                  <Text style={styles.heroEyebrowText}>Safe marketplace</Text>
+                </View>
+                <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile, isTinyPhone && styles.heroTitleTiny]}>
+                  Buy and sell with confidence.
+                </Text>
+                <Text style={[styles.heroBody, isMobile && styles.heroBodyMobile]}>
+                  Digital goods, gift cards, software, and jewellery in one place.
+                </Text>
+
+                <View style={[styles.heroActions, isCompact && styles.heroActionsStacked]}>
+                  <Pressable onPress={onGetStarted} style={[styles.heroPrimary, isCompact && styles.heroPrimaryStacked]}>
+                    <Text numberOfLines={1} style={styles.heroPrimaryText}>
+                      Get Started Free
+                    </Text>
+                  </Pressable>
+                  <Pressable onPress={onSignIn} style={[styles.heroSecondary, isCompact && styles.heroSecondaryStacked]}>
+                    <Text numberOfLines={1} style={styles.heroSecondaryText}>
+                      Sign In
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.heroPills}>
+                  {heroPills.map((pill) => (
+                    <View key={pill} style={styles.heroPill}>
+                      <Text style={styles.heroPillText}>{pill}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.heroVisualCard, webHeroCardGradient, isDesktop && styles.heroVisualCardDesktop, !isCompact && styles.heroVisualCardSplit, { minHeight: heroCardHeight }]}>
+              {heroSlides.length > 0 ? (
+                <>
+                  <Pressable
+                    onPress={() => handleHeroSlidePress(activeHeroIndex)}
+                    style={[styles.heroCarouselViewport, styles.heroCarouselSimple]}
+                  >
+                    <Image
+                      onError={() => {
+                        if (__DEV__) {
+                          console.warn('Hero image failed to load:', heroSlides[activeHeroIndex]?.imageUrl);
+                        }
+                      }}
+                      resizeMode="contain"
+                      source={{ uri: heroSlides[activeHeroIndex].imageUrl }}
+                      style={styles.heroVisualImage}
+                    />
+                  </Pressable>
+                  {heroSlides.length > 1 ? (
+                    <View style={styles.heroDots}>
+                      {heroSlides.map((item, index) => (
+                        <Pressable
+                          key={item.id}
+                          onPress={() => handleHeroSlidePress(index)}
+                          style={[styles.heroDot, index === activeHeroIndex && styles.heroDotActive]}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
+                </>
+              ) : homeLoading ? (
+                <View style={[styles.heroVisualState, { minHeight: heroCardHeight - 40 }]}>
+                  <Ionicons color={palette.blue} name="sync-outline" size={28} />
+                  <Text style={styles.heroVisualStateText}>Loading marketplace...</Text>
+                </View>
+              ) : (
+                <View style={[styles.heroVisualState, { minHeight: heroCardHeight - 40 }]}>
+                  <Ionicons color={palette.blue} name="images-outline" size={28} />
+                  <Text style={styles.heroVisualStateText}>No hero banners configured</Text>
+                </View>
+              )}
+
             </View>
           </View>
-        ) : null}
 
-        <View style={[styles.heroSection, webHeroGradient, isCompact && styles.heroSectionCompact]}>
-          <View style={[styles.heroContentCard, isCompact && styles.heroContentCardCompact]}>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>TRUSTED MARKETPLACE</Text>
+          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionKicker}>Featured Collections</Text>
+              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
+                Top Categories
+              </Text>
+              <Text style={styles.sectionSubtitle}>
+                Browse the main categories in one quick view.
+              </Text>
             </View>
-            <Text style={[styles.heroTitle, isCompact && styles.heroTitleMobile]}>
-              Buy & Sell Digital Goods and Imitation Jewellery
-            </Text>
-            <Text style={styles.heroDescription}>
-              Sharity helps buyers and sellers trade gift cards, subscriptions, game codes, software licenses, and imitation jewellery through verified sellers, protected checkout, and clear delivery rules.
-            </Text>
-            <View style={[styles.heroActions, isCompact && styles.heroActionsMobile]}>
-              <Pressable onPress={onGetStarted} style={styles.heroPrimary}>
-                <Text numberOfLines={1} style={styles.heroPrimaryText}>Get Started Free</Text>
-              </Pressable>
-              <Pressable onPress={onSignIn} style={styles.heroSecondary}>
-                <Text numberOfLines={1} style={styles.heroSecondaryText}>Sign In</Text>
-              </Pressable>
+
+            <View style={[styles.categoryGrid, categoryGridWebStyle]}>
+              {homeLoading ? (
+                <View style={styles.apiState}>
+                  <Ionicons color={palette.blue} name="sync-outline" size={22} />
+                  <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+                </View>
+              ) : null}
+              {homeError ? (
+                <View style={styles.apiState}>
+                  <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
+                  <Text style={styles.apiStateText}>Marketplace categories are unavailable from the backend right now.</Text>
+                </View>
+              ) : null}
+              {!homeLoading && !homeError && topCategories.length === 0 ? (
+                <View style={styles.apiState}>
+                  <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
+                  <Text style={styles.apiStateText}>No active public categories are enabled for this region.</Text>
+                </View>
+              ) : null}
+
+              {topCategories.map((category) => (
+                <Pressable
+                  key={category.categoryCode}
+                  onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
+                  style={[styles.categoryCard, isWeb && styles.gridCardFullWidth]}
+                >
+                  {category.imageUrl ? (
+                    <>
+                      <View style={styles.categoryMediaWrap}>
+                        <ImageBackground
+                          imageStyle={styles.categoryImage}
+                          resizeMode="contain"
+                          source={{ uri: category.imageUrl }}
+                          style={styles.categoryMedia}
+                        />
+                      </View>
+                      <View style={styles.categoryCopy}>
+                        <View style={styles.categoryIconPill}>
+                          <Ionicons color={palette.blue} name={category.icon} size={16} />
+                        </View>
+                        <Text style={styles.categoryName}>{category.categoryName}</Text>
+                        <Text style={styles.categoryCount}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.categoryPlaceholder}>
+                      <View style={styles.categoryPlaceholderIcon}>
+                        <Ionicons color={palette.blue} name={category.icon} size={20} />
+                      </View>
+                      <Text style={styles.categoryName}>{category.categoryName}</Text>
+                      <Text style={styles.categoryCount}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
+                    </View>
+                  )}
+                </Pressable>
+              ))}
             </View>
-            <View style={styles.heroChips}>
-              {['Protected Checkout', 'Verified Sellers', 'Secure Delivery', 'Imitation Jewellery'].map((item) => (
-                <View key={item} style={styles.heroChip}>
-                  <Text style={styles.heroChipText}>{item}</Text>
+          </View>
+
+          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionKicker}>Today&apos;s Best Deals</Text>
+              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Best deals today</Text>
+              <Text style={styles.sectionSubtitle}>Simple discounts from trusted sellers.</Text>
+            </View>
+
+            <View style={[styles.productGrid, productGridWebStyle]}>
+              {topDiscounts.map((item) => (
+                <Pressable
+                  key={`${item.verticalCode}-${item.title}`}
+                  onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                  style={[styles.productCard, isWeb && styles.gridCardFullWidth]}
+                >
+                  {item.imageUrl ? (
+                    <ImageBackground imageStyle={styles.productImage} source={{ uri: item.imageUrl }} style={styles.productMedia}>
+                      <View style={styles.cardScrim} />
+                      <View style={styles.productBadge}>
+                        <Text style={styles.productBadgeText}>{Math.round(item.discountPercentage)}% off</Text>
+                      </View>
+                    </ImageBackground>
+                  ) : (
+                    <View style={styles.productPlaceholder}>
+                      <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
+                      <Text style={styles.productPlaceholderText}>Discounted item</Text>
+                    </View>
+                  )}
+                  <View style={styles.productBody}>
+                    <Text style={styles.productCategory} numberOfLines={1}>
+                      {item.categoryName}
+                    </Text>
+                    <Text style={[styles.productTitle, isMobile && styles.productTitleMobile]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.productMetaRow}>
+                      <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                      <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionKicker}>Featured Products</Text>
+              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Popular products</Text>
+              <Text style={styles.sectionSubtitle}>A quick look at what shoppers are buying now.</Text>
+            </View>
+
+            <View style={[styles.collectionGrid, collectionGridWebStyle]}>
+              {featuredProducts.map((item) => (
+                <Pressable
+                  key={`${item.verticalCode}-${item.title}-${item.sellerName}`}
+                  onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                  style={[styles.collectionCard, isWeb && styles.gridCardFullWidth]}
+                >
+                  <View style={styles.collectionMediaWrap}>
+                    {item.imageUrl ? (
+                      <ImageBackground imageStyle={styles.collectionImage} resizeMode="contain" source={{ uri: item.imageUrl }} style={styles.collectionMedia} />
+                    ) : (
+                      <View style={styles.collectionPlaceholder}>
+                        <Ionicons color={palette.blue} name="images-outline" size={28} />
+                        <Text style={styles.collectionPlaceholderText}>Featured product</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.collectionCopy}>
+                    <Text style={styles.collectionEyebrow}>Featured</Text>
+                    <Text style={styles.collectionMeta}>{item.sellerName}</Text>
+                    <Text style={styles.collectionTitle} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.productMetaRow}>
+                      <Text style={styles.productPrice}>{formatMoney(item.price, item.currencyCode)}</Text>
+                      <Text style={styles.productSubMeta}>{item.verifiedSeller ? 'Verified seller' : item.categoryName}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeading}>
+                <Text style={styles.sectionKicker}>Trusted Sellers</Text>
+                <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Trusted sellers</Text>
+                <Text style={styles.sectionSubtitle}>Verified sellers with solid ratings.</Text>
+              </View>
+              {!isMobile ? (
+                <View style={styles.carouselControls}>
+                  <Pressable onPress={() => scrollTrustedSellers('previous')} style={styles.carouselControlButton}>
+                    <Ionicons color={palette.text} name="chevron-back" size={18} />
+                  </Pressable>
+                  <Pressable onPress={() => scrollTrustedSellers('next')} style={styles.carouselControlButton}>
+                    <Ionicons color={palette.text} name="chevron-forward" size={18} />
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.sellerCarouselContent}
+              horizontal
+              decelerationRate="fast"
+              keyboardShouldPersistTaps="handled"
+              onScroll={(event) => {
+                sellerScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
+              }}
+              scrollEventThrottle={16}
+              ref={sellerCarouselRef}
+              snapToAlignment="start"
+              snapToInterval={sellerCarouselStep}
+              showsHorizontalScrollIndicator={false}
+            >
+              {trustedSellers.map((seller) => (
+                <Pressable
+                  key={seller.name}
+                  onPress={onBrowse}
+                  style={[styles.sellerCard, isWeb && styles.gridCardFullWidth, { width: sellerCardWidth }]}
+                >
+                  <View style={styles.sellerHeader}>
+                    <View style={styles.sellerAvatar}>
+                      <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
+                    </View>
+                    <View style={styles.sellerHeaderCopy}>
+                      <Text style={styles.sellerName} numberOfLines={1}>
+                        {seller.name}
+                      </Text>
+                      <View style={styles.sellerBadgeRow}>
+                        <View style={styles.sellerBadge}>
+                          <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
+                          <Text style={styles.sellerBadgeText}>Verified seller</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.sellerStatsRow}>
+                    <View style={styles.sellerStat}>
+                      <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
+                      <Text style={styles.sellerStatLabel}>Review score</Text>
+                    </View>
+                    <View style={styles.sellerStat}>
+                      <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
+                      <Text style={styles.sellerStatLabel}>Completed orders</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.sellerFooterText}>
+                    {seller.listings[0]?.title ?? 'Curated storefront'}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionKicker}>Why Choose Sharity</Text>
+              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Why Sharity</Text>
+              <Text style={styles.sectionSubtitle}>Trust, simple checkout, and clear rules.</Text>
+            </View>
+
+            <View style={[styles.featureGrid, featureGridWebStyle]}>
+              {featureCards.map((feature) => (
+                <View key={feature.title} style={[styles.featureCard, isWeb && styles.gridCardFullWidth]}>
+                  <View style={styles.featureIcon}>
+                    <Ionicons color={palette.blue} name={feature.icon} size={28} />
+                  </View>
+                  <Text style={styles.featureTitle}>{feature.title}</Text>
+                  <Text style={styles.featureText}>{feature.text}</Text>
                 </View>
               ))}
             </View>
           </View>
-          <View style={[styles.heroCarouselWrapper, isCompact && styles.heroCarouselWrapperCompact]}>
-            {activeHeroImageUrl ? (
-              <ImageBackground
-                imageStyle={styles.heroCarouselImage}
-                resizeMode="contain"
-                source={{ uri: activeHeroImageUrl }}
-                style={styles.heroCarouselMedia}
-              >
-                <View style={styles.heroCarouselImageFallbackBackground} />
-              </ImageBackground>
-            ) : homeLoading ? (
-              <View style={styles.heroCarouselState}>
-                <Ionicons color={palette.blue} name="sync-outline" size={28} />
-                <Text style={styles.heroCarouselStateText}>Loading marketplace...</Text>
-              </View>
-            ) : (
-              <View style={styles.heroCarouselState}>
-                <Ionicons color={palette.blue} name="images-outline" size={28} />
-                <Text style={styles.heroCarouselStateText}>No hero image configured</Text>
-              </View>
-            )}
-            {activeVerticals.length > 1 ? (
-              <View style={styles.heroDots}>
-                {activeVerticals.map((vertical, index) => (
-                  <Pressable
-                    key={vertical.moduleCode}
-                    onPress={() => setActiveHeroIndex(index)}
-                    style={[styles.heroDot, index === activeHeroIndex && styles.heroDotActive]}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        </View>
 
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionKicker}>Browse By Category</Text>
-          </View>
-        </View>
-
-        <View style={styles.categoryGridGameflip}>
-          {homeLoading ? (
-            <View style={styles.apiState}>
-              <Ionicons color={palette.blue} name="sync-outline" size={22} />
-              <Text style={styles.apiStateText}>Loading categories...</Text>
+          <View style={styles.metricSection}>
+            <View style={[styles.metricGrid, metricGridWebStyle]}>
+              {metrics.map((metric) => (
+                <View key={metric.label} style={[styles.metricCard, isWeb && styles.gridCardFullWidth]}>
+                  <Text style={styles.metricValue}>{metric.value}</Text>
+                  <Text style={styles.metricLabel}>{metric.label}</Text>
+                </View>
+              ))}
             </View>
-          ) : null}
-          {homeError ? (
-            <View style={styles.apiState}>
-              <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-              <Text style={styles.apiStateText}>Categories unavailable</Text>
-            </View>
-          ) : null}
-          {!homeLoading && !homeError && topCategories.length === 0 ? (
-            <View style={styles.apiState}>
-              <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-              <Text style={styles.apiStateText}>No categories available for this region.</Text>
-            </View>
-          ) : null}
-          {topCategories.map((category, index) => {
-            const cardSize = Math.floor((viewportWidth - 16 - (categoryColumns - 1) * categoryGutter) / categoryColumns);
-            return (
-            <View key={category.code} style={{ width: cardSize, height: cardSize, marginBottom: 8 }}>
-              <Pressable
-                onPress={() => {
-                  const route = getMarketplaceRoute(category.verticalCode, home?.verticals ?? []);
-                  onOpenMarketplace(route);
-                }}
-                style={styles.categoryCardGameflipInnerWrapper}
-              >
-                {category.imageUrl ? (
-                  <ImageBackground
-                    imageStyle={styles.categoryImageGameflip}
-                    resizeMode="cover"
-                    source={{ uri: category.imageUrl }}
-                    style={styles.categoryImageWrapGameflip}
-                  >
-                    <View style={styles.categoryOverlayGameflip} />
-                    <View style={styles.categoryLabelGameflip}>
-                      <Text style={styles.categoryNameGameflip}>{category.name}</Text>
-                    </View>
-                  </ImageBackground>
-                ) : (
-                  <View style={[styles.categoryImageWrapGameflip, styles.categoryNoImageGameflip]}>
-                    <Ionicons color={palette.brandPrimary} name="grid-outline" size={32} />
-                    <View style={styles.categoryLabelGameflip}>
-                      <Text style={styles.categoryNameGameflip}>{category.name}</Text>
-                    </View>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          );
-          })}
-        </View>
-
-        {/* Discounted Subcategories Section */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionKicker}>Best deals</Text>
-            <Text style={styles.sectionTitle}>Top discounted items</Text>
           </View>
-          <Text style={styles.sectionNote}>Best discounts across top categories.</Text>
-        </View>
 
-        {isMobile ? (
-          <ScrollView
-            contentContainerStyle={styles.horizontalShelfContent}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalShelf}
-          >
-            {homeLoading ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading deals...</Text>
-              </View>
-            ) : null}
-            {homeError ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Deals unavailable right now.</Text>
-              </View>
-            ) : null}
-            {!homeLoading && !homeError && (!home?.discountedSubcategories || home.discountedSubcategories.length === 0) ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No discounted items found.</Text>
-              </View>
-            ) : null}
-            {(home?.discountedSubcategories ?? []).slice(0, 20).map((item) => (
-              <Pressable
-                key={`${item.subcategoryCode}-${item.listingTitle}`}
-                onPress={() => {
-                  const route = getMarketplaceRoute(item.verticalCode, home?.verticals ?? []);
-                  onOpenMarketplace(route);
-                }}
-                style={[styles.publicListingCard, styles.publicListingCardShelf]}
-              >
-                <ImageBackground
-                  imageStyle={styles.publicListingImage}
-                  resizeMode="cover"
-                  source={{ uri: item.listingImageUrl ?? placeholderImageUrl(item.listingTitle, 900) }}
-                  style={styles.publicListingImageWrap}
-                >
-                  <View style={styles.publicListingScrim} />
-                  <View style={styles.publicListingBadgeRow}>
-                    <Text style={styles.publicListingBadge}>{Math.round(item.discountPercentage)}% off</Text>
-                  </View>
-                </ImageBackground>
-                <View style={styles.publicListingCopy}>
-                  <Text style={styles.publicListingMarketplace}>{item.categoryName}</Text>
-                  <Text style={styles.publicListingTitle} numberOfLines={2}>{item.listingTitle}</Text>
-                  <View style={styles.publicListingPriceRow}>
-                    <Text style={styles.publicListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
-                    <Text style={styles.publicListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.publicListingGrid}>
-            {homeLoading ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading deals...</Text>
-              </View>
-            ) : null}
-            {homeError ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Deals unavailable right now.</Text>
-              </View>
-            ) : null}
-            {!homeLoading && !homeError && (!home?.discountedSubcategories || home.discountedSubcategories.length === 0) ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No discounted items found.</Text>
-              </View>
-            ) : null}
-            {(home?.discountedSubcategories ?? []).slice(0, 20).map((item) => (
-              <Pressable
-                key={`${item.subcategoryCode}-${item.listingTitle}`}
-                onPress={() => {
-                  const route = getMarketplaceRoute(item.verticalCode, home?.verticals ?? []);
-                  onOpenMarketplace(route);
-                }}
-                style={[styles.publicListingCard, isCompactMarketplaceGrid && styles.publicListingCardCompactGrid]}
-              >
-                <ImageBackground
-                  imageStyle={styles.publicListingImage}
-                  resizeMode="cover"
-                  source={{ uri: item.listingImageUrl ?? placeholderImageUrl(item.listingTitle, 900) }}
-                  style={styles.publicListingImageWrap}
-                >
-                  <View style={styles.publicListingScrim} />
-                  <View style={styles.publicListingBadgeRow}>
-                    <Text style={styles.publicListingBadge}>{Math.round(item.discountPercentage)}% off</Text>
-                  </View>
-                </ImageBackground>
-                <View style={styles.publicListingCopy}>
-                  <Text style={styles.publicListingMarketplace}>{item.categoryName}</Text>
-                  <Text style={styles.publicListingTitle} numberOfLines={2}>{item.listingTitle}</Text>
-                  <View style={styles.publicListingPriceRow}>
-                    <Text style={styles.publicListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
-                    <Text style={styles.publicListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))}
+          <View style={[styles.ctaSection, webGlassPanel, isMobile && styles.ctaSectionMobile]}>
+            <Text style={[styles.ctaTitle, isMobile && styles.ctaTitleMobile]}>Get started today</Text>
+            <Text style={styles.ctaText}>Join Sharity and start buying or selling in minutes.</Text>
+            <Pressable onPress={onGetStarted} style={styles.ctaButton}>
+              <Text style={styles.ctaButtonText}>Create Free Account</Text>
+              <Ionicons color={palette.white} name="arrow-forward" size={18} />
+            </Pressable>
           </View>
-        )}
 
-        {/* Top Rated Sellers Section */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionKicker}>Top sellers</Text>
-            <Text style={styles.sectionTitle}>Shop from trusted sellers</Text>
-          </View>
-          <Text style={styles.sectionNote}>Browse products from our highest-rated sellers.</Text>
-        </View>
-
-        {isMobile ? (
-          <ScrollView
-            contentContainerStyle={styles.horizontalShelfContent}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalShelf}
-          >
-            {homeLoading ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading top sellers...</Text>
-              </View>
-            ) : null}
-            {homeError ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Top sellers unavailable right now.</Text>
-              </View>
-            ) : null}
-            {!homeLoading && !homeError && (!home?.topRatedSellers || home.topRatedSellers.length === 0) ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No top sellers found.</Text>
-              </View>
-            ) : null}
-            {(home?.topRatedSellers ?? []).slice(0, 20).map((seller) => (
-              <View key={seller.sellerPublicId} style={[styles.publicListingCard, styles.publicListingCardShelf]}>
-                <View style={styles.sellerHeaderSection}>
-                  <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
-                  <View style={styles.sellerRatingRow}>
-                    <Ionicons color="#FFC107" name="star" size={14} />
-                    <Text style={styles.sellerRating}>{seller.sellerRating.toFixed(1)}</Text>
-                    <Text style={styles.sellerOrdersCount}>({seller.completedOrders})</Text>
-                  </View>
-                </View>
-                <ScrollView
-                  contentContainerStyle={styles.sellerListingsContent}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.sellerListingsScroll}
-                >
-                  {seller.listings.slice(0, 3).map((listing) => (
-                    <Pressable
-                      key={listing.publicId}
-                      onPress={() => {
-                        const route = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
-                        onOpenMarketplace(route);
-                      }}
-                      style={styles.sellerListingThumb}
-                    >
-                      <ImageBackground
-                        imageStyle={styles.sellerListingImage}
-                        resizeMode="cover"
-                        source={{ uri: listing.imageUrl ?? placeholderImageUrl(listing.title, 300) }}
-                        style={styles.sellerListingImageWrap}
-                      >
-                        <View style={styles.publicListingScrim} />
-                      </ImageBackground>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.sellerGrid}>
-            {homeLoading ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading top sellers...</Text>
-              </View>
-            ) : null}
-            {homeError ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Top sellers unavailable right now.</Text>
-              </View>
-            ) : null}
-            {!homeLoading && !homeError && (!home?.topRatedSellers || home.topRatedSellers.length === 0) ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No top sellers found.</Text>
-              </View>
-            ) : null}
-            {(home?.topRatedSellers ?? []).slice(0, 20).map((seller) => (
-              <View key={seller.sellerPublicId} style={[styles.sellerCard, isCompactMarketplaceGrid && styles.sellerCardCompactGrid]}>
-                <View style={styles.sellerHeaderSection}>
-                  <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
-                  <View style={styles.sellerRatingRow}>
-                    <Ionicons color="#FFC107" name="star" size={14} />
-                    <Text style={styles.sellerRating}>{seller.sellerRating.toFixed(1)}</Text>
-                    <Text style={styles.sellerOrdersCount}>({seller.completedOrders})</Text>
-                  </View>
-                </View>
-                <View style={styles.sellerListingsGrid}>
-                  {seller.listings.slice(0, 3).map((listing) => (
-                    <Pressable
-                      key={listing.publicId}
-                      onPress={() => {
-                        const route = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
-                        onOpenMarketplace(route);
-                      }}
-                      style={styles.sellerListingThumb}
-                    >
-                      <ImageBackground
-                        imageStyle={styles.sellerListingImage}
-                        resizeMode="cover"
-                        source={{ uri: listing.imageUrl ?? placeholderImageUrl(listing.title, 300) }}
-                        style={styles.sellerListingImageWrap}
-                      >
-                        <View style={styles.publicListingScrim} />
-                      </ImageBackground>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionKicker}>Public listings</Text>
-            <Text style={styles.sectionTitle}>Browse before you sign in</Text>
-          </View>
-          <Text style={styles.sectionNote}>Real listings are visible to everyone. Checkout stays protected.</Text>
-        </View>
-
-        {isMobile ? (
-          <ScrollView
-            contentContainerStyle={styles.horizontalShelfContent}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalShelf}
-          >
-            {publicListingsLoading ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading public listings...</Text>
-              </View>
-            ) : null}
-            {publicListingsError ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Public listings are unavailable right now.</Text>
-              </View>
-            ) : null}
-            {!publicListingsLoading && !publicListingsError && publicListings.length === 0 ? (
-              <View style={[styles.apiState, styles.horizontalState]}>
-                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No public listings found for this region.</Text>
-              </View>
-            ) : null}
-            {publicListings.slice(0, 8).map((listing) => {
-              const marketplaceRoute = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
-              const price = formatMoney(listing.displayPriceAmount ?? listing.priceAmount, listing.displayCurrencyCode ?? listing.currencyCode);
-              const original = listing.displayOriginalPriceAmount ?? listing.originalPriceAmount;
-              const discount = original && original > (listing.displayPriceAmount ?? listing.priceAmount)
-                ? Math.round(((original - (listing.displayPriceAmount ?? listing.priceAmount)) / original) * 100)
-                : 0;
-
-              return (
-                <Pressable
-                  key={listing.publicId}
-                  onPress={() => onOpenMarketplace(marketplaceRoute)}
-                  style={[styles.publicListingCard, styles.publicListingCardShelf]}
-                >
-                  <ImageBackground
-                    imageStyle={styles.publicListingImage}
-                    resizeMode="cover"
-                    source={{ uri: listing.imageUrl ?? placeholderImageUrl(listing.title, 900) }}
-                    style={styles.publicListingImageWrap}
-                  >
-                    <View style={styles.publicListingScrim} />
-                    <View style={styles.publicListingBadgeRow}>
-                      <Text style={styles.publicListingBadge}>{listing.productType}</Text>
-                      {discount > 0 ? <Text style={styles.publicListingBadge}>{discount}% off</Text> : null}
-                    </View>
-                  </ImageBackground>
-                  <View style={styles.publicListingCopy}>
-                    <Text style={styles.publicListingMarketplace}>{listing.verticalCode === 'JEWELLERY' ? 'Imitation Jewellery' : 'Digital Marketplace'}</Text>
-                    <Text style={styles.publicListingTitle} numberOfLines={2}>{listing.title}</Text>
-                    <Text style={styles.publicListingSeller} numberOfLines={1}>{listing.sellerDisplayName}</Text>
-                    <View style={styles.publicListingPriceRow}>
-                      <Text style={styles.publicListingPrice}>{price}</Text>
-                      <Text style={styles.publicListingCta}>{listing.productType === 'DIGITAL' ? 'Buy now' : 'View listing'}</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : (
-          <View style={styles.publicListingGrid}>
-            {publicListingsLoading ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                <Text style={styles.apiStateText}>Loading public listings...</Text>
-              </View>
-            ) : null}
-            {publicListingsError ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                <Text style={styles.apiStateText}>Public listings are unavailable right now.</Text>
-              </View>
-            ) : null}
-            {!publicListingsLoading && !publicListingsError && publicListings.length === 0 ? (
-              <View style={styles.apiState}>
-                <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                <Text style={styles.apiStateText}>No public listings found for this region.</Text>
-              </View>
-            ) : null}
-            {publicListings.slice(0, 8).map((listing) => {
-              const marketplaceRoute = getMarketplaceRoute(listing.verticalCode, home?.verticals ?? []);
-              const price = formatMoney(listing.displayPriceAmount ?? listing.priceAmount, listing.displayCurrencyCode ?? listing.currencyCode);
-              const original = listing.displayOriginalPriceAmount ?? listing.originalPriceAmount;
-              const discount = original && original > (listing.displayPriceAmount ?? listing.priceAmount)
-                ? Math.round(((original - (listing.displayPriceAmount ?? listing.priceAmount)) / original) * 100)
-                : 0;
-
-              return (
-                <Pressable
-                  key={listing.publicId}
-                  onPress={() => onOpenMarketplace(marketplaceRoute)}
-                  style={[styles.publicListingCard, isCompactMarketplaceGrid && styles.publicListingCardCompactGrid]}
-                >
-                  <ImageBackground
-                    imageStyle={styles.publicListingImage}
-                    resizeMode="cover"
-                    source={{ uri: listing.imageUrl ?? placeholderImageUrl(listing.title, 900) }}
-                    style={styles.publicListingImageWrap}
-                  >
-                    <View style={styles.publicListingScrim} />
-                    <View style={styles.publicListingBadgeRow}>
-                      <Text style={styles.publicListingBadge}>{listing.productType}</Text>
-                      {discount > 0 ? <Text style={styles.publicListingBadge}>{discount}% off</Text> : null}
-                    </View>
-                  </ImageBackground>
-                  <View style={styles.publicListingCopy}>
-                    <Text style={styles.publicListingMarketplace}>{listing.verticalCode === 'JEWELLERY' ? 'Imitation Jewellery' : 'Digital Marketplace'}</Text>
-                    <Text style={styles.publicListingTitle} numberOfLines={2}>{listing.title}</Text>
-                    <Text style={styles.publicListingSeller} numberOfLines={1}>{listing.sellerDisplayName}</Text>
-                    <View style={styles.publicListingPriceRow}>
-                      <Text style={styles.publicListingPrice}>{price}</Text>
-                      <Text style={styles.publicListingCta}>{listing.productType === 'DIGITAL' ? 'Buy now' : 'View listing'}</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-
-        <View style={styles.whySection}>
-          <Text style={styles.whyTitle}>Why Choose Sharity?</Text>
-          <Text style={styles.whySubtitle}>The safest marketplace for buyers and sellers</Text>
-          <View style={styles.featureGrid}>
-            {featureCards.map((feature) => (
-              <View key={feature.title} style={styles.featureCard}>
-                <View style={styles.featureIcon}>
-                  <Ionicons color={palette.blue} name={feature.icon} size={30} />
-                </View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureText}>{feature.text}</Text>
-              </View>
-            ))}
+          <PublicSiteFooter groups={footerGroups} onLinkPress={onOpenPublicContent} visitorContext={visitorContext} />
           </View>
         </View>
-
-        <View style={styles.statsBand}>
-          {(activeVerticals.length > 0
-            ? [
-                [`${activeVerticals.length}`, 'Active Marketplaces'],
-                [`${(home?.categories ?? []).filter((category) => category.active).length || topCategories.length}`, 'Live Categories'],
-                [`${home?.featuredListings.length ?? 0}`, 'Featured Listings'],
-                ratingStat
-              ]
-            : stats
-          ).map(([value, label]) => (
-            <View key={label} style={styles.statItem}>
-              <Text style={styles.statValue}>{value}</Text>
-              <Text style={styles.statLabel}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.ctaSection}>
-          <Text style={[styles.ctaTitle, isMobile && styles.ctaTitleMobile]}>Ready to Start Shopping?</Text>
-          <Text style={styles.ctaText}>Join millions of users and experience the future of online shopping</Text>
-          <Pressable onPress={onGetStarted} style={styles.ctaButton}>
-            <Text style={styles.ctaButtonText}>Create Free Account</Text>
-            <Ionicons color={palette.white} name="arrow-forward" size={18} />
-          </Pressable>
-        </View>
-
-        {isWeb ? <PublicSiteFooter groups={footerGroups} onLinkPress={onOpenPublicContent} visitorContext={visitorContext} /> : null}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-type LandingCategory = {
-  code: string;
-  countLabel: string;
-  icon: ComponentProps<typeof Ionicons>['name'];
-  imageUrl: string | null;
-  name: string;
-  verticalCode: string;
-};
-
-function buildTopCategories(home: MarketplaceHomeResponse | null): LandingCategory[] {
+function buildTopCategories(home: MarketplaceHomeResponse | null): TopCategoryCard[] {
   if (!home) {
     return [];
   }
 
-  return (home.topCategories ?? []).slice(0, 4).map((category) => ({
-    code: category.categoryCode,
-    countLabel: countLabelFor(category.soldCount, category.activeCount, category.maxDiscountPercent),
-    icon: iconForCategory({
-      code: category.categoryCode,
-      countryCode: null,
-      active: true,
-      iconRef: category.iconRef,
-      imageUrl: category.imageUrl,
-      id: 0,
-      name: category.categoryName,
+  const seen = new Set<string>();
+  const countsByCategory = new Map<string, number>();
+  home.featuredListings.forEach((listing) => {
+    countsByCategory.set(listing.categoryCode, (countsByCategory.get(listing.categoryCode) ?? 0) + 1);
+  });
+
+  const rawHome = home as MarketplaceHomeResponse & Record<string, unknown>;
+  const categoryBuckets = collectCategoryBuckets(rawHome);
+
+  return categoryBuckets
+    .filter((category) => {
+      const key = category.categoryName.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => {
+      const countDelta = (countsByCategory.get(right.code) ?? 0) - (countsByCategory.get(left.code) ?? 0);
+      if (countDelta !== 0) {
+        return countDelta;
+      }
+      return left.categoryName.localeCompare(right.categoryName);
+    })
+    .map((category) => ({
+      activeCount: countsByCategory.get(category.code) ?? 0,
+      categoryCode: category.code,
+      categoryName: category.categoryName,
+      icon: iconForCategory(category),
+      imageUrl: category.imageUrl ?? imageForCategory(category, home),
+      maxDiscountPercent: maxDiscountForCategory(category.code, home),
+      soldCount: countsByCategory.get(category.code) ?? 0,
       slug: category.slug,
       verticalCode: category.verticalCode
-    }),
-    imageUrl: category.imageUrl ? resolveMockImageUrl(category.imageUrl, 720) : placeholderImageUrl(category.categoryName, 720),
-    name: category.categoryName,
-    verticalCode: category.verticalCode
-  }));
+    }));
 }
 
-function submitSearch(query: string, onSearchMarketplace: (value: string) => void) {
-  const trimmedQuery = query.trim();
-  if (!trimmedQuery) {
-    return;
-  }
-
-  appState$.marketplace.searchQuery.set(trimmedQuery);
-  onSearchMarketplace(trimmedQuery);
-}
-
-function getMarketplaceRoute(verticalCode: string, verticals: MarketplaceHomeResponse['verticals']): 'digitalMarketplace' | 'jewelryMarketplace' {
-  const vertical = verticals.find(v => v.moduleCode === verticalCode);
-  const route = vertical?.frontendRoute;
-  if (route === 'jewelryMarketplace' || route === 'digitalMarketplace') {
-    return route;
-  }
-  // Fallback to code-based mapping if frontendRoute not available
-  return verticalCode === 'JEWELLERY' ? 'jewelryMarketplace' : 'digitalMarketplace';
-}
-
-function imageForVertical(
-  vertical: MarketplaceHomeResponse['verticals'][number],
-  home: MarketplaceHomeResponse
-): string | null {
-  if (vertical.imageUrl) {
-    return resolveMockImageUrl(vertical.imageUrl, 1200);
-  }
-
-  const directKeyImage = splitAssetSources(vertical.imageKeys)
-    .map((imageSource) => resolveMockImageUrl(imageSource, 1200))
-    .find(Boolean);
-
-  if (directKeyImage) {
-    return directKeyImage;
-  }
-
-  const categoryImage = home.categories.find(
-    (category) =>
-      category.verticalCode === vertical.moduleCode &&
-      category.active &&
-      Boolean(category.imageUrl)
-  )?.imageUrl;
-
-  if (categoryImage) {
-    return resolveMockImageUrl(categoryImage, 1200);
-  }
-
-  const listingImage = home.featuredListings.find(
-    (listing) =>
-      listing.verticalCode === vertical.moduleCode &&
-      Boolean(listing.imageUrl)
-  )?.imageUrl;
-
-  return listingImage ? resolveMockImageUrl(listingImage, 1200) : null;
-}
-
-function splitAssetSources(value?: string | null) {
-  if (!value) {
+function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] {
+  if (!home) {
     return [];
   }
 
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const source = home.discountedSubcategories ?? [];
+  if (source.length > 0) {
+    return source.map((item) => ({
+      categoryName: item.categoryName,
+      currencyCode: item.currencyCode,
+      discountedPrice: item.discountedPrice,
+      discountPercentage: item.discountPercentage,
+      imageUrl: item.listingImageUrl,
+      originalPrice: item.originalPrice,
+      title: item.listingTitle,
+      verticalCode: item.verticalCode
+    }));
+  }
+
+  return home.featuredListings.map((listing) => {
+    const original = listing.originalPriceAmount ?? listing.priceAmount;
+    const discountPercentage = original > listing.priceAmount && original > 0 ? ((original - listing.priceAmount) / original) * 100 : 0;
+    return {
+      categoryName: categoryNameFor(listing.categoryCode, home),
+      currencyCode: listing.displayCurrencyCode ?? listing.currencyCode,
+      discountedPrice: listing.displayPriceAmount ?? listing.priceAmount,
+      discountPercentage,
+      imageUrl: listing.imageUrl,
+      originalPrice: listing.displayOriginalPriceAmount ?? original,
+      title: listing.title,
+      verticalCode: listing.verticalCode
+    };
+  });
 }
 
-function countLabelFor(soldCount: number, activeCount: number, discountPercent: number) {
-  const labels = [];
-  if (soldCount > 0) {
-    labels.push(soldCount === 1 ? '1 sold' : `${soldCount} sold`);
+function buildSellerCards(home: MarketplaceHomeResponse | null): SellerCard[] {
+  if (!home) {
+    return [];
   }
-  if (discountPercent > 0) {
-    labels.push(`${discountPercent}% off`);
+
+  const source = home.topRatedSellers ?? [];
+  if (source.length > 0) {
+    return source.map((seller) => ({
+      completedOrders: seller.completedOrders,
+      listings: seller.listings,
+      name: seller.sellerName,
+      rating: seller.sellerRating
+    }));
   }
-  if (labels.length === 0) {
-    labels.push(activeCount > 0 ? `${activeCount} live` : 'Live now');
-  }
-  return labels.join(' â€¢ ');
+
+  const sellers = new Map<string, SellerCard>();
+  home.featuredListings.forEach((listing) => {
+    const existing = sellers.get(listing.sellerDisplayName);
+    if (existing) {
+      existing.completedOrders += listing.publicReviews.length;
+      existing.listings.push(listing);
+      existing.rating = averageRating(existing.listings);
+      return;
+    }
+
+    sellers.set(listing.sellerDisplayName, {
+      completedOrders: listing.publicReviews.length,
+      listings: [listing],
+      name: listing.sellerDisplayName,
+      rating: listing.publicReviews.length > 0 ? listing.publicReviews.reduce((sum, review) => sum + review.rating, 0) / listing.publicReviews.length : 0
+    });
+  });
+
+  return [...sellers.values()]
+    .map((seller) => ({
+      ...seller,
+      rating: seller.rating || averageRating(seller.listings)
+    }))
+    .sort((left, right) => right.rating - left.rating);
 }
 
-function iconForCategory(category: MarketplaceCategory): ComponentProps<typeof Ionicons>['name'] {
+function buildFeaturedProducts(home: MarketplaceHomeResponse | null): FeaturedProductCard[] {
+  if (!home) {
+    return [];
+  }
+
+  return home.featuredListings.map((listing) => ({
+    categoryName: categoryNameFor(listing.categoryCode, home),
+    currencyCode: listing.displayCurrencyCode ?? listing.currencyCode,
+    imageUrl: listing.imageUrl,
+    originalPrice: listing.displayOriginalPriceAmount ?? listing.originalPriceAmount ?? listing.priceAmount,
+    price: listing.displayPriceAmount ?? listing.priceAmount,
+    sellerName: listing.sellerDisplayName,
+    title: listing.title,
+    verticalCode: listing.verticalCode,
+    verifiedSeller: listing.verifiedSeller
+  }));
+}
+
+function normalizeHeroSlides(home: MarketplaceHomeResponse | null): HeroSlide[] {
+  if (!home) {
+    return [];
+  }
+
+  const slides: HeroSlide[] = [];
+  const seenImages = new Set<string>();
+
+  const addSlide = (slide: HeroSlide | null) => {
+    if (!slide || !slide.imageUrl) {
+      return;
+    }
+
+    const key = slide.imageUrl;
+    if (seenImages.has(key)) {
+      return;
+    }
+
+    seenImages.add(key);
+    slides.push(slide);
+  };
+
+  home.verticals
+    .filter((vertical) => vertical.availableToCustomer)
+    .sort((left, right) => left.displayOrder - right.displayOrder)
+    .forEach((vertical) => {
+      const imageUrls = resolveHeroImageUrls({
+        imageUrl: vertical.imageUrl,
+        imageUrls: vertical.imageUrls,
+        imageKeys: vertical.imageKeys
+      });
+
+      if (imageUrls.length === 0) {
+        return;
+      }
+
+      imageUrls.forEach((imageUrl, imageIndex) => {
+        addSlide({
+          id: `${vertical.moduleCode}-${imageIndex}-${imageUrl}`,
+          imageUrl,
+          kicker: 'Vertical spotlight',
+          meta: `${home.categories.filter((category) => category.verticalCode === vertical.moduleCode && category.active).length.toLocaleString()} collections`,
+          subtitle: `${vertical.moduleName} collections`,
+          title: vertical.moduleName,
+          verticalCode: vertical.moduleCode,
+          sortOrder: vertical.displayOrder
+        });
+      });
+    });
+
+  return slides.sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0));
+}
+
+function buildMetrics(home: MarketplaceHomeResponse | null, sellerCount: number) {
+  const activeVerticals = home?.verticals.filter((vertical) => vertical.status === 'ACTIVE' && vertical.availableToCustomer).length ?? 0;
+  const activeCategories = home?.categories.filter((category) => category.active).length ?? 0;
+  const featuredListings = home?.featuredListings.length ?? 0;
+
+  return [
+    { label: 'Active marketplaces', value: String(activeVerticals) },
+    { label: 'Live categories', value: String(activeCategories) },
+    { label: 'Featured listings', value: String(featuredListings) },
+    { label: 'Verified sellers', value: String(sellerCount) }
+  ];
+}
+
+function categoryNameFor(categoryCode: string, home: MarketplaceHomeResponse) {
+  return home.categories.find((category) => category.code === categoryCode)?.name ?? categoryCode;
+}
+
+function firstString(candidate: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = candidate[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function firstUpperString(candidate: Record<string, unknown>, keys: string[]) {
+  const value = firstString(candidate, keys);
+  return value ? value.toUpperCase() : null;
+}
+
+function firstNumber(candidate: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = candidate[key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return undefined;
+}
+
+function firstArray(candidate: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = candidate[key];
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    }
+  }
+  return [];
+}
+
+function resolveHeroImageUrls(source: string | Record<string, unknown> | null | undefined) {
+  if (!source) {
+    return [];
+  }
+
+  if (typeof source === 'string') {
+    const trimmed = source.trim();
+    if (!trimmed) {
+      return [];
+    }
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')
+      ? [trimmed]
+      : [];
+  }
+
+  const imageUrls = firstArray(source, ['imageUrls', 'image_urls', 'urls', 'publicUrls', 'public_urls', 'mediaUrls', 'media_urls']);
+  if (imageUrls.length > 0) {
+    return imageUrls.filter((url) => url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:'));
+  }
+
+  const directImage = firstString(source, [
+    'imageUrl',
+    'image_url',
+    'url',
+    'publicUrl',
+    'public_url',
+    'assetUrl',
+    'asset_url',
+    'mediaUrl',
+    'media_url',
+    'verticalImageUrl',
+    'vertical_image_url'
+  ]);
+  if (directImage) {
+    return directImage.startsWith('http://') || directImage.startsWith('https://') || directImage.startsWith('data:')
+      ? [directImage]
+      : [];
+  }
+
+  const imageKeys = firstString(source, ['imageKeys', 'image_keys', 'imageKey', 'image_key']);
+  if (imageKeys) {
+    return [];
+  }
+
+  return [];
+}
+
+function isValidHeroVerticalPlacement(placement: string | null, type: string | null, orientation: string | null) {
+  const placementValue = placement?.toUpperCase() ?? '';
+  const typeValue = type?.toUpperCase() ?? '';
+  const orientationValue = orientation?.toUpperCase() ?? '';
+
+  const validPlacements = new Set(['HERO', 'HOME_HERO', 'HERO_VERTICAL', 'PUBLIC_HOME_HERO']);
+  const validTypes = new Set(['VERTICAL', 'HERO', 'BANNER', 'HERO_BANNER']);
+  const validOrientations = new Set(['VERTICAL', 'PORTRAIT']);
+
+  const placementOk = !placementValue || validPlacements.has(placementValue);
+  const typeOk = !typeValue || validTypes.has(typeValue);
+  const orientationOk = !orientationValue || validOrientations.has(orientationValue);
+  return placementOk && typeOk && orientationOk;
+}
+
+function extractHeroVerticalSource(home: MarketplaceHomeResponse | null) {
+  if (!home) {
+    return [];
+  }
+
+  const rawHome = home as MarketplaceHomeResponse & Record<string, unknown>;
+  const preferredSources = [
+    rawHome.heroBanners,
+    rawHome.hero_banners,
+    rawHome.verticalImages,
+    rawHome.vertical_images,
+    rawHome.verticalBanners,
+    rawHome.vertical_banners,
+    rawHome.banners,
+    rawHome.heroSlides,
+    rawHome.hero_slides,
+    rawHome.media,
+    rawHome.images
+  ];
+
+  for (const source of preferredSources) {
+    if (Array.isArray(source) && source.length > 0) {
+      return source;
+    }
+  }
+
+  return home.verticals
+    .filter((vertical) => vertical.availableToCustomer && (vertical.imageUrl || (vertical.imageUrls?.length ?? 0) > 0 || vertical.imageKeys))
+    .map((vertical) => ({
+      id: vertical.moduleCode,
+      imageUrl: vertical.imageUrl,
+      imageUrls: vertical.imageUrls,
+      title: vertical.moduleName,
+      subtitle: `${vertical.moduleName} collections`,
+      sortOrder: vertical.displayOrder,
+      type: 'VERTICAL',
+      placement: 'HERO_VERTICAL',
+      orientation: 'VERTICAL',
+      verticalCode: vertical.moduleCode
+    }));
+}
+
+function maxDiscountForCategory(categoryCode: string, home: MarketplaceHomeResponse) {
+  return (
+    home.discountedSubcategories?.find((item) => item.categoryName && categoryCode.toLowerCase().includes(item.categoryName.toLowerCase()))?.discountPercentage ??
+    0
+  );
+}
+
+function averageRating(listings: MarketplaceListing[]) {
+  const reviews = listings.flatMap((listing) => listing.publicReviews);
+  if (reviews.length === 0) {
+    return 0;
+  }
+  return reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+}
+
+type CategoryDescriptor = {
+  code: string;
+  iconRef?: string | null;
+  verticalCode: string;
+};
+
+function iconForCategory(category: CategoryDescriptor): ComponentProps<typeof Ionicons>['name'] {
   const value = `${category.code} ${category.verticalCode} ${category.iconRef ?? ''}`.toLowerCase();
   if (value.includes('gift')) return 'gift-outline';
   if (value.includes('auto') || value.includes('car')) return 'car-outline';
@@ -882,180 +1158,190 @@ function iconForCategory(category: MarketplaceCategory): ComponentProps<typeof I
   return 'grid-outline';
 }
 
-function imageForCategory(category: MarketplaceCategory, home: MarketplaceHomeResponse) {
-  if (category.imageUrl) {
-    return resolveMockImageUrl(category.imageUrl, 720);
-  }
-
+function imageForCategory(category: CategoryDescriptor, home: MarketplaceHomeResponse) {
   const directMatch = home.featuredListings.find((listing) => listing.categoryCode === category.code && listing.imageUrl);
   if (directMatch?.imageUrl) {
-    return resolveMockImageUrl(directMatch.imageUrl, 720);
+    return directMatch.imageUrl;
   }
 
-  return placeholderImageUrl(category.name, 720);
+  const topCategoryMatch = home.topCategories?.find((item) => item.categoryCode === category.code && item.imageUrl);
+  if (topCategoryMatch?.imageUrl) {
+    return topCategoryMatch.imageUrl;
+  }
+
+  return null;
 }
 
-function formatMoney(amount: number | null | undefined, currencyCode: string | null | undefined) {
-  if (typeof amount !== 'number' || Number.isNaN(amount)) {
-    return '';
+type CategoryBucket = {
+  code: string;
+  categoryName: string;
+  imageUrl: string | null;
+  slug: string;
+  verticalCode: string;
+  iconRef: string | null;
+};
+
+function collectCategoryBuckets(home: MarketplaceHomeResponse & Record<string, unknown>): CategoryBucket[] {
+  const buckets: CategoryBucket[] = [];
+  const seenCodes = new Set<string>();
+  const homeRecord = home as Record<string, unknown>;
+
+  const pushCategory = (candidate: Record<string, unknown> | null | undefined, fallbackVerticalCode = '') => {
+    if (!candidate) {
+      return;
+    }
+
+    const code = String(candidate.categoryCode ?? candidate.code ?? candidate.slug ?? candidate.categoryName ?? candidate.name ?? '').trim();
+    if (!code || seenCodes.has(code)) {
+      return;
+    }
+
+    const categoryName = String(candidate.categoryName ?? candidate.name ?? candidate.title ?? code);
+    const verticalCode = String(candidate.verticalCode ?? fallbackVerticalCode ?? '').trim();
+    const slug = String(candidate.slug ?? code.toLowerCase().replace(/\s+/g, '-'));
+    const imageUrl = typeof candidate.imageUrl === 'string' ? candidate.imageUrl : null;
+    const iconRef = typeof candidate.iconRef === 'string' ? candidate.iconRef : null;
+
+    seenCodes.add(code);
+    buckets.push({
+      code,
+      categoryName,
+      imageUrl,
+      iconRef,
+      slug,
+      verticalCode
+    });
+  };
+
+  const topCategories = Array.isArray(homeRecord.topCategories) ? (homeRecord.topCategories as Record<string, unknown>[]) : [];
+  topCategories.forEach((item) => pushCategory(item as Record<string, unknown>));
+
+  const publicCategories = Array.isArray(homeRecord.publicCategories) ? (homeRecord.publicCategories as Record<string, unknown>[]) : [];
+  publicCategories.forEach((item) => pushCategory(item as Record<string, unknown>));
+
+  const featuredCategories = Array.isArray(homeRecord.featuredCategories) ? (homeRecord.featuredCategories as Record<string, unknown>[]) : [];
+  featuredCategories.forEach((item) => pushCategory(item as Record<string, unknown>));
+
+  const categoryTiles = Array.isArray(homeRecord.categoryTiles) ? (homeRecord.categoryTiles as Record<string, unknown>[]) : [];
+  categoryTiles.forEach((item) => pushCategory(item as Record<string, unknown>));
+
+  const verticals = Array.isArray(homeRecord.verticals) ? (homeRecord.verticals as Array<Record<string, unknown>>) : [];
+  verticals.forEach((vertical) => {
+      const nestedCategories = (vertical as Record<string, unknown>).categories;
+      if (Array.isArray(nestedCategories)) {
+        (nestedCategories as Record<string, unknown>[]).forEach((item) => pushCategory(item as Record<string, unknown>, String(vertical.moduleCode ?? '')));
+      }
+    });
+
+  if (Array.isArray(homeRecord.categories)) {
+    (homeRecord.categories as MarketplaceCategory[])
+      .filter((category) => category.active)
+      .forEach((category) =>
+        pushCategory(
+          {
+            categoryCode: category.code,
+            categoryName: category.name,
+            code: category.code,
+            iconRef: category.iconRef,
+            imageUrl: category.imageUrl,
+            slug: category.slug,
+            verticalCode: category.verticalCode
+          },
+          category.verticalCode
+        )
+      );
   }
 
-  const currency = currencyCode ?? 'USD';
-  const fractionDigits = amount % 1 === 0 ? 0 : 2;
+  return buckets;
+}
 
+function getMarketplaceRoute(verticalCode: string, verticals: MarketplaceHomeResponse['verticals']): 'digitalMarketplace' | 'jewelryMarketplace' {
+  const normalized = verticalCode.toUpperCase();
+  const vertical = verticals.find(
+    (item) =>
+      item.moduleCode.toUpperCase() === normalized ||
+      item.frontendRoute?.toLowerCase() === verticalCode.toLowerCase() ||
+      item.moduleName.toUpperCase().replace(/\s+/g, '_') === normalized
+  );
+  const route = vertical?.frontendRoute;
+  if (route === 'jewelryMarketplace' || route === 'digitalMarketplace') {
+    return route;
+  }
+
+  if (normalized.includes('JEWELL')) {
+    return 'jewelryMarketplace';
+  }
+
+  return 'digitalMarketplace';
+}
+
+function formatMoney(amount: number, currencyCode: string) {
   try {
     return new Intl.NumberFormat('en-US', {
-      currency,
-      maximumFractionDigits: fractionDigits,
-      minimumFractionDigits: fractionDigits,
-      style: 'currency'
+      style: 'currency',
+      currency: currencyCode,
+      maximumFractionDigits: 0
     }).format(amount);
   } catch {
-    return `${currency} ${amount.toFixed(fractionDigits)}`;
+    return `${currencyCode} ${Math.round(amount)}`;
   }
 }
 
-const palette = marketingColors;
+const palette = {
+  blue: '#2563eb',
+  border: 'rgba(15, 23, 42, 0.10)',
+  body: '#475569',
+  page: '#f5f7fb',
+  pageAlt: '#f8fafc',
+  surface: '#ffffff',
+  text: '#0f172a',
+  white: '#ffffff'
+};
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: '#fafafa',
+    backgroundColor: palette.page,
     flex: 1
   },
-  page: {
-    backgroundColor: '#fafafa',
-    paddingBottom: 0
+  scrollContent: {
+    backgroundColor: palette.page,
+    paddingBottom: 56
+  },
+  pageWrapper: {
+    width: '100%'
+  },
+  contentContainer: {
+    width: '100%'
   },
   header: {
     alignItems: 'center',
-    backgroundColor: palette.header,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderBottomColor: palette.border,
     borderBottomWidth: 1,
+    borderRadius: 24,
     flexDirection: 'row',
-    gap: spacing.lg,
+    gap: spacing.md,
     justifyContent: 'space-between',
-    minHeight: 74,
-    paddingHorizontal: 32
-  },
-  headerInnerMobile: {
-    alignItems: 'flex-start',
-    flexWrap: 'wrap'
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 16
   },
   headerMobile: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    gap: 12,
-    marginBottom: 0,
-    minHeight: 0,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 0
-  },
-  headerPhone: {
-    gap: spacing.xs,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 0
-  },
-  mobileSearchSection: {
-    paddingHorizontal: 16,
-    paddingTop: 14
-  },
-  mobileSearchSectionTiny: {
-    paddingHorizontal: 12,
-    paddingTop: 12
-  },
-  mobileHeroSection: {
-    alignItems: 'stretch',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-    backgroundColor: '#EEF6FF',
-    borderColor: 'rgba(148,163,184,0.22)',
-    borderRadius: 24,
-    borderWidth: 1,
-    margin: 0,
-    marginHorizontal: 16,
-    overflow: 'visible',
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 16,
-    width: '100%'
-  },
-  mobileHeroSectionTiny: {
-    gap: 14,
-    marginHorizontal: 12,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 14
-  },
-  mobileHeroCard: {
-    alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderColor: 'rgba(148,163,184,0.18)',
-    borderRadius: 24,
-    borderWidth: 1,
-    flex: 0,
-    margin: 0,
-    overflow: 'visible',
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    width: '100%'
-  },
-  mobileHeroCardTiny: {
-    paddingHorizontal: 18,
-    paddingVertical: 20
-  },
-  mobileHeroCarousel: {
-    alignSelf: 'stretch',
-    aspectRatio: 16 / 9,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderColor: 'rgba(148,163,184,0.18)',
-    borderRadius: 24,
-    borderWidth: 1,
-    flex: 0,
-    margin: 0,
-    marginTop: 2,
-    overflow: 'hidden',
-    padding: 10,
-    width: '100%'
-  },
-  mobileHeroCarouselTiny: {
-    aspectRatio: 16 / 9,
-    borderRadius: 22,
-    padding: 8
-  },
-  headerTopRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    justifyContent: 'space-between',
-    width: '100%'
-  },
-  headerTopRowPhone: {
-    gap: spacing.sm
+    alignItems: 'flex-start',
+    flexWrap: 'wrap'
   },
   brandWrap: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
-    minWidth: 130
-  },
-  brandWrapMobile: {
-    minWidth: 0,
-    flexShrink: 1,
-    width: 'auto'
-  },
-  brandWrapPhone: {
-    minWidth: 0
+    gap: spacing.sm
   },
   brandMark: {
     alignItems: 'center',
     backgroundColor: palette.blue,
-    borderRadius: 10,
-    height: 40,
+    borderRadius: 14,
+    height: 44,
     justifyContent: 'center',
-    width: 40
+    width: 44
   },
   brandLetter: {
     color: palette.white,
@@ -1064,419 +1350,298 @@ const styles = StyleSheet.create({
   },
   brandName: {
     color: palette.text,
-    fontSize: 20,
-    fontWeight: '900'
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 28
   },
   searchBar: {
     alignItems: 'center',
-    backgroundColor: palette.cardAlt,
+    backgroundColor: palette.pageAlt,
     borderColor: palette.border,
-    borderRadius: 10,
+    borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    height: 42,
-    maxWidth: 310,
-    paddingHorizontal: spacing.md,
-    width: '28%'
+    height: 48,
+    maxWidth: 480,
+    minWidth: 280,
+    paddingHorizontal: 16,
+    width: '38%'
   },
   searchBarMobile: {
-    alignSelf: 'stretch',
-    flexBasis: '100%',
-    height: 56,
-    marginLeft: 0,
-    marginTop: 0,
-    marginBottom: 18,
-    maxWidth: '100%',
-    borderRadius: 24,
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    height: 50,
     paddingHorizontal: 16,
     width: '100%'
   },
-  searchBarPhone: {
-    flexBasis: '100%',
-    height: 56,
-    maxWidth: '100%',
-    minWidth: 0,
-    marginTop: 0,
-    marginBottom: 18,
-    paddingHorizontal: 16,
-    width: '100%'
-  },
-  searchBarTiny: {
-    height: 52,
-    marginBottom: 14,
-    paddingHorizontal: 14
+  mobileSearchWrap: {
+    marginTop: 14
   },
   searchInput: {
     color: palette.text,
     flex: 1,
-    fontSize: 15,
-    margin: 0,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    outlineStyle: 'none' as never
-  },
-  searchInputWeb: {
     fontSize: 16,
     lineHeight: 20,
-    minHeight: 48
-  },
-  searchInputCompact: {
-    minHeight: 48
-  },
-  compactSearchSection: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 16,
-    width: '100%'
-  },
-  searchBarCompact: {
-    alignItems: 'center',
-    backgroundColor: palette.cardAlt,
-    borderColor: palette.border,
-    borderRadius: 22,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    height: 54,
-    minHeight: 48,
-    maxWidth: '100%',
-    paddingHorizontal: spacing.md,
-    width: '100%'
+    minHeight: 24,
+    outlineStyle: 'none' as never
   },
   headerActions: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    flexShrink: 0,
+    gap: 12,
     marginLeft: 'auto'
   },
-  headerActionsMobile: {
-    justifyContent: 'space-between',
-    gap: 10,
-    marginLeft: 0,
-    width: 'auto'
-  },
-  headerActionsPhone: {
-    flexShrink: 0,
-    justifyContent: 'space-between',
-    gap: 6,
-    marginLeft: 0,
-    width: 'auto'
-  },
-  headerButtonCompact: {
-    flexGrow: 0,
-    flexShrink: 0,
-    justifyContent: 'center',
-    width: 'auto'
-  },
-  headerButtonPhone: {
-    flexGrow: 0,
-    flexShrink: 0,
-    minHeight: 34,
-    minWidth: 62,
-    paddingHorizontal: 10,
-    paddingVertical: 6
-  },
-  headerButtonTextPhone: {
-    fontSize: 13,
-    lineHeight: 15
-  },
   signInButton: {
-    backgroundColor: 'rgba(59,130,246,0.12)',
-    borderColor: 'rgba(59,130,246,0.28)',
+    alignItems: 'center',
+    borderColor: palette.border,
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 10
+    height: 44,
+    justifyContent: 'center',
+    minWidth: 88,
+    paddingHorizontal: 16
   },
   signInText: {
-    color: palette.blue,
+    color: palette.text,
     fontSize: 14,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   headerCta: {
+    alignItems: 'center',
     backgroundColor: palette.blue,
-    borderRadius: 10,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 12
+    borderRadius: 999,
+    height: 44,
+    justifyContent: 'center',
+    minWidth: 136,
+    paddingHorizontal: 18
   },
   headerCtaText: {
     color: palette.white,
     fontSize: 14,
-    fontWeight: '900'
+    fontWeight: '800'
   },
-  hero: {
-    alignItems: 'center',
-    backgroundColor: '#EEF6FF',
-    borderColor: 'rgba(148,163,184,0.22)',
-    borderRadius: '2%',
+  heroGrid: {
     flexDirection: 'row',
-    gap: '2%',
-    justifyContent: 'space-between',
-    marginHorizontal: '1.5%',
-    marginVertical: '1.5%',
-    minHeight: 280,
+    gap: 32,
+    alignItems: 'stretch',
+    minHeight: 460,
+    width: '100%',
+    marginTop: 24
+  },
+  heroGridSplit: {
+    flexDirection: 'row'
+  },
+  heroCopyCard: {
+    backgroundColor: '#f8fbff',
+    borderColor: palette.border,
+    borderRadius: 28,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 460,
     overflow: 'hidden',
-    paddingHorizontal: '2%',
-    paddingVertical: '2%',
+    padding: 32,
     position: 'relative'
   },
-  heroTablet: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    gap: spacing.xl,
-    minHeight: 0,
-    paddingHorizontal: 30,
-    paddingVertical: 34
+  heroCopyCardSplit: {
+    flex: 1
   },
-  heroMobile: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
+  heroCopyCardDesktop: {
+    flexBasis: '36%',
+    flexGrow: 0,
+    flexShrink: 0
+  },
+  heroCopyInner: {
+    flex: 1,
+    justifyContent: 'flex-start',
     gap: 16,
-    marginHorizontal: 0,
-    marginTop: 0,
-    marginBottom: 0,
-    minHeight: 0,
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    overflow: 'visible',
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 20
+    position: 'relative',
+    zIndex: 1
   },
-  heroPhone: {
-    alignItems: 'stretch',
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    marginHorizontal: 0,
-    marginTop: 0,
-    marginBottom: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 0
-  },
-  heroCompactPhone: {
-    minHeight: 0,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl
-  },
-  heroCopy: {
-    flexDirection: 'column',
-    justifyContent: 'center',
-    flex: 0.32,
-    maxWidth: '100%',
-    minWidth: 0,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    zIndex: 2
-  },
-  heroCopyTablet: {
-    alignSelf: 'center',
-    maxWidth: 780,
-    width: '100%'
-  },
-  heroCopyMobile: {
-    alignSelf: 'stretch',
-    flex: 0,
-    minWidth: 0,
-    maxWidth: '100%',
-    backgroundColor: 'rgba(255,255,255,0.86)',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    width: '100%'
-  },
-  heroCopyPhone: {
-    paddingVertical: 24
-  },
-  heroCopyTiny: {
-    paddingHorizontal: 18,
-    paddingVertical: 20
-  },
-  heroBadge: {
+  heroEyebrow: {
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: palette.cardAlt,
-    borderColor: palette.blue,
-    borderRadius: 10,
+    backgroundColor: palette.pageAlt,
+    borderColor: palette.border,
+    borderRadius: 999,
     borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8
   },
-  heroBadgeText: {
+  heroEyebrowText: {
     color: palette.blue,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.5
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase'
   },
   heroTitle: {
-    color: '#0F172A',
+    color: palette.text,
     fontSize: 50,
-    fontWeight: '900',
-    letterSpacing: -1.8,
-    lineHeight: 55,
-    marginTop: 18,
-    maxWidth: 520
+    fontWeight: '800',
+    letterSpacing: -1,
+    lineHeight: 58,
+    marginTop: 14
   },
   heroTitleMobile: {
-    fontSize: 30,
-    lineHeight: 35,
-    maxWidth: '100%'
+    fontSize: 40,
+    lineHeight: 46
   },
-  heroDescription: {
-    color: '#475569',
+  heroTitleTiny: {
+    fontSize: 34,
+    lineHeight: 40
+  },
+  heroBody: {
+    color: palette.body,
     fontSize: 16,
-    fontWeight: '600',
     lineHeight: 24,
-    marginTop: 16
+    marginTop: 8
+  },
+  heroBodyMobile: {
+    fontSize: 16,
+    lineHeight: 24
   },
   heroActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginTop: 22
+    marginTop: 20
   },
-  heroActionsMobile: {
-    width: '100%'
+  heroActionsStacked: {
+    flexDirection: 'column'
   },
   heroPrimary: {
     alignItems: 'center',
-    backgroundColor: '#2563EB',
-    borderRadius: 14,
+    backgroundColor: palette.blue,
+    borderRadius: 16,
+    height: 52,
     justifyContent: 'center',
-    minHeight: 54,
-    minWidth: 176,
-    paddingHorizontal: spacing.lg
+    minWidth: 170,
+    paddingHorizontal: 22
   },
-  heroActionPhone: {
-    flexGrow: 1,
-    minHeight: 48,
+  heroPrimaryStacked: {
     minWidth: 0,
-    paddingHorizontal: spacing.md
-  },
-  heroActionTiny: {
-    minHeight: 44,
-    paddingHorizontal: 12
+    width: '100%'
   },
   heroPrimaryText: {
     color: palette.white,
     fontSize: 16,
-    fontWeight: '900'
+    fontWeight: '800'
   },
   heroSecondary: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderColor: 'rgba(148,163,184,0.34)',
-    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 16,
     borderWidth: 1,
+    height: 52,
     justifyContent: 'center',
-    minHeight: 54,
-    minWidth: 110,
-    paddingHorizontal: spacing.lg
+    minWidth: 132,
+    paddingHorizontal: 22
+  },
+  heroSecondaryStacked: {
+    minWidth: 0,
+    width: '100%'
   },
   heroSecondaryText: {
     color: palette.text,
     fontSize: 16,
     fontWeight: '800'
   },
-  heroSection: {
-    backgroundColor: palette.heroEnd,
-    borderRadius: 30,
-    alignItems: 'stretch',
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 28,
-    marginHorizontal: 24,
-    marginTop: 0,
-    overflow: 'hidden',
-    padding: 24,
-    width: 'auto'
-  },
-  heroSectionCompact: {
-    flexDirection: 'column',
-    gap: 16,
-    marginHorizontal: 12,
-    padding: 12
-  },
-  heroContentCard: {
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderColor: 'rgba(255,255,255,0.94)',
-    borderRadius: 24,
-    borderWidth: 1,
-    flexBasis: '34%',
-    flexGrow: 0,
-    flexShrink: 1,
-    justifyContent: 'center',
-    minHeight: 0,
-    minWidth: 0,
-    padding: 28
-  },
-  heroContentCardCompact: {
-    flexBasis: 'auto',
-    flexGrow: 0,
-    flexShrink: 0,
-    minHeight: 0,
-    padding: 20,
-    width: '100%'
-  },
-  heroChips: {
+  heroPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 14
+    marginTop: 18
   },
-  heroCarouselWrapper: {
-    backgroundColor: palette.cardAlt,
-    borderRadius: 24,
-    alignSelf: 'flex-start',
-    flexBasis: '66%',
-    flexGrow: 1,
-    flexShrink: 1,
-    minHeight: 0,
-    minWidth: 0,
-    overflow: 'hidden',
-    width: '100%'
+  heroPill: {
+    backgroundColor: palette.pageAlt,
+    borderColor: palette.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9
   },
-  heroCarouselWrapperCompact: {
-    flexBasis: 'auto',
-    flexGrow: 0,
-    flexShrink: 0,
-    width: '100%'
+  heroPillText: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '700'
   },
-  heroCarouselMedia: {
-    aspectRatio: 16 / 9,
-    backgroundColor: palette.cardAlt,
-    width: '100%'
-  },
-  heroCarouselImage: {
-    borderRadius: 24
-  },
-  heroCarouselImageFallbackBackground: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.08)'
-  },
-  heroCarouselState: {
+  heroVisualCard: {
+    backgroundColor: '#f8fbff',
+    borderColor: palette.border,
+    borderRadius: 28,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 460,
     alignItems: 'center',
-    aspectRatio: 16 / 9,
-    backgroundColor: palette.cardAlt,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 0,
+    position: 'relative'
+  },
+  heroVisualCardSplit: {
+    flex: 1
+  },
+  heroVisualCardDesktop: {
+    flexBasis: '64%',
+    flexGrow: 0,
+    flexShrink: 0
+  },
+  heroCarouselViewport: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
+    width: '100%'
+  },
+  heroCarouselSimple: {
+    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
     width: '100%'
   },
-  heroCarouselStateText: {
-    color: palette.textMuted,
+  heroVisualImage: {
+    backgroundColor: '#f8fbff',
+    height: '100%',
+    alignSelf: 'center',
+    minHeight: 0,
+    margin: 0,
+    width: '100%'
+  },
+  heroVisualState: {
+    alignItems: 'center',
+    backgroundColor: '#f8fbff',
+    borderColor: palette.border,
+    borderRadius: 26,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 460,
+    padding: 24
+  },
+  heroVisualStateText: {
+    color: palette.body,
     fontSize: 14,
     fontWeight: '700',
-    marginTop: 10
+    marginTop: 12,
+    textAlign: 'center'
   },
   heroDots: {
-    alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    paddingBottom: 10,
-    paddingTop: 8
+    marginTop: 10
   },
   heroDot: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: 'rgba(37, 99, 235, 0.16)',
     borderRadius: 999,
     height: 8,
     width: 8
@@ -1485,995 +1650,562 @@ const styles = StyleSheet.create({
     backgroundColor: palette.blue,
     width: 24
   },
-  heroBackgroundShell: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
-    height: '100%',
-    minHeight: 450,
-    overflow: 'hidden',
-    position: 'absolute'
-  },
-  heroBackgroundShellMobile: {
-    minHeight: 360
-  },
-  heroBackgroundCarouselContent: {
-    alignItems: 'stretch'
-  },
-  heroBackgroundCarousel: {
-    ...StyleSheet.absoluteFillObject,
-    height: '100%'
-  },
-  heroBackgroundSlide: {
-    height: '100%',
-    width: '100%'
-  },
-  heroBackgroundSlideImageWrap: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: palette.cardAlt,
-    height: '100%',
-    width: '100%'
-  },
-  heroBackgroundSlideImage: {
-    borderRadius: 0
-  },
-  heroBackgroundOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(8,18,32,0.02)'
-  },
-  heroBannerBackground: {
-    ...StyleSheet.absoluteFillObject
-  },
-  heroBannerImageWrap: {
-    flex: 1,
-    height: '100%',
-    width: '100%'
-  },
-  heroBannerImage: {
-    borderRadius: 26
-  },
-  heroBannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15,23,42,0.06)'
-  },
-  heroBannerGlow: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.08)'
-  },
-  heroImagePane: {
-    aspectRatio: 16 / 9,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderColor: 'rgba(255,255,255,0.62)',
-    borderRadius: '2%',
+  sectionBlock: {
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 28,
     borderWidth: 1,
-    flex: 0.68,
-    maxHeight: '100%',
-    maxWidth: '100%',
-    minHeight: 'auto',
-    minWidth: 'auto',
+    marginTop: 56,
     overflow: 'hidden',
-    zIndex: 2
-  },
-  heroImagePaneDesktop: {
-    marginLeft: 0
-  },
-  heroImagePaneTablet: {
-    alignSelf: 'stretch',
-    flex: 0,
-    height: 360,
-    maxHeight: 420,
-    maxWidth: '100%',
-    minHeight: 200,
-    minWidth: 200,
-    width: '100%'
-  },
-  heroImagePaneMobile: {
-    alignSelf: 'stretch',
-    flex: 0,
-    height: 320,
-    maxWidth: '100%',
-    marginTop: 16,
-    minHeight: 240,
-    minWidth: 0,
-    width: '100%'
-  },
-  heroImagePanePhone: {
-    borderRadius: 24,
-    flex: 0,
-    height: 300,
-    maxHeight: '100%',
-    maxWidth: '100%',
-    marginTop: 16,
-    minHeight: 220,
-    minWidth: 0,
-    width: '100%'
-  },
-  mobileHeroImagePane: {
-    alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,255,255,0.86)',
-    borderRadius: 24,
-    flex: 0,
-    marginTop: 0,
-    overflow: 'hidden',
-    padding: 0,
-    width: '100%'
-  },
-  heroSpotlightPanel: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.66)',
-    borderColor: 'rgba(226,232,240,0.86)',
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-    maxWidth: '100%',
-    paddingHorizontal: 10,
-    paddingVertical: 7
-  },
-  heroSpotlightBadge: {
-    backgroundColor: '#2563EB',
-    borderRadius: 999,
-    color: palette.white,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    overflow: 'hidden',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    textTransform: 'uppercase'
-  },
-  heroSpotlightCopy: {
-    flex: 1,
-    minWidth: 0
-  },
-  heroSpotlightTitle: {
-    color: '#0F172A',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 17
-  },
-  heroSpotlightDescription: {
-    color: '#64748B',
-    fontSize: 10,
-    fontWeight: '700',
-    lineHeight: 15,
-    marginTop: 1
-  },
-  heroChipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 12
-  },
-  heroChipGridPhone: {
-    gap: 8,
-    marginTop: 8
-  },
-  heroChip: {
-    backgroundColor: palette.cardAlt,
-    borderColor: palette.border,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 9
-  },
-  heroChipText: {
-    color: palette.text,
-    fontSize: 13,
-    fontWeight: '800'
-  },
-  heroVisual: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 400,
-    minWidth: 420,
-    position: 'relative',
-    zIndex: 1
-  },
-  heroVisualMobile: {
-    minHeight: 320,
-    minWidth: 0
-  },
-  heroDecorOne: {
-    backgroundColor: 'rgba(124,58,237,0.12)',
-    borderRadius: 999,
-    height: 260,
-    position: 'absolute',
-    right: -60,
-    top: -70,
-    width: 260
-  },
-  heroDecorTwo: {
-    backgroundColor: 'rgba(37,99,235,0.1)',
-    borderRadius: 999,
-    bottom: -90,
-    height: 320,
-    position: 'absolute',
-    right: 270,
-    width: 320
-  },
-  heroVisualHalo: {
-    backgroundColor: 'rgba(255,255,255,0.58)',
-    borderRadius: 999,
-    height: 330,
-    position: 'absolute',
-    width: 330
-  },
-  heroVisualFrame: {
-    backgroundColor: 'rgba(15,23,42,0.92)',
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 30,
-    borderWidth: 1,
-    height: 330,
-    maxWidth: 520,
-    overflow: 'hidden',
-    shadowColor: '#1e40af',
+    padding: 32,
+    shadowColor: '#0f172a',
     shadowOffset: { height: 24, width: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 54,
-    width: '88%'
+    shadowOpacity: 0.08,
+    shadowRadius: 70
   },
-  heroVisualImageWrap: {
-    flex: 1,
-    height: '100%',
-    width: '100%'
+  sectionBlockMobile: {
+    padding: 20
   },
-  heroVisualImage: {
-    borderRadius: 28
-  },
-  heroVisualImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15,23,42,0.06)'
-  },
-  heroVisualFallback: {
-    backgroundColor: 'rgba(15,23,42,0.92)',
-    flex: 1,
-    justifyContent: 'center',
-    padding: 30,
-    width: '100%'
-  },
-  heroVisualIconCircle: {
+  sectionHeading: {
     alignItems: 'center',
-    backgroundColor: '#7C3AED',
-    borderRadius: 22,
-    height: 56,
-    justifyContent: 'center',
-    width: 56
+    marginBottom: 24
   },
-  heroVisualKicker: {
-    color: '#93C5FD',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    marginTop: 24,
-    textTransform: 'uppercase'
-  },
-  heroVisualTitle: {
-    color: palette.white,
-    fontSize: 30,
-    fontWeight: '900',
-    lineHeight: 36,
-    marginTop: 8
-  },
-  heroVisualText: {
-    color: '#CBD5E1',
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 23,
-    marginTop: 12
-  },
-  heroVisualStack: {
-    bottom: 28,
-    flexDirection: 'row',
-    gap: 12,
-    position: 'absolute'
-  },
-  heroMiniTile: {
+  sectionHeaderRow: {
     alignItems: 'center',
-    borderRadius: 18,
-    gap: 8,
-    justifyContent: 'center',
-    minHeight: 92,
-    paddingHorizontal: 16,
-    width: 116
-  },
-  heroMiniTileBlue: {
-    backgroundColor: '#2563EB'
-  },
-  heroMiniTilePurple: {
-    backgroundColor: '#7C3AED'
-  },
-  heroMiniTileGreen: {
-    backgroundColor: '#1D9E75'
-  },
-  heroMiniTileText: {
-    color: palette.white,
-    fontSize: 12,
-    fontWeight: '900',
-    textAlign: 'center'
-  },
-  heroCarouselDots: {
-    bottom: 22,
     flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0
-  },
-  heroCarouselDotsMobile: {
-    alignSelf: 'center',
-    marginTop: 12,
-    position: 'relative'
-  },
-  heroCarouselDotsTiny: {
-    marginTop: 10
-  },
-  heroCarouselDot: {
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderRadius: 999,
-    height: 9,
-    width: 9
-  },
-  heroCarouselDotActive: {
-    backgroundColor: '#2563EB',
-    width: 26
-  },
-  heroShowcaseBadge: {
-    color: palette.blue,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase'
-  },
-  heroShowcaseTitle: {
-    color: palette.text,
-    fontSize: 19,
-    fontWeight: '900',
-    lineHeight: 24,
-    marginTop: 2
-  },
-  heroShowcaseTitleMini: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '900',
-    lineHeight: 18,
-    marginTop: 2
-  },
-  heroShowcaseMeta: {
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 6
-  },
-  heroShowcasePrice: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: '900',
-    marginTop: 6
-  },
-  heroShowcasePriceMini: {
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '900',
-    marginTop: 4
-  },
-  featuredRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-    marginTop: 26,
-    paddingTop: 18,
-    borderTopColor: 'rgba(22,49,79,0.08)',
-    borderTopWidth: 1
-  },
-  featuredText: {
-    color: palette.textMuted,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase'
-  },
-  featuredMuted: {
-    color: palette.blue
-  },
-  sectionHeader: {
-    alignItems: 'flex-start',
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 12,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 4,
-    borderBottomWidth: 0
+    justifyContent: 'space-between',
+    marginBottom: 24
   },
   sectionKicker: {
-    color: palette.brandPrimary,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    color: palette.blue,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.4,
     textTransform: 'uppercase'
-  },
-  sectionHeaderMobile: {
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-    flexDirection: 'column'
   },
   sectionTitle: {
     color: palette.text,
-    fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 24,
-    marginTop: 2
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    lineHeight: 46,
+    marginTop: 10,
+    textAlign: 'center'
   },
-  sectionNote: {
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '400',
-    lineHeight: 18
+  sectionTitleMobile: {
+    fontSize: 30,
+    lineHeight: 36
   },
-  viewAll: {
-    alignItems: 'center',
+  sectionSubtitle: {
+    color: palette.body,
+    fontSize: 17,
+    lineHeight: 26,
+    marginTop: 12,
+    textAlign: 'center'
+  },
+  collectionGrid: {
     flexDirection: 'row',
-    gap: spacing.sm
+    flexWrap: 'wrap',
+    gap: 24,
+    justifyContent: 'flex-start'
   },
-  viewAllText: {
-    color: palette.blue,
-    fontSize: 14,
-    fontWeight: '900'
+  gridCardFullWidth: {
+    minWidth: 0,
+    width: '100%'
+  },
+  collectionCard: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 28,
+    borderWidth: 1,
+    alignSelf: 'stretch',
+    height: '100%',
+    width: '100%',
+    overflow: 'hidden'
+  },
+  collectionMediaWrap: {
+    backgroundColor: '#f8fbff'
+  },
+  collectionMedia: {
+    height: 300,
+    width: '100%'
+  },
+  collectionImage: {
+    borderRadius: 24
+  },
+  collectionPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: palette.pageAlt,
+    gap: 8,
+    height: 300,
+    justifyContent: 'center',
+    padding: 18,
+    width: '100%'
+  },
+  collectionPlaceholderText: {
+    color: palette.body,
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  collectionCopy: {
+    backgroundColor: palette.surface,
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
+    padding: 22,
+    position: 'relative'
+  },
+  collectionEyebrow: {
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase'
+  },
+  collectionTitle: {
+    color: palette.text,
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    lineHeight: 34,
+    marginTop: 8
+  },
+  collectionMeta: {
+    color: palette.body,
+    fontSize: 15,
+    marginTop: 8
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 24,
-    padding: 32,
-    justifyContent: 'space-between'
-  },
-  horizontalShelf: {
-    paddingHorizontal: 32
-  },
-  horizontalShelfContent: {
-    gap: 16,
-    paddingBottom: 8,
-    paddingRight: 32
-  },
-  horizontalState: {
-    minWidth: 280
-  },
-  publicListingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 24,
-    paddingHorizontal: 32,
-    paddingBottom: 16,
-    justifyContent: 'space-between'
+    justifyContent: 'flex-start'
   },
   categoryCard: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
     borderRadius: 24,
-    flexBasis: '32%',
-    flexGrow: 0,
-    maxWidth: 'calc(33.333% - 16px)',
-    minWidth: 'calc(33.333% - 16px)',
+    borderWidth: 1,
+    alignSelf: 'stretch',
+    height: '100%',
+    width: '100%',
     overflow: 'hidden'
   },
-  categoryCardFeatured: {
-    flexBasis: '100%',
-    maxWidth: '100%',
-    minWidth: '100%'
+  categoryMediaWrap: {
+    backgroundColor: '#f8fbff'
   },
-  categoryCardCompact: {
-    maxWidth: '100%',
-    minWidth: '100%'
-  },
-  categoryCardShelf: {
-    flexBasis: 'auto',
-    flexGrow: 0,
-    maxWidth: 380,
-    minWidth: 380,
-    width: 380
-  },
-  categoryImageWrap: {
-    aspectRatio: 1,
-    borderColor: palette.border,
-    borderWidth: 1,
-    height: 'auto',
-    minHeight: 380,
-    justifyContent: 'flex-end'
+  categoryMedia: {
+    height: 218,
+    width: '100%'
   },
   categoryImage: {
-    borderRadius: 24
-  },
-  categoryNoImage: {
-    backgroundColor: palette.cardAlt
-  },
-  categoryOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18,38,58,0.32)'
+    borderRadius: 20
   },
   categoryCopy: {
-    padding: spacing.lg
-  },
-  categoryCopyNoImage: {
-    padding: spacing.md
+    backgroundColor: palette.surface,
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
+    padding: 18,
+    position: 'relative'
   },
   categoryIconPill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(63,136,197,0.9)',
-    borderRadius: 999,
-    height: 40,
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    width: 40
-  },
-  categoryCount: {
-    color: '#eef8ff',
-    fontSize: 13,
-    fontWeight: '900',
-    textTransform: 'uppercase'
-  },
-  categoryName: {
-    color: palette.white,
-    fontSize: 22,
-    fontWeight: '900',
-    marginTop: spacing.xs,
-    letterSpacing: 0.5
-  },
-  categoryIconPillNoImage: {
-    alignItems: 'center',
-    backgroundColor: palette.accentSoft,
+    backgroundColor: 'rgba(255,255,255,0.20)',
     borderRadius: 999,
     height: 30,
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 10,
     width: 30
   },
-  categoryCountNoImage: {
+  categoryCount: {
     color: palette.blue,
     fontSize: 12,
-    fontWeight: '900'
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase'
   },
-  categoryNameNoImage: {
+  categoryName: {
     color: palette.text,
-    fontSize: 15,
-    fontWeight: '900',
-    marginTop: spacing.xs
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 24,
+    marginTop: 8
   },
-  publicListingCard: {
-    backgroundColor: palette.white,
+  categoryPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: palette.pageAlt,
+    justifyContent: 'center',
+    minHeight: 218,
+    padding: 18
+  },
+  categoryPlaceholderIcon: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 52,
+    justifyContent: 'center',
+    width: 52
+  },
+  productGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 24,
+    justifyContent: 'flex-start'
+  },
+  productCard: {
+    backgroundColor: palette.surface,
     borderColor: palette.border,
     borderRadius: 24,
     borderWidth: 1,
-    flexBasis: '23%',
-    flexGrow: 0,
-    maxWidth: 'calc(25% - 18px)',
-    minWidth: 'calc(25% - 18px)',
+    alignSelf: 'stretch',
+    height: '100%',
+    width: '100%',
     overflow: 'hidden'
   },
-  publicListingCardCompact: {
-    flexBasis: '100%',
-    minWidth: '100%'
+  productMedia: {
+    height: 228,
+    width: '100%',
+    justifyContent: 'space-between'
   },
-  publicListingCardCompactGrid: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    maxWidth: '48%',
-    minWidth: 0
-  },
-  publicListingCardShelf: {
-    flexBasis: 'auto',
-    flexGrow: 0,
-    maxWidth: 260,
-    minWidth: 260,
-    width: 260
-  },
-  publicListingImageWrap: {
-    height: 180
-  },
-  publicListingImage: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20
-  },
-  publicListingScrim: {
+  cardScrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10,20,35,0.12)'
+    backgroundColor: 'rgba(255,255,255,0.01)'
   },
-  publicListingBadgeRow: {
-    flexDirection: 'row',
+  productImage: {
+    borderRadius: 24
+  },
+  productPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: palette.pageAlt,
     gap: 8,
-    justifyContent: 'space-between',
-    padding: spacing.md
+    height: 228,
+    justifyContent: 'center',
+    padding: 18,
+    width: '100%'
   },
-  publicListingBadge: {
-    backgroundColor: 'rgba(10,20,35,0.72)',
+  productPlaceholderText: {
+    color: palette.body,
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  productBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.90)',
+    borderColor: palette.border,
     borderRadius: 999,
-    color: palette.white,
-    fontSize: 11,
-    fontWeight: '900',
-    overflow: 'hidden',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    textTransform: 'uppercase'
+    borderWidth: 1,
+    margin: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    position: 'relative',
+    zIndex: 1
   },
-  publicListingCopy: {
-    gap: 4,
-    padding: spacing.lg
+  productBadgeText: {
+    color: palette.text,
+    fontSize: 12,
+    fontWeight: '800'
   },
-  publicListingMarketplace: {
+  productBody: {
+    padding: 18
+  },
+  productCategory: {
     color: palette.blue,
     fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
     textTransform: 'uppercase'
   },
-  publicListingTitle: {
-    color: palette.text,
-    fontSize: 17,
-    fontWeight: '900',
-    lineHeight: 22
-  },
-  publicListingSeller: {
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '700'
-  },
-  publicListingPriceRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs
-  },
-  publicListingPrice: {
+  productTitle: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: '900'
+    fontWeight: '800',
+    lineHeight: 24,
+    marginTop: 8
   },
-  publicListingCta: {
-    color: palette.blue,
-    fontSize: 13,
-    fontWeight: '900'
+  productTitleMobile: {
+    fontSize: 17,
+    lineHeight: 23
   },
-  whySection: {
+  productMetaRow: {
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 72
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginTop: 14
   },
-  whyTitle: {
+  productPrice: {
     color: palette.text,
-    fontSize: 34,
-    fontWeight: '900',
-    textAlign: 'center'
-  },
-  whySubtitle: {
-    color: palette.textMuted,
     fontSize: 16,
-    marginTop: spacing.md,
-    textAlign: 'center'
+    fontWeight: '800'
+  },
+  productOriginalPrice: {
+    color: palette.body,
+    fontSize: 13,
+    textDecorationLine: 'line-through'
+  },
+  productSubMeta: {
+    color: palette.body,
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'right'
+  },
+  sellerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 24,
+    justifyContent: 'flex-start'
+  },
+  sellerCarouselContent: {
+    alignItems: 'stretch',
+    gap: 24,
+    paddingBottom: 4,
+    paddingTop: 4
+  },
+  carouselControls: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginLeft: 16
+  },
+  carouselControlButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: palette.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40
+  },
+  sellerCard: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignSelf: 'stretch',
+    height: '100%',
+    width: '100%',
+    overflow: 'hidden',
+    padding: 20
+  },
+  sellerHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14
+  },
+  sellerAvatar: {
+    alignItems: 'center',
+    backgroundColor: palette.pageAlt,
+    borderColor: palette.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 56
+  },
+  sellerHeaderCopy: {
+    flex: 1
+  },
+  sellerName: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 24
+  },
+  sellerBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8
+  },
+  sellerBadge: {
+    alignItems: 'center',
+    backgroundColor: palette.pageAlt,
+    borderColor: palette.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  sellerBadgeText: {
+    color: palette.blue,
+    fontSize: 12,
+    fontWeight: '800'
+  },
+  sellerStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18
+  },
+  sellerStat: {
+    backgroundColor: palette.pageAlt,
+    borderRadius: 18,
+    flex: 1,
+    padding: 14
+  },
+  sellerStatValue: {
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: '800'
+  },
+  sellerStatLabel: {
+    color: palette.body,
+    fontSize: 12,
+    marginTop: 6
+  },
+  sellerFooterText: {
+    color: palette.body,
+    fontSize: 13,
+    marginTop: 14
   },
   featureGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 38,
-    justifyContent: 'space-between',
-    marginTop: 48,
-    width: '100%'
+    gap: 24,
+    justifyContent: 'flex-start'
   },
   featureCard: {
     alignItems: 'center',
-    flexBasis: 220,
-    flexGrow: 1,
-    paddingHorizontal: spacing.md
-  },
-  featureCardCompact: {
-    flexBasis: '100%',
-    paddingHorizontal: 0
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignSelf: 'stretch',
+    height: '100%',
+    width: '100%',
+    padding: 22
   },
   featureIcon: {
     alignItems: 'center',
-    backgroundColor: palette.purpleSoft,
+    backgroundColor: palette.pageAlt,
     borderColor: palette.border,
     borderRadius: 999,
     borderWidth: 1,
-    height: 58,
+    height: 62,
     justifyContent: 'center',
-    width: 58
+    width: 62
   },
   featureTitle: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: '900',
-    marginTop: spacing.lg,
+    fontWeight: '800',
+    lineHeight: 24,
+    marginTop: 16,
     textAlign: 'center'
   },
   featureText: {
-    color: palette.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: spacing.md,
-    maxWidth: 250,
+    color: palette.body,
+    fontSize: 15,
+    lineHeight: 23,
+    marginTop: 10,
     textAlign: 'center'
   },
-  statsBand: {
-    borderBottomColor: palette.border,
-    borderBottomWidth: 1,
-    borderTopColor: palette.border,
-    borderTopWidth: 1,
+  metricSection: {
+    marginTop: 24
+  },
+  metricGrid: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 28,
+    borderWidth: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 46
+    gap: 24,
+    justifyContent: 'flex-start',
+    width: '100%',
+    padding: 20
   },
-  statItem: {
+  metricCard: {
     alignItems: 'center',
-    flexBasis: 190,
-    flexGrow: 1,
-    maxWidth: 260
+    backgroundColor: palette.pageAlt,
+    borderRadius: 22,
+    flex: 1,
+    height: '100%',
+    minWidth: 150,
+    paddingVertical: 22
   },
-  statItemCompact: {
-    flexBasis: '48%',
-    maxWidth: '50%',
-    paddingVertical: spacing.sm
-  },
-  statValue: {
+  metricValue: {
     color: palette.blue,
-    fontSize: 32,
-    fontWeight: '900'
+    fontSize: 30,
+    fontWeight: '800',
+    lineHeight: 34
   },
-  statLabel: {
-    color: palette.textMuted,
+  metricLabel: {
+    color: palette.body,
     fontSize: 13,
-    marginTop: spacing.xs
+    marginTop: 6,
+    textAlign: 'center'
   },
   ctaSection: {
     alignItems: 'center',
-    backgroundColor: '#11183A',
-    paddingHorizontal: 32,
-    paddingVertical: 90
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 28,
+    borderWidth: 1,
+    marginTop: 56,
+    paddingHorizontal: 24,
+    paddingVertical: 44
+  },
+  ctaSectionMobile: {
+    paddingHorizontal: 20,
+    paddingVertical: 32
   },
   ctaTitle: {
     color: palette.text,
     fontSize: 42,
-    fontWeight: '900',
+    fontWeight: '800',
+    letterSpacing: -0.6,
     textAlign: 'center'
   },
   ctaTitleMobile: {
-    fontSize: 32
+    fontSize: 32,
+    lineHeight: 38
   },
   ctaText: {
-    color: palette.textMuted,
+    color: palette.body,
     fontSize: 17,
-    lineHeight: 25,
-    marginTop: spacing.lg,
+    lineHeight: 26,
+    marginTop: 12,
     textAlign: 'center'
   },
   ctaButton: {
     alignItems: 'center',
     backgroundColor: palette.blue,
-    borderRadius: 10,
+    borderRadius: 16,
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: 10,
+    height: 52,
     justifyContent: 'center',
-    marginTop: 42,
-    minHeight: 52,
-    paddingHorizontal: spacing.lg
+    marginTop: 24,
+    minWidth: 220,
+    paddingHorizontal: 22
   },
   ctaButtonText: {
     color: palette.white,
     fontSize: 16,
-    fontWeight: '900'
-  },
-  footer: {
-    padding: 32
-  },
-  footerGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xl,
-    justifyContent: 'space-between'
-  },
-  footerGroup: {
-    gap: spacing.md,
-    minWidth: 180
-  },
-  footerTitle: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '900'
-  },
-  footerLink: {
-    color: palette.textMuted,
-    fontSize: 14
+    fontWeight: '800'
   },
   apiState: {
     alignItems: 'center',
-    backgroundColor: palette.cardAlt,
+    backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 12,
+    borderRadius: 24,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     minHeight: 88,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 18,
     width: '100%'
   },
   apiStateText: {
-    color: palette.textMuted,
+    color: palette.body,
+    flex: 1,
     fontSize: 14,
-    fontWeight: '700'
-  },
-  footerNotice: {
-    alignItems: 'center',
-    borderColor: palette.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-    padding: spacing.md
-  },
-  footerNoticeText: {
-    color: palette.textMuted,
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19
-  },
-  copyright: {
-    borderTopColor: palette.border,
-    borderTopWidth: 1,
-    color: palette.textMuted,
-    fontSize: 13,
-    marginTop: spacing.xl,
-    paddingTop: spacing.lg,
-    textAlign: 'center'
-  },
-  publicListingOriginalPrice: {
-    color: palette.textMuted,
-    fontSize: 12,
-    textDecorationLine: 'line-through'
-  },
-  sellerCard: {
-    backgroundColor: palette.background,
-    borderColor: palette.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    minWidth: 200,
-    padding: spacing.md
-  },
-  sellerCardCompactGrid: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    maxWidth: '48%',
-    minWidth: 0
-  },
-  sellerGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    justifyContent: 'flex-start'
-  },
-  sellerHeaderSection: {
-    marginBottom: spacing.md
-  },
-  sellerName: {
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4
-  },
-  sellerRatingRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4
-  },
-  sellerRating: {
-    color: '#FFC107',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  sellerOrdersCount: {
-    color: palette.textMuted,
-    fontSize: 11
-  },
-  sellerListingsGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'space-between'
-  },
-  sellerListingsScroll: {
-    width: '100%'
-  },
-  sellerListingsContent: {
-    gap: spacing.sm,
-    paddingRight: spacing.md
-  },
-  sellerListingThumb: {
-    aspectRatio: 1,
-    borderRadius: 8,
-    minWidth: 80,
-    overflow: 'hidden',
-    width: 80
-  },
-  sellerListingImageWrap: {
-    flex: 1,
-    width: '100%'
-  },
-  sellerListingImage: {
-    borderRadius: 8
-  },
-  // Gameflip-style category cards - 4 column responsive grid
-  categoryGridGameflip: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    justifyContent: 'flex-start',
-    gap: 6
-  },
-  categoryCardGameflipInnerWrapper: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-    width: '100%',
-    height: '100%'
-  },
-  categoryImageWrapGameflip: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 6,
-    position: 'relative',
-    backgroundColor: '#f8f8f8'
-  },
-  categoryImageGameflip: {
-    borderRadius: 16
-  },
-  categoryNoImageGameflip: {
-    backgroundColor: '#f0f4f8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12
-  },
-  categoryOverlayGameflip: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)'
-  },
-  categoryLabelGameflip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 2,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10
-  },
-  categoryNameGameflip: {
-    color: palette.white,
-    fontSize: 12,
     fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    maxWidth: '95%'
-  },
-  sectionTitleSmall: {
-    color: palette.textMuted,
-    fontSize: 14,
-    fontWeight: '500',
-    marginTop: 4
+    lineHeight: 21
   }
 });

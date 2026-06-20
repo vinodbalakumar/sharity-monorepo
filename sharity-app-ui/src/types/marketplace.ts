@@ -6,6 +6,7 @@ export type MarketplaceVertical = {
   displayOrder: number;
   iconKey?: string;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   imageKeys?: string | null;
   frontendRoute?: string;
   availableToCustomer: boolean;

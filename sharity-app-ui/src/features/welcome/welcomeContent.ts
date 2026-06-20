@@ -10,22 +10,22 @@ export const featureCards: {
 }[] = [
   {
     icon: 'shield-checkmark-outline',
-    text: 'Protected payments and buyer guarantee on all purchases',
+    text: 'Protected checkout and buyer support on every order',
     title: 'Secure Transactions'
   },
   {
     icon: 'bag-handle-outline',
-    text: 'Over 100M products across multiple categories',
+    text: 'Curated digital goods, jewellery, and gift card collections',
     title: 'Wide Selection'
   },
   {
     icon: 'flash-outline',
-    text: 'Quick shipping and reliable tracking on all orders',
+    text: 'Clear delivery details and fast access for digital items',
     title: 'Fast Delivery'
   },
   {
     icon: 'people-outline',
-    text: 'Join 10M+ active users buying and selling daily',
+    text: 'Verified sellers and customer-first marketplace rules',
     title: 'Trusted Community'
   }
 ];

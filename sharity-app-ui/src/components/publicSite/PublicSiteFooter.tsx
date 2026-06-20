@@ -131,10 +131,12 @@ const styles = StyleSheet.create({
     padding: 18
   },
   topBand: {
+    alignItems: 'stretch',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xl,
-    justifyContent: 'space-between'
+    justifyContent: 'flex-start',
+    width: '100%'
   },
   topBandCompact: {
     gap: spacing.lg
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     flex: 1,
-    maxWidth: 480,
+    maxWidth: 520,
     minWidth: 280,
     padding: 20
   },
@@ -261,14 +263,16 @@ const styles = StyleSheet.create({
     color: palette.blue
   },
   footerGrid: {
+    alignItems: 'stretch',
     borderBottomColor: palette.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xl,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginTop: 24,
-    paddingBottom: 24
+    paddingBottom: 24,
+    width: '100%'
   },
   footerGridCompact: {
     gap: spacing.lg
@@ -277,6 +281,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start'
   },
   footerGroup: {
+    alignSelf: 'stretch',
+    flexBasis: 0,
+    flexGrow: 1,
     gap: spacing.sm,
     minWidth: 220
   },
