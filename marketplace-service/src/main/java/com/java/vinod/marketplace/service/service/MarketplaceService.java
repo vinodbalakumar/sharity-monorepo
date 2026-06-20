@@ -2,23 +2,27 @@ package com.java.vinod.marketplace.service.service;
 
 import com.java.vinod.marketplace.service.dto.MarketplaceDtos;
 import com.java.vinod.marketplace.service.entity.CustomerAcceptance;
+import com.java.vinod.marketplace.service.entity.AssetStorageProvider;
 import com.java.vinod.marketplace.service.entity.DeliverySubmission;
 import com.java.vinod.marketplace.service.entity.DisputeCase;
 import com.java.vinod.marketplace.service.entity.Listing;
 import com.java.vinod.marketplace.service.entity.ListingStatusMaster;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
 import com.java.vinod.marketplace.service.entity.MarketplaceVertical;
+import com.java.vinod.marketplace.service.entity.SellerProfile;
 import com.java.vinod.marketplace.service.entity.OrderHeader;
 import com.java.vinod.marketplace.service.repository.DeliveryTypeMasterRepository;
 import com.java.vinod.marketplace.service.repository.CustomerAcceptanceRepository;
 import com.java.vinod.marketplace.service.repository.DeliverySubmissionRepository;
 import com.java.vinod.marketplace.service.repository.DisputeCaseRepository;
+import com.java.vinod.marketplace.service.repository.AssetStorageProviderRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
 import com.java.vinod.marketplace.service.repository.ListingStatusMasterRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceCategoryRepository;
 import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
 import com.java.vinod.marketplace.service.repository.ProductTypeMasterRepository;
+import com.java.vinod.marketplace.service.repository.SellerProfileRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,19 +55,20 @@ public class MarketplaceService {
     private final ListingStatusMasterRepository listingStatusMasterRepository;
     private final MarketplaceCategoryRepository marketplaceCategoryRepository;
     private final MarketplaceVerticalRepository marketplaceVerticalRepository;
+    private final SellerProfileRepository sellerProfileRepository;
     private final ProductTypeMasterRepository productTypeMasterRepository;
     private final DeliveryTypeMasterRepository deliveryTypeMasterRepository;
     private final OrderHeaderRepository orderHeaderRepository;
     private final DeliverySubmissionRepository deliverySubmissionRepository;
     private final CustomerAcceptanceRepository customerAcceptanceRepository;
     private final DisputeCaseRepository disputeCaseRepository;
+    private final AssetStorageProviderRepository assetStorageProviderRepository;
     private final MarketplaceEventOutboxService marketplaceEventOutboxService;
     private final MarketplaceCurrencyService marketplaceCurrencyService;
     private final RestClient restClient;
     private final String authorizationProviderEligibilityUrl;
     private final String paymentInternalUrl;
     private final String internalServiceToken;
-    private final String assetPublicBaseUrl;
 
     /**
      * Creates the marketplace service with repositories and internal payment configuration.
@@ -73,41 +78,44 @@ public class MarketplaceService {
                               ListingStatusMasterRepository listingStatusMasterRepository,
                               MarketplaceCategoryRepository marketplaceCategoryRepository,
                               MarketplaceVerticalRepository marketplaceVerticalRepository,
+                              SellerProfileRepository sellerProfileRepository,
                               ProductTypeMasterRepository productTypeMasterRepository,
                               DeliveryTypeMasterRepository deliveryTypeMasterRepository,
                               OrderHeaderRepository orderHeaderRepository,
                               DeliverySubmissionRepository deliverySubmissionRepository,
                               CustomerAcceptanceRepository customerAcceptanceRepository,
                               DisputeCaseRepository disputeCaseRepository,
+                              AssetStorageProviderRepository assetStorageProviderRepository,
                               MarketplaceEventOutboxService marketplaceEventOutboxService,
                               MarketplaceCurrencyService marketplaceCurrencyService,
                               @Value("${app.services.authorization-provider-eligibility-url}") String authorizationProviderEligibilityUrl,
                               @Value("${app.services.payment-internal-url}") String paymentInternalUrl,
-                              @Value("${app.internal.service-token}") String internalServiceToken,
-                              @Value("${app.assets.public-base-url:}") String assetPublicBaseUrl) {
+                              @Value("${app.internal.service-token}") String internalServiceToken) {
         this.listingRepository = listingRepository;
         this.listingStatusMasterRepository = listingStatusMasterRepository;
         this.marketplaceCategoryRepository = marketplaceCategoryRepository;
         this.marketplaceVerticalRepository = marketplaceVerticalRepository;
+        this.sellerProfileRepository = sellerProfileRepository;
         this.productTypeMasterRepository = productTypeMasterRepository;
         this.deliveryTypeMasterRepository = deliveryTypeMasterRepository;
         this.orderHeaderRepository = orderHeaderRepository;
         this.deliverySubmissionRepository = deliverySubmissionRepository;
         this.customerAcceptanceRepository = customerAcceptanceRepository;
         this.disputeCaseRepository = disputeCaseRepository;
+        this.assetStorageProviderRepository = assetStorageProviderRepository;
         this.marketplaceEventOutboxService = marketplaceEventOutboxService;
         this.marketplaceCurrencyService = marketplaceCurrencyService;
         this.restClient = RestClient.builder().build();
         this.authorizationProviderEligibilityUrl = authorizationProviderEligibilityUrl;
         this.paymentInternalUrl = paymentInternalUrl;
         this.internalServiceToken = internalServiceToken;
-        this.assetPublicBaseUrl = assetPublicBaseUrl;
     }
 
     public MarketplaceService(ListingRepository listingRepository,
                               ListingStatusMasterRepository listingStatusMasterRepository,
                               MarketplaceCategoryRepository marketplaceCategoryRepository,
                               MarketplaceVerticalRepository marketplaceVerticalRepository,
+                              SellerProfileRepository sellerProfileRepository,
                               ProductTypeMasterRepository productTypeMasterRepository,
                               DeliveryTypeMasterRepository deliveryTypeMasterRepository,
                               OrderHeaderRepository orderHeaderRepository,
@@ -120,9 +128,9 @@ public class MarketplaceService {
                               String paymentInternalUrl,
                               String internalServiceToken) {
         this(listingRepository, listingStatusMasterRepository, marketplaceCategoryRepository, marketplaceVerticalRepository,
-                productTypeMasterRepository, deliveryTypeMasterRepository, orderHeaderRepository, deliverySubmissionRepository,
-                customerAcceptanceRepository, disputeCaseRepository, marketplaceEventOutboxService, marketplaceCurrencyService,
-                authorizationProviderEligibilityUrl, paymentInternalUrl, internalServiceToken, "");
+                sellerProfileRepository, productTypeMasterRepository, deliveryTypeMasterRepository, orderHeaderRepository, deliverySubmissionRepository,
+                customerAcceptanceRepository, disputeCaseRepository, null, marketplaceEventOutboxService, marketplaceCurrencyService,
+                authorizationProviderEligibilityUrl, paymentInternalUrl, internalServiceToken);
     }
 
     /**
@@ -1162,7 +1170,8 @@ public class MarketplaceService {
     }
 
     private MarketplaceDtos.VerticalResponse toVerticalResponse(MarketplaceVertical vertical) {
-        String resolvedImageUrl = resolveImageUrl(firstAssetKey(vertical.getImageKeys()), vertical.getImageUrl());
+        List<String> resolvedImageUrls = resolveImageUrls(vertical.getImageKeys(), vertical.getImageUrl());
+        String resolvedImageUrl = resolvedImageUrls.isEmpty() ? null : resolvedImageUrls.get(0);
         return new MarketplaceDtos.VerticalResponse(
                 vertical.getModuleCode(),
                 vertical.getModuleName(),
@@ -1174,6 +1183,7 @@ public class MarketplaceService {
                 vertical.getFrontendRoute(),
                 vertical.getApiAudience(),
                 resolvedImageUrl,
+                resolvedImageUrls,
                 vertical.getImageKeys(),
                 vertical.isCustomerAccessEnabled(),
                 vertical.isProviderAccessEnabled(),
@@ -1184,13 +1194,14 @@ public class MarketplaceService {
     }
 
     private String resolveImageUrl(String imageKey, String fallback) {
+        String publicBaseUrl = resolveAssetPublicBaseUrl();
         if (imageKey != null && !imageKey.isBlank()) {
             String trimmed = imageKey.trim();
             if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
                 return trimmed;
             }
-            if (assetPublicBaseUrl != null && !assetPublicBaseUrl.isBlank()) {
-                return assetPublicBaseUrl.stripTrailing() + "/" + trimmed;
+            if (publicBaseUrl != null && !publicBaseUrl.isBlank()) {
+                return publicBaseUrl.stripTrailing() + "/" + trimmed.replaceFirst("^/+", "");
             }
             return trimmed;
         }
@@ -1209,6 +1220,53 @@ public class MarketplaceService {
                 .filter(value -> !value.isBlank())
                 .findFirst()
                 .orElse(null);
+    }
+
+    private List<String> resolveImageUrls(String imageKeys, String fallback) {
+        String publicBaseUrl = resolveAssetPublicBaseUrl();
+        List<String> urls = new ArrayList<>();
+
+        if (imageKeys != null && !imageKeys.isBlank()) {
+            for (String key : imageKeys.split(",")) {
+                String resolved = resolveImageUrl(key, null, publicBaseUrl);
+                if (resolved != null && !resolved.isBlank() && !urls.contains(resolved)) {
+                    urls.add(resolved);
+                }
+            }
+        }
+
+        if (urls.isEmpty()) {
+            String resolvedFallback = resolveImageUrl(null, fallback, publicBaseUrl);
+            if (resolvedFallback != null && !resolvedFallback.isBlank()) {
+                urls.add(resolvedFallback);
+            }
+        }
+
+        return urls;
+    }
+
+    private String resolveAssetPublicBaseUrl() {
+        return assetStorageProviderRepository.findFirstByActiveTrueOrderByUpdatedAtDesc()
+                .map(AssetStorageProvider::getPublicBaseUrl)
+                .filter(baseUrl -> baseUrl != null && !baseUrl.isBlank())
+                .orElse(null);
+    }
+
+    private String resolveImageUrl(String imageKey, String fallback, String publicBaseUrl) {
+        if (imageKey != null && !imageKey.isBlank()) {
+            String trimmed = imageKey.trim();
+            if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
+                return trimmed;
+            }
+            if (publicBaseUrl != null && !publicBaseUrl.isBlank()) {
+                return publicBaseUrl.stripTrailing() + "/" + trimmed.replaceFirst("^/+", "");
+            }
+            return trimmed;
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback.trim();
+        }
+        return null;
     }
 
     @Transactional(readOnly = true)
@@ -1507,15 +1565,21 @@ public class MarketplaceService {
         for (java.util.Map.Entry<String, List<Listing>> entry : listingsByProvider.entrySet()) {
             String providerPublicId = entry.getKey();
             List<Listing> providerListings = entry.getValue();
-            long completedOrders = providerListings.stream()
-                    .filter(listing -> "SOLD".equalsIgnoreCase(listing.getListingStatus()))
-                    .count();
+            SellerProfile sellerProfile = sellerProfileRepository.findByProviderAccountPublicId(providerPublicId).orElse(null);
+            if (sellerProfile == null) {
+                continue;
+            }
 
-            String sellerName = providerListings.stream()
-                    .map(Listing::getSellerDisplayName)
-                    .filter(s -> s != null && !s.isBlank())
-                    .findFirst()
-                    .orElse("Unknown Seller");
+            long completedOrders = sellerProfile.getCompletedOrders() == null ? 0 : sellerProfile.getCompletedOrders();
+
+            String sellerName = sellerProfile.getSellerName();
+            if (sellerName == null || sellerName.isBlank()) {
+                sellerName = providerListings.stream()
+                        .map(Listing::getSellerDisplayName)
+                        .filter(s -> s != null && !s.isBlank())
+                        .findFirst()
+                        .orElse("Unknown Seller");
+            }
 
             List<MarketplaceDtos.ListingResponse> sellerListings = providerListings.stream()
                     .filter(listing -> publicStatuses.contains(listing.getListingStatus()))
@@ -1560,7 +1624,7 @@ public class MarketplaceService {
             sellers.add(new MarketplaceDtos.SellerHighlightResponse(
                     providerPublicId,
                     sellerName,
-                    java.math.BigDecimal.valueOf(4.5),
+                    sellerProfile.getSellerRating() == null ? java.math.BigDecimal.ZERO : sellerProfile.getSellerRating(),
                     (int) completedOrders,
                     sellerListings
             ));
@@ -1568,6 +1632,7 @@ public class MarketplaceService {
 
         sellers.sort(Comparator
                 .comparingInt(MarketplaceDtos.SellerHighlightResponse::completedOrders).reversed()
+                .thenComparing(Comparator.comparing(MarketplaceDtos.SellerHighlightResponse::sellerRating).reversed())
                 .thenComparing(Comparator.comparingInt((MarketplaceDtos.SellerHighlightResponse seller) -> seller.listings().size()).reversed())
                 .thenComparing(MarketplaceDtos.SellerHighlightResponse::sellerName, String.CASE_INSENSITIVE_ORDER));
 

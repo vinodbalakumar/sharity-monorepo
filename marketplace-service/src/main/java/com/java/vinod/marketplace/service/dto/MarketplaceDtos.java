@@ -69,7 +69,7 @@ public final class MarketplaceDtos {
 
     public record VerticalResponse(String moduleCode, String moduleName, String description, String status,
                                    int displayOrder, String iconKey, String moduleType, String frontendRoute,
-                                   String apiAudience, String imageUrl, String imageKeys, boolean customerAccessEnabled, boolean providerAccessEnabled,
+                                   String apiAudience, String imageUrl, List<String> imageUrls, String imageKeys, boolean customerAccessEnabled, boolean providerAccessEnabled,
                                    boolean requiresProviderApproval, boolean availableToCustomer,
                                    boolean providerAccessActive) {
         public VerticalResponse(String moduleCode, String moduleName, String description, String status,
@@ -78,7 +78,7 @@ public final class MarketplaceDtos {
                                 boolean providerAccessEnabled, boolean requiresProviderApproval,
                                 boolean availableToCustomer, boolean providerAccessActive) {
             this(moduleCode, moduleName, description, status, displayOrder, iconKey, moduleType, frontendRoute,
-                    apiAudience, imageUrl, null, customerAccessEnabled, providerAccessEnabled,
+                    apiAudience, imageUrl, null, null, customerAccessEnabled, providerAccessEnabled,
                     requiresProviderApproval, availableToCustomer, providerAccessActive);
         }
     }

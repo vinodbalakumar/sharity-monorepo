@@ -13,6 +13,7 @@ import com.java.vinod.marketplace.service.repository.MarketplaceCategoryReposito
 import com.java.vinod.marketplace.service.repository.MarketplaceVerticalRepository;
 import com.java.vinod.marketplace.service.repository.OrderHeaderRepository;
 import com.java.vinod.marketplace.service.repository.ProductTypeMasterRepository;
+import com.java.vinod.marketplace.service.repository.SellerProfileRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -228,12 +229,14 @@ class MarketplaceServiceCatalogTest {
                 mock(ListingStatusMasterRepository.class),
                 categoryRepository,
                 verticalRepository,
+                mock(SellerProfileRepository.class),
                 mock(ProductTypeMasterRepository.class),
                 mock(DeliveryTypeMasterRepository.class),
                 mock(OrderHeaderRepository.class),
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
                 mock(DisputeCaseRepository.class),
+                mock(com.java.vinod.marketplace.service.repository.AssetStorageProviderRepository.class),
                 mock(MarketplaceEventOutboxService.class),
                 mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",
