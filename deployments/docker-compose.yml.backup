@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: sharity-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: authorization_db
+      MYSQL_USER: sharity_user
+      MYSQL_PASSWORD: REDACTED_LEGACY_CREDENTIAL
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - sharity-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: sharity-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sharity-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Authorization Server
+  authorization-server:
+    build:
+      context: ./authorization-server
+      dockerfile: Dockerfile
+    container_name: sharity-auth-server
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/authorization_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: sharity_user
+      SPRING_DATASOURCE_PASSWORD: REDACTED_LEGACY_CREDENTIAL
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_PROFILES_ACTIVE: qa
+    ports:
+      - "9091:9090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sharity-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Marketplace Service
+  marketplace-service:
+    build:
+      context: ./marketplace-service
+      dockerfile: Dockerfile
+    container_name: sharity-marketplace
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/marketplace_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: sharity_user
+      SPRING_DATASOURCE_PASSWORD: REDACTED_LEGACY_CREDENTIAL
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_PROFILES_ACTIVE: qa
+      AUTHORIZATION_SERVER_URL: http://authorization-server:9090
+    ports:
+      - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      authorization-server:
+        condition: service_healthy
+    networks:
+      - sharity-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Sharity App UI
+  sharity-app:
+    build:
+      context: ./sharity-app-ui
+      dockerfile: Dockerfile
+    container_name: sharity-app-ui
+    ports:
+      - "3001:3000"
+    environment:
+      EXPOSE_PUBLIC_BFF_BASE_URL: http://localhost:9090
+      EXPOSE_PUBLIC_MARKETPLACE_BASE_URL: http://localhost:8080
+    depends_on:
+      - authorization-server
+      - marketplace-service
+    networks:
+      - sharity-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: sharity-nginx
+    ports:
+      - "8000:80"
+      - "8443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - sharity-app
+      - authorization-server
+      - marketplace-service
+    networks:
+      - sharity-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  sharity-network:
+    driver: bridge

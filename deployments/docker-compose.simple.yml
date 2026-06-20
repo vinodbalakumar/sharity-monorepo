@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # Sharity App UI with 4 sections
+  sharity-app:
+    build:
+      context: ./sharity-app-ui
+      dockerfile: Dockerfile
+    container_name: sharity-app-ui
+    ports:
+      - "3001:3000"
+    environment:
+      EXPOSE_PUBLIC_BFF_BASE_URL: http://localhost:9090
+      EXPOSE_PUBLIC_MARKETPLACE_BASE_URL: http://localhost:8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    driver: bridge

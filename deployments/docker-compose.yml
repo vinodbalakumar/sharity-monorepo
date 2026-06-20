@@ -48,11 +48,12 @@ services:
 
   sharity-app:
     build:
-      context: ../webapps/sharity-app
+      context: ../springbootrestdemo/sharity-app-ui
       dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-app.Dockerfile
       args:
         EXPO_PUBLIC_BFF_BASE_URL: ${EXPO_PUBLIC_BFF_BASE_URL:-https://vinodbalakumar.com/bff}
-        EXPO_PUBLIC_MARKETPLACE_BASE_URL: ${EXPO_PUBLIC_MARKETPLACE_BASE_URL:-https://vinodbalakumar.com/marketplace-service/api/v1/marketplace}
+        EXPO_PUBLIC_MARKETPLACE_BASE_URL: /marketplace-service/api/v1/marketplace
+        EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
     image: sharity-app:latest
     expose:
       - "80"
@@ -88,7 +89,10 @@ services:
     image: authorization-server:latest
     environment:
       SERVER_PORT: 8080
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: qa
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:${PC_MYSQL_PORT:-3306}/${AUTH_DB_NAME:-auth}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       DB_HOST: host.docker.internal
       DB_PORT: ${PC_MYSQL_PORT:-3306}
       DB_NAME: ${AUTH_DB_NAME:-auth}
@@ -111,14 +115,14 @@ services:
       APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID:-}
       APPLE_OAUTH_CLIENT_SECRET: ${APPLE_OAUTH_CLIENT_SECRET:-}
       APPLE_OAUTH_REDIRECT_URI: ${APPLE_OAUTH_REDIRECT_URI:-https://vinodbalakumar.com/authorization-server/api/v1/auth/social/apple/callback}
-      ASSET_STORAGE_PROVIDER_CODE: ${ASSET_STORAGE_PROVIDER_CODE:-CLOUDFLARE_R2_PRIMARY}
-      ASSET_STORAGE_BUCKET_NAME: ${ASSET_STORAGE_BUCKET_NAME:-sharity-assets}
-      ASSET_STORAGE_ENDPOINT_URL: ${ASSET_STORAGE_ENDPOINT_URL:-}
-      ASSET_STORAGE_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-}
-      ASSET_STORAGE_REGION: ${ASSET_STORAGE_REGION:-auto}
-      ASSET_STORAGE_ACCESS_KEY_ID: ${ASSET_STORAGE_ACCESS_KEY_ID:-}
-      ASSET_STORAGE_SECRET_ACCESS_KEY: ${ASSET_STORAGE_SECRET_ACCESS_KEY:-}
-      ASSET_UPLOAD_MAX_FILE_SIZE_BYTES: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:-5242880}
+      APP_PROFILE_IMAGE_STORAGE_PROVIDER_CODE: ${ASSET_STORAGE_PROVIDER_CODE:-CLOUDFLARE_R2_PRIMARY}
+      APP_PROFILE_IMAGE_STORAGE_BUCKET_NAME: ${ASSET_STORAGE_BUCKET_NAME:-sharity-assets}
+      APP_PROFILE_IMAGE_STORAGE_ENDPOINT_URL: ${ASSET_STORAGE_ENDPOINT_URL:-}
+      APP_PROFILE_IMAGE_STORAGE_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
+      APP_PROFILE_IMAGE_STORAGE_REGION: ${ASSET_STORAGE_REGION:-auto}
+      APP_PROFILE_IMAGE_STORAGE_ACCESS_KEY_ID: ${ASSET_STORAGE_ACCESS_KEY_ID:-}
+      APP_PROFILE_IMAGE_STORAGE_SECRET_ACCESS_KEY: ${ASSET_STORAGE_SECRET_ACCESS_KEY:-}
+      APP_PROFILE_IMAGE_STORAGE_MAX_FILE_SIZE_BYTES: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:-5242880}
       AUTH_SESSION_COOKIE_SECURE: ${AUTH_SESSION_COOKIE_SECURE:-false}
       EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-false}
       MAIL_HOST: ${MAIL_HOST:-mail.smtp2go.com}
@@ -143,7 +147,10 @@ services:
     image: platform-web-bff:latest
     environment:
       SERVER_PORT: 8080
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: qa
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:${PC_MYSQL_PORT:-3306}/${AUTH_DB_NAME:-auth}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       DB_HOST: host.docker.internal
       DB_PORT: ${PC_MYSQL_PORT:-3306}
       BFF_DB_NAME: ${AUTH_DB_NAME:-auth}
@@ -177,6 +184,10 @@ services:
     image: marketplace-service:latest
     environment:
       SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: qa
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:${PC_MYSQL_PORT:-3306}/${MARKETPLACE_DB_NAME:-marketplace_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       DB_HOST: host.docker.internal
       DB_PORT: ${PC_MYSQL_PORT:-3306}
       MARKETPLACE_DB_NAME: ${MARKETPLACE_DB_NAME:-marketplace_db}
@@ -191,11 +202,12 @@ services:
       ASSET_STORAGE_PROVIDER_CODE: ${ASSET_STORAGE_PROVIDER_CODE:-CLOUDFLARE_R2_PRIMARY}
       ASSET_STORAGE_BUCKET_NAME: ${ASSET_STORAGE_BUCKET_NAME:-sharity-assets}
       ASSET_STORAGE_ENDPOINT_URL: ${ASSET_STORAGE_ENDPOINT_URL:-}
-      ASSET_STORAGE_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-}
+      ASSET_STORAGE_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
       ASSET_STORAGE_REGION: ${ASSET_STORAGE_REGION:-auto}
       ASSET_STORAGE_ACCESS_KEY_ID: ${ASSET_STORAGE_ACCESS_KEY_ID:-}
       ASSET_STORAGE_SECRET_ACCESS_KEY: ${ASSET_STORAGE_SECRET_ACCESS_KEY:-}
       ASSET_UPLOAD_MAX_FILE_SIZE_BYTES: ${ASSET_UPLOAD_MAX_FILE_SIZE_BYTES:-5242880}
+      SPRING_FLYWAY_OUT_OF_ORDER: "true"
     volumes:
       - C:/Users/HP/projects/certs:/keys:ro
     expose:
@@ -214,6 +226,10 @@ services:
     image: payment-service:latest
     environment:
       SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: qa
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:${PC_MYSQL_PORT:-3306}/${PAYMENT_DB_NAME:-payment_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       DB_HOST: host.docker.internal
       DB_PORT: ${PC_MYSQL_PORT:-3306}
       PAYMENT_DB_NAME: ${PAYMENT_DB_NAME:-payment_db}
@@ -244,6 +260,10 @@ services:
     image: wallet-service:latest
     environment:
       SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: qa
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:${PC_MYSQL_PORT:-3306}/${WALLET_DB_NAME:-wallet_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${PC_MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${PC_MYSQL_PASSWORD:-root}
       DB_HOST: host.docker.internal
       DB_PORT: ${PC_MYSQL_PORT:-3306}
       WALLET_DB_NAME: ${WALLET_DB_NAME:-wallet_db}
