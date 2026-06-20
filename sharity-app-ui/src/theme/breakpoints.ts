@@ -1,8 +1,8 @@
 export const breakpoints = {
   mobile: 0,
   tablet: 768,
-  desktop: 1024,
-  largeDesktop: 1440
+  desktop: 992,
+  largeDesktop: 1200
 };
 
 export function responsiveValue<T>(width: number, values: { desktop?: T; largeDesktop?: T; mobile: T; tablet?: T }) {

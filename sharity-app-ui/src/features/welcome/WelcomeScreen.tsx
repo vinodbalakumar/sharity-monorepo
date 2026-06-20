@@ -51,9 +51,9 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
   const { isMobile } = useResponsiveLayout();
   const { width: viewportWidth } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
-  const isCompact = viewportWidth < 1024;
-  const isCompactMarketplaceGrid = viewportWidth < 960;
-  const categoryColumns = viewportWidth < 360 ? 1 : viewportWidth < 1024 ? 2 : 4;
+  const isCompact = viewportWidth < 992;
+  const isCompactMarketplaceGrid = viewportWidth < 992;
+  const categoryColumns = viewportWidth < 360 ? 1 : viewportWidth < 992 ? 2 : 4;
   const categoryGutter = viewportWidth < 560 ? 8 : 6;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeHeroIndex, setActiveHeroIndex] = useState(0);
@@ -478,7 +478,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
                 <Text style={styles.apiStateText}>No top sellers found.</Text>
               </View>
             ) : null}
-            {(home?.topRatedSellers ?? []).slice(0, 10).map((seller) => (
+            {(home?.topRatedSellers ?? []).slice(0, 20).map((seller) => (
               <View key={seller.sellerPublicId} style={[styles.publicListingCard, styles.publicListingCardShelf]}>
                 <View style={styles.sellerHeaderSection}>
                   <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
@@ -537,7 +537,7 @@ export function WelcomeScreen({ onBrowse, onGetStarted, onOpenMarketplace, onOpe
                 <Text style={styles.apiStateText}>No top sellers found.</Text>
               </View>
             ) : null}
-            {(home?.topRatedSellers ?? []).slice(0, 10).map((seller) => (
+            {(home?.topRatedSellers ?? []).slice(0, 20).map((seller) => (
               <View key={seller.sellerPublicId} style={[styles.sellerCard, isCompactMarketplaceGrid && styles.sellerCardCompactGrid]}>
                 <View style={styles.sellerHeaderSection}>
                   <Text style={styles.sellerName} numberOfLines={1}>{seller.sellerName}</Text>
@@ -768,53 +768,24 @@ function buildTopCategories(home: MarketplaceHomeResponse | null): LandingCatego
     return [];
   }
 
-  if ((home.topCategories ?? []).length > 0) {
-    return (home.topCategories ?? []).slice(0, 12).map((category) => ({
+  return (home.topCategories ?? []).slice(0, 4).map((category) => ({
+    code: category.categoryCode,
+    countLabel: countLabelFor(category.soldCount, category.activeCount, category.maxDiscountPercent),
+    icon: iconForCategory({
       code: category.categoryCode,
-      countLabel: countLabelFor(category.soldCount, category.activeCount, category.maxDiscountPercent),
-      icon: iconForCategory({
-        code: category.categoryCode,
-        countryCode: null,
-        active: true,
-        iconRef: category.iconRef,
-        imageUrl: category.imageUrl,
-        id: 0,
-        name: category.categoryName,
-        slug: category.slug,
-        verticalCode: category.verticalCode
-        }), 
-        imageUrl: category.imageUrl ? resolveMockImageUrl(category.imageUrl, 720) : placeholderImageUrl(category.categoryName, 720),
-        name: category.categoryName,
-        verticalCode: category.verticalCode
-      }));
-  }
-
-  const seenNames = new Set<string>();
-  const featuredCountByCategory = new Map<string, number>();
-
-  home.featuredListings.forEach((listing) => {
-    featuredCountByCategory.set(listing.categoryCode, (featuredCountByCategory.get(listing.categoryCode) ?? 0) + 1);
-  });
-
-  return (home.categories ?? [])
-    .filter((category) => category.active)
-    .filter((category) => {
-      const key = category.name.toLowerCase();
-      if (seenNames.has(key)) {
-        return false;
-      }
-      seenNames.add(key);
-      return true;
-    })
-    .slice(0, 6)
-    .map((category) => ({
-      code: category.code,
-      countLabel: countLabelFor(featuredCountByCategory.get(category.code) ?? 0, 0, 0),
-      icon: iconForCategory(category),
-      imageUrl: imageForCategory(category, home),
-      name: category.name,
+      countryCode: null,
+      active: true,
+      iconRef: category.iconRef,
+      imageUrl: category.imageUrl,
+      id: 0,
+      name: category.categoryName,
+      slug: category.slug,
       verticalCode: category.verticalCode
-    }));
+    }),
+    imageUrl: category.imageUrl ? resolveMockImageUrl(category.imageUrl, 720) : placeholderImageUrl(category.categoryName, 720),
+    name: category.categoryName,
+    verticalCode: category.verticalCode
+  }));
 }
 
 function submitSearch(query: string, onSearchMarketplace: (value: string) => void) {
