@@ -211,36 +211,35 @@ export function WelcomeScreen({
   const [isHeroPaused, setIsHeroPaused] = useState(false);
   const heroScrollRef = useRef<ScrollView | null>(null);
   const heroResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const homeRequestIdRef = useRef(0);
 
-  useEffect(() => {
-    let mounted = true;
+  const loadHome = useCallback(async () => {
+    const requestId = homeRequestIdRef.current + 1;
+    homeRequestIdRef.current = requestId;
+    setHomeLoading(true);
+    setHomeError(false);
 
-    async function loadHome() {
-      try {
-        const countryQuery = visitorContext?.countryCode ? `?countryCode=${encodeURIComponent(visitorContext.countryCode)}` : '';
-        const response = await getMarketplaceHome(countryQuery);
-        if (mounted) {
-          setHome(response);
-          setHomeError(false);
-        }
-      } catch {
-        if (mounted) {
-          setHome(null);
-          setHomeError(true);
-        }
-      } finally {
-        if (mounted) {
-          setHomeLoading(false);
-        }
+    try {
+      const countryQuery = visitorContext?.countryCode ? `?countryCode=${encodeURIComponent(visitorContext.countryCode)}` : '';
+      const response = await getMarketplaceHome(countryQuery);
+      if (homeRequestIdRef.current === requestId) {
+        setHome(response);
+        setHomeError(false);
+      }
+    } catch {
+      if (homeRequestIdRef.current === requestId) {
+        setHomeError(true);
+      }
+    } finally {
+      if (homeRequestIdRef.current === requestId) {
+        setHomeLoading(false);
       }
     }
-
-    loadHome();
-
-    return () => {
-      mounted = false;
-    };
   }, [visitorContext?.countryCode]);
+
+  useEffect(() => {
+    loadHome();
+  }, [loadHome]);
 
   const normalizedCategories = useMemo(() => buildTopCategories(home), [home]);
   const topCategories = normalizedCategories;
@@ -257,6 +256,8 @@ export function WelcomeScreen({
   const sellerScrollOffsetRef = useRef(0);
   const sellerCardWidth = isMobile ? 260 : 300;
   const sellerCarouselStep = sellerCardWidth + 24;
+  const isHomeInitialLoading = homeLoading && !home;
+  const isHomeErrorState = homeError && !home;
 
   const scrollHeroToIndex = useCallback(
     (index: number) => {
@@ -351,6 +352,101 @@ export function WelcomeScreen({
     },
     [heroSlides.length, heroViewportWidth, pauseHeroAutoplay]
   );
+
+  if (isHomeInitialLoading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+          <View style={[styles.homeStateShell, webGlassPanel, isMobile && styles.homeStateShellMobile]}>
+            <View style={styles.homeStateHeader}>
+              <View style={styles.skeletonBrandRow}>
+                <View style={styles.skeletonBrandMark} />
+                <View style={styles.skeletonHeaderTextBlock}>
+                  <View style={styles.skeletonLineLarge} />
+                  <View style={styles.skeletonLineSmall} />
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.homeStateHeroRow, isCompact && styles.homeStateHeroRowStacked]}>
+              <View style={styles.skeletonHeroCard}>
+                <View style={styles.skeletonEyebrow} />
+                <View style={styles.skeletonHeroTitle} />
+                <View style={styles.skeletonHeroTitleShort} />
+                <View style={styles.skeletonBodyLine} />
+                <View style={styles.skeletonBodyLineShort} />
+                <View style={styles.skeletonButtonRow}>
+                  <View style={styles.skeletonButton} />
+                  <View style={styles.skeletonButtonSecondary} />
+                </View>
+                <View style={styles.skeletonPillRow}>
+                  <View style={styles.skeletonPill} />
+                  <View style={styles.skeletonPill} />
+                  <View style={styles.skeletonPill} />
+                </View>
+              </View>
+              <View style={styles.skeletonVisualCard} />
+            </View>
+
+            <View style={styles.homeStateSection}>
+              <View style={styles.skeletonSectionHeader}>
+                <View style={styles.skeletonEyebrow} />
+                <View style={styles.skeletonSectionTitle} />
+                <View style={styles.skeletonBodyLineShort} />
+              </View>
+              <View style={[styles.skeletonGrid, categoryGridWebStyle]}>
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <View key={`category-skeleton-${index}`} style={styles.skeletonCard}>
+                    <View style={styles.skeletonMedia} />
+                    <View style={styles.skeletonCardBody}>
+                      <View style={styles.skeletonLineLarge} />
+                      <View style={styles.skeletonLineSmall} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.homeStateSection}>
+              <View style={styles.skeletonSectionHeader}>
+                <View style={styles.skeletonEyebrow} />
+                <View style={styles.skeletonSectionTitle} />
+                <View style={styles.skeletonBodyLineShort} />
+              </View>
+              <View style={[styles.skeletonGrid, productGridWebStyle]}>
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <View key={`product-skeleton-${index}`} style={styles.skeletonCard}>
+                    <View style={styles.skeletonMediaTall} />
+                    <View style={styles.skeletonCardBody}>
+                      <View style={styles.skeletonLineLarge} />
+                      <View style={styles.skeletonLineMedium} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (isHomeErrorState) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+          <View style={[styles.homeErrorShell, webGlassPanel, isMobile && styles.homeErrorShellMobile]}>
+            <Ionicons color={palette.blue} name="cloud-offline-outline" size={38} />
+            <Text style={styles.homeErrorTitle}>We couldn&apos;t load the marketplace right now.</Text>
+            <Text style={styles.homeErrorText}>Please check your connection and try again.</Text>
+            <Pressable onPress={loadHome} style={styles.homeRetryButton}>
+              <Text style={styles.homeRetryButtonText}>Retry</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   function submitSearch() {
     const trimmed = searchQuery.trim();
@@ -1924,6 +2020,223 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center'
+  },
+  homeStateShell: {
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 28,
+    borderWidth: 1,
+    gap: 28,
+    margin: 32,
+    padding: 32
+  },
+  homeStateShellMobile: {
+    margin: 16,
+    padding: 20
+  },
+  homeStateHeader: {
+    width: '100%'
+  },
+  skeletonBrandRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14
+  },
+  skeletonBrandMark: {
+    backgroundColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 14,
+    height: 44,
+    width: 44
+  },
+  skeletonHeaderTextBlock: {
+    gap: 8
+  },
+  skeletonLineLarge: {
+    backgroundColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 999,
+    height: 18,
+    width: 180
+  },
+  skeletonLineMedium: {
+    backgroundColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 999,
+    height: 14,
+    width: 140
+  },
+  skeletonLineSmall: {
+    backgroundColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 999,
+    height: 12,
+    width: 110
+  },
+  skeletonEyebrow: {
+    backgroundColor: 'rgba(37,99,235,0.16)',
+    borderRadius: 999,
+    height: 12,
+    width: 92
+  },
+  homeStateHeroRow: {
+    alignItems: 'stretch',
+    flexDirection: 'row',
+    gap: 24,
+    width: '100%'
+  },
+  homeStateHeroRowStacked: {
+    flexDirection: 'column'
+  },
+  skeletonHeroCard: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 28,
+    borderWidth: 1,
+    flex: 1,
+    gap: 14,
+    minHeight: 380,
+    padding: 24
+  },
+  skeletonHeroTitle: {
+    backgroundColor: 'rgba(15,23,42,0.12)',
+    borderRadius: 16,
+    height: 32,
+    width: '88%'
+  },
+  skeletonHeroTitleShort: {
+    backgroundColor: 'rgba(15,23,42,0.10)',
+    borderRadius: 16,
+    height: 32,
+    width: '72%'
+  },
+  skeletonBodyLine: {
+    backgroundColor: 'rgba(148,163,184,0.16)',
+    borderRadius: 999,
+    height: 16,
+    width: '92%'
+  },
+  skeletonBodyLineShort: {
+    backgroundColor: 'rgba(148,163,184,0.14)',
+    borderRadius: 999,
+    height: 14,
+    width: '65%'
+  },
+  skeletonButtonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8
+  },
+  skeletonButton: {
+    backgroundColor: 'rgba(37,99,235,0.18)',
+    borderRadius: 14,
+    height: 48,
+    width: 170
+  },
+  skeletonButtonSecondary: {
+    backgroundColor: 'rgba(148,163,184,0.14)',
+    borderRadius: 14,
+    height: 48,
+    width: 130
+  },
+  skeletonPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 8
+  },
+  skeletonPill: {
+    backgroundColor: 'rgba(37,99,235,0.10)',
+    borderRadius: 999,
+    height: 32,
+    width: 110
+  },
+  skeletonVisualCard: {
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 28,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 380
+  },
+  homeStateSection: {
+    gap: 20,
+    width: '100%'
+  },
+  skeletonSectionHeader: {
+    gap: 10,
+    maxWidth: 580
+  },
+  skeletonSectionTitle: {
+    backgroundColor: 'rgba(15,23,42,0.12)',
+    borderRadius: 16,
+    height: 30,
+    width: '60%'
+  },
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 20,
+    width: '100%'
+  },
+  skeletonCard: {
+    backgroundColor: '#ffffff',
+    borderColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 22,
+    borderWidth: 1,
+    flexGrow: 1,
+    flexBasis: 220,
+    overflow: 'hidden'
+  },
+  skeletonMedia: {
+    backgroundColor: 'rgba(148,163,184,0.12)',
+    height: 180,
+    width: '100%'
+  },
+  skeletonMediaTall: {
+    backgroundColor: 'rgba(148,163,184,0.12)',
+    height: 260,
+    width: '100%'
+  },
+  skeletonCardBody: {
+    gap: 10,
+    padding: 18
+  },
+  homeErrorShell: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 28,
+    borderWidth: 1,
+    gap: 14,
+    margin: 32,
+    padding: 32
+  },
+  homeErrorShellMobile: {
+    margin: 16,
+    padding: 24
+  },
+  homeErrorTitle: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center'
+  },
+  homeErrorText: {
+    color: palette.body,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center'
+  },
+  homeRetryButton: {
+    alignItems: 'center',
+    backgroundColor: palette.blue,
+    borderRadius: 999,
+    minHeight: 46,
+    justifyContent: 'center',
+    paddingHorizontal: 20
+  },
+  homeRetryButtonText: {
+    color: palette.white,
+    fontSize: 15,
+    fontWeight: '800'
   },
   lazyImageNative: {
     height: '100%',

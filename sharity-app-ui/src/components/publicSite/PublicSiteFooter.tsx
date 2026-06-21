@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -22,12 +23,48 @@ type PublicSiteFooterProps = {
 
 export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorContext }: PublicSiteFooterProps) {
   const { isCompactPhone, isSingleColumn, width } = useResponsiveLayout();
-  const shouldUseSingleColumnFooter = width < 992;
-  const useTwoColumnFooter = !shouldUseSingleColumnFooter && width < 1180;
+  const shouldUseSingleColumnFooter = width <= 768;
+  const useTwoColumnFooter = width > 768 && width < 1180;
+  const [openGroup, setOpenGroup] = useState<string | null>(shouldUseSingleColumnFooter ? groups[0]?.title ?? null : null);
 
   return (
     <View style={[styles.footer, isCompactPhone && styles.footerCompact]}>
-      <View style={[styles.footerGrid, (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGridCompact, shouldUseSingleColumnFooter && styles.footerGridStacked, useTwoColumnFooter && styles.footerGridTwoColumn]}>
+      {shouldUseSingleColumnFooter ? (
+        <View style={styles.footerAccordion}>
+          {groups.map((group) => {
+            const expanded = openGroup === group.title;
+            return (
+              <View key={group.title} style={styles.footerAccordionItem}>
+                <Pressable onPress={() => setOpenGroup(expanded ? null : group.title)} style={styles.footerAccordionHeader}>
+                  <Text style={styles.footerAccordionTitle}>{group.title}</Text>
+                  <Ionicons color={palette.textMuted} name={expanded ? 'chevron-up' : 'chevron-down'} size={18} />
+                </Pressable>
+
+                {expanded ? (
+                  <View style={styles.footerAccordionBody}>
+                    <Text style={styles.footerGroupText}>{groupDescription(group.title)}</Text>
+                    {group.links.map((link) => (
+                      <Pressable key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerAccordionLinkWrap}>
+                        <Text style={styles.footerLink}>{link.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {!shouldUseSingleColumnFooter ? (
+      <View
+        style={[
+          styles.footerGrid,
+          (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGridCompact,
+          shouldUseSingleColumnFooter && styles.footerGridStacked,
+          useTwoColumnFooter && styles.footerGridTwoColumn
+        ]}
+      >
         {groups.map((group) => (
           <View
             key={group.title}
@@ -39,7 +76,7 @@ export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorCon
             ]}
           >
             <Text style={styles.footerTitle}>{group.title}</Text>
-            <Text style={styles.footerGroupText}>{groupDescription(group.title)}</Text>
+            <Text style={[styles.footerGroupText, (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGroupTextCompact]}>{groupDescription(group.title)}</Text>
             {group.links.map((link) => (
               <Pressable key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerLinkWrap}>
                 <Text style={styles.footerLink}>{link.label}</Text>
@@ -48,9 +85,10 @@ export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorCon
           </View>
         ))}
       </View>
+      ) : null}
 
       {visitorContext ? (
-        <View style={styles.footerNotice}>
+        <View style={[styles.footerNotice, (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerNoticeCompact]}>
           <Ionicons color={palette.blue} name="information-circle-outline" size={18} />
           <Text style={styles.footerNoticeText}>
             Showing public terms and guidelines for {visitorContext.countryName} ({visitorContext.countryCode}).
@@ -88,6 +126,37 @@ const styles = StyleSheet.create({
   },
   footerCompact: {
     padding: 18
+  },
+  footerAccordion: {
+    borderBottomColor: palette.border,
+    borderBottomWidth: 1,
+    marginTop: 8,
+    width: '100%'
+  },
+  footerAccordionItem: {
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
+    width: '100%'
+  },
+  footerAccordionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingVertical: 12
+  },
+  footerAccordionTitle: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '800'
+  },
+  footerAccordionBody: {
+    gap: 10,
+    paddingBottom: 14,
+    paddingLeft: 2
+  },
+  footerAccordionLinkWrap: {
+    paddingVertical: 2
   },
   supportCard: {
     backgroundColor: '#FFFFFF',
@@ -168,10 +237,13 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   footerGridCompact: {
-    gap: spacing.lg
+    gap: 24,
+    width: '100%'
   },
   footerGridStacked: {
-    flexDirection: 'column'
+    flexDirection: 'column',
+    gap: 28,
+    width: '100%'
   },
   footerGridTwoColumn: {
     justifyContent: 'flex-start'
@@ -188,6 +260,9 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   footerGroupStacked: {
+    alignSelf: 'stretch',
+    flexBasis: 'auto',
+    minWidth: 0,
     width: '100%'
   },
   footerGroupTwoColumn: {
@@ -204,6 +279,10 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     maxWidth: 260
   },
+  footerGroupTextCompact: {
+    maxWidth: '100%',
+    width: '100%'
+  },
   footerLinkWrap: {
     paddingVertical: 2
   },
@@ -211,7 +290,8 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 14,
     fontWeight: '800',
-    lineHeight: 21
+    lineHeight: 21,
+    flexShrink: 1
   },
   footerNotice: {
     alignItems: 'center',
@@ -221,20 +301,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: 24,
+    marginTop: 28,
     padding: spacing.md
+  },
+  footerNoticeCompact: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    width: '100%'
   },
   footerNoticeText: {
     color: palette.textMuted,
     flex: 1,
     fontSize: 13,
-    lineHeight: 19
+    lineHeight: 19,
+    width: '100%'
   },
   copyright: {
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
     color: palette.textMuted,
     fontSize: 13,
     fontWeight: '700',
-    marginTop: 20,
+    marginTop: 28,
+    paddingTop: 20,
     textAlign: 'center'
   }
 });
