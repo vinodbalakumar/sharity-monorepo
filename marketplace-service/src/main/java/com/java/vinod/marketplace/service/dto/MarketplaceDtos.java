@@ -124,11 +124,16 @@ public final class MarketplaceDtos {
                                           List<ListingResponse> listings) {
     }
 
+    public record PopularListingResponse(ListingResponse listing, long selectionCount) {
+    }
+
     public record HomeResponse(List<VerticalResponse> verticals,
                                List<ListingResponse> featuredListings,
                                List<CategoryHighlightResponse> topCategories,
                                List<SubcategoryHighlightResponse> discountedSubcategories,
-                               List<SellerHighlightResponse> topRatedSellers) {
+                               List<SellerHighlightResponse> topRatedSellers,
+                               List<ListingResponse> popularListings,
+                               long itemsSoldCount) {
     }
 
     public record ListingRequest(@NotBlank String title, String description, String categoryCode,

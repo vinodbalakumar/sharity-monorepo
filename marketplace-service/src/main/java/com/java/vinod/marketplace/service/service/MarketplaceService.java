@@ -240,12 +240,15 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public MarketplaceDtos.HomeResponse home(String countryCode) {
+        List<Listing> homeListings = homeListings(countryCode);
         return new MarketplaceDtos.HomeResponse(
                 activeVerticals(),
                 featuredListings(countryCode),
                 toCategoryHighlights(countryCode),
                 topDiscountedSubcategories(countryCode),
-                topRatedSellers(countryCode));
+                topRatedSellers(countryCode),
+                mostSelectedListings(countryCode),
+                homeListings.stream().filter(listing -> "SOLD".equalsIgnoreCase(listing.getListingStatus())).count());
     }
 
     /**
@@ -1535,6 +1538,58 @@ public class MarketplaceService {
                 .toList();
 
         return highlights;
+    }
+
+    /**
+     * Returns the 10 most selected listings for the public homepage.
+     */
+    @Transactional(readOnly = true)
+    private List<MarketplaceDtos.ListingResponse> mostSelectedListings(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> publicStatuses = publicListingStatuses();
+        List<Listing> listings = normalizedCountry == null
+                ? listingRepository.findByListingStatusInOrderByCreatedAtDesc(publicStatuses)
+                : listingRepository.findByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(publicStatuses, normalizedCountry);
+
+        if (listings.isEmpty() && normalizedCountry != null) {
+            listings = listingRepository.findByListingStatusInOrderByCreatedAtDesc(publicStatuses);
+        }
+
+        java.util.Map<String, Long> selectionCounts = new java.util.HashMap<>();
+        for (OrderHeader order : orderHeaderRepository.findAllByOrderByCreatedAtDesc()) {
+            if (order.getListing() == null || order.getListing().getPublicId() == null) {
+                continue;
+            }
+            if (order.getCompletedAt() == null && !"COMPLETED".equalsIgnoreCase(order.getOrderStatus())) {
+                continue;
+            }
+            String listingPublicId = order.getListing().getPublicId();
+            selectionCounts.put(listingPublicId, selectionCounts.getOrDefault(listingPublicId, 0L) + 1L);
+        }
+
+        return listings.stream()
+                .sorted((left, right) -> {
+                    long rightCount = selectionCounts.getOrDefault(right.getPublicId(), 0L);
+                    long leftCount = selectionCounts.getOrDefault(left.getPublicId(), 0L);
+                    if (rightCount != leftCount) {
+                        return Long.compare(rightCount, leftCount);
+                    }
+                    LocalDateTime leftUpdated = left.getUpdatedAt();
+                    LocalDateTime rightUpdated = right.getUpdatedAt();
+                    if (leftUpdated == null && rightUpdated == null) {
+                        return 0;
+                    }
+                    if (leftUpdated == null) {
+                        return 1;
+                    }
+                    if (rightUpdated == null) {
+                        return -1;
+                    }
+                    return rightUpdated.compareTo(leftUpdated);
+                })
+                .limit(10)
+                .map(listing -> toListingResponse(listing, normalizedCountry))
+                .toList();
     }
 
     /**
