@@ -91,10 +91,10 @@ INSERT INTO user_credential (
     user_id, password_hash, password_changed_at, password_reset_required, created_at, updated_at
 )
 VALUES
-    (@customer_user_id, '$2a$10$/JSzGsCWZXW3xEMqD.UARuvfDcAmMW5MmMP.ATpBqJx1IPcWFkjly', NOW(6), FALSE, NOW(6), NOW(6)),
-    (@seller_user_id, '$2a$10$hT5PXfi4MfgrYWiVdZeopeIxFRJRsA4O2tFHvWDdVLm8puIyTZEsS', NOW(6), FALSE, NOW(6), NOW(6)),
-    (@admin_user_id, '$2a$10$TGDJTrz4yVSJQj2IZAxtmuxkB7xsFubwi9WfaWWU4TdJzOgL3gHhe', NOW(6), FALSE, NOW(6), NOW(6)),
-    (@super_admin_user_id, '$2a$10$Mwv2LRtiBAgPGJuwroLx1es9AeVz8NrHAwTViif.D0y3JnCCMyi2.', NOW(6), FALSE, NOW(6), NOW(6));
+    (@customer_user_id, '$2a$10$u7t/x3OARkTJ23ZOZj/8qejFm0TbGDqrbPcF2t0KCbokewm6dxLMi', NOW(6), FALSE, NOW(6), NOW(6)),
+    (@seller_user_id, '$2a$10$u7t/x3OARkTJ23ZOZj/8qejFm0TbGDqrbPcF2t0KCbokewm6dxLMi', NOW(6), FALSE, NOW(6), NOW(6)),
+    (@admin_user_id, '$2a$10$u7t/x3OARkTJ23ZOZj/8qejFm0TbGDqrbPcF2t0KCbokewm6dxLMi', NOW(6), FALSE, NOW(6), NOW(6)),
+    (@super_admin_user_id, '$2a$10$u7t/x3OARkTJ23ZOZj/8qejFm0TbGDqrbPcF2t0KCbokewm6dxLMi', NOW(6), FALSE, NOW(6), NOW(6));
 
 INSERT INTO user_profile (
     user_id, first_name, last_name, phone_number, profile_image_url, country_code, country_name,
