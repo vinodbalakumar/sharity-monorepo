@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
-  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -11,6 +10,9 @@ import {
   Text,
   TextInput,
   View,
+  type ImageStyle,
+  type StyleProp,
+  type ViewStyle,
   useWindowDimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -107,6 +109,12 @@ const webGlassPanel = Platform.OS === 'web'
       backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(248,251,255,0.76) 100%)'
     } as never)
   : null;
+const webItemsSoldGradient = Platform.OS === 'web'
+  ? ({
+      backgroundImage:
+        'radial-gradient(circle at 10% 20%, rgba(37,99,235,0.25), transparent 28%), radial-gradient(circle at 88% 12%, rgba(245,158,11,0.12), transparent 26%), linear-gradient(135deg, #0b1028 0%, #121a3a 52%, #0f172a 100%)'
+    } as never)
+  : null;
 
 export function WelcomeScreen({
   onBrowse,
@@ -120,11 +128,16 @@ export function WelcomeScreen({
   const { width } = useWindowDimensions();
   const isCompact = width < 992;
   const isMobile = width < 760;
+  const isTablet = width >= 760 && width < 992;
   const isTinyPhone = width < 480;
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
   const heroCardHeight = isMobile ? 380 : width < 992 ? 440 : 520;
+  const productImageHeight = isMobile ? 180 : width < 992 ? 200 : 260;
+  const categoryVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
+  const productVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
+  const collectionVisibleCount = isDesktop ? 3 : isTablet ? 2 : 1;
   const collectionGridWebStyle =
     isWeb
       ? ({
@@ -233,6 +246,7 @@ export function WelcomeScreen({
   const topCategories = normalizedCategories;
   const discountedItems = useMemo(() => buildDiscountedItems(home), [home]);
   const featuredProducts = useMemo(() => buildFeaturedProducts(home), [home]);
+  const popularProducts = useMemo(() => home?.popularListings ?? [], [home]);
   const sellerCards = useMemo(() => buildSellerCards(home), [home]);
   const metrics = useMemo(() => buildMetrics(home, sellerCards.length), [home, sellerCards.length]);
   const heroVerticalSource = useMemo(() => extractHeroVerticalSource(home), [home]);
@@ -263,10 +277,11 @@ export function WelcomeScreen({
       console.log('Normalized hero slides:', heroSlides);
       console.log('Top discounts count:', topDiscounts.length);
       console.log('Featured products count:', featuredProducts.length);
+      console.log('Popular products count:', popularProducts.length);
       console.log('Trusted sellers count:', trustedSellers.length);
       console.log('Hero slides count:', heroSlides.length, 'activeIndex:', activeHeroIndex);
     }
-  }, [activeHeroIndex, featuredProducts.length, heroSlides, heroVerticalSource, normalizedCategories, topDiscounts.length, trustedSellers.length, home]);
+  }, [activeHeroIndex, featuredProducts.length, heroSlides, heroVerticalSource, normalizedCategories, popularProducts.length, topDiscounts.length, trustedSellers.length, home]);
 
   useEffect(() => {
     if (heroSlides.length <= 1 || isHeroPaused) {
@@ -458,15 +473,12 @@ export function WelcomeScreen({
                     onPress={() => handleHeroSlidePress(activeHeroIndex)}
                     style={[styles.heroCarouselViewport, styles.heroCarouselSimple]}
                   >
-                    <Image
-                      onError={() => {
-                        if (__DEV__) {
-                          console.warn('Hero image failed to load:', heroSlides[activeHeroIndex]?.imageUrl);
-                        }
-                      }}
-                      resizeMode="contain"
-                      source={{ uri: heroSlides[activeHeroIndex].imageUrl }}
-                      style={styles.heroVisualImage}
+                    <LazyImage
+                      alt={heroSlides[activeHeroIndex].title}
+                      containerStyle={styles.heroVisualImage}
+                      imageStyle={styles.heroVisualImage}
+                      priority="high"
+                      source={heroSlides[activeHeroIndex].imageUrl}
                     />
                   </Pressable>
                   {heroSlides.length > 1 ? (
@@ -497,15 +509,16 @@ export function WelcomeScreen({
           </View>
 
           <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionKicker}>Featured Collections</Text>
-              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-                Top Categories
-              </Text>
-              <Text style={styles.sectionSubtitle}>
-                Browse the main categories in one quick view.
-              </Text>
-            </View>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Collections"
+              onAction={onBrowse}
+              subtitle="Browse the main categories in one quick view."
+              title="Top Categories"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
 
             <View style={[styles.categoryGrid, categoryGridWebStyle]}>
               {homeLoading ? (
@@ -527,7 +540,7 @@ export function WelcomeScreen({
                 </View>
               ) : null}
 
-              {topCategories.map((category) => (
+              {topCategories.map((category, index) => (
                 <Pressable
                   key={category.categoryCode}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
@@ -535,14 +548,14 @@ export function WelcomeScreen({
                 >
                   {category.imageUrl ? (
                     <>
-                      <View style={styles.categoryMediaWrap}>
-                        <ImageBackground
-                          imageStyle={styles.categoryImage}
-                          resizeMode="contain"
-                          source={{ uri: category.imageUrl }}
-                          style={styles.categoryMedia}
-                        />
-                      </View>
+                      <LazyImage
+                        alt={category.categoryName}
+                        containerStyle={styles.categoryMediaWrap}
+                        imageStyle={styles.categoryImage}
+                        priority={index < categoryVisibleCount ? 'high' : 'lazy'}
+                        source={category.imageUrl}
+                        style={styles.categoryMedia}
+                      />
                       <View style={styles.categoryCopy}>
                         <View style={styles.categoryIconPill}>
                           <Ionicons color={palette.blue} name={category.icon} size={16} />
@@ -566,28 +579,39 @@ export function WelcomeScreen({
           </View>
 
           <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionKicker}>Today&apos;s Best Deals</Text>
-              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Best deals today</Text>
-              <Text style={styles.sectionSubtitle}>Simple discounts from trusted sellers.</Text>
-            </View>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Today&apos;s Deals"
+              onAction={onBrowse}
+              subtitle="Save on popular listings from trusted sellers."
+              title="Top Discounts"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
 
             <View style={[styles.productGrid, productGridWebStyle]}>
-              {topDiscounts.map((item) => (
+              {topDiscounts.map((item, index) => (
                 <Pressable
                   key={`${item.verticalCode}-${item.title}`}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
                   style={[styles.productCard, isWeb && styles.gridCardFullWidth]}
                 >
                   {item.imageUrl ? (
-                    <ImageBackground imageStyle={styles.productImage} source={{ uri: item.imageUrl }} style={styles.productMedia}>
+                    <LazyImage
+                      alt={item.title}
+                      containerStyle={[styles.productMedia, { height: productImageHeight }]}
+                      imageStyle={styles.productImage}
+                      priority={index < productVisibleCount ? 'high' : 'lazy'}
+                      source={item.imageUrl}
+                    >
                       <View style={styles.cardScrim} />
                       <View style={styles.productBadge}>
                         <Text style={styles.productBadgeText}>{Math.round(item.discountPercentage)}% off</Text>
                       </View>
-                    </ImageBackground>
+                    </LazyImage>
                   ) : (
-                    <View style={styles.productPlaceholder}>
+                    <View style={[styles.productPlaceholder, { minHeight: productImageHeight }]}>
                       <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
                       <Text style={styles.productPlaceholderText}>Discounted item</Text>
                     </View>
@@ -610,14 +634,76 @@ export function WelcomeScreen({
           </View>
 
           <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionKicker}>Featured Products</Text>
-              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Popular products</Text>
-              <Text style={styles.sectionSubtitle}>A quick look at what shoppers are buying now.</Text>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Popular Picks"
+              onAction={onBrowse}
+              subtitle="Products shoppers are choosing most often across Sharity."
+              title="Most Selected Products"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
+
+            <View style={[styles.productGrid, productGridWebStyle]}>
+              {popularProducts.slice(0, 10).map((item, index) => (
+                <Pressable
+                  key={`${item.publicId}-${item.title}`}
+                  onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                  style={[styles.productCard, isWeb && styles.gridCardFullWidth]}
+                >
+                  {item.imageUrl ? (
+                    <LazyImage
+                      alt={item.title}
+                      containerStyle={[styles.productMedia, { height: productImageHeight }]}
+                      imageStyle={styles.productImage}
+                      priority={index < productVisibleCount ? 'high' : 'lazy'}
+                      source={item.imageUrl}
+                    >
+                      <View style={styles.cardScrim} />
+                      <View style={styles.productBadge}>
+                        <Text style={styles.productBadgeText}>Popular</Text>
+                      </View>
+                    </LazyImage>
+                  ) : (
+                    <View style={[styles.productPlaceholder, { minHeight: productImageHeight }]}>
+                      <Ionicons color={palette.blue} name="sparkles-outline" size={26} />
+                      <Text style={styles.productPlaceholderText}>Most selected product</Text>
+                    </View>
+                  )}
+                  <View style={styles.productBody}>
+                    <Text style={styles.productCategory} numberOfLines={1}>
+                      {categoryNameFor(item.categoryCode, home)}
+                    </Text>
+                    <Text style={[styles.productTitle, isMobile && styles.productTitleMobile]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.productMetaRow}>
+                      <Text style={styles.productPrice}>
+                        {formatMoney(item.displayPriceAmount ?? item.priceAmount, item.displayCurrencyCode ?? item.currencyCode)}
+                      </Text>
+                      <Text style={styles.productSubMeta}>{item.verifiedSeller ? 'Verified seller' : item.sellerDisplayName}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
             </View>
+          </View>
+
+          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Featured"
+              onAction={onBrowse}
+              subtitle="Quality listings selected for demand, value, and buyer interest."
+              title="Featured Products"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
 
             <View style={[styles.collectionGrid, collectionGridWebStyle]}>
-              {featuredProducts.map((item) => (
+              {featuredProducts.map((item, index) => (
                 <Pressable
                   key={`${item.verticalCode}-${item.title}-${item.sellerName}`}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
@@ -625,7 +711,13 @@ export function WelcomeScreen({
                 >
                   <View style={styles.collectionMediaWrap}>
                     {item.imageUrl ? (
-                      <ImageBackground imageStyle={styles.collectionImage} resizeMode="contain" source={{ uri: item.imageUrl }} style={styles.collectionMedia} />
+                      <LazyImage
+                        alt={item.title}
+                        containerStyle={styles.collectionMedia}
+                        imageStyle={styles.collectionImage}
+                        priority={index < collectionVisibleCount ? 'high' : 'lazy'}
+                        source={item.imageUrl}
+                      />
                     ) : (
                       <View style={styles.collectionPlaceholder}>
                         <Ionicons color={palette.blue} name="images-outline" size={28} />
@@ -650,23 +742,28 @@ export function WelcomeScreen({
           </View>
 
           <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeading}>
-                <Text style={styles.sectionKicker}>Trusted Sellers</Text>
-                <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Trusted sellers</Text>
-                <Text style={styles.sectionSubtitle}>Verified sellers with solid ratings.</Text>
-              </View>
-              {!isMobile ? (
-                <View style={styles.carouselControls}>
-                  <Pressable onPress={() => scrollTrustedSellers('previous')} style={styles.carouselControlButton}>
-                    <Ionicons color={palette.text} name="chevron-back" size={18} />
-                  </Pressable>
-                  <Pressable onPress={() => scrollTrustedSellers('next')} style={styles.carouselControlButton}>
-                    <Ionicons color={palette.text} name="chevron-forward" size={18} />
-                  </Pressable>
-                </View>
-              ) : null}
-            </View>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Verified Sellers"
+              onAction={onBrowse}
+              subtitle="Shop from sellers with strong ratings and reliable delivery."
+              title="Trusted Sellers"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+              trailingAction={
+                !isMobile ? (
+                  <View style={styles.carouselControls}>
+                    <Pressable onPress={() => scrollTrustedSellers('previous')} style={styles.carouselControlButton}>
+                      <Ionicons color={palette.blue} name="chevron-back" size={18} />
+                    </Pressable>
+                    <Pressable onPress={() => scrollTrustedSellers('next')} style={styles.carouselControlButton}>
+                      <Ionicons color={palette.blue} name="chevron-forward" size={18} />
+                    </Pressable>
+                  </View>
+                ) : null
+              }
+            />
 
             <ScrollView
               contentContainerStyle={styles.sellerCarouselContent}
@@ -725,11 +822,16 @@ export function WelcomeScreen({
           </View>
 
           <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionKicker}>Why Choose Sharity</Text>
-              <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Why Sharity</Text>
-              <Text style={styles.sectionSubtitle}>Trust, simple checkout, and clear rules.</Text>
-            </View>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Why Choose Sharity"
+              onAction={onBrowse}
+              subtitle="Trust, simple checkout, and clear rules."
+              title="Why Sharity"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
 
             <View style={[styles.featureGrid, featureGridWebStyle]}>
               {featureCards.map((feature) => (
@@ -745,7 +847,12 @@ export function WelcomeScreen({
           </View>
 
           <View style={styles.metricSection}>
-            <View style={[styles.metricGrid, metricGridWebStyle]}>
+            <View style={[styles.itemsSoldBanner, webItemsSoldGradient]}>
+              <Text style={styles.itemsSoldKicker}>Items sold</Text>
+              <Text style={styles.itemsSoldValue}>{new Intl.NumberFormat('en-US').format(home?.itemsSoldCount ?? 0)}</Text>
+              <Text style={styles.itemsSoldLabel}>Across all active marketplace categories</Text>
+            </View>
+            <View style={[styles.metricGrid, isMobile && styles.metricGridMobile, metricGridWebStyle]}>
               {metrics.map((metric) => (
                 <View key={metric.label} style={[styles.metricCard, isWeb && styles.gridCardFullWidth]}>
                   <Text style={styles.metricValue}>{metric.value}</Text>
@@ -769,6 +876,176 @@ export function WelcomeScreen({
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+type SectionHeaderProps = {
+  actionLabel?: string;
+  eyebrow: string;
+  isCompact: boolean;
+  isMobile: boolean;
+  isTablet: boolean;
+  onAction?: () => void;
+  subtitle: string;
+  title: string;
+  trailingAction?: ReactNode;
+};
+
+function SectionHeader({
+  actionLabel = 'Show more',
+  eyebrow,
+  isCompact,
+  isMobile,
+  isTablet,
+  onAction,
+  subtitle,
+  title,
+  trailingAction
+}: SectionHeaderProps) {
+  const [hovered, setHovered] = useState(false);
+  const stackActions = isCompact;
+
+  return (
+    <View style={[styles.sectionHeaderRow, stackActions && styles.sectionHeaderRowStacked]}>
+      <View style={[styles.sectionHeading, isMobile && styles.sectionHeadingMobile, !isMobile && styles.sectionHeadingDesktop]}>
+        <Text style={styles.sectionKicker}>{eyebrow}</Text>
+        <Text style={[styles.sectionTitle, isTablet && styles.sectionTitleTablet, isMobile && styles.sectionTitleMobile]}>{title}</Text>
+        <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>{subtitle}</Text>
+      </View>
+      {(onAction || trailingAction) && !stackActions ? (
+        <View style={styles.sectionHeaderActions}>
+          {trailingAction}
+          {onAction ? (
+            <Pressable
+              onHoverIn={() => setHovered(true)}
+              onHoverOut={() => setHovered(false)}
+              onPress={onAction}
+              style={({ pressed }) => [
+                styles.sectionShowMoreButton,
+                (pressed || hovered) && styles.sectionShowMoreButtonActive
+              ]}
+            >
+              <Text style={[styles.sectionShowMoreText, hovered && styles.sectionShowMoreTextActive]}>{actionLabel}</Text>
+              <Ionicons color={hovered ? palette.white : palette.blue} name="arrow-forward" size={18} />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+      {(onAction || trailingAction) && stackActions ? (
+        <View style={styles.sectionHeaderMobileActions}>
+          {trailingAction}
+          {onAction ? (
+            <Pressable
+              onHoverIn={() => setHovered(true)}
+              onHoverOut={() => setHovered(false)}
+              onPress={onAction}
+              style={({ pressed }) => [
+                styles.sectionShowMoreButton,
+                styles.sectionShowMoreButtonMobile,
+                (pressed || hovered) && styles.sectionShowMoreButtonActive
+              ]}
+            >
+              <Text style={[styles.sectionShowMoreText, hovered && styles.sectionShowMoreTextActive]}>{actionLabel}</Text>
+              <Ionicons color={hovered ? palette.white : palette.blue} name="arrow-forward" size={18} />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+type LazyImageProps = {
+  alt: string;
+  children?: ReactNode;
+  containerStyle?: StyleProp<ViewStyle>;
+  imageStyle?: StyleProp<ImageStyle>;
+  priority?: 'high' | 'lazy';
+  source: string;
+  style?: StyleProp<ViewStyle>;
+};
+
+function LazyImage({ alt, children, containerStyle, imageStyle, priority = 'lazy', source, style }: LazyImageProps) {
+  const isWeb = Platform.OS === 'web';
+  const shouldLoadImmediately = priority === 'high' || !isWeb;
+  const [shouldLoad, setShouldLoad] = useState(shouldLoadImmediately);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const containerRef = useRef<View | null>(null);
+
+  useEffect(() => {
+    if (!isWeb || shouldLoadImmediately || shouldLoad) {
+      return;
+    }
+
+    const node = containerRef.current as unknown as Element | null;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '300px 0px' }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [isWeb, shouldLoad, shouldLoadImmediately]);
+
+  const flattenedImageStyle = StyleSheet.flatten(imageStyle) ?? {};
+
+  return (
+    <View ref={containerRef} style={[styles.lazyImageRoot, containerStyle, style]}>
+      {!shouldLoad || (!hasLoaded && !hasError) ? (
+        <View style={styles.lazyImagePlaceholder}>
+          {hasError ? (
+            <View style={styles.lazyImageFallback}>
+              <Ionicons color={palette.blue} name="image-outline" size={24} />
+              <Text style={styles.lazyImageFallbackText}>{alt}</Text>
+            </View>
+          ) : (
+            <View style={styles.lazyImageSkeleton} />
+          )}
+        </View>
+      ) : null}
+
+      {shouldLoad ? (
+        isWeb ? (
+          <img
+            alt={alt}
+            decoding="async"
+            loading={priority === 'high' ? 'eager' : 'lazy'}
+            onError={() => setHasError(true)}
+            onLoad={() => setHasLoaded(true)}
+            src={source}
+            style={{
+              height: '100%',
+              objectFit: 'contain',
+              opacity: hasError ? 0 : hasLoaded ? 1 : 0.01,
+              width: '100%',
+              ...flattenedImageStyle
+            }}
+          />
+        ) : (
+          <Image
+            onError={() => setHasError(true)}
+            onLoadEnd={() => setHasLoaded(true)}
+            resizeMode="contain"
+            source={{ uri: source }}
+            style={[styles.lazyImageNative, imageStyle]}
+          />
+        )
+      ) : null}
+
+      {children ? <View pointerEvents="box-none" style={styles.lazyImageChildren}>{children}</View> : null}
+    </View>
   );
 }
 
@@ -1400,7 +1677,8 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     alignItems: 'center',
-    borderColor: palette.border,
+    backgroundColor: 'rgba(37,99,235,0.06)',
+    borderColor: 'rgba(37,99,235,0.18)',
     borderRadius: 999,
     borderWidth: 1,
     height: 44,
@@ -1409,7 +1687,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16
   },
   signInText: {
-    color: palette.text,
+    color: palette.blue,
     fontSize: 14,
     fontWeight: '700'
   },
@@ -1538,8 +1816,8 @@ const styles = StyleSheet.create({
   },
   heroSecondary: {
     alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
+    backgroundColor: 'rgba(37,99,235,0.06)',
+    borderColor: 'rgba(37,99,235,0.18)',
     borderRadius: 16,
     borderWidth: 1,
     height: 52,
@@ -1552,7 +1830,7 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   heroSecondaryText: {
-    color: palette.text,
+    color: palette.blue,
     fontSize: 16,
     fontWeight: '800'
   },
@@ -1616,6 +1894,45 @@ const styles = StyleSheet.create({
     margin: 0,
     width: '100%'
   },
+  lazyImageRoot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  lazyImagePlaceholder: {
+    alignItems: 'center',
+    backgroundColor: '#f8fbff',
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%'
+  },
+  lazyImageSkeleton: {
+    backgroundColor: 'rgba(148,163,184,0.16)',
+    borderRadius: 18,
+    height: '72%',
+    width: '72%'
+  },
+  lazyImageFallback: {
+    alignItems: 'center',
+    gap: 10,
+    justifyContent: 'center',
+    padding: 16
+  },
+  lazyImageFallbackText: {
+    color: palette.body,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center'
+  },
+  lazyImageNative: {
+    height: '100%',
+    width: '100%'
+  },
+  lazyImageChildren: {
+    ...StyleSheet.absoluteFillObject,
+    pointerEvents: 'box-none'
+  },
   heroVisualState: {
     alignItems: 'center',
     backgroundColor: '#f8fbff',
@@ -1635,10 +1952,24 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   heroDots: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderColor: 'rgba(148,163,184,0.18)',
+    borderRadius: 999,
+    borderWidth: 1,
+    bottom: 16,
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    marginTop: 10
+    left: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    position: 'absolute',
+    right: 0,
+    zIndex: 5,
+    ...(Platform.OS === 'web'
+      ? ({ backdropFilter: 'blur(10px)' } as never)
+      : null)
   },
   heroDot: {
     backgroundColor: 'rgba(37, 99, 235, 0.16)',
@@ -1667,41 +1998,101 @@ const styles = StyleSheet.create({
     padding: 20
   },
   sectionHeading: {
-    alignItems: 'center',
-    marginBottom: 24
+    maxWidth: 720
+  },
+  sectionHeadingDesktop: {
+    flex: 1
+  },
+  sectionHeadingMobile: {
+    maxWidth: '100%'
   },
   sectionHeaderRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 32
+  },
+  sectionHeaderRowStacked: {
+    flexDirection: 'column',
+    gap: 16,
     marginBottom: 24
+  },
+  sectionHeaderActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12
+  },
+  sectionHeaderMobileActions: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    gap: 12,
+    marginTop: 4
   },
   sectionKicker: {
     color: palette.blue,
     fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1.4,
+    letterSpacing: 1.6,
+    marginBottom: 8,
     textTransform: 'uppercase'
   },
   sectionTitle: {
     color: palette.text,
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '800',
-    letterSpacing: -0.6,
-    lineHeight: 46,
-    marginTop: 10,
-    textAlign: 'center'
+    letterSpacing: -0.4,
+    lineHeight: 40,
+    marginTop: 0,
+    textAlign: 'left'
+  },
+  sectionTitleTablet: {
+    fontSize: 30,
+    lineHeight: 34
   },
   sectionTitleMobile: {
-    fontSize: 30,
-    lineHeight: 36
+    fontSize: 26,
+    lineHeight: 29
   },
   sectionSubtitle: {
     color: palette.body,
     fontSize: 17,
-    lineHeight: 26,
+    lineHeight: 25,
     marginTop: 12,
-    textAlign: 'center'
+    maxWidth: 640,
+    textAlign: 'left'
+  },
+  sectionSubtitleMobile: {
+    fontSize: 15,
+    lineHeight: 22
+  },
+  sectionShowMoreButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(37,99,235,0.08)',
+    borderColor: 'rgba(37,99,235,0.18)',
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    flexShrink: 0,
+    height: 40,
+    paddingHorizontal: 16
+  },
+  sectionShowMoreButtonMobile: {
+    alignSelf: 'flex-start'
+  },
+  sectionShowMoreButtonActive: {
+    backgroundColor: palette.blue,
+    transform: [{ translateY: -1 }]
+  },
+  sectionShowMoreText: {
+    color: palette.blue,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3
+  },
+  sectionShowMoreTextActive: {
+    color: palette.white
   },
   collectionGrid: {
     flexDirection: 'row',
@@ -1860,11 +2251,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignSelf: 'stretch',
     height: '100%',
+    flexDirection: 'column',
     width: '100%',
     overflow: 'hidden'
   },
   productMedia: {
-    height: 228,
     width: '100%',
     justifyContent: 'space-between'
   },
@@ -1879,7 +2270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: palette.pageAlt,
     gap: 8,
-    height: 228,
     justifyContent: 'center',
     padding: 18,
     width: '100%'
@@ -1907,6 +2297,8 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   productBody: {
+    flex: 1,
+    justifyContent: 'flex-start',
     padding: 18
   },
   productCategory: {
@@ -1921,6 +2313,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     lineHeight: 24,
+    minHeight: 48,
     marginTop: 8
   },
   productTitleMobile: {
@@ -1932,7 +2325,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     justifyContent: 'space-between',
-    marginTop: 14
+    marginTop: 'auto',
+    paddingTop: 14
   },
   productPrice: {
     color: palette.text,
@@ -1970,8 +2364,8 @@ const styles = StyleSheet.create({
   },
   carouselControlButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderColor: palette.border,
+    backgroundColor: 'rgba(37,99,235,0.08)',
+    borderColor: 'rgba(37,99,235,0.18)',
     borderRadius: 999,
     borderWidth: 1,
     height: 40,
@@ -2105,7 +2499,44 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   metricSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 24,
     marginTop: 24
+  },
+  itemsSoldBanner: {
+    alignItems: 'flex-start',
+    borderColor: 'rgba(148,163,184,0.22)',
+    borderRadius: 28,
+    borderWidth: 1,
+    overflow: 'hidden',
+    paddingHorizontal: 28,
+    paddingVertical: 32,
+    shadowColor: '#0f172a',
+    shadowOffset: { height: 24, width: 0 },
+    shadowOpacity: 0.14,
+    shadowRadius: 50
+  },
+  itemsSoldKicker: {
+    color: '#c7d2fe',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase'
+  },
+  itemsSoldValue: {
+    color: palette.white,
+    fontSize: 64,
+    fontWeight: '900',
+    letterSpacing: -2,
+    lineHeight: 72,
+    marginTop: 10
+  },
+  itemsSoldLabel: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 6
   },
   metricGrid: {
     backgroundColor: palette.surface,
@@ -2118,6 +2549,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     width: '100%',
     padding: 20
+  },
+  metricGridMobile: {
+    flexDirection: 'column',
+    gap: 16
   },
   metricCard: {
     alignItems: 'center',

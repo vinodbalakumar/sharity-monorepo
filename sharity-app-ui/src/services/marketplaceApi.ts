@@ -39,7 +39,8 @@ export async function getMarketplaceHome(query = ''): Promise<MarketplaceHomeRes
     featuredListings: response.featuredListings ?? [],
     topCategories: response.topCategories ?? [],
     discountedSubcategories: response.discountedSubcategories ?? [],
-    topRatedSellers: response.topRatedSellers ?? []
+    topRatedSellers: response.topRatedSellers ?? [],
+    popularListings: response.popularListings ?? []
   };
 }
 

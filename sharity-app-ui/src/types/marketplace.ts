@@ -76,6 +76,8 @@ export type MarketplaceHomeResponse = {
   topCategories?: MarketplaceCategoryHighlight[];
   discountedSubcategories?: SubcategoryHighlight[];
   topRatedSellers?: SellerHighlight[];
+  popularListings?: MarketplaceListing[];
+  itemsSoldCount?: number;
 };
 
 export type MarketplaceCategoryHighlight = {
