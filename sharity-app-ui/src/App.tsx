@@ -336,6 +336,30 @@ export default function App() {
   const [publicContentSlug, setPublicContentSlug] = useState('terms');
 
   useEffect(() => {
+    if (Platform.OS !== 'web') {
+      return;
+    }
+
+    const { body, documentElement } = window.document;
+    const previousBodyOverflowY = body.style.overflowY;
+    const previousBodyOverscrollBehaviorY = body.style.overscrollBehaviorY;
+    const previousRootOverflowY = documentElement.style.overflowY;
+    const previousRootOverscrollBehaviorY = documentElement.style.overscrollBehaviorY;
+
+    body.style.overflowY = 'auto';
+    body.style.overscrollBehaviorY = 'auto';
+    documentElement.style.overflowY = 'auto';
+    documentElement.style.overscrollBehaviorY = 'auto';
+
+    return () => {
+      body.style.overflowY = previousBodyOverflowY;
+      body.style.overscrollBehaviorY = previousBodyOverscrollBehaviorY;
+      documentElement.style.overflowY = previousRootOverflowY;
+      documentElement.style.overscrollBehaviorY = previousRootOverscrollBehaviorY;
+    };
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS !== 'web' || route === 'splash') {
       return;
     }
