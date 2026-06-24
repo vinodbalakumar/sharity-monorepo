@@ -2,6 +2,8 @@ package com.java.vinod.platform.web.bff.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.List;
+
 @ConfigurationProperties(prefix = "app")
 /**
  * Binds the browser BFF configuration used to connect the public app, OAuth
@@ -20,7 +22,7 @@ public record BffProperties(
     /**
      * Holds browser-origin settings used for CORS and session-aware requests.
      */
-    public record Security(String allowedOrigin) {}
+    public record Security(String allowedOrigin, List<String> allowedOrigins) {}
 
     /**
      * Holds the OAuth client values used by the confidential BFF browser flow.

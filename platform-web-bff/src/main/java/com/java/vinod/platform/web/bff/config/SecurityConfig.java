@@ -32,6 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import com.java.vinod.platform.web.bff.security.SharityAccessTokenAuthenticationFilter;
 
@@ -115,9 +116,9 @@ public class SecurityConfig {
                 .clientSecret(properties.oauth2().clientSecret())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(browserRedirectUri(properties))
+                .redirectUri(browserRedirectUri(null, properties))
                 .scope("openid", "profile")
-                .authorizationUri(browserAuthorizationServerBaseUrl(properties) + "/oauth2/authorize")
+                .authorizationUri(browserAuthorizationServerBaseUrl(null, properties) + "/oauth2/authorize")
                 .tokenUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/token")
                 .userInfoUri(properties.oauth2().authorizationServerBaseUrl() + "/userinfo")
                 .jwkSetUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/jwks")
@@ -159,28 +160,65 @@ public class SecurityConfig {
             return null;
         }
         OAuth2AuthorizationRequest.Builder builder = OAuth2AuthorizationRequest.from(authorizationRequest)
-                .authorizationUri(browserAuthorizationServerBaseUrl(properties) + "/oauth2/authorize")
-                .redirectUri(browserRedirectUri(properties));
+                .authorizationUri(browserAuthorizationServerBaseUrl(request, properties) + "/oauth2/authorize")
+                .redirectUri(browserRedirectUri(request, properties));
         if (hasForceReauthenticationCookie(request)) {
             builder.additionalParameters(parameters -> parameters.put("prompt", "login"));
         }
         return builder.build();
     }
 
-    private String browserAuthorizationServerBaseUrl(BffProperties properties) {
+    private String browserAuthorizationServerBaseUrl(jakarta.servlet.http.HttpServletRequest request, BffProperties properties) {
         String configured = trimTrailingSlash(properties.oauth2().authorizationServerPublicBaseUrl());
         if (isLoopbackUrl(configured)) {
-            return trimTrailingSlash(properties.security().allowedOrigin()) + "/authorization-server/api";
+            return canonicalBrowserOrigin(properties) + "/authorization-server/api";
+        }
+        if (isLocalBrowserRequest(request)) {
+            return "http://localhost:8080/authorization-server/api";
         }
         return configured;
     }
 
-    private String browserRedirectUri(BffProperties properties) {
+    private String browserRedirectUri(jakarta.servlet.http.HttpServletRequest request, BffProperties properties) {
         String configured = properties.oauth2().redirectUri();
         if (isLoopbackUrl(configured)) {
-            return trimTrailingSlash(properties.security().allowedOrigin()) + "/login/oauth2/code/" + REGISTRATION_ID;
+            return canonicalBrowserOrigin(properties) + "/login/oauth2/code/" + REGISTRATION_ID;
+        }
+        if (isLocalBrowserRequest(request)) {
+            return canonicalBrowserOriginFromRequest(request) + "/login/oauth2/code/" + REGISTRATION_ID;
         }
         return configured;
+    }
+
+    private String canonicalBrowserOrigin(BffProperties properties) {
+        String allowedOrigin = properties.security().allowedOrigin();
+        if (allowedOrigin == null || allowedOrigin.isBlank()) {
+            return "";
+        }
+        return trimTrailingSlash(allowedOrigin.split(",")[0].trim());
+    }
+
+    private String canonicalBrowserOriginFromRequest(jakarta.servlet.http.HttpServletRequest request) {
+        String origin = request.getHeader("Origin");
+        if (origin == null || origin.isBlank()) {
+            return "http://localhost:8081";
+        }
+        return trimTrailingSlash(origin.trim());
+    }
+
+    private boolean isLocalBrowserRequest(jakarta.servlet.http.HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        String origin = request.getHeader("Origin");
+        if (origin == null || origin.isBlank()) {
+            return false;
+        }
+        String lower = origin.toLowerCase();
+        return lower.startsWith("http://localhost")
+                || lower.startsWith("https://localhost")
+                || lower.startsWith("http://127.0.0.1")
+                || lower.startsWith("https://127.0.0.1");
     }
 
     private String successRedirectUrl(String redirectUri) {
@@ -226,7 +264,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(BffProperties properties) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(properties.security().allowedOrigin()));
+        configuration.setAllowedOrigins(allowedBrowserOrigins(properties));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-TOKEN", "X-Requested-With"));
         configuration.setAllowCredentials(true);
@@ -234,6 +272,39 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> allowedBrowserOrigins(BffProperties properties) {
+        List<String> configuredOrigins = properties.security().allowedOrigins();
+        List<String> localOrigins = List.of(
+                "http://localhost:8080",
+                "http://localhost:8081",
+                "http://localhost:8082",
+                "http://localhost:19006",
+                "http://192.168.0.200:8082",
+                "http://127.0.0.1:8080",
+                "http://127.0.0.1:8081",
+                "http://127.0.0.1:8082",
+                "http://127.0.0.1:19006");
+        if (configuredOrigins != null && !configuredOrigins.isEmpty()) {
+            return Stream.concat(configuredOrigins.stream(), localOrigins.stream())
+                    .filter(origin -> origin != null && !origin.isBlank())
+                    .map(this::trimTrailingSlash)
+                    .distinct()
+                    .toList();
+        }
+
+        String allowedOrigin = properties.security().allowedOrigin();
+        if (allowedOrigin == null || allowedOrigin.isBlank()) {
+            return localOrigins;
+        }
+
+        return Stream.concat(Stream.of(allowedOrigin.split(",")), localOrigins.stream())
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .map(this::trimTrailingSlash)
+                .distinct()
+                .toList();
     }
 
     @Bean

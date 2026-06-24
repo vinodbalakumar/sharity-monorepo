@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -219,7 +220,7 @@ class BffControllerTest {
             return new ProxyServiceStub(
                     proxyCalls,
                     new BffProperties(
-                            new BffProperties.Security("https://vinodbalakumar.com"),
+                            new BffProperties.Security("https://vinodbalakumar.com", List.of("https://vinodbalakumar.com")),
                             new BffProperties.OAuth2("sharity-web-bff", "test-secret", "https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff", "https://vinodbalakumar.com/authorization-server/api", "http://localhost:8083/authorization-server/api"),
                             new BffProperties.Backends("http://authorization-server:8080/authorization-server", "http://marketplace-service:8080/marketplace-service", "http://payment-service:8080/payment-service", "http://wallet-service:8080/wallet-service"),
                             new BffProperties.Web("https://vinodbalakumar.com/app/")

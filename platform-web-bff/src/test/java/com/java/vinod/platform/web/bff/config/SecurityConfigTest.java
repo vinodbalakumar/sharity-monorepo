@@ -2,6 +2,8 @@ package com.java.vinod.platform.web.bff.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SecurityConfigTest {
@@ -9,7 +11,7 @@ class SecurityConfigTest {
     @Test
     void browserOauthRegistrationRejectsLocalhostOverrides() {
         BffProperties properties = new BffProperties(
-                new BffProperties.Security("https://vinodbalakumar.com"),
+                new BffProperties.Security("https://vinodbalakumar.com", List.of("https://vinodbalakumar.com")),
                 new BffProperties.OAuth2(
                         "sharity-web-bff",
                         "test-secret",
