@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "scheme": "sharity",
     "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-dev-client"
+    ],
     "web": {
       "bundler": "metro",
       "publicPath": "/app/"

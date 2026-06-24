@@ -160,10 +160,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     height: 48,
     justifyContent: 'center',
-    shadowColor: colors.gray600,
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
     width: 48
   },
   brandMarkSmall: {
@@ -306,10 +302,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: spacing.sm
   },
+  bottomTabsCompact: {
+    paddingVertical: spacing.xs
+  },
   bottomTab: {
     alignItems: 'center',
     gap: spacing.xs,
     minWidth: 58
+  },
+  bottomTabCompact: {
+    minWidth: 48
   },
   bottomTabText: {
     color: colors.textSecondary,

@@ -2,11 +2,22 @@ import type { MarketplaceHomeResponse, MarketplaceListing } from '../types/marke
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const bffPublicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL ?? '';
-const marketplaceBaseUrl = process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL
-  ?? (bffPublicBaseUrl
-    ? `${bffPublicBaseUrl}/public/marketplace-service/api/v1/marketplace`
-    : '/marketplace-service/api/v1/marketplace');
+const marketplaceEnvBaseUrl = process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL;
+const marketplaceBaseUrl = resolveMarketplaceBaseUrl(marketplaceEnvBaseUrl);
 const requestTimeoutMs = 6000;
+
+function resolveMarketplaceBaseUrl(baseUrl: string | undefined) {
+  const proxyBaseUrl = `${(bffBaseUrl || bffPublicBaseUrl || '/bff').replace(/\/$/, '')}/public/marketplace-service/api/v1/marketplace`;
+
+  if (baseUrl && /^https?:\/\//i.test(baseUrl)) {
+    if (baseUrl.includes('/marketplace-service/api/v1/marketplace') && !baseUrl.includes('/bff/public/marketplace-service/api/v1/marketplace')) {
+      return proxyBaseUrl;
+    }
+    return baseUrl;
+  }
+
+  return proxyBaseUrl;
+}
 
 async function getJson<T>(path: string): Promise<T> {
   const controller = new AbortController();
@@ -39,6 +50,8 @@ export async function getMarketplaceHome(query = ''): Promise<MarketplaceHomeRes
     featuredListings: response.featuredListings ?? [],
     topCategories: response.topCategories ?? [],
     discountedSubcategories: response.discountedSubcategories ?? [],
+    rollbackOffers: response.rollbackOffers ?? [],
+    clearanceListings: response.clearanceListings ?? [],
     topRatedSellers: response.topRatedSellers ?? [],
     popularListings: response.popularListings ?? []
   };

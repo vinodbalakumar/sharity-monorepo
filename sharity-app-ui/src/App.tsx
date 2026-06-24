@@ -46,14 +46,14 @@ import { SellerVerificationScreen } from './features/sellerVerification/SellerVe
 import { SupportScreen } from './features/support/SupportScreen';
 import { WalletScreen } from './features/wallet/WalletScreen';
 import { WelcomeScreen } from './features/welcome/WelcomeScreen';
-import { getRegistrationOptions } from './services/authApi';
 import { getVisitorContext, type VisitorContextResponse } from './services/publicContentApi';
-import { checkSession, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
+import { checkSession, clearBrowserSessionArtifacts, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
 import { appState$ } from './state/appState';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
 const minimumSplashMs = 900;
+const bootstrapTimeoutMs = 10000;
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 
 type RouteSnapshot = {
@@ -391,7 +391,7 @@ export default function App() {
   }, [authToken, digitalProductId, disputeId, electronicsProductId, orderId, publicContentSlug, receiptId, refundRequestId, route, secureAccessId]);
 
   function startBrowserLogin() {
-    clearLogoutOverride();
+    void clearLogoutOverride();
     if (Platform.OS === 'web') {
       window.location.assign(`${bffBaseUrl}/login?force=true`);
       return;
@@ -402,6 +402,7 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
+    let resolved = false;
 
     const fallbackTimer = setTimeout(() => {
       if (isMounted) {
@@ -409,65 +410,128 @@ export default function App() {
       }
     }, 1600);
 
+    const hardTimeout = setTimeout(() => {
+      if (!isMounted || resolved) {
+        return;
+      }
+      console.warn('[bootstrap] hard timeout reached; falling back to welcome');
+      resolved = true;
+      void clearBrowserSessionArtifacts();
+      setRoute('welcome');
+      if (Platform.OS === 'web') {
+        window.history.replaceState({ route: 'welcome' }, '', '/app/');
+      }
+    }, bootstrapTimeoutMs);
+
     const startTime = Date.now();
 
     async function resolveStartupRoute() {
-      const historySnapshot = window.history.state as RouteSnapshot | null;
-      const locationSnapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search, historySnapshot);
+      console.log('[bootstrap] app bootstrap started');
+      let locationSnapshot: RouteSnapshot | null = null;
+
+      if (Platform.OS === 'web') {
+        const historySnapshot = window.history.state as RouteSnapshot | null;
+        locationSnapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search, historySnapshot);
+      }
+
       const loginSuccessReturn = isLoginSuccessReturn();
-      const logoutOverride = hasLogoutOverride();
-      const [session, context, registrationOptions] = await Promise.all([
-        checkSession(),
-        getVisitorContext().catch(() => null),
-        getRegistrationOptions().catch(() => null)
-      ]);
+      const logoutOverride = await hasLogoutOverride();
+
+      console.log('[bootstrap] auth restore started');
+      let session: Awaited<ReturnType<typeof checkSession>>;
+      try {
+        session = await checkSession();
+        console.log('[bootstrap] auth restore completed', session.status);
+      } catch (error) {
+        console.error('[bootstrap] auth restore failed', error);
+        session = { status: 'anonymous' as const };
+      }
+      if (session.status === 'anonymous' && !logoutOverride) {
+        await clearBrowserSessionArtifacts();
+      }
+
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(minimumSplashMs - elapsed, 0);
+      const nextRoute = !logoutOverride && (loginSuccessReturn || session.status === 'authenticated')
+        ? (locationSnapshot?.route ?? 'home')
+        : (locationSnapshot?.route && isPublicRoute(locationSnapshot.route) ? locationSnapshot.route : 'welcome');
+
+      console.log('[bootstrap] navigation target selected', nextRoute);
 
       setTimeout(() => {
-        if (!isMounted) {
+        if (!isMounted || resolved) {
           return;
         }
-        if (context) {
-          setVisitorContext(context);
-        }
+        resolved = true;
+
         if (locationSnapshot?.route === 'publicContent') {
           setPublicContentSlug(locationSnapshot.publicContentSlug ?? 'terms');
         }
         if (locationSnapshot?.route === 'forgotPassword' || locationSnapshot?.route === 'resetPassword' || locationSnapshot?.route === 'verifyEmail') {
           setAuthToken(locationSnapshot.authToken ?? null);
         }
-        if (!logoutOverride && (loginSuccessReturn || session.status === 'authenticated')) {
-          const nextRoute = locationSnapshot?.route ?? 'home';
+
+        if (nextRoute === 'home') {
           applyRouteSnapshot(locationSnapshot ?? { route: 'home' });
-          setRoute(nextRoute);
-          if (loginSuccessReturn) {
+        } else if (locationSnapshot?.route && isPublicRoute(locationSnapshot.route)) {
+          applyRouteSnapshot(locationSnapshot);
+        }
+
+        if (logoutOverride && (loginSuccessReturn || session.status === 'authenticated')) {
+          void clearLogoutOverride();
+        }
+
+        setRoute(nextRoute);
+
+        if (Platform.OS === 'web') {
+          const nextPath = locationSnapshot ? snapshotToPath(locationSnapshot) : '/app/';
+          if (nextRoute === 'welcome') {
+            window.history.replaceState({ route: 'welcome' }, '', '/app/');
+          } else if (loginSuccessReturn && locationSnapshot) {
             window.history.replaceState({
               route: nextRoute,
               ...snapshotStateForRoute(nextRoute, locationSnapshot)
-            }, '', snapshotToPath(locationSnapshot ?? { route: 'home' }));
+            }, '', nextPath);
+          } else if (locationSnapshot?.route && isPublicRoute(locationSnapshot.route)) {
+            window.history.replaceState({
+              route: locationSnapshot.route,
+              ...snapshotStateForRoute(locationSnapshot.route, locationSnapshot)
+            }, '', nextPath);
           }
-          return;
         }
-        if (locationSnapshot?.route && isPublicRoute(locationSnapshot.route)) {
-          applyRouteSnapshot(locationSnapshot);
-          setRoute(locationSnapshot.route);
-          window.history.replaceState({
-            route: locationSnapshot.route,
-            ...snapshotStateForRoute(locationSnapshot.route, locationSnapshot)
-          }, '', snapshotToPath(locationSnapshot));
-          return;
-        }
-        setRoute('welcome');
-        window.history.replaceState({ route: 'welcome' }, '', '/app/');
+
+        console.log('[bootstrap] bootstrap completed');
       }, remaining);
+
+      void getVisitorContext()
+        .then((context) => {
+          console.log('[bootstrap] visitor context completed');
+          if (isMounted && context) {
+            setVisitorContext(context);
+          }
+        })
+        .catch((error) => {
+          console.error('[bootstrap] visitor context failed', error);
+        });
     }
 
-    resolveStartupRoute();
+    void resolveStartupRoute().catch((error) => {
+      console.error('[bootstrap] bootstrap failed', error);
+      if (!isMounted || resolved) {
+        return;
+      }
+      resolved = true;
+      void clearBrowserSessionArtifacts();
+      setRoute('welcome');
+      if (Platform.OS === 'web') {
+        window.history.replaceState({ route: 'welcome' }, '', '/app/');
+      }
+    });
 
     return () => {
       isMounted = false;
       clearTimeout(fallbackTimer);
+      clearTimeout(hardTimeout);
     };
   }, []);
 
@@ -483,7 +547,7 @@ export default function App() {
       if (cancelled) {
         return;
       }
-      if (!hasLogoutOverride() && session.status === 'authenticated') {
+      if (!(await hasLogoutOverride()) && session.status === 'authenticated') {
         setRoute((current) => (current === 'welcome' || current === 'register' || current === 'completeSocialRegistration' ? 'home' : current));
       }
     };
@@ -515,9 +579,7 @@ export default function App() {
   }, []);
 
   function leavePublicContent() {
-    if (Platform.OS === 'web' && hasLogoutOverride()) {
-      clearLogoutOverride();
-    }
+    void clearLogoutOverride();
     updatePublicPath('welcome');
     setRoute('welcome');
   }

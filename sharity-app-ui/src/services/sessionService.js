@@ -1,3 +1,4 @@
+import { appStorage } from '../storage/storage';
 const sessionTimeoutMs = 2500;
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const logoutOverrideKey = 'sharity_logout_override';
@@ -41,7 +42,7 @@ export async function getBrowserSessionSummary() {
 export async function logoutBrowserSession() {
     try {
         const session = await getBffCsrfToken();
-        const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
+        const refreshToken = await appStorage.getItem('refresh_token');
         const body = refreshToken ? { refreshToken } : undefined;
         await fetch(`${bffBaseUrl}/logout`, {
             credentials: 'include',
@@ -57,36 +58,37 @@ export async function logoutBrowserSession() {
         console.error('Error calling logout endpoint:', error);
     }
     finally {
-        localStorage.setItem(logoutOverrideKey, '1');
+        await appStorage.setItem(logoutOverrideKey, '1');
         // Clear all tokens and authentication state
-        clearAllAuthTokens();
+        await clearAllAuthTokens();
     }
 }
-export function clearLogoutOverride() {
-    localStorage.removeItem(logoutOverrideKey);
+export async function clearLogoutOverride() {
+    await appStorage.removeItem(logoutOverrideKey);
 }
-export function hasLogoutOverride() {
-    return localStorage.getItem(logoutOverrideKey) === '1';
+export async function clearBrowserSessionArtifacts() {
+    await clearLogoutOverride();
+    await clearAllAuthTokens();
 }
-function clearAllAuthTokens() {
-    // Clear localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('id_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user_email');
-    // Clear sessionStorage
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
-    sessionStorage.removeItem('id_token');
-    sessionStorage.removeItem('user_id');
-    sessionStorage.removeItem('user_email');
-    // Clear cookies by setting them to empty with maxAge=0
-    // This is a fallback since the server should also send clear-cookie headers
-    const cookieNames = ['access_token', 'refresh_token', 'id_token', 'session'];
-    cookieNames.forEach(name => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    });
+export async function hasLogoutOverride() {
+    return (await appStorage.getItem(logoutOverrideKey)) === '1';
+}
+async function clearAllAuthTokens() {
+    await Promise.all([
+        appStorage.removeItem('access_token'),
+        appStorage.removeItem('refresh_token'),
+        appStorage.removeItem('id_token'),
+        appStorage.removeItem('user_id'),
+        appStorage.removeItem('user_email')
+    ]);
+    if (typeof document !== 'undefined') {
+        // Clear cookies by setting them to empty with maxAge=0
+        // This is a fallback since the server should also send clear-cookie headers
+        const cookieNames = ['access_token', 'refresh_token', 'id_token', 'session'];
+        cookieNames.forEach(name => {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+    }
 }
 export async function getBffCsrfToken() {
     try {

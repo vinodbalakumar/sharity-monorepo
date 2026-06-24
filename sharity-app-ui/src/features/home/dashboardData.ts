@@ -136,9 +136,39 @@ export function buildDashboardDeals(listings: MarketplaceListing[], countryCode?
     });
 }
 
-export function buildHeroOffers(listings: MarketplaceListing[], countryCode?: string): HeroOffer[] {
+export function buildHeroOffers(home: MarketplaceHomeResponse | null, listings: MarketplaceListing[], countryCode?: string): HeroOffer[] {
   const scopedListings = listings.filter((listing) => !countryCode || listing.providerCountryCode === countryCode);
   const rankedListings = scopedListings.length > 0 ? scopedListings : listings;
+  const verticalHeroOffers = (home?.verticals ?? [])
+    .filter((vertical) => isActiveVertical(vertical) && (vertical.imageUrls?.length ?? 0) > 0)
+    .flatMap((vertical) => {
+      const verticalListings = rankedListings.filter((listing) => listing.verticalCode === vertical.moduleCode || listing.categoryCode === vertical.moduleCode);
+      const preferredListing = verticalListings
+        .filter((listing) => isActiveMarketplaceDeal(listing))
+        .sort((left, right) => discountValue(right) - discountValue(left))[0] ?? verticalListings[0] ?? null;
+
+      return (vertical.imageUrls ?? [])
+        .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
+        .slice(0, 3)
+        .map((imageUrl, index) => ({
+          badge: vertical.moduleName,
+          countryCode: preferredListing?.providerCountryCode ?? countryCode ?? 'GL',
+          currencyCode: preferredListing ? getListingDisplayCurrencyCode(preferredListing) : 'USD',
+          id: `${vertical.moduleCode}-${index}`,
+          imageUrl,
+          marketplaceName: vertical.moduleName,
+          priceLabel: preferredListing
+            ? formatCompactMoney(getListingDisplayPriceAmount(preferredListing), getListingDisplayCurrencyCode(preferredListing))
+            : 'Featured',
+          sellerDisplayName: preferredListing?.sellerDisplayName ?? vertical.moduleName,
+          title: preferredListing?.title ?? vertical.moduleName
+        }));
+    });
+
+  if (verticalHeroOffers.length > 0) {
+    return verticalHeroOffers.slice(0, 5);
+  }
+
   const withPreferredImages = rankedListings.filter((listing) => hasPreferredHeroImage(listing.imageUrl));
   const heroCandidates = (withPreferredImages.length > 0 ? withPreferredImages : rankedListings)
     .filter((listing) => isActiveMarketplaceDeal(listing))

@@ -128,12 +128,13 @@ export function WelcomeScreen({
   const { width } = useWindowDimensions();
   const isCompact = width < 992;
   const isMobile = width < 760;
+  const isSmallPhone = width < 390;
   const isTablet = width >= 760 && width < 992;
   const isTinyPhone = width < 480;
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
-  const heroCardHeight = isMobile ? 380 : width < 992 ? 440 : 520;
+  const heroCardHeight = isMobile ? 220 : width < 992 ? 440 : 520;
   const productImageHeight = isMobile ? 180 : width < 992 ? 200 : 260;
   const categoryVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
   const productVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
@@ -151,8 +152,16 @@ export function WelcomeScreen({
     isWeb
       ? ({
           display: 'grid',
-          gridTemplateColumns: width >= 1200 ? 'repeat(4, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
-          gap: 24,
+          gridTemplateColumns:
+            width >= 1400
+              ? 'repeat(6, minmax(0, 1fr))'
+              : width >= 1200
+                ? 'repeat(4, minmax(0, 1fr))'
+                : width >= 768
+                  ? 'repeat(3, minmax(0, 1fr))'
+                  : 'repeat(2, minmax(0, 1fr))',
+          gap: 12,
+          justifyContent: 'center',
           width: '100%'
         } as never)
       : null;
@@ -166,10 +175,10 @@ export function WelcomeScreen({
               : width >= 1200
                 ? 'repeat(4, minmax(0, 1fr))'
                 : width >= 992
-                  ? 'repeat(3, minmax(0, 1fr))'
+                  ? 'repeat(2, minmax(0, 1fr))'
                   : width >= 768
                     ? 'repeat(2, minmax(0, 1fr))'
-                    : '1fr',
+                    : 'repeat(2, minmax(0, 1fr))',
           gap: 24,
           width: '100%'
         } as never)
@@ -243,7 +252,10 @@ export function WelcomeScreen({
 
   const normalizedCategories = useMemo(() => buildTopCategories(home), [home]);
   const topCategories = normalizedCategories;
+  const mobileCategoryPages = useMemo(() => (isMobile ? chunkArray(topCategories, 4) : [topCategories]), [isMobile, topCategories]);
   const discountedItems = useMemo(() => buildDiscountedItems(home), [home]);
+  const rollbackOffers = useMemo(() => buildListingDealCards(home?.rollbackOffers ?? [], home), [home]);
+  const clearanceItems = useMemo(() => buildListingDealCards(home?.clearanceListings ?? [], home), [home]);
   const featuredProducts = useMemo(() => buildFeaturedProducts(home), [home]);
   const popularProducts = useMemo(() => home?.popularListings ?? [], [home]);
   const sellerCards = useMemo(() => buildSellerCards(home), [home]);
@@ -251,6 +263,8 @@ export function WelcomeScreen({
   const heroVerticalSource = useMemo(() => extractHeroVerticalSource(home), [home]);
   const heroSlides = useMemo(() => normalizeHeroSlides(home), [home]);
   const topDiscounts = discountedItems;
+  const rollbackDeals = rollbackOffers;
+  const clearanceDeals = clearanceItems;
   const trustedSellers = sellerCards;
   const sellerCarouselRef = useRef<ScrollView | null>(null);
   const sellerScrollOffsetRef = useRef(0);
@@ -258,6 +272,7 @@ export function WelcomeScreen({
   const sellerCarouselStep = sellerCardWidth + 24;
   const isHomeInitialLoading = homeLoading && !home;
   const isHomeErrorState = homeError && !home;
+  const activeHeroSlide = heroSlides[activeHeroIndex] ?? heroSlides[0] ?? null;
 
   const scrollHeroToIndex = useCallback(
     (index: number) => {
@@ -277,12 +292,14 @@ export function WelcomeScreen({
       console.log('Hero vertical source:', heroVerticalSource);
       console.log('Normalized hero slides:', heroSlides);
       console.log('Top discounts count:', topDiscounts.length);
+      console.log('Rollback offers count:', rollbackDeals.length);
+      console.log('Clearance items count:', clearanceDeals.length);
       console.log('Featured products count:', featuredProducts.length);
       console.log('Popular products count:', popularProducts.length);
       console.log('Trusted sellers count:', trustedSellers.length);
       console.log('Hero slides count:', heroSlides.length, 'activeIndex:', activeHeroIndex);
     }
-  }, [activeHeroIndex, featuredProducts.length, heroSlides, heroVerticalSource, normalizedCategories, popularProducts.length, topDiscounts.length, trustedSellers.length, home]);
+  }, [activeHeroIndex, clearanceDeals.length, featuredProducts.length, heroSlides, heroVerticalSource, normalizedCategories, popularProducts.length, rollbackDeals.length, topDiscounts.length, trustedSellers.length, home]);
 
   useEffect(() => {
     if (heroSlides.length <= 1 || isHeroPaused) {
@@ -301,6 +318,12 @@ export function WelcomeScreen({
   useEffect(() => {
     scrollHeroToIndex(activeHeroIndex);
   }, [activeHeroIndex, scrollHeroToIndex]);
+
+  useEffect(() => {
+    if (heroSlides.length > 0 && activeHeroIndex >= heroSlides.length) {
+      setActiveHeroIndex(0);
+    }
+  }, [activeHeroIndex, heroSlides.length]);
 
   useEffect(() => {
     return () => {
@@ -356,7 +379,7 @@ export function WelcomeScreen({
   if (isHomeInitialLoading) {
     return (
       <SafeAreaView style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={[styles.homeStateShell, webGlassPanel, isMobile && styles.homeStateShellMobile]}>
             <View style={styles.homeStateHeader}>
               <View style={styles.skeletonBrandRow}>
@@ -434,7 +457,7 @@ export function WelcomeScreen({
   if (isHomeErrorState) {
     return (
       <SafeAreaView style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={[styles.homeErrorShell, webGlassPanel, isMobile && styles.homeErrorShellMobile]}>
             <Ionicons color={palette.blue} name="cloud-offline-outline" size={38} />
             <Text style={styles.homeErrorTitle}>We couldn&apos;t load the marketplace right now.</Text>
@@ -458,17 +481,19 @@ export function WelcomeScreen({
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={isWeb}
+        style={[styles.pageScroll, isWeb && styles.pageScrollWeb]}
+      >
         <View style={styles.pageWrapper}>
           <View style={[styles.contentContainer, { paddingHorizontal: contentPadding }]}>
           <View style={[styles.header, isMobile && styles.headerMobile]}>
             <View style={styles.brandWrap}>
-              <View style={styles.brandMark}>
+              <View style={[styles.brandMark, isMobile && styles.brandMarkMobile]}>
                 <Text style={styles.brandLetter}>S</Text>
               </View>
-              <View>
-                <Text style={styles.brandName}>Sharity</Text>
-              </View>
+              <Text style={[styles.brandName, isMobile && styles.brandNameMobile]}>Sharity</Text>
             </View>
 
             {!isMobile ? (
@@ -486,17 +511,19 @@ export function WelcomeScreen({
               </View>
             ) : null}
 
-            <View style={styles.headerActions}>
-              <Pressable onPress={onSignIn} style={styles.signInButton}>
-                <Text numberOfLines={1} style={styles.signInText}>
+            <View style={[styles.headerActions, isMobile && styles.headerActionsMobile]}>
+              <Pressable onPress={onSignIn} style={[styles.signInButton, isMobile && styles.signInButtonMobile]}>
+                <Text numberOfLines={1} style={[styles.signInText, isMobile && styles.signInTextMobile]}>
                   Sign In
                 </Text>
               </Pressable>
-              <Pressable onPress={onGetStarted} style={styles.headerCta}>
-                <Text numberOfLines={1} style={styles.headerCtaText}>
-                  Get Started
-                </Text>
-              </Pressable>
+              {!isSmallPhone ? (
+                <Pressable onPress={onGetStarted} style={[styles.headerCta, isMobile && styles.headerCtaMobile]}>
+                  <Text numberOfLines={1} style={[styles.headerCtaText, isMobile && styles.headerCtaTextMobile]}>
+                    Get Started
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
 
@@ -517,14 +544,24 @@ export function WelcomeScreen({
             </View>
           ) : null}
 
-          <View style={[styles.heroGrid, !isCompact && styles.heroGridSplit, heroGridWebStyle, { minHeight: heroCardHeight }]}>
+          <View
+            style={[
+              styles.heroGrid,
+              isMobile && styles.heroGridStacked,
+              webHeroGradient,
+              !isCompact && styles.heroGridSplit,
+              heroGridWebStyle,
+              { minHeight: isMobile ? 0 : heroCardHeight }
+            ]}
+          >
             <View
               style={[
                 styles.heroCopyCard,
                 webHeroContentGradient,
                 isDesktop && styles.heroCopyCardDesktop,
+                isMobile && styles.heroCopyCardMobile,
                 !isCompact && styles.heroCopyCardSplit,
-                { minHeight: heroCardHeight }
+                { minHeight: isMobile ? 0 : heroCardHeight }
               ]}
             >
               <View style={styles.heroCopyInner}>
@@ -532,7 +569,19 @@ export function WelcomeScreen({
                   <Ionicons color={palette.blue} name="shield-checkmark-outline" size={14} />
                   <Text style={styles.heroEyebrowText}>Safe marketplace</Text>
                 </View>
-                <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile, isTinyPhone && styles.heroTitleTiny]}>
+                <Text
+                  style={[
+                    styles.heroTitle,
+                    isMobile && styles.heroTitleMobile,
+                    isTinyPhone && styles.heroTitleTiny,
+                    isWeb &&
+                      ({
+                        hyphens: 'none',
+                        overflowWrap: 'normal',
+                        wordBreak: 'normal'
+                      } as any)
+                  ]}
+                >
                   Buy and sell with confidence.
                 </Text>
                 <Text style={[styles.heroBody, isMobile && styles.heroBodyMobile]}>
@@ -562,7 +611,16 @@ export function WelcomeScreen({
               </View>
             </View>
 
-            <View style={[styles.heroVisualCard, webHeroCardGradient, isDesktop && styles.heroVisualCardDesktop, !isCompact && styles.heroVisualCardSplit, { minHeight: heroCardHeight }]}>
+            <View
+              style={[
+                styles.heroVisualCard,
+                webHeroCardGradient,
+                isDesktop && styles.heroVisualCardDesktop,
+                isMobile && styles.heroVisualCardMobile,
+                !isCompact && styles.heroVisualCardSplit,
+                { minHeight: isMobile ? 200 : heroCardHeight }
+              ]}
+            >
               {heroSlides.length > 0 ? (
                 <>
                   <Pressable
@@ -570,11 +628,11 @@ export function WelcomeScreen({
                     style={[styles.heroCarouselViewport, styles.heroCarouselSimple]}
                   >
                     <LazyImage
-                      alt={heroSlides[activeHeroIndex].title}
+                      alt={activeHeroSlide?.title ?? 'Hero banner'}
                       containerStyle={styles.heroVisualImage}
                       imageStyle={styles.heroVisualImage}
                       priority="high"
-                      source={heroSlides[activeHeroIndex].imageUrl}
+                      source={activeHeroSlide?.imageUrl ?? ''}
                     />
                   </Pressable>
                   {heroSlides.length > 1 ? (
@@ -604,8 +662,8 @@ export function WelcomeScreen({
             </View>
           </View>
 
-          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
-            <SectionHeader
+          <View style={[styles.sectionBlock, styles.sectionBlockTopCategories, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+              <SectionHeader
               actionLabel="Show more"
               eyebrow="Collections"
               onAction={onBrowse}
@@ -616,65 +674,159 @@ export function WelcomeScreen({
               isTablet={isTablet}
             />
 
-            <View style={[styles.categoryGrid, categoryGridWebStyle]}>
-              {homeLoading ? (
-                <View style={styles.apiState}>
-                  <Ionicons color={palette.blue} name="sync-outline" size={22} />
-                  <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
-                </View>
-              ) : null}
-              {homeError ? (
-                <View style={styles.apiState}>
-                  <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
-                  <Text style={styles.apiStateText}>Marketplace categories are unavailable from the backend right now.</Text>
-                </View>
-              ) : null}
-              {!homeLoading && !homeError && topCategories.length === 0 ? (
-                <View style={styles.apiState}>
-                  <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
-                  <Text style={styles.apiStateText}>No active public categories are enabled for this region.</Text>
-                </View>
-              ) : null}
+            {isMobile ? (
+              <>
+                {homeLoading ? (
+                  <View style={styles.apiState}>
+                    <Ionicons color={palette.blue} name="sync-outline" size={22} />
+                    <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+                  </View>
+                ) : null}
+                {homeError ? (
+                  <View style={styles.apiState}>
+                    <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
+                    <Text style={styles.apiStateText}>Marketplace categories are unavailable from the backend right now.</Text>
+                  </View>
+                ) : null}
+                {!homeLoading && !homeError && topCategories.length === 0 ? (
+                  <View style={styles.apiState}>
+                    <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
+                    <Text style={styles.apiStateText}>No active public categories are enabled for this region.</Text>
+                  </View>
+                ) : null}
 
-              {topCategories.map((category, index) => (
-                <Pressable
-                  key={category.categoryCode}
-                  onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
-                  style={[styles.categoryCard, isWeb && styles.gridCardFullWidth]}
-                >
-                  {category.imageUrl ? (
-                    <>
-                      <LazyImage
-                        alt={category.categoryName}
-                        containerStyle={styles.categoryMediaWrap}
-                        imageStyle={styles.categoryImage}
-                        priority={index < categoryVisibleCount ? 'high' : 'lazy'}
-                        source={category.imageUrl}
-                        style={styles.categoryMedia}
-                      />
-                      <View style={styles.categoryCopy}>
-                        <View style={styles.categoryIconPill}>
-                          <Ionicons color={palette.blue} name={category.icon} size={16} />
+                {!homeLoading && !homeError && topCategories.length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    pagingEnabled
+                    decelerationRate="fast"
+                    showsHorizontalScrollIndicator={false}
+                    snapToAlignment="start"
+                    style={styles.categoryPager}
+                    contentContainerStyle={styles.categoryPagerContent}
+                  >
+                    {mobileCategoryPages.map((page, pageIndex) => (
+                      <View
+                        key={`category-page-${pageIndex}`}
+                        style={[styles.categoryPage, { width: Math.max(0, width - contentPadding * 2) }]}
+                      >
+                        <View style={styles.categoryPageGrid}>
+                          {page.map((category, index) => (
+                            <Pressable
+                              key={`${category.categoryCode}-${pageIndex}-${index}`}
+                              onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
+                              style={[styles.categoryCard, styles.categoryCardMobile]}
+                            >
+                              {category.imageUrl ? (
+                                <>
+                                  <LazyImage
+                                    alt={category.categoryName}
+                                    containerStyle={styles.categoryMediaWrapMobile}
+                                    fitMode="cover"
+                                    imageStyle={styles.categoryImageMobile}
+                                    priority={pageIndex === 0 && index < 2 ? 'high' : 'lazy'}
+                                    source={category.imageUrl}
+                                    style={styles.categoryMediaMobile}
+                                  />
+                                  <View style={styles.categoryCopyMobile}>
+                                    <View style={styles.categoryIconPill}>
+                                      <Ionicons color={palette.blue} name={category.icon} size={16} />
+                                    </View>
+                                    <Text style={styles.categoryNameMobile} numberOfLines={2}>
+                                      {category.categoryName}
+                                    </Text>
+                                    <Text style={styles.categoryCountMobile} numberOfLines={1}>
+                                      {category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}
+                                    </Text>
+                                  </View>
+                                </>
+                              ) : (
+                                <View style={styles.categoryPlaceholderMobile}>
+                                  <View style={styles.categoryPlaceholderIcon}>
+                                    <Ionicons color={palette.blue} name={category.icon} size={20} />
+                                  </View>
+                                  <Text style={styles.categoryNameMobile} numberOfLines={2}>
+                                    {category.categoryName}
+                                  </Text>
+                                  <Text style={styles.categoryCountMobile} numberOfLines={1}>
+                                    {category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}
+                                  </Text>
+                                </View>
+                              )}
+                            </Pressable>
+                          ))}
                         </View>
-                        <Text style={styles.categoryName}>{category.categoryName}</Text>
-                        <Text style={styles.categoryCount}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
                       </View>
-                    </>
-                  ) : (
-                    <View style={styles.categoryPlaceholder}>
-                      <View style={styles.categoryPlaceholderIcon}>
-                        <Ionicons color={palette.blue} name={category.icon} size={20} />
+                    ))}
+                  </ScrollView>
+                ) : null}
+              </>
+            ) : (
+              <View style={[styles.categoryGrid, isMobile && styles.categoryGridMobile, categoryGridWebStyle]}>
+                {homeLoading ? (
+                  <View style={styles.apiState}>
+                    <Ionicons color={palette.blue} name="sync-outline" size={22} />
+                    <Text style={styles.apiStateText}>Loading marketplace categories...</Text>
+                  </View>
+                ) : null}
+                {homeError ? (
+                  <View style={styles.apiState}>
+                    <Ionicons color={palette.blue} name="alert-circle-outline" size={22} />
+                    <Text style={styles.apiStateText}>Marketplace categories are unavailable from the backend right now.</Text>
+                  </View>
+                ) : null}
+                {!homeLoading && !homeError && topCategories.length === 0 ? (
+                  <View style={styles.apiState}>
+                    <Ionicons color={palette.blue} name="file-tray-outline" size={22} />
+                    <Text style={styles.apiStateText}>No active public categories are enabled for this region.</Text>
+                  </View>
+                ) : null}
+
+                {topCategories.map((category, index) => (
+                  <Pressable
+                    key={`${category.categoryCode}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
+                    style={[
+                      styles.categoryCard,
+                      isMobile && styles.categoryCardMobile,
+                      isWeb && !isMobile && styles.gridCardFullWidth
+                    ]}
+                  >
+                    {category.imageUrl ? (
+                      <>
+                        <LazyImage
+                          alt={category.categoryName}
+                          containerStyle={[styles.categoryMediaWrap, isMobile && styles.categoryMediaWrapMobile]}
+                          fitMode="cover"
+                          imageStyle={[styles.categoryImage, isMobile && styles.categoryImageMobile]}
+                          priority={index < categoryVisibleCount ? 'high' : 'lazy'}
+                          source={category.imageUrl}
+                          style={[styles.categoryMedia, isMobile && styles.categoryMediaMobile]}
+                        />
+                        <View style={[styles.categoryCopy, isMobile && styles.categoryCopyMobile]}>
+                          <View style={styles.categoryIconPill}>
+                            <Ionicons color={palette.blue} name={category.icon} size={16} />
+                          </View>
+                          <Text style={[styles.categoryName, isMobile && styles.categoryNameMobile]}>{category.categoryName}</Text>
+                          <Text style={[styles.categoryCount, isMobile && styles.categoryCountMobile]}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <View style={[styles.categoryPlaceholder, isMobile && styles.categoryPlaceholderMobile]}>
+                        <View style={styles.categoryPlaceholderIcon}>
+                          <Ionicons color={palette.blue} name={category.icon} size={20} />
+                        </View>
+                        <Text style={[styles.categoryName, isMobile && styles.categoryNameMobile]}>{category.categoryName}</Text>
+                        <Text style={[styles.categoryCount, isMobile && styles.categoryCountMobile]}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
                       </View>
-                      <Text style={styles.categoryName}>{category.categoryName}</Text>
-                      <Text style={styles.categoryCount}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
-                    </View>
-                  )}
-                </Pressable>
-              ))}
-            </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
 
-          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+          <View style={[styles.sectionBlock, styles.sectionBlockDiscounts, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
             <SectionHeader
               actionLabel="Show more"
               eyebrow="Today&apos;s Deals"
@@ -686,12 +838,79 @@ export function WelcomeScreen({
               isTablet={isTablet}
             />
 
-            <View style={[styles.productGrid, productGridWebStyle]}>
+            {isMobile ? (
+              <ScrollView
+                horizontal
+                decelerationRate="fast"
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="start"
+                style={styles.productRail}
+                contentContainerStyle={styles.productRailContent}
+              >
+                {topDiscounts.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={({ pressed }) => [
+                      styles.productCard,
+                      styles.productCardRailMobile,
+                      isWeb && pressed && styles.productCardPressed
+                    ]}
+                  >
+                    {item.imageUrl ? (
+                      <LazyImage
+                        alt={item.title}
+                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        fitMode="contain"
+                        imageStyle={styles.productImage}
+                        priority={index < productVisibleCount ? 'high' : 'lazy'}
+                        source={item.imageUrl}
+                      >
+                        <View style={styles.productImageOverlay} />
+                        <View style={[styles.productBadge, productDiscountBadgeStyle(item.discountPercentage)]}>
+                          <Text style={styles.productBadgeText}>{`${Math.round(item.discountPercentage)}% OFF`}</Text>
+                        </View>
+                      </LazyImage>
+                    ) : (
+                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                        <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
+                        <Text style={styles.productPlaceholderText}>Discounted item</Text>
+                      </View>
+                    )}
+                    <View style={[styles.productBody, styles.productBodyMobile]}>
+                      <Text style={styles.productCategory} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={styles.productTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={styles.productPriceStack}>
+                        <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                        <View style={styles.productSavingsRow}>
+                          <Text style={styles.productSavingsLabel}>
+                            Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                          </Text>
+                          <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                        </View>
+                        <Text style={styles.productTrustIndicator}>✔ Protected Checkout</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
               {topDiscounts.map((item, index) => (
                 <Pressable
-                  key={`${item.verticalCode}-${item.title}`}
+                  key={`${item.verticalCode}-${item.title}-${index}`}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
-                  style={[styles.productCard, isWeb && styles.gridCardFullWidth]}
+                  style={({ pressed }) => [
+                    styles.productCard,
+                    isMobile && styles.productCardMobile,
+                    isWeb && styles.gridCardFullWidth,
+                    isWeb && pressed && styles.productCardPressed
+                  ]}
                 >
                   {item.imageUrl ? (
                     <LazyImage
@@ -701,9 +920,11 @@ export function WelcomeScreen({
                       priority={index < productVisibleCount ? 'high' : 'lazy'}
                       source={item.imageUrl}
                     >
-                      <View style={styles.cardScrim} />
-                      <View style={styles.productBadge}>
-                        <Text style={styles.productBadgeText}>{Math.round(item.discountPercentage)}% off</Text>
+                      <View style={styles.productImageOverlay} />
+                      <View style={[styles.productBadge, productDiscountBadgeStyle(item.discountPercentage)]}>
+                        <Text style={styles.productBadgeText}>
+                          {`${Math.round(item.discountPercentage)}% OFF`}
+                        </Text>
                       </View>
                     </LazyImage>
                   ) : (
@@ -712,16 +933,22 @@ export function WelcomeScreen({
                       <Text style={styles.productPlaceholderText}>Discounted item</Text>
                     </View>
                   )}
-                  <View style={styles.productBody}>
+                  <View style={[styles.productBody, isMobile && styles.productBodyMobile]}>
                     <Text style={styles.productCategory} numberOfLines={1}>
                       {item.categoryName}
                     </Text>
                     <Text style={[styles.productTitle, isMobile && styles.productTitleMobile]} numberOfLines={2}>
                       {item.title}
                     </Text>
-                    <View style={styles.productMetaRow}>
+                    <View style={styles.productPriceStack}>
                       <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
-                      <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      <View style={styles.productSavingsRow}>
+                        <Text style={styles.productSavingsLabel}>
+                          Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                        </Text>
+                        <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      </View>
+                      <Text style={styles.productTrustIndicator}>✔ Protected Checkout</Text>
                     </View>
                   </View>
                 </Pressable>
@@ -729,7 +956,267 @@ export function WelcomeScreen({
             </View>
           </View>
 
-          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+          {rollbackDeals.length > 0 ? (
+          <View style={[styles.sectionBlock, styles.sectionBlockRollback, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Limited Time"
+              onAction={onBrowse}
+              subtitle="Rollback offers that still have time left."
+              title="Rollback Offers"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
+
+            {isMobile ? (
+              <ScrollView
+                horizontal
+                decelerationRate="fast"
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="start"
+                style={styles.productRail}
+                contentContainerStyle={styles.productRailContent}
+              >
+                {rollbackDeals.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={({ pressed }) => [
+                      styles.productCard,
+                      styles.productCardRailMobile,
+                      isWeb && pressed && styles.productCardPressed
+                    ]}
+                  >
+                    {item.imageUrl ? (
+                      <LazyImage
+                        alt={item.title}
+                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        fitMode="contain"
+                        imageStyle={styles.productImage}
+                        priority={index < productVisibleCount ? 'high' : 'lazy'}
+                        source={item.imageUrl}
+                      >
+                        <View style={styles.productImageOverlay} />
+                        <View style={[styles.productBadge, styles.productBadgeRollback]}>
+                          <Text style={styles.productBadgeText}>Rollback</Text>
+                        </View>
+                      </LazyImage>
+                    ) : (
+                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                        <Ionicons color={palette.blue} name="time-outline" size={26} />
+                        <Text style={styles.productPlaceholderText}>Rollback offer</Text>
+                      </View>
+                    )}
+                    <View style={[styles.productBody, styles.productBodyMobile]}>
+                      <Text style={styles.productCategory} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={styles.productTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={styles.productPriceStack}>
+                        <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                        <View style={styles.productSavingsRow}>
+                          <Text style={styles.productSavingsLabel}>
+                            Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                          </Text>
+                          <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                        </View>
+                        <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
+              {rollbackDeals.map((item, index) => (
+                <Pressable
+                  key={`${item.verticalCode}-${item.title}-${index}`}
+                  onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                  style={({ pressed }) => [
+                    styles.productCard,
+                    isMobile && styles.productCardMobile,
+                    isWeb && styles.gridCardFullWidth,
+                    isWeb && pressed && styles.productCardPressed
+                  ]}
+                >
+                  {item.imageUrl ? (
+                    <LazyImage
+                      alt={item.title}
+                      containerStyle={[styles.productMedia, { height: productImageHeight }]}
+                      imageStyle={styles.productImage}
+                      priority={index < productVisibleCount ? 'high' : 'lazy'}
+                      source={item.imageUrl}
+                    >
+                      <View style={styles.productImageOverlay} />
+                      <View style={[styles.productBadge, styles.productBadgeRollback]}>
+                        <Text style={styles.productBadgeText}>Rollback</Text>
+                      </View>
+                    </LazyImage>
+                  ) : (
+                    <View style={[styles.productPlaceholder, { minHeight: productImageHeight }]}>
+                      <Ionicons color={palette.blue} name="time-outline" size={26} />
+                      <Text style={styles.productPlaceholderText}>Rollback offer</Text>
+                    </View>
+                  )}
+                  <View style={[styles.productBody, isMobile && styles.productBodyMobile]}>
+                    <Text style={styles.productCategory} numberOfLines={1}>
+                      {item.categoryName}
+                    </Text>
+                    <Text style={[styles.productTitle, isMobile && styles.productTitleMobile]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.productPriceStack}>
+                      <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                      <View style={styles.productSavingsRow}>
+                        <Text style={styles.productSavingsLabel}>
+                          Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                        </Text>
+                        <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      </View>
+                      <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          ) : null}
+
+          {clearanceDeals.length > 0 ? (
+          <View style={[styles.sectionBlock, styles.sectionBlockClearance, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+            <SectionHeader
+              actionLabel="Show more"
+              eyebrow="Clearance"
+              onAction={onBrowse}
+              subtitle="Older picks with 50%+ discounts."
+              title="Clearance Items"
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
+
+            {isMobile ? (
+              <ScrollView
+                horizontal
+                decelerationRate="fast"
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="start"
+                style={styles.productRail}
+                contentContainerStyle={styles.productRailContent}
+              >
+                {clearanceDeals.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={({ pressed }) => [
+                      styles.productCard,
+                      styles.productCardRailMobile,
+                      isWeb && pressed && styles.productCardPressed
+                    ]}
+                  >
+                    {item.imageUrl ? (
+                      <LazyImage
+                        alt={item.title}
+                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        fitMode="contain"
+                        imageStyle={styles.productImage}
+                        priority={index < productVisibleCount ? 'high' : 'lazy'}
+                        source={item.imageUrl}
+                      >
+                        <View style={styles.productImageOverlay} />
+                        <View style={[styles.productBadge, styles.productBadgeClearance]}>
+                          <Text style={styles.productBadgeText}>Clearance</Text>
+                        </View>
+                      </LazyImage>
+                    ) : (
+                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                        <Ionicons color={palette.blue} name="trash-bin-outline" size={26} />
+                        <Text style={styles.productPlaceholderText}>Clearance item</Text>
+                      </View>
+                    )}
+                    <View style={[styles.productBody, styles.productBodyMobile]}>
+                      <Text style={styles.productCategory} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={styles.productTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={styles.productPriceStack}>
+                        <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                        <View style={styles.productSavingsRow}>
+                          <Text style={styles.productSavingsLabel}>
+                            Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                          </Text>
+                          <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                        </View>
+                        <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
+              {clearanceDeals.map((item, index) => (
+                <Pressable
+                  key={`${item.verticalCode}-${item.title}-${index}`}
+                  onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                  style={({ pressed }) => [
+                    styles.productCard,
+                    isMobile && styles.productCardMobile,
+                    isWeb && styles.gridCardFullWidth,
+                    isWeb && pressed && styles.productCardPressed
+                  ]}
+                >
+                  {item.imageUrl ? (
+                    <LazyImage
+                      alt={item.title}
+                      containerStyle={[styles.productMedia, { height: productImageHeight }]}
+                      imageStyle={styles.productImage}
+                      priority={index < productVisibleCount ? 'high' : 'lazy'}
+                      source={item.imageUrl}
+                    >
+                      <View style={styles.productImageOverlay} />
+                      <View style={[styles.productBadge, styles.productBadgeClearance]}>
+                        <Text style={styles.productBadgeText}>Clearance</Text>
+                      </View>
+                    </LazyImage>
+                  ) : (
+                    <View style={[styles.productPlaceholder, { minHeight: productImageHeight }]}>
+                      <Ionicons color={palette.blue} name="trash-bin-outline" size={26} />
+                      <Text style={styles.productPlaceholderText}>Clearance item</Text>
+                    </View>
+                  )}
+                  <View style={[styles.productBody, isMobile && styles.productBodyMobile]}>
+                    <Text style={styles.productCategory} numberOfLines={1}>
+                      {item.categoryName}
+                    </Text>
+                    <Text style={[styles.productTitle, isMobile && styles.productTitleMobile]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <View style={styles.productPriceStack}>
+                      <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                      <View style={styles.productSavingsRow}>
+                        <Text style={styles.productSavingsLabel}>
+                          Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                        </Text>
+                        <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      </View>
+                      <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          ) : null}
+
+          <View style={[styles.sectionBlock, styles.sectionBlockPopular, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
             <SectionHeader
               actionLabel="Show more"
               eyebrow="Popular Picks"
@@ -741,12 +1228,74 @@ export function WelcomeScreen({
               isTablet={isTablet}
             />
 
-            <View style={[styles.productGrid, productGridWebStyle]}>
+            {isMobile ? (
+              <ScrollView
+                horizontal
+                decelerationRate="fast"
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="start"
+                style={styles.productRail}
+                contentContainerStyle={styles.productRailContent}
+              >
+                {popularProducts.slice(0, 10).map((item, index) => (
+                  <Pressable
+                    key={`${item.publicId}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={({ pressed }) => [
+                      styles.productCard,
+                      styles.productCardRailMobile,
+                      isWeb && pressed && styles.productCardPressed
+                    ]}
+                  >
+                    {item.imageUrl ? (
+                      <LazyImage
+                        alt={item.title}
+                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        fitMode="contain"
+                        imageStyle={styles.productImage}
+                        priority={index < productVisibleCount ? 'high' : 'lazy'}
+                        source={item.imageUrl}
+                      >
+                        <View style={styles.productImageOverlay} />
+                        <View style={[styles.productBadge, styles.productBadgeBlue]}>
+                          <Text style={styles.productBadgeText}>Popular</Text>
+                        </View>
+                      </LazyImage>
+                    ) : (
+                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                        <Ionicons color={palette.blue} name="sparkles-outline" size={26} />
+                        <Text style={styles.productPlaceholderText}>Most selected product</Text>
+                      </View>
+                    )}
+                    <View style={[styles.productBody, styles.productBodyMobile]}>
+                      <Text style={styles.productCategory} numberOfLines={1}>
+                        {categoryNameFor(item.categoryCode, home)}
+                      </Text>
+                      <Text style={styles.productTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={styles.productPriceStack}>
+                        <Text style={styles.productPrice}>
+                          {formatMoney(item.displayPriceAmount ?? item.priceAmount, item.displayCurrencyCode ?? item.currencyCode)}
+                        </Text>
+                        <Text style={styles.productTrustIndicator}>{item.verifiedSeller ? '✔ Verified Seller' : '🛵 Instant Delivery'}</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
               {popularProducts.slice(0, 10).map((item, index) => (
                 <Pressable
-                  key={`${item.publicId}-${item.title}`}
+                  key={`${item.publicId}-${item.title}-${index}`}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
-                  style={[styles.productCard, isWeb && styles.gridCardFullWidth]}
+                  style={({ pressed }) => [
+                    styles.productCard,
+                    isWeb && styles.gridCardFullWidth,
+                    isWeb && pressed && styles.productCardPressed
+                  ]}
                 >
                   {item.imageUrl ? (
                     <LazyImage
@@ -756,8 +1305,8 @@ export function WelcomeScreen({
                       priority={index < productVisibleCount ? 'high' : 'lazy'}
                       source={item.imageUrl}
                     >
-                      <View style={styles.cardScrim} />
-                      <View style={styles.productBadge}>
+                      <View style={styles.productImageOverlay} />
+                      <View style={[styles.productBadge, styles.productBadgeBlue]}>
                         <Text style={styles.productBadgeText}>Popular</Text>
                       </View>
                     </LazyImage>
@@ -767,18 +1316,20 @@ export function WelcomeScreen({
                       <Text style={styles.productPlaceholderText}>Most selected product</Text>
                     </View>
                   )}
-                  <View style={styles.productBody}>
+                  <View style={[styles.productBody, isMobile && styles.productBodyMobile]}>
                     <Text style={styles.productCategory} numberOfLines={1}>
                       {categoryNameFor(item.categoryCode, home)}
                     </Text>
                     <Text style={[styles.productTitle, isMobile && styles.productTitleMobile]} numberOfLines={2}>
                       {item.title}
                     </Text>
-                    <View style={styles.productMetaRow}>
+                    <View style={styles.productPriceStack}>
                       <Text style={styles.productPrice}>
                         {formatMoney(item.displayPriceAmount ?? item.priceAmount, item.displayCurrencyCode ?? item.currencyCode)}
                       </Text>
-                      <Text style={styles.productSubMeta}>{item.verifiedSeller ? 'Verified seller' : item.sellerDisplayName}</Text>
+                      <Text style={styles.productTrustIndicator}>
+                        {item.verifiedSeller ? '✔ Verified Seller' : '🚚 Instant Delivery'}
+                      </Text>
                     </View>
                   </View>
                 </Pressable>
@@ -786,7 +1337,7 @@ export function WelcomeScreen({
             </View>
           </View>
 
-          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+          <View style={[styles.sectionBlock, styles.sectionBlockFeatured, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
             <SectionHeader
               actionLabel="Show more"
               eyebrow="Featured"
@@ -798,10 +1349,57 @@ export function WelcomeScreen({
               isTablet={isTablet}
             />
 
-            <View style={[styles.collectionGrid, collectionGridWebStyle]}>
+            {isMobile ? (
+              <ScrollView
+                horizontal
+                decelerationRate="fast"
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="start"
+                style={styles.productRail}
+                contentContainerStyle={styles.productRailContent}
+              >
+                {featuredProducts.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={[styles.collectionCard, styles.collectionCardMobile]}
+                  >
+                    <View style={styles.collectionMediaWrap}>
+                      {item.imageUrl ? (
+                        <LazyImage
+                          alt={item.title}
+                          containerStyle={styles.collectionMedia}
+                          imageStyle={styles.collectionImage}
+                          priority={index < collectionVisibleCount ? 'high' : 'lazy'}
+                          source={item.imageUrl}
+                        />
+                      ) : (
+                        <View style={styles.collectionPlaceholder}>
+                          <Ionicons color={palette.blue} name="images-outline" size={28} />
+                          <Text style={styles.collectionPlaceholderText}>Featured product</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={[styles.collectionCopy, styles.collectionCopyMobile]}>
+                      <Text style={styles.collectionEyebrow}>Featured</Text>
+                      <Text style={styles.collectionMeta}>{item.sellerName}</Text>
+                      <Text style={styles.collectionTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={styles.productMetaRow}>
+                        <Text style={styles.productPrice}>{formatMoney(item.price, item.currencyCode)}</Text>
+                        <Text style={styles.productSubMeta}>{item.verifiedSeller ? 'Verified seller' : item.categoryName}</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <View style={[styles.collectionGrid, collectionGridWebStyle, isMobile && styles.hiddenOnMobile]}>
               {featuredProducts.map((item, index) => (
                 <Pressable
-                  key={`${item.verticalCode}-${item.title}-${item.sellerName}`}
+                  key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
                   style={[styles.collectionCard, isWeb && styles.gridCardFullWidth]}
                 >
@@ -837,7 +1435,7 @@ export function WelcomeScreen({
             </View>
           </View>
 
-          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+          <View style={[styles.sectionBlock, styles.sectionBlockSellersDark, isMobile && styles.sectionBlockMobile]}>
             <SectionHeader
               actionLabel="Show more"
               eyebrow="Verified Sellers"
@@ -847,6 +1445,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              tone="dark"
               trailingAction={
                 !isMobile ? (
                   <View style={styles.carouselControls}>
@@ -875,14 +1474,22 @@ export function WelcomeScreen({
               snapToInterval={sellerCarouselStep}
               showsHorizontalScrollIndicator={false}
             >
-              {trustedSellers.map((seller) => (
+              {trustedSellers.map((seller, index) => (
                 <Pressable
-                  key={seller.name}
+                  key={`${seller.name}-${index}`}
                   onPress={onBrowse}
-                  style={[styles.sellerCard, isWeb && styles.gridCardFullWidth, { width: sellerCardWidth }]}
+                  style={[
+                    styles.sellerCard,
+                    isMobile && styles.sellerCardMobile,
+                    isWeb && styles.gridCardFullWidth,
+                    {
+                      backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
+                      width: isMobile ? 250 : sellerCardWidth
+                    }
+                  ]}
                 >
-                  <View style={styles.sellerHeader}>
-                    <View style={styles.sellerAvatar}>
+                  <View style={[styles.sellerHeader, isMobile && styles.sellerHeaderMobile]}>
+                    <View style={[styles.sellerAvatar, isMobile && styles.sellerAvatarMobile]}>
                       <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
                     </View>
                     <View style={styles.sellerHeaderCopy}>
@@ -895,21 +1502,22 @@ export function WelcomeScreen({
                           <Text style={styles.sellerBadgeText}>Verified seller</Text>
                         </View>
                       </View>
+                      <Text style={styles.sellerStars}>⭐ {seller.rating.toFixed(1)}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.sellerStatsRow}>
-                    <View style={styles.sellerStat}>
+                  <View style={[styles.sellerStatsRow, isMobile && styles.sellerStatsRowMobile]}>
+                    <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
                       <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
                       <Text style={styles.sellerStatLabel}>Review score</Text>
                     </View>
-                    <View style={styles.sellerStat}>
+                    <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
                       <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
                       <Text style={styles.sellerStatLabel}>Completed orders</Text>
                     </View>
                   </View>
 
-                  <Text style={styles.sellerFooterText}>
+                  <Text style={[styles.sellerFooterText, isMobile && styles.sellerFooterTextMobile]}>
                     {seller.listings[0]?.title ?? 'Curated storefront'}
                   </Text>
                 </Pressable>
@@ -917,7 +1525,7 @@ export function WelcomeScreen({
             </ScrollView>
           </View>
 
-          <View style={[styles.sectionBlock, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
+          <View style={[styles.sectionBlock, styles.sectionBlockWhy, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
             <SectionHeader
               actionLabel="Show more"
               eyebrow="Why Choose Sharity"
@@ -929,9 +1537,16 @@ export function WelcomeScreen({
               isTablet={isTablet}
             />
 
-            <View style={[styles.featureGrid, featureGridWebStyle]}>
+            <View style={[styles.featureGrid, isMobile && styles.featureGridMobile, featureGridWebStyle]}>
               {featureCards.map((feature) => (
-                <View key={feature.title} style={[styles.featureCard, isWeb && styles.gridCardFullWidth]}>
+                <View
+                  key={feature.title}
+                  style={[
+                    styles.featureCard,
+                    isMobile && styles.featureCardMobile,
+                    isWeb && styles.gridCardFullWidth
+                  ]}
+                >
                   <View style={styles.featureIcon}>
                     <Ionicons color={palette.blue} name={feature.icon} size={28} />
                   </View>
@@ -942,15 +1557,26 @@ export function WelcomeScreen({
             </View>
           </View>
 
-          <View style={styles.metricSection}>
-            <View style={[styles.itemsSoldBanner, webItemsSoldGradient]}>
+          <View style={[styles.metricSection, styles.metricSectionDark, isMobile && styles.metricSectionDarkMobile]}>
+            <View style={[styles.itemsSoldBanner, webItemsSoldGradient, isMobile && styles.itemsSoldBannerMobile]}>
               <Text style={styles.itemsSoldKicker}>Items sold</Text>
-              <Text style={styles.itemsSoldValue}>{new Intl.NumberFormat('en-US').format(home?.itemsSoldCount ?? 0)}</Text>
-              <Text style={styles.itemsSoldLabel}>Across all active marketplace categories</Text>
+              <Text style={[styles.itemsSoldValue, isMobile && styles.itemsSoldValueMobile]}>
+                {new Intl.NumberFormat('en-US').format(home?.itemsSoldCount ?? 0)}
+              </Text>
+              <Text style={[styles.itemsSoldLabel, isMobile && styles.itemsSoldLabelMobile]}>
+                Across all active marketplace categories
+              </Text>
             </View>
             <View style={[styles.metricGrid, isMobile && styles.metricGridMobile, metricGridWebStyle]}>
               {metrics.map((metric) => (
-                <View key={metric.label} style={[styles.metricCard, isWeb && styles.gridCardFullWidth]}>
+                <View
+                  key={metric.label}
+                  style={[
+                    styles.metricCard,
+                    isMobile && styles.metricCardMobile,
+                    isWeb && styles.gridCardFullWidth
+                  ]}
+                >
                   <Text style={styles.metricValue}>{metric.value}</Text>
                   <Text style={styles.metricLabel}>{metric.label}</Text>
                 </View>
@@ -958,7 +1584,7 @@ export function WelcomeScreen({
             </View>
           </View>
 
-          <View style={[styles.ctaSection, webGlassPanel, isMobile && styles.ctaSectionMobile]}>
+          <View style={[styles.ctaSection, styles.ctaSectionDark, isMobile && styles.ctaSectionMobile]}>
             <Text style={[styles.ctaTitle, isMobile && styles.ctaTitleMobile]}>Get started today</Text>
             <Text style={styles.ctaText}>Join Sharity and start buying or selling in minutes.</Text>
             <Pressable onPress={onGetStarted} style={styles.ctaButton}>
@@ -984,6 +1610,7 @@ type SectionHeaderProps = {
   onAction?: () => void;
   subtitle: string;
   title: string;
+  tone?: 'dark' | 'light';
   trailingAction?: ReactNode;
 };
 
@@ -996,17 +1623,19 @@ function SectionHeader({
   onAction,
   subtitle,
   title,
+  tone = 'light',
   trailingAction
 }: SectionHeaderProps) {
   const [hovered, setHovered] = useState(false);
-  const stackActions = isCompact;
+  const stackActions = isCompact && !isMobile;
+  const isDark = tone === 'dark';
 
   return (
     <View style={[styles.sectionHeaderRow, stackActions && styles.sectionHeaderRowStacked]}>
       <View style={[styles.sectionHeading, isMobile && styles.sectionHeadingMobile, !isMobile && styles.sectionHeadingDesktop]}>
-        <Text style={styles.sectionKicker}>{eyebrow}</Text>
-        <Text style={[styles.sectionTitle, isTablet && styles.sectionTitleTablet, isMobile && styles.sectionTitleMobile]}>{title}</Text>
-        <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>{subtitle}</Text>
+        <Text style={[styles.sectionKicker, isDark && styles.sectionKickerDark]}>{eyebrow}</Text>
+        <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark, isTablet && styles.sectionTitleTablet, isMobile && styles.sectionTitleMobile]}>{title}</Text>
+        <Text style={[styles.sectionSubtitle, isDark && styles.sectionSubtitleDark, isMobile && styles.sectionSubtitleMobile]}>{subtitle}</Text>
       </View>
       {(onAction || trailingAction) && !stackActions ? (
         <View style={styles.sectionHeaderActions}>
@@ -1018,11 +1647,12 @@ function SectionHeader({
               onPress={onAction}
               style={({ pressed }) => [
                 styles.sectionShowMoreButton,
+                isDark && styles.sectionShowMoreButtonDark,
                 (pressed || hovered) && styles.sectionShowMoreButtonActive
               ]}
             >
-              <Text style={[styles.sectionShowMoreText, hovered && styles.sectionShowMoreTextActive]}>{actionLabel}</Text>
-              <Ionicons color={hovered ? palette.white : palette.blue} name="arrow-forward" size={18} />
+              <Text style={[styles.sectionShowMoreText, isDark && styles.sectionShowMoreTextDark, hovered && styles.sectionShowMoreTextActive]}>{actionLabel}</Text>
+              <Ionicons color={hovered || isDark ? palette.white : palette.blue} name="arrow-forward" size={18} />
             </Pressable>
           ) : null}
         </View>
@@ -1038,11 +1668,12 @@ function SectionHeader({
               style={({ pressed }) => [
                 styles.sectionShowMoreButton,
                 styles.sectionShowMoreButtonMobile,
+                isDark && styles.sectionShowMoreButtonDark,
                 (pressed || hovered) && styles.sectionShowMoreButtonActive
               ]}
             >
-              <Text style={[styles.sectionShowMoreText, hovered && styles.sectionShowMoreTextActive]}>{actionLabel}</Text>
-              <Ionicons color={hovered ? palette.white : palette.blue} name="arrow-forward" size={18} />
+              <Text style={[styles.sectionShowMoreText, isDark && styles.sectionShowMoreTextDark, hovered && styles.sectionShowMoreTextActive]}>{actionLabel}</Text>
+              <Ionicons color={hovered || isDark ? palette.white : palette.blue} name="arrow-forward" size={18} />
             </Pressable>
           ) : null}
         </View>
@@ -1055,13 +1686,14 @@ type LazyImageProps = {
   alt: string;
   children?: ReactNode;
   containerStyle?: StyleProp<ViewStyle>;
+  fitMode?: 'cover' | 'contain';
   imageStyle?: StyleProp<ImageStyle>;
   priority?: 'high' | 'lazy';
   source: string;
   style?: StyleProp<ViewStyle>;
 };
 
-function LazyImage({ alt, children, containerStyle, imageStyle, priority = 'lazy', source, style }: LazyImageProps) {
+function LazyImage({ alt, children, containerStyle, fitMode = 'contain', imageStyle, priority = 'lazy', source, style }: LazyImageProps) {
   const isWeb = Platform.OS === 'web';
   const shouldLoadImmediately = priority === 'high' || !isWeb;
   const [shouldLoad, setShouldLoad] = useState(shouldLoadImmediately);
@@ -1095,7 +1727,14 @@ function LazyImage({ alt, children, containerStyle, imageStyle, priority = 'lazy
     return () => observer.disconnect();
   }, [isWeb, shouldLoad, shouldLoadImmediately]);
 
-  const flattenedImageStyle = StyleSheet.flatten(imageStyle) ?? {};
+  const flattenedImageStyle = (StyleSheet.flatten(imageStyle) ?? {}) as Record<string, unknown>;
+  const webImageStyle = {
+    ...flattenedImageStyle,
+    height: '100%',
+    opacity: hasError ? 0 : hasLoaded ? 1 : 0.01,
+    objectFit: fitMode,
+    width: '100%'
+  } as any;
 
   return (
     <View ref={containerRef} style={[styles.lazyImageRoot, containerStyle, style]}>
@@ -1121,21 +1760,15 @@ function LazyImage({ alt, children, containerStyle, imageStyle, priority = 'lazy
             onError={() => setHasError(true)}
             onLoad={() => setHasLoaded(true)}
             src={source}
-            style={{
-              height: '100%',
-              objectFit: 'contain',
-              opacity: hasError ? 0 : hasLoaded ? 1 : 0.01,
-              width: '100%',
-              ...flattenedImageStyle
-            }}
+            style={webImageStyle}
           />
         ) : (
           <Image
             onError={() => setHasError(true)}
             onLoadEnd={() => setHasLoaded(true)}
-            resizeMode="contain"
+            resizeMode={fitMode}
             source={{ uri: source }}
-            style={[styles.lazyImageNative, imageStyle]}
+            style={[styles.lazyImageNative, imageStyle as StyleProp<ImageStyle>]}
           />
         )
       ) : null}
@@ -1175,6 +1808,7 @@ function buildTopCategories(home: MarketplaceHomeResponse | null): TopCategoryCa
       }
       return left.categoryName.localeCompare(right.categoryName);
     })
+    .slice(0, 6)
     .map((category) => ({
       activeCount: countsByCategory.get(category.code) ?? 0,
       categoryCode: category.code,
@@ -1188,6 +1822,18 @@ function buildTopCategories(home: MarketplaceHomeResponse | null): TopCategoryCa
     }));
 }
 
+function chunkArray<T>(items: T[], size: number): T[][] {
+  if (size <= 0) {
+    return [items];
+  }
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] {
   if (!home) {
     return [];
@@ -1195,16 +1841,25 @@ function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] 
 
   const source = home.discountedSubcategories ?? [];
   if (source.length > 0) {
-    return source.map((item) => ({
-      categoryName: item.categoryName,
-      currencyCode: item.currencyCode,
-      discountedPrice: item.discountedPrice,
-      discountPercentage: item.discountPercentage,
-      imageUrl: item.listingImageUrl,
-      originalPrice: item.originalPrice,
-      title: item.listingTitle,
-      verticalCode: item.verticalCode
-    }));
+    return source.map((item) => {
+      const record = item as Record<string, unknown>;
+      const discountedPrice = firstNumber(record, ['discountedPrice', 'discounted_price', 'salePrice', 'sale_price', 'price']) ?? 0;
+      const originalPrice = firstNumber(record, ['originalPrice', 'original_price', 'listPrice', 'list_price']) ?? discountedPrice;
+      const discountPercentage =
+        firstNumber(record, ['discountPercentage', 'discount_percentage', 'discountPercent']) ??
+        (originalPrice > discountedPrice && originalPrice > 0 ? ((originalPrice - discountedPrice) / originalPrice) * 100 : 0);
+
+      return {
+        categoryName: firstString(record, ['categoryName', 'category_name']) ?? 'Discounted item',
+        currencyCode: firstString(record, ['currencyCode', 'currency_code']) ?? 'USD',
+        discountedPrice,
+        discountPercentage,
+        imageUrl: firstString(record, ['listingImageUrl', 'listing_image_url', 'imageUrl', 'image_url']),
+        originalPrice,
+        title: firstString(record, ['listingTitle', 'listing_title', 'title', 'name']) ?? 'Discounted item',
+        verticalCode: firstString(record, ['verticalCode', 'vertical_code']) ?? 'digital'
+      };
+    });
   }
 
   return home.featuredListings.map((listing) => {
@@ -1221,6 +1876,31 @@ function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] 
       verticalCode: listing.verticalCode
     };
   });
+}
+
+function buildListingDealCards(listings: MarketplaceListing[] | undefined, home: MarketplaceHomeResponse | null): DealCard[] {
+  if (!listings || listings.length === 0) {
+    return [];
+  }
+
+  return listings
+    .map((listing) => {
+      const original = listing.originalPriceAmount ?? listing.displayOriginalPriceAmount ?? listing.priceAmount;
+      const price = listing.displayPriceAmount ?? listing.priceAmount;
+      const discountPercentage = original > price && original > 0 ? ((original - price) / original) * 100 : 0;
+      return {
+        categoryName: categoryNameFor(listing.categoryCode, home),
+        currencyCode: listing.displayCurrencyCode ?? listing.currencyCode,
+        discountedPrice: price,
+        discountPercentage,
+        imageUrl: listing.imageUrl,
+        originalPrice: original,
+        title: listing.title,
+        verticalCode: listing.verticalCode
+      };
+    })
+    .filter((item) => item.discountPercentage > 0)
+    .sort((left, right) => right.discountPercentage - left.discountPercentage || left.title.localeCompare(right.title));
 }
 
 function buildSellerCards(home: MarketplaceHomeResponse | null): SellerCard[] {
@@ -1348,8 +2028,8 @@ function buildMetrics(home: MarketplaceHomeResponse | null, sellerCount: number)
   ];
 }
 
-function categoryNameFor(categoryCode: string, home: MarketplaceHomeResponse) {
-  return home.categories.find((category) => category.code === categoryCode)?.name ?? categoryCode;
+function categoryNameFor(categoryCode: string, home: MarketplaceHomeResponse | null) {
+  return home?.categories.find((category) => category.code === categoryCode)?.name ?? categoryCode;
 }
 
 function firstString(candidate: Record<string, unknown>, keys: string[]) {
@@ -1649,15 +2329,76 @@ function getMarketplaceRoute(verticalCode: string, verticals: MarketplaceHomeRes
 }
 
 function formatMoney(amount: number, currencyCode: string) {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
   try {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currencyCode,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(safeAmount);
   } catch {
-    return `${currencyCode} ${Math.round(amount)}`;
+    return `${currencyCode} ${Math.round(safeAmount)}`;
   }
+}
+
+function productDiscountBadgeStyle(percent: number): any | undefined {
+  if (percent >= 80) {
+    return Platform.OS === 'web'
+      ? ({
+          backgroundImage: 'linear-gradient(135deg, #FF6B35 0%, #FF3D00 100%)',
+          boxShadow: '0 10px 22px rgba(255, 61, 0, 0.28)'
+        } as any)
+      : ({
+          backgroundColor: '#FF4D1A',
+          shadowColor: '#FF4D1A',
+          shadowOpacity: 0.28,
+          shadowRadius: 10,
+          shadowOffset: { height: 4, width: 0 }
+        } as any);
+  }
+
+  if (percent >= 50) {
+    return Platform.OS === 'web'
+      ? ({
+          backgroundImage: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+          boxShadow: '0 10px 22px rgba(91, 33, 182, 0.24)'
+        } as any)
+      : ({
+          backgroundColor: '#6D28D9',
+          shadowColor: '#6D28D9',
+          shadowOpacity: 0.24,
+          shadowRadius: 10,
+          shadowOffset: { height: 4, width: 0 }
+        } as any);
+  }
+
+  if (percent >= 20) {
+    return Platform.OS === 'web'
+      ? ({
+          backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+          boxShadow: '0 10px 22px rgba(37, 99, 235, 0.24)'
+        } as any)
+      : ({
+          backgroundColor: '#2563EB',
+          shadowColor: '#2563EB',
+          shadowOpacity: 0.24,
+          shadowRadius: 10,
+          shadowOffset: { height: 4, width: 0 }
+        } as any);
+  }
+
+  return Platform.OS === 'web'
+    ? ({
+        backgroundImage: 'linear-gradient(135deg, #94A3B8 0%, #64748B 100%)',
+        boxShadow: '0 10px 22px rgba(100, 116, 139, 0.20)'
+      } as any)
+    : ({
+        backgroundColor: '#64748B',
+        shadowColor: '#64748B',
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        shadowOffset: { height: 4, width: 0 }
+      } as any);
 }
 
 const palette = {
@@ -1676,8 +2417,19 @@ const styles = StyleSheet.create({
     backgroundColor: palette.page,
     flex: 1
   },
+  pageScroll: {
+    flex: 1
+  },
+  pageScrollWeb: Platform.OS === 'web'
+    ? ({
+        overflowY: 'auto',
+        overscrollBehaviorY: 'auto',
+        WebkitOverflowScrolling: 'touch'
+      } as never)
+    : ({} as never),
   scrollContent: {
     backgroundColor: palette.page,
+    minHeight: '100%',
     paddingBottom: 56
   },
   pageWrapper: {
@@ -1700,13 +2452,18 @@ const styles = StyleSheet.create({
     paddingVertical: 16
   },
   headerMobile: {
-    alignItems: 'flex-start',
-    flexWrap: 'wrap'
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12
   },
   brandWrap: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm
+    flexShrink: 1,
+    gap: spacing.sm,
+    minWidth: 0
   },
   brandMark: {
     alignItems: 'center',
@@ -1715,6 +2472,10 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     width: 44
+  },
+  brandMarkMobile: {
+    height: 36,
+    width: 36
   },
   brandLetter: {
     color: palette.white,
@@ -1725,7 +2486,12 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 24,
     fontWeight: '800',
-    lineHeight: 28
+    lineHeight: 28,
+    flexShrink: 1
+  },
+  brandNameMobile: {
+    fontSize: 18,
+    lineHeight: 22
   },
   searchBar: {
     alignItems: 'center',
@@ -1771,6 +2537,15 @@ const styles = StyleSheet.create({
     gap: 12,
     marginLeft: 'auto'
   },
+  headerActionsMobile: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    gap: 8,
+    justifyContent: 'flex-end',
+    marginLeft: 'auto',
+    minWidth: 0
+  },
   signInButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(37,99,235,0.06)',
@@ -1782,9 +2557,18 @@ const styles = StyleSheet.create({
     minWidth: 88,
     paddingHorizontal: 16
   },
+  signInButtonMobile: {
+    height: 44,
+    minWidth: 96,
+    paddingHorizontal: 10
+  },
   signInText: {
     color: palette.blue,
     fontSize: 14,
+    fontWeight: '700'
+  },
+  signInTextMobile: {
+    fontSize: 15,
     fontWeight: '700'
   },
   headerCta: {
@@ -1796,10 +2580,19 @@ const styles = StyleSheet.create({
     minWidth: 136,
     paddingHorizontal: 18
   },
+  headerCtaMobile: {
+    height: 44,
+    minWidth: 128,
+    paddingHorizontal: 12
+  },
   headerCtaText: {
     color: palette.white,
     fontSize: 14,
     fontWeight: '800'
+  },
+  headerCtaTextMobile: {
+    fontSize: 15,
+    fontWeight: '700'
   },
   heroGrid: {
     flexDirection: 'row',
@@ -1808,6 +2601,10 @@ const styles = StyleSheet.create({
     minHeight: 460,
     width: '100%',
     marginTop: 24
+  },
+  heroGridStacked: {
+    flexDirection: 'column',
+    gap: 18
   },
   heroGridSplit: {
     flexDirection: 'row'
@@ -1825,6 +2622,14 @@ const styles = StyleSheet.create({
   },
   heroCopyCardSplit: {
     flex: 1
+  },
+  heroCopyCardMobile: {
+    flexBasis: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
+    minHeight: 0,
+    padding: 20,
+    width: '100%'
   },
   heroCopyCardDesktop: {
     flexBasis: '36%',
@@ -1866,8 +2671,10 @@ const styles = StyleSheet.create({
     marginTop: 14
   },
   heroTitleMobile: {
-    fontSize: 40,
-    lineHeight: 46
+    fontSize: 38,
+    lineHeight: 44,
+    marginTop: 10,
+    maxWidth: '100%'
   },
   heroTitleTiny: {
     fontSize: 34,
@@ -1881,7 +2688,8 @@ const styles = StyleSheet.create({
   },
   heroBodyMobile: {
     fontSize: 16,
-    lineHeight: 24
+    lineHeight: 24,
+    maxWidth: '100%'
   },
   heroActions: {
     flexDirection: 'row',
@@ -1961,6 +2769,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 0,
     position: 'relative'
+  },
+  heroVisualCardMobile: {
+    flexBasis: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
+    minHeight: 240,
+    width: '100%'
   },
   heroVisualCardSplit: {
     flex: 1
@@ -2282,7 +3097,7 @@ const styles = StyleSheet.create({
     zIndex: 5,
     ...(Platform.OS === 'web'
       ? ({ backdropFilter: 'blur(10px)' } as never)
-      : null)
+      : {})
   },
   heroDot: {
     backgroundColor: 'rgba(37, 99, 235, 0.16)',
@@ -2307,11 +3122,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 70
   },
+  sectionBlockTopCategories: {
+    backgroundColor: 'rgba(244,247,255,0.92)'
+  },
+  sectionBlockDiscounts: {
+    backgroundColor: 'rgba(255,249,242,0.94)'
+  },
+  sectionBlockPopular: {
+    backgroundColor: 'rgba(255,255,255,0.92)'
+  },
+  sectionBlockFeatured: {
+    backgroundColor: 'rgba(245,243,255,0.92)'
+  },
+  sectionBlockRollback: {
+    backgroundColor: 'rgba(255,244,235,0.96)',
+    borderColor: 'rgba(251,146,60,0.18)'
+  },
+  sectionBlockClearance: {
+    backgroundColor: 'rgba(240,253,244,0.95)',
+    borderColor: 'rgba(34,197,94,0.18)'
+  },
+  sectionBlockSellersDark: {
+    backgroundColor: '#101936',
+    borderColor: 'rgba(148,163,184,0.16)'
+  },
+  sectionBlockWhy: {
+    backgroundColor: 'rgba(248,250,252,0.92)'
+  },
   sectionBlockMobile: {
-    padding: 20
+    marginTop: 28,
+    padding: 16
   },
   sectionHeading: {
-    maxWidth: 720
+    flex: 1,
+    maxWidth: 720,
+    minWidth: 0
   },
   sectionHeadingDesktop: {
     flex: 1
@@ -2327,8 +3172,9 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRowStacked: {
     flexDirection: 'column',
-    gap: 16,
-    marginBottom: 24
+    gap: 8,
+    marginBottom: 12,
+    width: '100%'
   },
   sectionHeaderActions: {
     alignItems: 'center',
@@ -2336,10 +3182,11 @@ const styles = StyleSheet.create({
     gap: 12
   },
   sectionHeaderMobileActions: {
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     flexDirection: 'column',
-    gap: 12,
-    marginTop: 4
+    gap: 8,
+    marginTop: 0,
+    width: '100%'
   },
   sectionKicker: {
     color: palette.blue,
@@ -2349,6 +3196,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase'
   },
+  sectionKickerDark: {
+    color: '#93c5fd'
+  },
   sectionTitle: {
     color: palette.text,
     fontSize: 36,
@@ -2357,6 +3207,9 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     marginTop: 0,
     textAlign: 'left'
+  },
+  sectionTitleDark: {
+    color: palette.white
   },
   sectionTitleTablet: {
     fontSize: 30,
@@ -2374,6 +3227,9 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     textAlign: 'left'
   },
+  sectionSubtitleDark: {
+    color: 'rgba(255,255,255,0.78)'
+  },
   sectionSubtitleMobile: {
     fontSize: 15,
     lineHeight: 22
@@ -2388,11 +3244,19 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'center',
     flexShrink: 0,
-    height: 40,
-    paddingHorizontal: 16
+    height: 48,
+    paddingHorizontal: 18
+  },
+  sectionShowMoreButtonDark: {
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(255,255,255,0.20)'
   },
   sectionShowMoreButtonMobile: {
-    alignSelf: 'flex-start'
+    alignSelf: 'flex-end',
+    height: 42,
+    marginTop: 0,
+    maxWidth: '100%',
+    paddingHorizontal: 14
   },
   sectionShowMoreButtonActive: {
     backgroundColor: palette.blue,
@@ -2400,9 +3264,12 @@ const styles = StyleSheet.create({
   },
   sectionShowMoreText: {
     color: palette.blue,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.3
+  },
+  sectionShowMoreTextDark: {
+    color: palette.white
   },
   sectionShowMoreTextActive: {
     color: palette.white
@@ -2426,6 +3293,12 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%',
     overflow: 'hidden'
+  },
+  collectionCardMobile: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    width: 240
   },
   collectionMediaWrap: {
     backgroundColor: '#f8fbff'
@@ -2458,6 +3331,9 @@ const styles = StyleSheet.create({
     padding: 22,
     position: 'relative'
   },
+  collectionCopyMobile: {
+    padding: 14
+  },
   collectionEyebrow: {
     color: '#2563eb',
     fontSize: 12,
@@ -2481,35 +3357,87 @@ const styles = StyleSheet.create({
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 24,
+    gap: 12,
     justifyContent: 'flex-start'
+  },
+  categoryGridMobile: {
+    gap: 12,
+    marginTop: 12
+  },
+  categoryPager: {
+    marginTop: 12,
+    width: '100%'
+  },
+  categoryPagerContent: {
+    gap: 12,
+    paddingBottom: 2,
+    paddingRight: 2
+  },
+  categoryPage: {
+    flexShrink: 0
+  },
+  categoryPageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: 12,
+    width: '100%'
   },
   categoryCard: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 24,
+    borderRadius: 18,
     borderWidth: 1,
     alignSelf: 'stretch',
-    height: '100%',
+    maxWidth: 240,
+    minHeight: 312,
     width: '100%',
     overflow: 'hidden'
   },
-  categoryMediaWrap: {
-    backgroundColor: '#f8fbff'
+  categoryCardMobile: {
+    flexBasis: '47%',
+    flexGrow: 0,
+    alignSelf: 'flex-start',
+    height: 176,
+    minHeight: 176,
+    maxWidth: '47%',
+    overflow: 'hidden',
+    width: '47%'
   },
-  categoryMedia: {
-    height: 218,
+  categoryMediaWrap: {
+    backgroundColor: '#f8fbff',
+    aspectRatio: 4 / 5,
     width: '100%'
   },
+  categoryMediaWrapMobile: {
+    aspectRatio: 4 / 3
+  },
+  categoryMedia: {
+    height: '100%',
+    width: '100%'
+  },
+  categoryMediaMobile: {
+    height: '100%'
+  },
   categoryImage: {
-    borderRadius: 20
+    borderRadius: 0
+  },
+  categoryImageMobile: {
+    borderRadius: 0
   },
   categoryCopy: {
     backgroundColor: palette.surface,
     borderTopColor: palette.border,
     borderTopWidth: 1,
-    padding: 18,
+    minHeight: 84,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     position: 'relative'
+  },
+  categoryCopyMobile: {
+    minHeight: 54,
+    paddingHorizontal: 12,
+    paddingVertical: 8
   },
   categoryIconPill: {
     alignItems: 'center',
@@ -2517,7 +3445,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     height: 30,
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
     width: 30
   },
   categoryCount: {
@@ -2527,19 +3455,34 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase'
   },
+  categoryCountMobile: {
+    fontSize: 10,
+    lineHeight: 12
+  },
   categoryName: {
     color: palette.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    lineHeight: 24,
-    marginTop: 8
+    lineHeight: 22,
+    marginTop: 6
+  },
+  categoryNameMobile: {
+    fontSize: 13,
+    lineHeight: 16,
+    marginTop: 4
   },
   categoryPlaceholder: {
     alignItems: 'center',
     backgroundColor: palette.pageAlt,
+    aspectRatio: 4 / 5,
     justifyContent: 'center',
-    minHeight: 218,
-    padding: 18
+    minHeight: 0,
+    padding: 14,
+    width: '100%'
+  },
+  categoryPlaceholderMobile: {
+    minHeight: 0,
+    padding: 12
   },
   categoryPlaceholderIcon: {
     alignItems: 'center',
@@ -2555,7 +3498,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 24,
+    alignItems: 'flex-start',
     justifyContent: 'flex-start'
+  },
+  hiddenOnMobile: {
+    display: 'none'
+  },
+  productRail: {
+    width: '100%'
+  },
+  productRailContent: {
+    gap: 14,
+    paddingBottom: 2,
+    paddingRight: 2
   },
   productCard: {
     backgroundColor: palette.surface,
@@ -2566,15 +3521,44 @@ const styles = StyleSheet.create({
     height: '100%',
     flexDirection: 'column',
     width: '100%',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    shadowColor: '#0f172a',
+    shadowOffset: { height: 10, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20
+  },
+  productCardMobile: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 'auto',
+    minHeight: 0,
+    width: '47%'
+  },
+  productCardRailMobile: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 'auto',
+    minHeight: 0,
+    width: 240
+  },
+  productCardHovered: {
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    transform: [{ translateY: -2 }, { scale: 1.01 }]
+  },
+  productCardPressed: {
+    shadowOpacity: 0.08,
+    transform: [{ translateY: 0 }, { scale: 0.995 }]
   },
   productMedia: {
     width: '100%',
     justifyContent: 'space-between'
   },
-  cardScrim: {
+  productImageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.01)'
+    backgroundColor: 'rgba(15,23,42,0.08)'
   },
   productImage: {
     borderRadius: 24
@@ -2594,37 +3578,61 @@ const styles = StyleSheet.create({
   },
   productBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.90)',
-    borderColor: palette.border,
     borderRadius: 999,
-    borderWidth: 1,
-    margin: 16,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    position: 'relative',
-    zIndex: 1
+    position: 'absolute',
+    left: 14,
+    top: 14,
+    zIndex: 2
+  },
+  productBadgeBlue: {
+    backgroundColor: 'rgba(37,99,235,0.95)'
+  },
+  productBadgeRollback: {
+    backgroundColor: 'rgba(249,115,22,0.96)'
+  },
+  productBadgeClearance: {
+    backgroundColor: 'rgba(22,163,74,0.96)'
   },
   productBadgeText: {
-    color: palette.text,
-    fontSize: 12,
-    fontWeight: '800'
+    color: palette.white,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.2
   },
   productBody: {
     flex: 1,
     justifyContent: 'flex-start',
     padding: 18
   },
+  productBodyMobile: {
+    flex: 0,
+    padding: 16
+  },
+  productBodyRailMobile: {
+    flex: 0,
+    padding: 16
+  },
   productCategory: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(37,99,235,0.08)',
+    borderColor: 'rgba(37,99,235,0.16)',
+    borderRadius: 999,
+    borderWidth: 1,
     color: palette.blue,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.8,
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     textTransform: 'uppercase'
   },
   productTitle: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     lineHeight: 24,
     minHeight: 48,
     marginTop: 8
@@ -2641,15 +3649,37 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     paddingTop: 14
   },
+  productPriceStack: {
+    marginTop: 'auto',
+    paddingTop: 14
+  },
   productPrice: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '800'
+    color: '#16A34A',
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 24
   },
   productOriginalPrice: {
-    color: palette.body,
+    color: '#64748B',
     fontSize: 13,
     textDecorationLine: 'line-through'
+  },
+  productSavingsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4
+  },
+  productSavingsLabel: {
+    color: '#0f172a',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  productTrustIndicator: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 8
   },
   productSubMeta: {
     color: palette.body,
@@ -2696,10 +3726,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 20
   },
+  sellerCardMobile: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 'auto',
+    minHeight: 0,
+    width: 250
+  },
   sellerHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 14
+  },
+  sellerHeaderMobile: {
+    gap: 10
   },
   sellerAvatar: {
     alignItems: 'center',
@@ -2711,6 +3752,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     width: 56
+  },
+  sellerAvatarMobile: {
+    height: 48,
+    width: 48
   },
   sellerHeaderCopy: {
     flex: 1
@@ -2748,11 +3793,18 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 18
   },
+  sellerStatsRowMobile: {
+    gap: 8,
+    marginTop: 14
+  },
   sellerStat: {
     backgroundColor: palette.pageAlt,
     borderRadius: 18,
     flex: 1,
     padding: 14
+  },
+  sellerStatMobile: {
+    padding: 12
   },
   sellerStatValue: {
     color: palette.text,
@@ -2769,11 +3821,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 14
   },
+  sellerFooterTextMobile: {
+    fontSize: 12,
+    marginTop: 12
+  },
+  sellerStars: {
+    color: '#f59e0b',
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 10
+  },
   featureGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 24,
     justifyContent: 'flex-start'
+  },
+  featureGridMobile: {
+    gap: 14,
+    justifyContent: 'space-between'
   },
   featureCard: {
     alignItems: 'center',
@@ -2785,6 +3851,15 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%',
     padding: 22
+  },
+  featureCardMobile: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 'auto',
+    minHeight: 160,
+    padding: 16,
+    width: '48%'
   },
   featureIcon: {
     alignItems: 'center',
@@ -2817,6 +3892,16 @@ const styles = StyleSheet.create({
     gap: 24,
     marginTop: 24
   },
+  metricSectionDark: {
+    backgroundColor: '#101936',
+    borderColor: 'rgba(148,163,184,0.16)',
+    borderRadius: 28,
+    borderWidth: 1,
+    padding: 24
+  },
+  metricSectionDarkMobile: {
+    padding: 18
+  },
   itemsSoldBanner: {
     alignItems: 'flex-start',
     borderColor: 'rgba(148,163,184,0.22)',
@@ -2829,6 +3914,10 @@ const styles = StyleSheet.create({
     shadowOffset: { height: 24, width: 0 },
     shadowOpacity: 0.14,
     shadowRadius: 50
+  },
+  itemsSoldBannerMobile: {
+    paddingHorizontal: 20,
+    paddingVertical: 22
   },
   itemsSoldKicker: {
     color: '#c7d2fe',
@@ -2845,11 +3934,19 @@ const styles = StyleSheet.create({
     lineHeight: 72,
     marginTop: 10
   },
+  itemsSoldValueMobile: {
+    fontSize: 44,
+    lineHeight: 48
+  },
   itemsSoldLabel: {
     color: 'rgba(255,255,255,0.82)',
     fontSize: 16,
     lineHeight: 24,
     marginTop: 6
+  },
+  itemsSoldLabelMobile: {
+    fontSize: 14,
+    lineHeight: 20
   },
   metricGrid: {
     backgroundColor: palette.surface,
@@ -2864,8 +3961,10 @@ const styles = StyleSheet.create({
     padding: 20
   },
   metricGridMobile: {
-    flexDirection: 'column',
-    gap: 16
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    justifyContent: 'space-between'
   },
   metricCard: {
     alignItems: 'center',
@@ -2875,6 +3974,16 @@ const styles = StyleSheet.create({
     height: '100%',
     minWidth: 150,
     paddingVertical: 22
+  },
+  metricCardMobile: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 'auto',
+    minHeight: 88,
+    minWidth: 0,
+    paddingVertical: 18,
+    width: '48%'
   },
   metricValue: {
     color: palette.blue,
@@ -2890,20 +3999,24 @@ const styles = StyleSheet.create({
   },
   ctaSection: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
-    borderColor: 'rgba(148,163,184,0.22)',
+    backgroundColor: '#101936',
+    borderColor: 'rgba(148,163,184,0.16)',
     borderRadius: 28,
     borderWidth: 1,
     marginTop: 56,
     paddingHorizontal: 24,
     paddingVertical: 44
   },
+  ctaSectionDark: {
+    backgroundColor: '#101936',
+    borderColor: 'rgba(148,163,184,0.16)'
+  },
   ctaSectionMobile: {
     paddingHorizontal: 20,
     paddingVertical: 32
   },
   ctaTitle: {
-    color: palette.text,
+    color: palette.white,
     fontSize: 42,
     fontWeight: '800',
     letterSpacing: -0.6,
@@ -2914,7 +4027,7 @@ const styles = StyleSheet.create({
     lineHeight: 38
   },
   ctaText: {
-    color: palette.body,
+    color: 'rgba(255,255,255,0.78)',
     fontSize: 17,
     lineHeight: 26,
     marginTop: 12,
