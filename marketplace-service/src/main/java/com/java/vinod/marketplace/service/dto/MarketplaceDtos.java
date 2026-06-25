@@ -131,6 +131,8 @@ public final class MarketplaceDtos {
                                List<ListingResponse> featuredListings,
                                List<CategoryHighlightResponse> topCategories,
                                List<SubcategoryHighlightResponse> discountedSubcategories,
+                               List<ListingResponse> rollbackOffers,
+                               List<ListingResponse> clearanceListings,
                                List<SellerHighlightResponse> topRatedSellers,
                                List<ListingResponse> popularListings,
                                long itemsSoldCount) {

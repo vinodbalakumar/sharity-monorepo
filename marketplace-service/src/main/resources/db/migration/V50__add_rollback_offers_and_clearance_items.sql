@@ -2,7 +2,7 @@
 -- the homepage can show rollback offers and clearance items in local/QA.
 
 ALTER TABLE listing
-    ADD COLUMN IF NOT EXISTS rollback_offer_expires_at DATETIME NULL;
+    ADD COLUMN rollback_offer_expires_at DATETIME NULL;
 
 ALTER TABLE listing ADD INDEX idx_listing_rollback_offer_expires_at (rollback_offer_expires_at);
 

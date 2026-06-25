@@ -73,6 +73,8 @@ public class Listing {
     private String sourceUrl;
     @Column(name = "license_note", length = 255)
     private String licenseNote;
+    @Column(name = "rollback_offer_expires_at")
+    private LocalDateTime rollbackOfferExpiresAt;
     @Column(name = "demo_seed", nullable = false)
     private boolean demoSeed;
     @Column(name = "listing_status", nullable = false, length = 30)

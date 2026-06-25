@@ -246,6 +246,8 @@ public class MarketplaceService {
                 featuredListings(countryCode),
                 toCategoryHighlights(countryCode),
                 topDiscountedSubcategories(countryCode),
+                rollbackOfferListings(countryCode),
+                clearanceListings(countryCode),
                 topRatedSellers(countryCode),
                 mostSelectedListings(countryCode),
                 homeListings.stream().filter(listing -> "SOLD".equalsIgnoreCase(listing.getListingStatus())).count());
@@ -812,7 +814,11 @@ public class MarketplaceService {
         String normalized = requested.trim().toUpperCase();
         return switch (normalized) {
             case "GLOBAL", "NATIONAL" -> normalized;
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported fulfillment scope");
+            case "LOCAL" -> "NATIONAL";
+            default -> {
+                log.warn("Unsupported fulfillment scope '{}' encountered while building marketplace home; defaulting to NATIONAL", normalized);
+                yield "NATIONAL";
+            }
         };
     }
 
@@ -1590,6 +1596,40 @@ public class MarketplaceService {
                 .limit(10)
                 .map(listing -> toListingResponse(listing, normalizedCountry))
                 .toList();
+    }
+
+    /**
+     * Returns top 20 active rollback offers that still have time remaining.
+     */
+    @Transactional(readOnly = true)
+    private List<MarketplaceDtos.ListingResponse> rollbackOfferListings(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<Listing> listings = homeListings(countryCode).stream()
+                .filter(listing -> listing.getRollbackOfferExpiresAt() != null)
+                .filter(listing -> listing.getRollbackOfferExpiresAt().isAfter(LocalDateTime.now()))
+                .sorted(Comparator.comparing(Listing::getRollbackOfferExpiresAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Listing::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(20)
+                .toList();
+        return toListingResponses(listings, normalizedCountry);
+    }
+
+    /**
+     * Returns top 20 clearance listings older than three months and discounted by 50% or more.
+     */
+    @Transactional(readOnly = true)
+    private List<MarketplaceDtos.ListingResponse> clearanceListings(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        LocalDateTime clearanceCutoff = LocalDateTime.now().minusMonths(3);
+        List<Listing> listings = homeListings(countryCode).stream()
+                .filter(listing -> listing.getCreatedAt() != null && listing.getCreatedAt().isBefore(clearanceCutoff))
+                .filter(listing -> discountPercent(listing) >= 50)
+                .sorted(Comparator.comparingInt(this::discountPercent).reversed()
+                        .thenComparing(Listing::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Listing::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(20)
+                .toList();
+        return toListingResponses(listings, normalizedCountry);
     }
 
     /**
