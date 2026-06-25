@@ -25,7 +25,7 @@ export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorCon
   const { isCompactPhone, isSingleColumn, width } = useResponsiveLayout();
   const shouldUseSingleColumnFooter = width <= 768;
   const useTwoColumnFooter = width > 768 && width < 1180;
-  const [openGroup, setOpenGroup] = useState<string | null>(shouldUseSingleColumnFooter ? groups[0]?.title ?? null : null);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   return (
     <View style={[styles.footer, isCompactPhone && styles.footerCompact]}>

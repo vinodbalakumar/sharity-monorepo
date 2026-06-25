@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -134,6 +134,14 @@ export function WelcomeScreen({
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
+  const mobileSectionPadding = isTinyPhone ? 14 : 16;
+  const mobileGap = isTinyPhone ? 10 : 14;
+  const mobileSectionInnerWidth = Math.max(0, width - contentPadding * 2 - mobileSectionPadding * 2);
+  const mobileRailCardWidth = Math.min(320, Math.max(240, Math.round(width * 0.82)));
+  const mobileCollectionCardWidth = isTinyPhone
+    ? Math.min(Math.round(width * 0.88), 340)
+    : Math.min(Math.round(width * 0.84), 340);
+  const stackSectionActions = width < 340;
   const heroCardHeight = isMobile ? 220 : width < 992 ? 440 : 520;
   const productImageHeight = isMobile ? 180 : width < 992 ? 200 : 260;
   const categoryVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
@@ -268,8 +276,8 @@ export function WelcomeScreen({
   const trustedSellers = sellerCards;
   const sellerCarouselRef = useRef<ScrollView | null>(null);
   const sellerScrollOffsetRef = useRef(0);
-  const sellerCardWidth = isMobile ? 260 : 300;
-  const sellerCarouselStep = sellerCardWidth + 24;
+  const sellerCardWidth = isMobile ? Math.min(width * 0.78, 320) : 300;
+  const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
   const isHomeInitialLoading = homeLoading && !home;
   const isHomeErrorState = homeError && !home;
   const activeHeroSlide = heroSlides[activeHeroIndex] ?? heroSlides[0] ?? null;
@@ -672,6 +680,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             {isMobile ? (
@@ -696,69 +705,44 @@ export function WelcomeScreen({
                 ) : null}
 
                 {!homeLoading && !homeError && topCategories.length > 0 ? (
-                  <ScrollView
-                    horizontal
-                    pagingEnabled
-                    decelerationRate="fast"
-                    showsHorizontalScrollIndicator={false}
-                    snapToAlignment="start"
-                    style={styles.categoryPager}
-                    contentContainerStyle={styles.categoryPagerContent}
-                  >
-                    {mobileCategoryPages.map((page, pageIndex) => (
-                      <View
-                        key={`category-page-${pageIndex}`}
-                        style={[styles.categoryPage, { width: Math.max(0, width - contentPadding * 2) }]}
+                  <View style={styles.mobileListingStack}>
+                    {topCategories.map((category, index) => (
+                      <Pressable
+                        key={`${category.categoryCode}-${index}`}
+                        onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
+                        style={styles.mobileListingRow}
                       >
-                        <View style={styles.categoryPageGrid}>
-                          {page.map((category, index) => (
-                            <Pressable
-                              key={`${category.categoryCode}-${pageIndex}-${index}`}
-                              onPress={() => onOpenMarketplace(getMarketplaceRoute(category.verticalCode, home?.verticals ?? []))}
-                              style={[styles.categoryCard, styles.categoryCardMobile]}
-                            >
-                              {category.imageUrl ? (
-                                <>
-                                  <LazyImage
-                                    alt={category.categoryName}
-                                    containerStyle={styles.categoryMediaWrapMobile}
-                                    fitMode="cover"
-                                    imageStyle={styles.categoryImageMobile}
-                                    priority={pageIndex === 0 && index < 2 ? 'high' : 'lazy'}
-                                    source={category.imageUrl}
-                                    style={styles.categoryMediaMobile}
-                                  />
-                                  <View style={styles.categoryCopyMobile}>
-                                    <View style={styles.categoryIconPill}>
-                                      <Ionicons color={palette.blue} name={category.icon} size={16} />
-                                    </View>
-                                    <Text style={styles.categoryNameMobile} numberOfLines={2}>
-                                      {category.categoryName}
-                                    </Text>
-                                    <Text style={styles.categoryCountMobile} numberOfLines={1}>
-                                      {category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}
-                                    </Text>
-                                  </View>
-                                </>
-                              ) : (
-                                <View style={styles.categoryPlaceholderMobile}>
-                                  <View style={styles.categoryPlaceholderIcon}>
-                                    <Ionicons color={palette.blue} name={category.icon} size={20} />
-                                  </View>
-                                  <Text style={styles.categoryNameMobile} numberOfLines={2}>
-                                    {category.categoryName}
-                                  </Text>
-                                  <Text style={styles.categoryCountMobile} numberOfLines={1}>
-                                    {category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}
-                                  </Text>
-                                </View>
-                              )}
-                            </Pressable>
-                          ))}
+                        <View style={styles.mobileListingMediaWrap}>
+                          {category.imageUrl ? (
+                            <LazyImage
+                              alt={category.categoryName}
+                              containerStyle={styles.mobileListingMedia}
+                              fitMode="cover"
+                              imageStyle={styles.mobileListingImage}
+                              priority={index < 2 ? 'high' : 'lazy'}
+                              source={category.imageUrl}
+                              style={styles.mobileListingMedia}
+                            />
+                          ) : (
+                            <View style={styles.mobileListingPlaceholder}>
+                              <Ionicons color={palette.blue} name={category.icon} size={24} />
+                            </View>
+                          )}
                         </View>
-                      </View>
+
+                        <View style={styles.mobileListingCopy}>
+                          <Text style={styles.mobileListingTitle} numberOfLines={2}>
+                            {category.categoryName}
+                          </Text>
+                          <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                            {category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}
+                          </Text>
+                        </View>
+
+                        <Ionicons color={palette.blue} name="chevron-forward" size={20} />
+                      </Pressable>
                     ))}
-                  </ScrollView>
+                  </View>
                 ) : null}
               </>
             ) : (
@@ -836,6 +820,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             {isMobile ? (
@@ -844,8 +829,16 @@ export function WelcomeScreen({
                 decelerationRate="fast"
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
-                style={styles.productRail}
-                contentContainerStyle={styles.productRailContent}
+                contentContainerStyle={[
+                  styles.productRailContent,
+                  {
+                    gap: mobileGap,
+                    paddingBottom: 2,
+                    paddingLeft: mobileSectionPadding,
+                    paddingRight: mobileSectionPadding,
+                    paddingTop: 4
+                  }
+                ]}
               >
                 {topDiscounts.map((item, index) => (
                   <Pressable
@@ -854,13 +847,14 @@ export function WelcomeScreen({
                     style={({ pressed }) => [
                       styles.productCard,
                       styles.productCardRailMobile,
+                      { width: mobileRailCardWidth },
                       isWeb && pressed && styles.productCardPressed
                     ]}
                   >
                     {item.imageUrl ? (
                       <LazyImage
                         alt={item.title}
-                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
                         imageStyle={styles.productImage}
                         priority={index < productVisibleCount ? 'high' : 'lazy'}
@@ -872,7 +866,73 @@ export function WelcomeScreen({
                         </View>
                       </LazyImage>
                     ) : (
-                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
+                        <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
+                        <Text style={styles.productPlaceholderText}>Discounted item</Text>
+                      </View>
+                    )}
+                    <View style={[styles.productBody, styles.productBodyMobile, styles.productBodyRailMobile]}>
+                      <Text style={styles.productCategory} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={[styles.productTitle, styles.productTitleMobile]} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={styles.productPriceStack}>
+                        <Text style={styles.productPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                        <View style={styles.productSavingsRow}>
+                          <Text style={styles.productSavingsLabel}>
+                            Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                          </Text>
+                          <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                        </View>
+                        <Text style={styles.productTrustIndicator}>Protected checkout</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            {false ? (
+              <ScrollView
+                horizontal
+                decelerationRate="fast"
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="start"
+                style={styles.productRail}
+                contentContainerStyle={[
+                  styles.productRailContent,
+                  { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+                ]}
+              >
+                {topDiscounts.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={({ pressed }) => [
+                      styles.productCard,
+                      styles.productCardRailMobile,
+                      { width: mobileRailCardWidth },
+                      isWeb && pressed && styles.productCardPressed
+                    ]}
+                  >
+                    {item.imageUrl ? (
+                      <LazyImage
+                        alt={item.title}
+                        containerStyle={[styles.productMedia, { height: 176 }]}
+                        fitMode="contain"
+                        imageStyle={styles.productImage}
+                        priority={index < productVisibleCount ? 'high' : 'lazy'}
+                        source={item.imageUrl}
+                      >
+                        <View style={styles.productImageOverlay} />
+                        <View style={[styles.productBadge, productDiscountBadgeStyle(item.discountPercentage)]}>
+                          <Text style={styles.productBadgeText}>{`${Math.round(item.discountPercentage)}% OFF`}</Text>
+                        </View>
+                      </LazyImage>
+                    ) : (
+                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
                         <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
                         <Text style={styles.productPlaceholderText}>Discounted item</Text>
                       </View>
@@ -892,7 +952,7 @@ export function WelcomeScreen({
                           </Text>
                           <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
                         </View>
-                        <Text style={styles.productTrustIndicator}>✔ Protected Checkout</Text>
+                        <Text style={styles.productTrustIndicator}>Protected checkout</Text>
                       </View>
                     </View>
                   </Pressable>
@@ -900,7 +960,8 @@ export function WelcomeScreen({
               </ScrollView>
             ) : null}
 
-            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
+            {!isMobile ? (
+              <View style={[styles.productGrid, productGridWebStyle]}>
               {topDiscounts.map((item, index) => (
                 <Pressable
                   key={`${item.verticalCode}-${item.title}-${index}`}
@@ -948,12 +1009,13 @@ export function WelcomeScreen({
                         </Text>
                         <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
                       </View>
-                      <Text style={styles.productTrustIndicator}>✔ Protected Checkout</Text>
+                      <Text style={styles.productTrustIndicator}>Protected checkout</Text>
                     </View>
                   </View>
                 </Pressable>
               ))}
-            </View>
+              </View>
+            ) : null}
           </View>
 
           {rollbackDeals.length > 0 ? (
@@ -967,6 +1029,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             {isMobile ? (
@@ -976,7 +1039,10 @@ export function WelcomeScreen({
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
-                contentContainerStyle={styles.productRailContent}
+                contentContainerStyle={[
+                  styles.productRailContent,
+                  { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+                ]}
               >
                 {rollbackDeals.map((item, index) => (
                   <Pressable
@@ -985,13 +1051,14 @@ export function WelcomeScreen({
                     style={({ pressed }) => [
                       styles.productCard,
                       styles.productCardRailMobile,
+                      { width: mobileRailCardWidth },
                       isWeb && pressed && styles.productCardPressed
                     ]}
                   >
                     {item.imageUrl ? (
                       <LazyImage
                         alt={item.title}
-                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
                         imageStyle={styles.productImage}
                         priority={index < productVisibleCount ? 'high' : 'lazy'}
@@ -1003,7 +1070,7 @@ export function WelcomeScreen({
                         </View>
                       </LazyImage>
                     ) : (
-                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
                         <Ionicons color={palette.blue} name="time-outline" size={26} />
                         <Text style={styles.productPlaceholderText}>Rollback offer</Text>
                       </View>
@@ -1023,7 +1090,7 @@ export function WelcomeScreen({
                           </Text>
                           <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
                         </View>
-                        <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                        <Text style={styles.productTrustIndicator}>Protected checkout</Text>
                       </View>
                     </View>
                   </Pressable>
@@ -1031,7 +1098,8 @@ export function WelcomeScreen({
               </ScrollView>
             ) : null}
 
-            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
+            {!isMobile ? (
+              <View style={[styles.productGrid, productGridWebStyle]}>
               {rollbackDeals.map((item, index) => (
                 <Pressable
                   key={`${item.verticalCode}-${item.title}-${index}`}
@@ -1077,12 +1145,13 @@ export function WelcomeScreen({
                         </Text>
                         <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
                       </View>
-                      <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                      <Text style={styles.productTrustIndicator}>Protected checkout</Text>
                     </View>
                   </View>
                 </Pressable>
               ))}
-            </View>
+              </View>
+            ) : null}
           </View>
           ) : null}
 
@@ -1097,6 +1166,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             {isMobile ? (
@@ -1106,7 +1176,10 @@ export function WelcomeScreen({
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
-                contentContainerStyle={styles.productRailContent}
+                contentContainerStyle={[
+                  styles.productRailContent,
+                  { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+                ]}
               >
                 {clearanceDeals.map((item, index) => (
                   <Pressable
@@ -1115,13 +1188,14 @@ export function WelcomeScreen({
                     style={({ pressed }) => [
                       styles.productCard,
                       styles.productCardRailMobile,
+                      { width: mobileRailCardWidth },
                       isWeb && pressed && styles.productCardPressed
                     ]}
                   >
                     {item.imageUrl ? (
                       <LazyImage
                         alt={item.title}
-                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
                         imageStyle={styles.productImage}
                         priority={index < productVisibleCount ? 'high' : 'lazy'}
@@ -1133,7 +1207,7 @@ export function WelcomeScreen({
                         </View>
                       </LazyImage>
                     ) : (
-                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
                         <Ionicons color={palette.blue} name="trash-bin-outline" size={26} />
                         <Text style={styles.productPlaceholderText}>Clearance item</Text>
                       </View>
@@ -1153,7 +1227,7 @@ export function WelcomeScreen({
                           </Text>
                           <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
                         </View>
-                        <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                        <Text style={styles.productTrustIndicator}>Protected checkout</Text>
                       </View>
                     </View>
                   </Pressable>
@@ -1161,7 +1235,8 @@ export function WelcomeScreen({
               </ScrollView>
             ) : null}
 
-            <View style={[styles.productGrid, productGridWebStyle, isMobile && styles.hiddenOnMobile]}>
+            {!isMobile ? (
+              <View style={[styles.productGrid, productGridWebStyle]}>
               {clearanceDeals.map((item, index) => (
                 <Pressable
                   key={`${item.verticalCode}-${item.title}-${index}`}
@@ -1207,12 +1282,13 @@ export function WelcomeScreen({
                         </Text>
                         <Text style={styles.productOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
                       </View>
-                      <Text style={styles.productTrustIndicator}>âœ” Protected Checkout</Text>
+                      <Text style={styles.productTrustIndicator}>Protected checkout</Text>
                     </View>
                   </View>
                 </Pressable>
               ))}
-            </View>
+              </View>
+            ) : null}
           </View>
           ) : null}
 
@@ -1226,6 +1302,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             {isMobile ? (
@@ -1235,7 +1312,10 @@ export function WelcomeScreen({
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
-                contentContainerStyle={styles.productRailContent}
+                contentContainerStyle={[
+                  styles.productRailContent,
+                  { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+                ]}
               >
                 {popularProducts.slice(0, 10).map((item, index) => (
                   <Pressable
@@ -1244,13 +1324,14 @@ export function WelcomeScreen({
                     style={({ pressed }) => [
                       styles.productCard,
                       styles.productCardRailMobile,
+                      { width: mobileRailCardWidth },
                       isWeb && pressed && styles.productCardPressed
                     ]}
                   >
                     {item.imageUrl ? (
                       <LazyImage
                         alt={item.title}
-                        containerStyle={[styles.productMedia, { height: 190 }]}
+                        containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
                         imageStyle={styles.productImage}
                         priority={index < productVisibleCount ? 'high' : 'lazy'}
@@ -1262,7 +1343,7 @@ export function WelcomeScreen({
                         </View>
                       </LazyImage>
                     ) : (
-                      <View style={[styles.productPlaceholder, { minHeight: 190 }]}>
+                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
                         <Ionicons color={palette.blue} name="sparkles-outline" size={26} />
                         <Text style={styles.productPlaceholderText}>Most selected product</Text>
                       </View>
@@ -1275,11 +1356,13 @@ export function WelcomeScreen({
                         {item.title}
                       </Text>
                       <View style={styles.productPriceStack}>
-                        <Text style={styles.productPrice}>
-                          {formatMoney(item.displayPriceAmount ?? item.priceAmount, item.displayCurrencyCode ?? item.currencyCode)}
-                        </Text>
-                        <Text style={styles.productTrustIndicator}>{item.verifiedSeller ? '✔ Verified Seller' : '🛵 Instant Delivery'}</Text>
-                      </View>
+                      <Text style={styles.productPrice}>
+                        {formatMoney(item.displayPriceAmount ?? item.priceAmount, item.displayCurrencyCode ?? item.currencyCode)}
+                      </Text>
+                      <Text style={styles.productTrustIndicator}>
+                        {item.verifiedSeller ? '✔ Verified Seller' : '🚚 Instant Delivery'}
+                      </Text>
+                    </View>
                     </View>
                   </Pressable>
                 ))}
@@ -1347,6 +1430,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             {isMobile ? (
@@ -1356,13 +1440,16 @@ export function WelcomeScreen({
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
-                contentContainerStyle={styles.productRailContent}
+                contentContainerStyle={[
+                  styles.productRailContent,
+                  { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+                ]}
               >
                 {featuredProducts.map((item, index) => (
                   <Pressable
                     key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
                     onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
-                    style={[styles.collectionCard, styles.collectionCardMobile]}
+                        style={[styles.collectionCard, styles.collectionCardMobile, { width: mobileCollectionCardWidth }]}
                   >
                     <View style={styles.collectionMediaWrap}>
                       {item.imageUrl ? (
@@ -1383,12 +1470,14 @@ export function WelcomeScreen({
                     <View style={[styles.collectionCopy, styles.collectionCopyMobile]}>
                       <Text style={styles.collectionEyebrow}>Featured</Text>
                       <Text style={styles.collectionMeta}>{item.sellerName}</Text>
-                      <Text style={styles.collectionTitle} numberOfLines={2}>
+                      <Text adjustsFontSizeToFit minimumFontScale={0.82} numberOfLines={3} ellipsizeMode="tail" style={[styles.collectionTitle, isMobile && styles.collectionTitleMobile]}>
                         {item.title}
                       </Text>
                       <View style={styles.productMetaRow}>
                         <Text style={styles.productPrice}>{formatMoney(item.price, item.currencyCode)}</Text>
-                        <Text style={styles.productSubMeta}>{item.verifiedSeller ? 'Verified seller' : item.categoryName}</Text>
+                        <Text style={styles.productTrustIndicator}>
+                          {item.verifiedSeller ? '✔ Verified Seller' : '🚚 Instant Delivery'}
+                        </Text>
                       </View>
                     </View>
                   </Pressable>
@@ -1427,7 +1516,9 @@ export function WelcomeScreen({
                     </Text>
                     <View style={styles.productMetaRow}>
                       <Text style={styles.productPrice}>{formatMoney(item.price, item.currencyCode)}</Text>
-                      <Text style={styles.productSubMeta}>{item.verifiedSeller ? 'Verified seller' : item.categoryName}</Text>
+                      <Text style={styles.productTrustIndicator}>
+                        {item.verifiedSeller ? '✔ Verified Seller' : '🚚 Instant Delivery'}
+                      </Text>
                     </View>
                   </View>
                 </Pressable>
@@ -1445,6 +1536,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
               tone="dark"
               trailingAction={
                 !isMobile ? (
@@ -1461,7 +1553,10 @@ export function WelcomeScreen({
             />
 
             <ScrollView
-              contentContainerStyle={styles.sellerCarouselContent}
+              contentContainerStyle={[
+                styles.sellerCarouselContent,
+                isMobile && { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+              ]}
               horizontal
               decelerationRate="fast"
               keyboardShouldPersistTaps="handled"
@@ -1484,7 +1579,7 @@ export function WelcomeScreen({
                     isWeb && styles.gridCardFullWidth,
                     {
                       backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
-                      width: isMobile ? 250 : sellerCardWidth
+                      width: isMobile ? sellerCardWidth : sellerCardWidth
                     }
                   ]}
                 >
@@ -1502,7 +1597,7 @@ export function WelcomeScreen({
                           <Text style={styles.sellerBadgeText}>Verified seller</Text>
                         </View>
                       </View>
-                      <Text style={styles.sellerStars}>⭐ {seller.rating.toFixed(1)}</Text>
+                      <Text numberOfLines={1} style={styles.sellerStars}>⭐ {seller.rating.toFixed(1)}</Text>
                     </View>
                   </View>
 
@@ -1535,6 +1630,7 @@ export function WelcomeScreen({
               isCompact={isCompact}
               isMobile={isMobile}
               isTablet={isTablet}
+              stackActionsOnMobile={stackSectionActions}
             />
 
             <View style={[styles.featureGrid, isMobile && styles.featureGridMobile, featureGridWebStyle]}>
@@ -1544,14 +1640,23 @@ export function WelcomeScreen({
                   style={[
                     styles.featureCard,
                     isMobile && styles.featureCardMobile,
-                    isWeb && styles.gridCardFullWidth
+                    isMobile && {
+                      flexBasis: isTinyPhone ? '100%' : '48%',
+                      maxWidth: isTinyPhone ? '100%' : '48%',
+                      width: isTinyPhone ? '100%' : '48%'
+                    },
+                    !isMobile && styles.gridCardFullWidth
                   ]}
                 >
                   <View style={styles.featureIcon}>
                     <Ionicons color={palette.blue} name={feature.icon} size={28} />
                   </View>
-                  <Text style={styles.featureTitle}>{feature.title}</Text>
-                  <Text style={styles.featureText}>{feature.text}</Text>
+                  <Text adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={2} style={[styles.featureTitle, isMobile && styles.featureTitleMobile]}>
+                    {feature.title}
+                  </Text>
+                  <Text adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={4} style={[styles.featureText, isMobile && styles.featureTextMobile]}>
+                    {feature.text}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -1574,11 +1679,20 @@ export function WelcomeScreen({
                   style={[
                     styles.metricCard,
                     isMobile && styles.metricCardMobile,
-                    isWeb && styles.gridCardFullWidth
+                    isMobile && {
+                      flexBasis: isTinyPhone ? '100%' : '48%',
+                      maxWidth: isTinyPhone ? '100%' : '48%',
+                      width: isTinyPhone ? '100%' : '48%'
+                    },
+                    !isMobile && styles.gridCardFullWidth
                   ]}
                 >
-                  <Text style={styles.metricValue}>{metric.value}</Text>
-                  <Text style={styles.metricLabel}>{metric.label}</Text>
+                  <Text adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={[styles.metricValue, isMobile && styles.metricValueMobile]}>
+                    {metric.value}
+                  </Text>
+                  <Text adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={2} style={[styles.metricLabel, isMobile && styles.metricLabelMobile]}>
+                    {metric.label}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -1607,6 +1721,7 @@ type SectionHeaderProps = {
   isCompact: boolean;
   isMobile: boolean;
   isTablet: boolean;
+  stackActionsOnMobile?: boolean;
   onAction?: () => void;
   subtitle: string;
   title: string;
@@ -1620,6 +1735,7 @@ function SectionHeader({
   isCompact,
   isMobile,
   isTablet,
+  stackActionsOnMobile = false,
   onAction,
   subtitle,
   title,
@@ -1627,7 +1743,7 @@ function SectionHeader({
   trailingAction
 }: SectionHeaderProps) {
   const [hovered, setHovered] = useState(false);
-  const stackActions = isCompact && !isMobile;
+  const stackActions = (isCompact && !isMobile) || (isMobile && stackActionsOnMobile);
   const isDark = tone === 'dark';
 
   return (
@@ -1841,7 +1957,8 @@ function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] 
 
   const source = home.discountedSubcategories ?? [];
   if (source.length > 0) {
-    return source.map((item) => {
+    return dedupeDealCards(
+      source.map((item) => {
       const record = item as Record<string, unknown>;
       const discountedPrice = firstNumber(record, ['discountedPrice', 'discounted_price', 'salePrice', 'sale_price', 'price']) ?? 0;
       const originalPrice = firstNumber(record, ['originalPrice', 'original_price', 'listPrice', 'list_price']) ?? discountedPrice;
@@ -1859,10 +1976,11 @@ function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] 
         title: firstString(record, ['listingTitle', 'listing_title', 'title', 'name']) ?? 'Discounted item',
         verticalCode: firstString(record, ['verticalCode', 'vertical_code']) ?? 'digital'
       };
-    });
+      })
+    );
   }
 
-  return home.featuredListings.map((listing) => {
+  return dedupeDealCards(home.featuredListings.map((listing) => {
     const original = listing.originalPriceAmount ?? listing.priceAmount;
     const discountPercentage = original > listing.priceAmount && original > 0 ? ((original - listing.priceAmount) / original) * 100 : 0;
     return {
@@ -1875,7 +1993,7 @@ function buildDiscountedItems(home: MarketplaceHomeResponse | null): DealCard[] 
       title: listing.title,
       verticalCode: listing.verticalCode
     };
-  });
+  }));
 }
 
 function buildListingDealCards(listings: MarketplaceListing[] | undefined, home: MarketplaceHomeResponse | null): DealCard[] {
@@ -1883,7 +2001,7 @@ function buildListingDealCards(listings: MarketplaceListing[] | undefined, home:
     return [];
   }
 
-  return listings
+  return dedupeDealCards(listings
     .map((listing) => {
       const original = listing.originalPriceAmount ?? listing.displayOriginalPriceAmount ?? listing.priceAmount;
       const price = listing.displayPriceAmount ?? listing.priceAmount;
@@ -1900,7 +2018,33 @@ function buildListingDealCards(listings: MarketplaceListing[] | undefined, home:
       };
     })
     .filter((item) => item.discountPercentage > 0)
-    .sort((left, right) => right.discountPercentage - left.discountPercentage || left.title.localeCompare(right.title));
+    .sort((left, right) => right.discountPercentage - left.discountPercentage || left.title.localeCompare(right.title)));
+}
+
+function dedupeDealCards(items: DealCard[]): DealCard[] {
+  const seen = new Set<string>();
+  const result: DealCard[] = [];
+
+  items.forEach((item) => {
+    const signature = [
+      item.verticalCode,
+      item.categoryName.trim().toLowerCase(),
+      item.title.trim().toLowerCase(),
+      item.currencyCode,
+      item.discountedPrice,
+      item.originalPrice,
+      item.imageUrl ?? ''
+    ].join('|');
+
+    if (seen.has(signature)) {
+      return;
+    }
+
+    seen.add(signature);
+    result.push(item);
+  });
+
+  return result;
 }
 
 function buildSellerCards(home: MarketplaceHomeResponse | null): SellerCard[] {
@@ -2393,8 +2537,8 @@ function productDiscountBadgeStyle(percent: number): any | undefined {
         boxShadow: '0 10px 22px rgba(100, 116, 139, 0.20)'
       } as any)
     : ({
-        backgroundColor: '#64748B',
-        shadowColor: '#64748B',
+        backgroundcolor: '#475569',
+        shadowcolor: '#475569',
         shadowOpacity: 0.2,
         shadowRadius: 10,
         shadowOffset: { height: 4, width: 0 }
@@ -3135,12 +3279,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,243,255,0.92)'
   },
   sectionBlockRollback: {
-    backgroundColor: 'rgba(255,244,235,0.96)',
-    borderColor: 'rgba(251,146,60,0.18)'
+    backgroundColor: 'rgba(255,247,237,0.98)',
+    borderColor: 'rgba(249,115,22,0.18)'
   },
   sectionBlockClearance: {
-    backgroundColor: 'rgba(240,253,244,0.95)',
-    borderColor: 'rgba(34,197,94,0.18)'
+    backgroundColor: 'rgba(236,253,245,0.98)',
+    borderColor: 'rgba(16,185,129,0.18)'
   },
   sectionBlockSellersDark: {
     backgroundColor: '#101936',
@@ -3298,7 +3442,9 @@ const styles = StyleSheet.create({
     flex: 0,
     flexGrow: 0,
     flexShrink: 0,
-    width: 240
+    height: 'auto',
+    minHeight: 430,
+    width: '100%'
   },
   collectionMediaWrap: {
     backgroundColor: '#f8fbff'
@@ -3332,7 +3478,7 @@ const styles = StyleSheet.create({
     position: 'relative'
   },
   collectionCopyMobile: {
-    padding: 14
+    padding: 18
   },
   collectionEyebrow: {
     color: '#2563eb',
@@ -3348,6 +3494,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     lineHeight: 34,
     marginTop: 8
+  },
+  collectionTitleMobile: {
+    fontSize: 28,
+    lineHeight: 32
   },
   collectionMeta: {
     color: palette.body,
@@ -3369,18 +3519,24 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   categoryPagerContent: {
-    gap: 12,
-    paddingBottom: 2,
-    paddingRight: 2
+    paddingBottom: 2
   },
   categoryPage: {
     flexShrink: 0
   },
   categoryPageGrid: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    alignContent: 'stretch',
+    gap: 12,
+    width: '100%'
+  },
+  mobileGridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    gap: 12,
+    justifyContent: 'flex-start',
+    gap: 14,
+    alignItems: 'stretch',
     width: '100%'
   },
   categoryCard: {
@@ -3395,14 +3551,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden'
   },
   categoryCardMobile: {
-    flexBasis: '47%',
+    flexBasis: 'auto',
     flexGrow: 0,
     alignSelf: 'flex-start',
     height: 176,
     minHeight: 176,
-    maxWidth: '47%',
-    overflow: 'hidden',
-    width: '47%'
+    maxWidth: '100%',
+    overflow: 'hidden'
   },
   categoryMediaWrap: {
     backgroundColor: '#f8fbff',
@@ -3458,6 +3613,107 @@ const styles = StyleSheet.create({
   categoryCountMobile: {
     fontSize: 10,
     lineHeight: 12
+  },
+  mobileListingStack: {
+    alignItems: 'stretch',
+    gap: 12,
+    width: '100%'
+  },
+  mobileListingRow: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 122,
+    overflow: 'hidden',
+    padding: 10,
+    alignSelf: 'stretch',
+    width: '100%'
+  },
+  mobileListingMediaWrap: {
+    borderRadius: 14,
+    flexShrink: 0,
+    height: 112,
+    overflow: 'hidden',
+    position: 'relative',
+    width: 128
+  },
+  mobileListingMedia: {
+    height: '100%',
+    width: '100%'
+  },
+  mobileListingImage: {
+    borderRadius: 14
+  },
+  mobileListingPlaceholder: {
+    alignItems: 'center',
+    backgroundColor: palette.pageAlt,
+    borderRadius: 14,
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%'
+  },
+  mobileListingCopy: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 2
+  },
+  mobileListingTitle: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 21
+  },
+  mobileListingSubtitle: {
+    color: palette.body,
+    fontSize: 12,
+    marginTop: 4
+  },
+  mobileListingPrice: {
+    color: '#15803D',
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 6
+  },
+  mobileListingMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4
+  },
+  mobileListingSavings: {
+    color: palette.text,
+    fontSize: 11,
+    fontWeight: '700'
+  },
+  mobileListingOriginalPrice: {
+    color: '#475569',
+    fontSize: 11,
+    textDecorationLine: 'line-through'
+  },
+  mobileListingTrust: {
+    color: palette.blue,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 4
+  },
+  mobileDiscountBadge: {
+    borderRadius: 999,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    position: 'absolute',
+    top: 10,
+    zIndex: 3
+  },
+  mobileDiscountBadgeText: {
+    color: palette.white,
+    fontSize: 11,
+    fontWeight: '800'
   },
   categoryName: {
     color: palette.text,
@@ -3541,7 +3797,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     height: 'auto',
     minHeight: 0,
-    width: 240
+    width: '100%'
   },
   productCardHovered: {
     shadowOpacity: 0.12,
@@ -3590,16 +3846,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37,99,235,0.95)'
   },
   productBadgeRollback: {
-    backgroundColor: 'rgba(249,115,22,0.96)'
+    backgroundColor: 'rgba(234,88,12,0.98)'
   },
   productBadgeClearance: {
-    backgroundColor: 'rgba(22,163,74,0.96)'
+    backgroundColor: 'rgba(5,150,105,0.98)'
   },
   productBadgeText: {
     color: palette.white,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.2
+    letterSpacing: 0.4
   },
   productBody: {
     flex: 1,
@@ -3654,13 +3910,13 @@ const styles = StyleSheet.create({
     paddingTop: 14
   },
   productPrice: {
-    color: '#16A34A',
+    color: '#15803D',
     fontSize: 20,
     fontWeight: '800',
     lineHeight: 24
   },
   productOriginalPrice: {
-    color: '#64748B',
+    color: '#475569',
     fontSize: 13,
     textDecorationLine: 'line-through'
   },
@@ -3676,7 +3932,7 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   productTrustIndicator: {
-    color: '#64748B',
+    color: '#475569',
     fontSize: 12,
     fontWeight: '600',
     marginTop: 8
@@ -3827,9 +4083,9 @@ const styles = StyleSheet.create({
   },
   sellerStars: {
     color: '#f59e0b',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    marginTop: 10
+    marginTop: 8
   },
   featureGrid: {
     flexDirection: 'row',
@@ -3839,7 +4095,10 @@ const styles = StyleSheet.create({
   },
   featureGridMobile: {
     gap: 14,
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    alignContent: 'stretch',
+    width: '100%'
   },
   featureCard: {
     alignItems: 'center',
@@ -3858,6 +4117,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     height: 'auto',
     minHeight: 160,
+    minWidth: 0,
     padding: 16,
     width: '48%'
   },
@@ -3879,12 +4139,20 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center'
   },
+  featureTitleMobile: {
+    fontSize: 18,
+    lineHeight: 22
+  },
   featureText: {
     color: palette.body,
     fontSize: 15,
     lineHeight: 23,
     marginTop: 10,
     textAlign: 'center'
+  },
+  featureTextMobile: {
+    fontSize: 14,
+    lineHeight: 20
   },
   metricSection: {
     display: 'flex',
@@ -3964,7 +4232,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 14,
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    alignContent: 'stretch',
+    width: '100%'
   },
   metricCard: {
     alignItems: 'center',
@@ -3991,11 +4262,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 34
   },
+  metricValueMobile: {
+    fontSize: 22,
+    lineHeight: 26
+  },
   metricLabel: {
     color: palette.body,
     fontSize: 13,
     marginTop: 6,
     textAlign: 'center'
+  },
+  metricLabelMobile: {
+    fontSize: 11,
+    lineHeight: 15
   },
   ctaSection: {
     alignItems: 'center',
@@ -4070,3 +4349,5 @@ const styles = StyleSheet.create({
     lineHeight: 21
   }
 });
+
+

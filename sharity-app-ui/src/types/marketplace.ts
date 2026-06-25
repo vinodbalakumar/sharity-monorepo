@@ -75,6 +75,8 @@ export type MarketplaceHomeResponse = {
   featuredListings: MarketplaceListing[];
   topCategories?: MarketplaceCategoryHighlight[];
   discountedSubcategories?: SubcategoryHighlight[];
+  rollbackOffers?: MarketplaceListing[];
+  clearanceListings?: MarketplaceListing[];
   topRatedSellers?: SellerHighlight[];
   popularListings?: MarketplaceListing[];
   itemsSoldCount?: number;
