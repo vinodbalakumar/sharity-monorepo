@@ -1,0 +1,189 @@
+name: QA Auto Deploy
+
+on:
+  push:
+    branches:
+      - claude_cop_patch
+      - develop
+  workflow_dispatch:
+    inputs:
+      workflow_from:
+        description: Git ref, branch, or commit to inspect
+        required: true
+        default: claude_cop_patch
+        type: string
+      component:
+        description: Component to inspect
+        required: true
+        default: all
+        type: choice
+        options:
+          - authorization-server
+          - marketplace-service
+          - payment-service
+          - wallet-service
+          - platform-web-bff
+          - sharity-app-ui
+          - all
+      qa_target:
+        description: QA target
+        required: false
+        default: mac
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
+      deploy_environment:
+        description: Deployment environment
+        required: false
+        default: qa
+        type: choice
+        options:
+          - qa
+      traffic_mode:
+        description: QA routing mode
+        required: false
+        default: deploy_only
+        type: choice
+        options:
+          - deploy_only
+          - make_active
+      rollback_enabled:
+        description: Keep rollback path ready
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      retry_count:
+        description: Retry attempts before rollback
+        required: false
+        default: "3"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      components_csv: ${{ steps.detect.outputs.components_csv }}
+      qa_target: ${{ steps.detect.outputs.qa_target }}
+      deploy_environment: ${{ steps.detect.outputs.deploy_environment }}
+      traffic_mode: ${{ steps.detect.outputs.traffic_mode }}
+      rollback_enabled: ${{ steps.detect.outputs.rollback_enabled }}
+      retry_count: ${{ steps.detect.outputs.retry_count }}
+      workflow_from: ${{ steps.detect.outputs.workflow_from }}
+    steps:
+      - name: Checkout deployments repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        name: Detect changed components
+        shell: bash
+        env:
+          WORKFLOW_FROM_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.workflow_from || github.sha }}
+          COMPONENT_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.component || 'all' }}
+          QA_TARGET_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.qa_target || 'mac' }}
+          DEPLOY_ENVIRONMENT_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || 'qa' }}
+          TRAFFIC_MODE_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.traffic_mode || 'deploy_only' }}
+          ROLLBACK_ENABLED_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.rollback_enabled || 'true' }}
+          RETRY_COUNT_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.retry_count || '3' }}
+        run: |
+          set -euo pipefail
+          source ./scripts/component-map.sh
+
+          workflow_from="$WORKFLOW_FROM_INPUT"
+          qa_target="$QA_TARGET_INPUT"
+          deploy_environment="$DEPLOY_ENVIRONMENT_INPUT"
+          traffic_mode="$TRAFFIC_MODE_INPUT"
+          rollback_enabled="$ROLLBACK_ENABLED_INPUT"
+          retry_count="$RETRY_COUNT_INPUT"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "$COMPONENT_INPUT" == "all" ]]; then
+              mapfile -t components < <(component_list)
+            else
+              components=("$COMPONENT_INPUT")
+            fi
+          else
+            base_sha="${{ github.event.before }}"
+            if [[ -z "$base_sha" || "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
+              base_sha="$(git rev-list --max-parents=0 HEAD)"
+            fi
+            mapfile -t components < <(
+              git diff --name-only "$base_sha" "${{ github.sha }}" | components_from_paths
+            )
+            if [[ "${#components[@]}" -eq 0 ]]; then
+              components=()
+            fi
+          fi
+
+          components_csv="$(IFS=,; echo "${components[*]-}")"
+          {
+            echo "components_csv=$components_csv"
+            echo "qa_target=$qa_target"
+            echo "deploy_environment=$deploy_environment"
+            echo "traffic_mode=$traffic_mode"
+            echo "rollback_enabled=$rollback_enabled"
+            echo "retry_count=$retry_count"
+            echo "workflow_from=$workflow_from"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## QA auto deploy detection"
+            echo ""
+            echo "- workflow_from: \`$workflow_from\`"
+            echo "- qa_target: \`$qa_target\`"
+            echo "- deploy_environment: \`$deploy_environment\`"
+            echo "- traffic_mode: \`$traffic_mode\`"
+            echo "- rollback_enabled: \`$rollback_enabled\`"
+            echo "- retry_count: \`$retry_count\`"
+            echo "- components: \`$components_csv\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  plan:
+    needs: detect
+    if: ${{ needs.detect.outputs.components_csv != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout deployments repo
+        uses: actions/checkout@v4
+
+      - name: Render auto QA plan
+        env:
+          COMPONENTS_CSV: ${{ needs.detect.outputs.components_csv }}
+          QA_TARGET: ${{ needs.detect.outputs.qa_target }}
+          DEPLOY_ENVIRONMENT: ${{ needs.detect.outputs.deploy_environment }}
+          TRAFFIC_MODE: ${{ needs.detect.outputs.traffic_mode }}
+          ROLLBACK_ENABLED: ${{ needs.detect.outputs.rollback_enabled }}
+          RETRY_COUNT: ${{ needs.detect.outputs.retry_count }}
+          WORKFLOW_FROM: ${{ needs.detect.outputs.workflow_from }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a components <<< "$COMPONENTS_CSV"
+          if [[ "${#components[@]}" -eq 0 ]]; then
+            echo "No deployable components detected."
+            exit 0
+          fi
+
+          for component in "${components[@]}"; do
+            ./scripts/deploy-component.sh \
+              --workflow-from "$WORKFLOW_FROM" \
+              --component "$component" \
+              --deploy-environment "$DEPLOY_ENVIRONMENT" \
+              --qa-target "$QA_TARGET" \
+              --traffic-mode "$TRAFFIC_MODE" \
+              --rollback-enabled "$ROLLBACK_ENABLED" \
+              --retry-count "$RETRY_COUNT" \
+              --mode plan
+          done

@@ -2,6 +2,7 @@ version: "3.8"
 
 x-sharity-common-env: &sharity-common-env
   SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-qa}
+  QA_TARGET: ${QA_TARGET:-mac}
   SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-}
   SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-}
   SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-}
@@ -82,6 +83,7 @@ services:
     ports:
       - "${SHARITY_APP_PORT:-3001}:80"
     environment:
+      QA_TARGET: ${QA_TARGET:-mac}
       EXPO_PUBLIC_BFF_BASE_URL: ${EXPO_PUBLIC_BFF_BASE_URL:-http://localhost:8083/bff}
       EXPO_PUBLIC_MARKETPLACE_BASE_URL: ${EXPO_PUBLIC_MARKETPLACE_BASE_URL:-http://localhost:8084/marketplace-service/api/v1/marketplace}
       EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL: ${EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}

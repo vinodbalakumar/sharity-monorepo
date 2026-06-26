@@ -1,0 +1,107 @@
+version: "3.8"
+
+x-sharity-common-env: &sharity-common-env
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-qa}
+  QA_TARGET: ${QA_TARGET:-mac}
+  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-}
+  SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-}
+  SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-}
+  SPRING_REDIS_HOST: ${SPRING_REDIS_HOST:-host.docker.internal}
+  SPRING_REDIS_PORT: ${SPRING_REDIS_PORT:-6379}
+  AUTHORIZATION_SERVER_URL: ${AUTHORIZATION_SERVER_URL:-http://authorization-server:8080}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-local-dev-internal-token}
+
+services:
+  authorization-server:
+    image: ${AUTHORIZATION_SERVER_IMAGE:-sharity/authorization-server:latest}
+    container_name: sharity-authorization-server
+    ports:
+      - "${AUTHORIZATION_SERVER_PORT:-9091}:8080"
+    environment:
+      <<: *sharity-common-env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/authorization-server/api/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+
+  marketplace-service:
+    image: ${MARKETPLACE_SERVICE_IMAGE:-sharity/marketplace-service:latest}
+    container_name: sharity-marketplace-service
+    ports:
+      - "${MARKETPLACE_SERVICE_PORT:-8084}:8080"
+    environment:
+      <<: *sharity-common-env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/marketplace-service/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+
+  payment-service:
+    image: ${PAYMENT_SERVICE_IMAGE:-sharity/payment-service:latest}
+    container_name: sharity-payment-service
+    ports:
+      - "${PAYMENT_SERVICE_PORT:-8085}:8080"
+    environment:
+      <<: *sharity-common-env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/payment-service/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+
+  wallet-service:
+    image: ${WALLET_SERVICE_IMAGE:-sharity/wallet-service:latest}
+    container_name: sharity-wallet-service
+    ports:
+      - "${WALLET_SERVICE_PORT:-8086}:8080"
+    environment:
+      <<: *sharity-common-env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/wallet-service/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+
+  platform-web-bff:
+    image: ${PLATFORM_WEB_BFF_IMAGE:-sharity/platform-web-bff:latest}
+    container_name: sharity-platform-web-bff
+    ports:
+      - "${PLATFORM_WEB_BFF_PORT:-8083}:8080"
+    environment:
+      <<: *sharity-common-env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+
+  sharity-app:
+    image: ${SHARITY_APP_IMAGE:-sharity/sharity-app-ui:latest}
+    container_name: sharity-sharity-app
+    ports:
+      - "${SHARITY_APP_PORT:-3001}:80"
+    environment:
+      QA_TARGET: ${QA_TARGET:-mac}
+      EXPO_PUBLIC_BFF_BASE_URL: ${EXPO_PUBLIC_BFF_BASE_URL:-http://localhost:8083/bff}
+      EXPO_PUBLIC_MARKETPLACE_BASE_URL: ${EXPO_PUBLIC_MARKETPLACE_BASE_URL:-http://localhost:8084/marketplace-service/api/v1/marketplace}
+      EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL: ${EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sharity-nginx
+    ports:
+      - "${NGINX_PORT:-8080}:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12

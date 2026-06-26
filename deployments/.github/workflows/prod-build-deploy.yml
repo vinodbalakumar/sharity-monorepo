@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       workflow_from:
-        description: Git ref or branch to inspect
+        description: Git ref, branch, or commit to inspect
         required: true
-        default: main
+        default: claude_cop_patch
         type: string
       component:
-        description: Component to prepare
+        description: Component to inspect
         required: true
         default: all
         type: choice
@@ -22,35 +22,56 @@ on:
           - sharity-app-ui
           - all
       qa_target:
-        description: QA target label
+        description: QA target (metadata only)
         required: false
-        default: qa
-        type: string
+        default: mac
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
       deploy_environment:
-        description: Target environment
-        required: true
+        description: Deployment environment
+        required: false
         default: prod
         type: choice
         options:
           - prod
       traffic_mode:
-        description: Traffic strategy label
+        description: Production traffic mode label
         required: false
-        default: standard
+        default: deploy_only
         type: choice
         options:
-          - standard
-          - blue-green
-          - canary
+          - deploy_only
+          - make_active
+      rollback_enabled:
+        description: Keep rollback path ready
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      retry_count:
+        description: Retry attempts before rollback
+        required: false
+        default: "3"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
 
 jobs:
-  prepare:
+  plan:
     uses: ./.github/workflows/component-build-deploy.yml
     with:
       workflow_from: ${{ inputs.workflow_from }}
       component: ${{ inputs.component }}
       qa_target: ${{ inputs.qa_target }}
-      deploy_environment: prod
+      deploy_environment: ${{ inputs.deploy_environment }}
       traffic_mode: ${{ inputs.traffic_mode }}
+      rollback_enabled: ${{ inputs.rollback_enabled }}
+      retry_count: ${{ inputs.retry_count }}
     secrets: inherit
-

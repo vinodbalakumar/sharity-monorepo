@@ -1,6 +1,14 @@
 # Sharity Deployment Repo
 
-This repository centralizes the deployment workflows and compose files for the Sharity services.
+This repository centralizes Sharity deployment metadata, compose layouts, helper scripts, and GitHub Actions workflow templates.
+
+## What lives here
+
+- Deployment manifests
+- GitHub Actions workflow definitions
+- Compose files for QA, prod, and target-specific deployments
+- Helper scripts for planning, health checks, QA routing, and rollback
+- Documentation for the deployment architecture
 
 ## Components
 
@@ -13,26 +21,32 @@ This repository centralizes the deployment workflows and compose files for the S
 
 ## Workflows
 
-- `qa-build-deploy.yml` - manual QA deployment.
-- `prod-build-deploy.yml` - manual production deployment with environment approval.
-- `component-build-deploy.yml` - reusable component deploy workflow.
+- `qa-build-deploy.yml` - QA workflow entry point with dropdown inputs.
+- `prod-build-deploy.yml` - production workflow entry point with environment approval semantics.
+- `component-build-deploy.yml` - reusable component workflow.
+- `qa-auto-deploy.yml` - branch-driven QA automation workflow.
 
 ## Compose files
 
-- `docker-compose.mac.yml` - Mac QA/self-hosted runner deployment.
-- `docker-compose.prod.yml` - IONOS production deployment.
+- `docker-compose.qa.yml` - generic QA template.
+- `docker-compose.mac.yml` - Mac QA node.
+- `docker-compose.windows.yml` - Windows QA node.
+- `docker-compose.linux.yml` - Linux QA node.
+- `docker-compose.prod.yml` - production node.
 
 ## Notes
 
 - No business logic is stored here.
-- Application repositories are cloned at deploy time.
-- Images are built from the source repositories using the Dockerfiles in `deployments/dockerfiles/`.
-- QA uses a Mac self-hosted runner.
-- Production expects IONOS SSH access and secrets configured in GitHub.
+- No API contracts are changed here.
+- The deployment branch is standardized to `claude_cop_patch`.
+- QA target choices are `windows`, `mac`, and `linux`.
+- The QA route is designed to have only one active public target at a time.
+- Rollback and retry behavior are described in helper scripts and workflow inputs.
+- These files prepare the deployment flow; they do not change application code.
 
 ## Required secrets / environment values
 
-The workflows expect these values to be provided in GitHub Secrets or the runner environment:
+The workflows expect these values to be provided in GitHub Secrets or the runner environment when the workflows are eventually executed:
 
 - `SPRING_DATASOURCE_URL`
 - `SPRING_DATASOURCE_USERNAME`
@@ -44,11 +58,11 @@ The workflows expect these values to be provided in GitHub Secrets or the runner
 - `EXPO_PUBLIC_BFF_BASE_URL`
 - `EXPO_PUBLIC_MARKETPLACE_BASE_URL`
 - `EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL`
+- `CERTS_DIR`
 
-Production SSH deploy also expects:
+Production deployment also expects:
 
 - `IONOS_HOST`
 - `IONOS_USER`
 - `IONOS_SSH_KEY`
 - `IONOS_APP_DIR` (optional)
-
