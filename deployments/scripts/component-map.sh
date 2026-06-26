@@ -110,9 +110,9 @@ component_default_port() {
 
 component_runner_labels() {
   case "${1:-}" in
-    windows) echo "self-hosted,Windows,sharity-qa" ;;
-    mac) echo "self-hosted,macOS,sharity-qa" ;;
-    linux) echo "self-hosted,Linux,sharity-qa" ;;
+    windows) echo "self-hosted,Windows,shariy-qa" ;;
+    mac) echo "self-hosted,macOS,shariy-qa" ;;
+    linux) echo "self-hosted,Linux,shariy-qa" ;;
     *) return 1 ;;
   esac
 }
