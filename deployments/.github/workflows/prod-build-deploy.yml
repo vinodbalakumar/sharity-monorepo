@@ -1,0 +1,56 @@
+name: Prod Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_from:
+        description: Git ref or branch to inspect
+        required: true
+        default: main
+        type: string
+      component:
+        description: Component to prepare
+        required: true
+        default: all
+        type: choice
+        options:
+          - authorization-server
+          - marketplace-service
+          - payment-service
+          - wallet-service
+          - platform-web-bff
+          - sharity-app-ui
+          - all
+      qa_target:
+        description: QA target label
+        required: false
+        default: qa
+        type: string
+      deploy_environment:
+        description: Target environment
+        required: true
+        default: prod
+        type: choice
+        options:
+          - prod
+      traffic_mode:
+        description: Traffic strategy label
+        required: false
+        default: standard
+        type: choice
+        options:
+          - standard
+          - blue-green
+          - canary
+
+jobs:
+  prepare:
+    uses: ./.github/workflows/component-build-deploy.yml
+    with:
+      workflow_from: ${{ inputs.workflow_from }}
+      component: ${{ inputs.component }}
+      qa_target: ${{ inputs.qa_target }}
+      deploy_environment: prod
+      traffic_mode: ${{ inputs.traffic_mode }}
+    secrets: inherit
+

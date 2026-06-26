@@ -1,7 +1,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 COPY . .
 ARG EXPO_PUBLIC_BFF_BASE_URL=https://vinodbalakumar.com/bff
 ARG EXPO_PUBLIC_MARKETPLACE_BASE_URL=/marketplace-service/api/v1/marketplace

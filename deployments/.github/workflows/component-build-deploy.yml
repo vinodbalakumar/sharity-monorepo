@@ -1,0 +1,122 @@
+name: Component Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_from:
+        description: Git ref or branch to inspect
+        required: true
+        default: main
+        type: string
+      component:
+        description: Component to prepare
+        required: true
+        default: all
+        type: choice
+        options:
+          - authorization-server
+          - marketplace-service
+          - payment-service
+          - wallet-service
+          - platform-web-bff
+          - sharity-app-ui
+          - all
+      qa_target:
+        description: QA target label or environment note
+        required: false
+        default: qa
+        type: string
+      deploy_environment:
+        description: Target environment
+        required: true
+        default: qa
+        type: choice
+        options:
+          - qa
+          - prod
+      traffic_mode:
+        description: Traffic strategy label
+        required: false
+        default: standard
+        type: choice
+        options:
+          - standard
+          - blue-green
+          - canary
+  workflow_call:
+    inputs:
+      workflow_from:
+        required: true
+        type: string
+      component:
+        required: true
+        type: string
+      qa_target:
+        required: false
+        type: string
+      deploy_environment:
+        required: true
+        type: string
+      traffic_mode:
+        required: false
+        type: string
+    secrets: inherit
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout deployments repo
+        uses: actions/checkout@v4
+
+      - name: Resolve deployment plan
+        run: |
+          set -euo pipefail
+          source ./scripts/component-map.sh
+
+          if ! component_is_supported "${{ inputs.component }}"; then
+            echo "Unsupported component: ${{ inputs.component }}" >&2
+            exit 1
+          fi
+
+          component="${{ inputs.component }}"
+          if [[ "$component" == "all" ]]; then
+            mapfile -t targets < <(component_list)
+          else
+            targets=("$component")
+          fi
+
+          {
+            echo "## Sharity deployment preparation"
+            echo ""
+            echo "- workflow_from: \`${{ inputs.workflow_from }}\`"
+            echo "- component: \`${{ inputs.component }}\`"
+            echo "- qa_target: \`${{ inputs.qa_target || 'qa' }}\`"
+            echo "- deploy_environment: \`${{ inputs.deploy_environment }}\`"
+            echo "- traffic_mode: \`${{ inputs.traffic_mode || 'standard' }}\`"
+            echo ""
+            echo "### Component audit"
+            echo ""
+            echo "| component | repo | default branch | deployment branch | dockerfile | build command | image | health endpoint | compose service |"
+            echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for target in "${targets[@]}"; do
+            printf '| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n' \
+              "$target" \
+              "$(component_repo "$target")" \
+              "$(component_default_branch "$target")" \
+              "$(component_deployment_branch "$target")" \
+              "$(component_dockerfile_path "$target")" \
+              "$(component_build_command "$target")" \
+              "$(component_image_name "$target")" \
+              "$(component_health_endpoint "$target")" \
+              "$(component_service "$target")" \
+              >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          echo "Preparation complete. No deployment was executed."
+

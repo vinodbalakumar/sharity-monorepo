@@ -115,6 +115,7 @@ services:
       APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID:-}
       APPLE_OAUTH_CLIENT_SECRET: ${APPLE_OAUTH_CLIENT_SECRET:-}
       APPLE_OAUTH_REDIRECT_URI: ${APPLE_OAUTH_REDIRECT_URI:-https://vinodbalakumar.com/authorization-server/api/v1/auth/social/apple/callback}
+      SHARITY_WEB_ALLOWED_ORIGIN: ${SHARITY_WEB_ALLOWED_ORIGIN:-http://localhost:8081,http://192.168.0.200:8081,http://localhost:8082,http://192.168.0.200:8082}
       APP_PROFILE_IMAGE_STORAGE_PROVIDER_CODE: ${ASSET_STORAGE_PROVIDER_CODE:-CLOUDFLARE_R2_PRIMARY}
       APP_PROFILE_IMAGE_STORAGE_BUCKET_NAME: ${ASSET_STORAGE_BUCKET_NAME:-sharity-assets}
       APP_PROFILE_IMAGE_STORAGE_ENDPOINT_URL: ${ASSET_STORAGE_ENDPOINT_URL:-}
@@ -162,7 +163,7 @@ services:
       SHARITY_WEB_BFF_CLIENT_SECRET: ${SHARITY_WEB_BFF_CLIENT_SECRET:-change-me-local-only}
       SHARITY_BFF_PUBLIC_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-http://localhost:8080}
       SHARITY_WEB_BASE_URL: ${SHARITY_WEB_BASE_URL:-http://localhost:8080/app/}
-      SHARITY_WEB_ALLOWED_ORIGIN: ${SHARITY_WEB_ALLOWED_ORIGIN:-http://localhost:8080}
+      SHARITY_WEB_ALLOWED_ORIGIN: ${SHARITY_WEB_ALLOWED_ORIGIN:-http://localhost:8080,http://localhost:8081,http://localhost:8082}
       BFF_SESSION_COOKIE_SECURE: ${BFF_SESSION_COOKIE_SECURE:-false}
       AUTHORIZATION_SERVER_BACKEND_URL: http://authorization-server:8080/authorization-server
       MARKETPLACE_SERVICE_BACKEND_URL: http://marketplace-service:8080/marketplace-service
@@ -182,6 +183,8 @@ services:
       context: ../springbootrestdemo/marketplace-service
       dockerfile: C:/Users/HP/projects/deployments/dockerfiles/marketplace-service.Dockerfile
     image: marketplace-service:latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: qa
