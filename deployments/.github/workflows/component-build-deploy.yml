@@ -86,8 +86,6 @@ on:
       retry_count:
         required: false
         type: string
-    secrets: inherit
-
 jobs:
   plan:
     runs-on: ubuntu-latest
