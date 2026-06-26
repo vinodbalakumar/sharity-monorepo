@@ -88,29 +88,29 @@ jobs:
         name: Detect changed components
         shell: bash
         env:
-          WORKFLOW_FROM_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.workflow_from || github.sha }}
-          COMPONENT_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.component || 'all' }}
-          QA_TARGET_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.qa_target || 'mac' }}
-          DEPLOY_ENVIRONMENT_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || 'qa' }}
-          TRAFFIC_MODE_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.traffic_mode || 'deploy_only' }}
-          ROLLBACK_ENABLED_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.rollback_enabled || 'true' }}
-          RETRY_COUNT_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.retry_count || '3' }}
+          WORKFLOW_FROM_INPUT: ${{ github.event.inputs.workflow_from }}
+          COMPONENT_INPUT: ${{ github.event.inputs.component }}
+          QA_TARGET_INPUT: ${{ github.event.inputs.qa_target }}
+          DEPLOY_ENVIRONMENT_INPUT: ${{ github.event.inputs.deploy_environment }}
+          TRAFFIC_MODE_INPUT: ${{ github.event.inputs.traffic_mode }}
+          ROLLBACK_ENABLED_INPUT: ${{ github.event.inputs.rollback_enabled }}
+          RETRY_COUNT_INPUT: ${{ github.event.inputs.retry_count }}
         run: |
           set -euo pipefail
           source ./scripts/component-map.sh
 
-          workflow_from="$WORKFLOW_FROM_INPUT"
-          qa_target="$QA_TARGET_INPUT"
-          deploy_environment="$DEPLOY_ENVIRONMENT_INPUT"
-          traffic_mode="$TRAFFIC_MODE_INPUT"
-          rollback_enabled="$ROLLBACK_ENABLED_INPUT"
-          retry_count="$RETRY_COUNT_INPUT"
+          workflow_from="${WORKFLOW_FROM_INPUT:-$GITHUB_SHA}"
+          qa_target="${QA_TARGET_INPUT:-mac}"
+          deploy_environment="${DEPLOY_ENVIRONMENT_INPUT:-qa}"
+          traffic_mode="${TRAFFIC_MODE_INPUT:-deploy_only}"
+          rollback_enabled="${ROLLBACK_ENABLED_INPUT:-true}"
+          retry_count="${RETRY_COUNT_INPUT:-3}"
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            if [[ "$COMPONENT_INPUT" == "all" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ "${COMPONENT_INPUT:-all}" == "all" ]]; then
               mapfile -t components < <(component_list)
             else
-              components=("$COMPONENT_INPUT")
+              components=("${COMPONENT_INPUT:-all}")
             fi
           else
             base_sha="${{ github.event.before }}"

@@ -91,7 +91,6 @@ on:
 jobs:
   plan:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.deploy_environment == 'prod' && 'production' || 'qa' }}
     defaults:
       run:
         shell: bash
@@ -110,6 +109,11 @@ jobs:
           RETRY_COUNT: ${{ inputs.retry_count || '3' }}
         run: |
           set -euo pipefail
+          if [[ "$DEPLOY_ENVIRONMENT" == "prod" ]]; then
+            echo "Production plan selected. Environment approval is expected in the calling workflow."
+          else
+            echo "QA plan selected for target: $QA_TARGET"
+          fi
           ./scripts/deploy-component.sh \
             --workflow-from "$WORKFLOW_FROM" \
             --component "$COMPONENT" \
@@ -119,4 +123,3 @@ jobs:
             --rollback-enabled "$ROLLBACK_ENABLED" \
             --retry-count "$RETRY_COUNT" \
             --mode plan
-
