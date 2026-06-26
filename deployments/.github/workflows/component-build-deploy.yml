@@ -1,0 +1,123 @@
+name: Component Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_from:
+        description: Git ref, branch, or commit to inspect
+        required: true
+        default: claude_cop_patch
+        type: string
+      component:
+        description: Component to inspect
+        required: true
+        default: all
+        type: choice
+        options:
+          - authorization-server
+          - marketplace-service
+          - payment-service
+          - wallet-service
+          - platform-web-bff
+          - sharity-app-ui
+          - all
+      qa_target:
+        description: QA target
+        required: false
+        default: mac
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
+      deploy_environment:
+        description: Deployment environment
+        required: true
+        default: qa
+        type: choice
+        options:
+          - qa
+          - prod
+      traffic_mode:
+        description: QA routing mode
+        required: false
+        default: deploy_only
+        type: choice
+        options:
+          - deploy_only
+          - make_active
+      rollback_enabled:
+        description: Keep rollback path ready
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      retry_count:
+        description: Retry attempts before rollback
+        required: false
+        default: "3"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+  workflow_call:
+    inputs:
+      workflow_from:
+        required: true
+        type: string
+      component:
+        required: true
+        type: string
+      qa_target:
+        required: false
+        type: string
+      deploy_environment:
+        required: true
+        type: string
+      traffic_mode:
+        required: false
+        type: string
+      rollback_enabled:
+        required: false
+        type: string
+      retry_count:
+        required: false
+        type: string
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout deployments repo
+        uses: actions/checkout@v4
+
+      - name: Render deployment plan
+        env:
+          WORKFLOW_FROM: ${{ inputs.workflow_from }}
+          COMPONENT: ${{ inputs.component }}
+          QA_TARGET: ${{ inputs.qa_target || 'mac' }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.deploy_environment }}
+          TRAFFIC_MODE: ${{ inputs.traffic_mode || 'deploy_only' }}
+          ROLLBACK_ENABLED: ${{ inputs.rollback_enabled || 'true' }}
+          RETRY_COUNT: ${{ inputs.retry_count || '3' }}
+        run: |
+          set -euo pipefail
+          if [[ "$DEPLOY_ENVIRONMENT" == "prod" ]]; then
+            echo "Production plan selected. Environment approval is expected in the calling workflow."
+          else
+            echo "QA plan selected for target: $QA_TARGET"
+          fi
+          ./scripts/deploy-component.sh \
+            --workflow-from "$WORKFLOW_FROM" \
+            --component "$COMPONENT" \
+            --deploy-environment "$DEPLOY_ENVIRONMENT" \
+            --qa-target "$QA_TARGET" \
+            --traffic-mode "$TRAFFIC_MODE" \
+            --rollback-enabled "$ROLLBACK_ENABLED" \
+            --retry-count "$RETRY_COUNT" \
+            --mode plan
