@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       workflow_from:
-        description: Git ref, branch, or commit to inspect
+        description: Branch to deploy from app/service repos
         required: true
         default: claude_cop_patch
         type: string
       component:
-        description: Component to inspect
+        description: Component to deploy
         required: true
         default: all
         type: choice
@@ -17,61 +17,81 @@ on:
           - authorization-server
           - marketplace-service
           - payment-service
-          - wallet-service
           - platform-web-bff
           - sharity-app-ui
+          - wallet-service
           - all
-      qa_target:
-        description: QA target
-        required: false
-        default: mac
-        type: choice
-        options:
-          - windows
-          - mac
-          - linux
-      deploy_environment:
-        description: Deployment environment
-        required: false
-        default: qa
-        type: choice
-        options:
-          - qa
-      traffic_mode:
-        description: QA routing mode
-        required: false
-        default: deploy_only
-        type: choice
-        options:
-          - deploy_only
-          - make_active
-      rollback_enabled:
-        description: Keep rollback path ready
-        required: false
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
-      retry_count:
-        description: Retry attempts before rollback
-        required: false
-        default: "3"
-        type: choice
-        options:
-          - "1"
-          - "2"
-          - "3"
 
 jobs:
-  plan:
-    uses: ./.github/workflows/component-build-deploy.yml
-    with:
-      workflow_from: ${{ inputs.workflow_from }}
-      component: ${{ inputs.component }}
-      qa_target: ${{ inputs.qa_target }}
-      deploy_environment: ${{ inputs.deploy_environment }}
-      traffic_mode: ${{ inputs.traffic_mode }}
-      rollback_enabled: ${{ inputs.rollback_enabled }}
-      retry_count: ${{ inputs.retry_count }}
-    secrets: inherit
+  deploy:
+    runs-on: [self-hosted, macOS, ARM64, sharity-qa]
+    timeout-minutes: 60
+    env:
+      DEPLOYMENTS_DIR: ${{ github.workspace }}/deployments
+      SHARITY_SOURCE_ROOT: ${{ github.workspace }}/sources
+      CERTS_DIR: ${{ vars.CERTS_DIR }}
+      DB_HOST: ${{ vars.DB_HOST }}
+      DB_PORT: ${{ vars.DB_PORT }}
+      DB_NAME: ${{ vars.DB_NAME }}
+      DB_USERNAME: ${{ vars.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+    steps:
+      - name: Checkout deployments
+        uses: actions/checkout@v4
+        with:
+          path: deployments
+
+      - name: Prepare sources directory
+        run: mkdir -p "${SHARITY_SOURCE_ROOT}"
+
+      - name: Checkout authorization-server
+        if: ${{ inputs.component == 'authorization-server' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/authorization-server
+          ref: ${{ inputs.workflow_from }}
+          path: sources/authorization-server
+
+      - name: Checkout marketplace-service
+        if: ${{ inputs.component == 'marketplace-service' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/marketplace-service
+          ref: ${{ inputs.workflow_from }}
+          path: sources/marketplace-service
+
+      - name: Checkout payment-service
+        if: ${{ inputs.component == 'payment-service' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/payment-service
+          ref: ${{ inputs.workflow_from }}
+          path: sources/payment-service
+
+      - name: Checkout platform-web-bff
+        if: ${{ inputs.component == 'platform-web-bff' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/platform-web-bff
+          ref: ${{ inputs.workflow_from }}
+          path: sources/platform-web-bff
+
+      - name: Checkout sharity-app-ui
+        if: ${{ inputs.component == 'sharity-app-ui' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/sharity-app-ui
+          ref: ${{ inputs.workflow_from }}
+          path: sources/sharity-app-ui
+
+      - name: Checkout wallet-service
+        if: ${{ inputs.component == 'wallet-service' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/wallet-service
+          ref: ${{ inputs.workflow_from }}
+          path: sources/wallet-service
+
+      - name: Deploy selected component to Mac Docker Compose
+        working-directory: deployments
+        run: ./scripts/deploy-component.sh "${{ inputs.component }}" qa "${{ inputs.workflow_from }}"
