@@ -12,7 +12,7 @@ GitHub Actions
   -> Windows MySQL QA database or approved Windows replica
 ```
 
-Windows owns the QA database. Mac and Linux are application runner nodes only. They must not create their own Sharity MySQL containers.
+Windows owns the QA database primary. Mac and Linux are application runner nodes and may also host approved MySQL replicas, but they must not create independent Sharity MySQL databases.
 
 ## Responsibilities
 
@@ -39,6 +39,7 @@ GitHub does not run Docker for this setup. The selected self-hosted runner runs 
 - Stores QA data.
 - Must allow each QA runner host to connect to MySQL.
 - Must expose MySQL on the approved private network path, not publicly.
+- Acts as the single write source unless a separate multi-primary design is approved.
 
 Windows is the database anchor for QA. Do not replace it with a Mac or Linux local MySQL container.
 
@@ -49,6 +50,7 @@ Windows is the database anchor for QA. Do not replace it with a Mac or Linux loc
 - Builds Docker images.
 - Starts Sharity containers using Docker Compose.
 - Connects those containers to Windows MySQL through `DB_HOST`.
+- May host a MySQL replica only when configured through the approved replication runbook.
 
 The current Mac runner host observed in logs is:
 
@@ -116,7 +118,28 @@ PC_MYSQL_PASSWORD from DB_PASSWORD
 11. Health checks run.
 12. If all required services are healthy, GitHub marks the workflow successful.
 
-The Mac workflow must not create or start a local MySQL container for Sharity data.
+The Mac workflow must not create or start an independent local MySQL container for Sharity data. If Mac stores a copy of QA data, that copy must be a configured replica of the Windows primary.
+
+## MySQL Replication
+
+QA data should be stored on every approved database node through MySQL replication.
+
+The safe default is single-primary replication:
+
+```text
+Windows MySQL primary -> Mac/Linux MySQL replicas
+```
+
+In this model:
+
+- Windows primary accepts writes.
+- Mac/Linux replicas receive copied data.
+- Replicas should normally be read-only.
+- App containers should keep writing to Windows primary unless read/write splitting is explicitly supported.
+
+Do not run independent writable MySQL databases on each QA node. That will create divergent data.
+
+See `docs/mysql-replication-runbook.md` for the full setup steps.
 
 ## Current State And Blocker
 
@@ -294,6 +317,7 @@ The public site may show 502 when backend containers are stopped, unhealthy, or 
 ## Related Docs
 
 - `docs/windows-qa-database.md`
+- `docs/mysql-replication-runbook.md`
 - `docs/mac-qa-deployment.md`
 - `docs/github-actions-deployment.md`
 - `docs/qa-multi-target-routing.md`

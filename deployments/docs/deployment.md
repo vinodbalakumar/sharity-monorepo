@@ -43,7 +43,8 @@ This repository centralizes Sharity deployment metadata, compose layouts, helper
 - The QA route is designed to have only one active public target at a time.
 - Rollback and retry behavior are described in helper scripts and workflow inputs.
 - These files prepare the deployment flow; they do not change application code.
-- QA app containers must use the Windows MySQL database or an approved Windows replica. Do not add a local MySQL service to Mac/Linux QA compose files.
+- QA app containers must use the Windows MySQL primary or an approved DB endpoint. Do not add independent local MySQL services to Mac/Linux QA compose files.
+- If QA data must exist on Mac/Linux too, configure MySQL replication from the Windows primary. See `docs/mysql-replication-runbook.md`.
 
 ## Required secrets / environment values
 

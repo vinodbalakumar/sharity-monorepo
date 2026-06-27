@@ -7,13 +7,14 @@ Windows hosts the primary QA MySQL database for Sharity.
 - The Windows QA database is the primary QA database.
 - QA deployment nodes connect to it through the approved private network path.
 - The database is not exposed publicly.
-- Mac and Linux QA nodes must not create their own MySQL containers for Sharity data.
-- No replica or cluster is introduced by this repository. If a replica is used, it must be provisioned outside this repo and exposed through the same approved DB connection variables.
+- Mac and Linux QA nodes must not create independent MySQL containers for Sharity data.
+- QA data can be stored on Mac/Linux database nodes only through approved MySQL replication from the Windows primary.
+- Replication setup is documented in `docs/mysql-replication-runbook.md`.
 
 ## Network model
 
 - Windows remains the database anchor for QA.
-- Mac and Linux QA nodes reference the Windows database or approved Windows replica using the approved internal connectivity path.
+- Mac and Linux QA nodes reference the Windows database or approved replica using the approved internal connectivity path.
 - Tailscale or an equivalent controlled path is used when required by the environment.
 
 ## Required GitHub values
