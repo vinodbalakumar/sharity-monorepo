@@ -1,3 +1,4 @@
+
 name: QA Build & Deploy
 
 on:
@@ -100,4 +101,10 @@ jobs:
 
       - name: Deploy selected component to Mac Docker Compose
         working-directory: deployments
-        run: ./scripts/deploy-component.sh "${{ inputs.component }}" qa "${{ inputs.workflow_from }}"
+        run: |
+          ./scripts/deploy-component.sh \
+            --workflow-from "${{ inputs.workflow_from }}" \
+            --component "${{ inputs.component }}" \
+            --deploy-environment qa \
+            --qa-target mac \
+            --mode apply
