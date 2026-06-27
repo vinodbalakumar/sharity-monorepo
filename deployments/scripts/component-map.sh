@@ -50,12 +50,12 @@ component_service() {
 
 component_dockerfile_path() {
   case "$1" in
-    authorization-server) echo "deployments/dockerfiles/authorization-server.Dockerfile" ;;
-    marketplace-service) echo "deployments/dockerfiles/marketplace-service.Dockerfile" ;;
-    payment-service) echo "deployments/dockerfiles/payment-service.Dockerfile" ;;
-    wallet-service) echo "deployments/dockerfiles/wallet-service.Dockerfile" ;;
-    platform-web-bff) echo "deployments/dockerfiles/platform-web-bff.Dockerfile" ;;
-    sharity-app-ui) echo "deployments/dockerfiles/sharity-app.Dockerfile" ;;
+    authorization-server) echo "dockerfiles/authorization-server.Dockerfile" ;;
+    marketplace-service) echo "dockerfiles/marketplace-service.Dockerfile" ;;
+    payment-service) echo "dockerfiles/payment-service.Dockerfile" ;;
+    wallet-service) echo "dockerfiles/wallet-service.Dockerfile" ;;
+    platform-web-bff) echo "dockerfiles/platform-web-bff.Dockerfile" ;;
+    sharity-app-ui) echo "dockerfiles/sharity-app.Dockerfile" ;;
     *) return 1 ;;
   esac
 }
@@ -110,9 +110,9 @@ component_default_port() {
 
 component_runner_labels() {
   case "${1:-}" in
-    windows) echo "self-hosted,Windows,shariy-qa" ;;
-    mac) echo "self-hosted,macOS,shariy-qa" ;;
-    linux) echo "self-hosted,Linux,shariy-qa" ;;
+    windows) echo "self-hosted,Windows,sharity-qa" ;;
+    mac) echo "self-hosted,macOS,ARM64,sharity-qa" ;;
+    linux) echo "self-hosted,Linux,sharity-qa" ;;
     *) return 1 ;;
   esac
 }
@@ -156,8 +156,16 @@ component_is_supported() {
 
 components_from_paths() {
   local path component
-  local -A seen=()
   local -a matches=()
+
+  has_match() {
+    local existing
+    [[ ${#matches[@]} -eq 0 ]] && return 1
+    for existing in "${matches[@]}"; do
+      [[ "$existing" == "$1" ]] && return 0
+    done
+    return 1
+  }
 
   while IFS= read -r path; do
     [[ -z "$path" ]] && continue
@@ -170,8 +178,7 @@ components_from_paths() {
       dockerfiles/sharity-app.Dockerfile|sharity-app-ui/*) component="sharity-app-ui" ;;
       docker-compose*.yml|nginx/*|.github/workflows/*|deployment-manifest.yml)
         for component in $(component_list); do
-          if [[ -z "${seen[$component]:-}" ]]; then
-            seen["$component"]=1
+          if ! has_match "$component"; then
             matches+=("$component")
           fi
         done
@@ -182,8 +189,7 @@ components_from_paths() {
         ;;
     esac
 
-    if [[ -z "${seen[$component]:-}" ]]; then
-      seen["$component"]=1
+    if ! has_match "$component"; then
       matches+=("$component")
     fi
   done

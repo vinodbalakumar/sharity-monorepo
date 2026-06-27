@@ -45,6 +45,10 @@ jobs:
       DB_NAME: ${{ vars.DB_NAME }}
       DB_USERNAME: ${{ vars.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      PC_MYSQL_HOST: ${{ vars.DB_HOST }}
+      PC_MYSQL_PORT: ${{ vars.DB_PORT }}
+      PC_MYSQL_USERNAME: ${{ vars.DB_USERNAME }}
+      PC_MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
     steps:
       - name: Checkout deployments
         uses: actions/checkout@v4

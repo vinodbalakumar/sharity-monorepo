@@ -12,7 +12,7 @@ traffic_mode="deploy_only"
 rollback_enabled="true"
 retry_count="3"
 mode="${DEPLOY_MODE:-plan}"
-source_root="${SOURCE_ROOT:-$ROOT_DIR/sources}"
+source_root="${SOURCE_ROOT:-${SHARITY_SOURCE_ROOT:-$ROOT_DIR/sources}}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -65,16 +65,23 @@ mkdir -p "$source_root"
 resolve_targets() {
   local target="$1"
   local -a ordered=()
-  local -A seen=()
+
+  has_component() {
+    local existing
+    [[ ${#ordered[@]} -eq 0 ]] && return 1
+    for existing in "${ordered[@]}"; do
+      [[ "$existing" == "$1" ]] && return 0
+    done
+    return 1
+  }
 
   add_component() {
     local candidate="$1"
-    [[ -n "${seen[$candidate]:-}" ]] && return 0
+    has_component "$candidate" && return 0
     local dep
     for dep in $(component_dependencies "$candidate"); do
       add_component "$dep"
     done
-    seen["$candidate"]=1
     ordered+=("$candidate")
   }
 
@@ -137,12 +144,20 @@ build_image() {
     )
   fi
 
-  docker build \
-    -f "$dockerfile_path" \
-    "${build_args[@]}" \
-    -t "${image_name}:${tag}" \
-    -t "${image_name}:latest" \
-    "$repo_dir"
+  if [[ ${#build_args[@]} -gt 0 ]]; then
+    docker build \
+      -f "$dockerfile_path" \
+      "${build_args[@]}" \
+      -t "${image_name}:${tag}" \
+      -t "${image_name}:latest" \
+      "$repo_dir"
+  else
+    docker build \
+      -f "$dockerfile_path" \
+      -t "${image_name}:${tag}" \
+      -t "${image_name}:latest" \
+      "$repo_dir"
+  fi
 }
 
 health_endpoint_for() {
@@ -170,6 +185,16 @@ wait_for_service() {
 }
 
 write_env_file() {
+  local pc_mysql_host="${PC_MYSQL_HOST:-${DB_HOST:-}}"
+  local pc_mysql_port="${PC_MYSQL_PORT:-${DB_PORT:-3306}}"
+  local pc_mysql_username="${PC_MYSQL_USERNAME:-${DB_USERNAME:-}}"
+  local pc_mysql_password="${PC_MYSQL_PASSWORD:-${DB_PASSWORD:-}}"
+
+  if [[ -z "$pc_mysql_host" || -z "$pc_mysql_username" || -z "$pc_mysql_password" ]]; then
+    echo "Windows MySQL settings are required: set PC_MYSQL_HOST/PC_MYSQL_USERNAME/PC_MYSQL_PASSWORD or DB_HOST/DB_USERNAME/DB_PASSWORD." >&2
+    exit 1
+  fi
+
   local tag="${deploy_environment}-${workflow_from}"
   tag="${tag//[^a-zA-Z0-9_.-]/-}"
   local env_file="$ROOT_DIR/.env.deploy"
@@ -180,6 +205,15 @@ write_env_file() {
     echo "TRAFFIC_MODE=${traffic_mode}"
     echo "ROLLBACK_ENABLED=${rollback_enabled}"
     echo "RETRY_COUNT=${retry_count}"
+    echo "PC_MYSQL_HOST=${pc_mysql_host}"
+    echo "PC_MYSQL_PORT=${pc_mysql_port}"
+    echo "PC_MYSQL_USERNAME=${pc_mysql_username}"
+    echo "PC_MYSQL_PASSWORD=${pc_mysql_password}"
+    echo "AUTH_DB_NAME=${AUTH_DB_NAME:-auth}"
+    echo "BFF_DB_NAME=${BFF_DB_NAME:-auth}"
+    echo "MARKETPLACE_DB_NAME=${MARKETPLACE_DB_NAME:-marketplace_db}"
+    echo "PAYMENT_DB_NAME=${PAYMENT_DB_NAME:-payment_db}"
+    echo "WALLET_DB_NAME=${WALLET_DB_NAME:-wallet_db}"
     echo "AUTHORIZATION_SERVER_IMAGE=$(component_image_name authorization-server):${tag}"
     echo "MARKETPLACE_SERVICE_IMAGE=$(component_image_name marketplace-service):${tag}"
     echo "PAYMENT_SERVICE_IMAGE=$(component_image_name payment-service):${tag}"
@@ -241,10 +275,29 @@ rewrite_env_image() {
   fi
 }
 
-mapfile -t targets < <(resolve_targets "$component")
-declare -A previous_tags=()
+targets=()
+while IFS= read -r target; do
+  targets+=("$target")
+done < <(resolve_targets "$component")
+
+previous_components=()
+previous_images=()
+
+previous_image_for() {
+  local component_name="$1"
+  local index
+  for index in "${!previous_components[@]}"; do
+    if [[ "${previous_components[$index]}" == "$component_name" ]]; then
+      echo "${previous_images[$index]}"
+      return 0
+    fi
+  done
+  echo ""
+}
+
 for target in "${targets[@]}"; do
-  previous_tags["$target"]="$(capture_previous_image "$target")"
+  previous_components+=("$target")
+  previous_images+=("$(capture_previous_image "$target")")
   repo_slug="$(component_repo "$target")"
   repo_dir="$source_root/$target"
   sync_repo "$repo_dir" "$repo_slug" "$workflow_from"
@@ -264,9 +317,10 @@ docker compose "${compose_args[@]}" up -d --remove-orphans "${services[@]}"
 
 for target in "${targets[@]}"; do
   if ! wait_for_service "$target"; then
-    if [[ "$rollback_enabled" == "true" && -n "${previous_tags[$target]:-}" ]]; then
-      echo "Health check failed for $target; restoring ${previous_tags[$target]}"
-      rewrite_env_image "$env_file" "$target" "${previous_tags[$target]}"
+    previous_tag="$(previous_image_for "$target")"
+    if [[ "$rollback_enabled" == "true" && -n "$previous_tag" ]]; then
+      echo "Health check failed for $target; restoring ${previous_tag}"
+      rewrite_env_image "$env_file" "$target" "${previous_tag}"
       docker compose "${compose_args[@]}" up -d --remove-orphans "${services[@]}"
       if ! wait_for_service "$target"; then
         echo "Rollback also failed for $target" >&2

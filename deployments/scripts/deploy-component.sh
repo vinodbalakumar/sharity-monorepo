@@ -63,16 +63,23 @@ fi
 resolve_targets() {
   local target="$1"
   local -a ordered=()
-  local -A seen=()
+
+  has_component() {
+    local existing
+    [[ ${#ordered[@]} -eq 0 ]] && return 1
+    for existing in "${ordered[@]}"; do
+      [[ "$existing" == "$1" ]] && return 0
+    done
+    return 1
+  }
 
   add_component() {
     local candidate="$1"
-    [[ -n "${seen[$candidate]:-}" ]] && return 0
+    has_component "$candidate" && return 0
     local dep
     for dep in $(component_dependencies "$candidate"); do
       add_component "$dep"
     done
-    seen["$candidate"]=1
     ordered+=("$candidate")
   }
 
@@ -150,4 +157,5 @@ exec "$ROOT_DIR/scripts/deploy-component-with-rollback.sh" \
   --qa-target "$qa_target" \
   --traffic-mode "$traffic_mode" \
   --rollback-enabled "$rollback_enabled" \
-  --retry-count "$retry_count"
+  --retry-count "$retry_count" \
+  --mode "$mode"

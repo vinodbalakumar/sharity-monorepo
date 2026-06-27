@@ -3,9 +3,12 @@ version: "3.8"
 x-sharity-common-env: &sharity-common-env
   SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-qa}
   QA_TARGET: ${QA_TARGET:-mac}
-  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-}
-  SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-}
-  SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-}
+  SPRING_DATASOURCE_USERNAME: ${PC_MYSQL_USERNAME:?PC_MYSQL_USERNAME is required}
+  SPRING_DATASOURCE_PASSWORD: ${PC_MYSQL_PASSWORD:?PC_MYSQL_PASSWORD is required}
+  DB_HOST: ${PC_MYSQL_HOST:?PC_MYSQL_HOST must point to the Windows MySQL host or replica}
+  DB_PORT: ${PC_MYSQL_PORT:-3306}
+  DB_USERNAME: ${PC_MYSQL_USERNAME:?PC_MYSQL_USERNAME is required}
+  DB_PASSWORD: ${PC_MYSQL_PASSWORD:?PC_MYSQL_PASSWORD is required}
   SPRING_REDIS_HOST: ${SPRING_REDIS_HOST:-host.docker.internal}
   SPRING_REDIS_PORT: ${SPRING_REDIS_PORT:-6379}
   AUTHORIZATION_SERVER_URL: ${AUTHORIZATION_SERVER_URL:-http://authorization-server:8080}
@@ -19,6 +22,8 @@ services:
       - "${AUTHORIZATION_SERVER_PORT:-9091}:8080"
     environment:
       <<: *sharity-common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PC_MYSQL_HOST:?PC_MYSQL_HOST must point to the Windows MySQL host or replica}:${PC_MYSQL_PORT:-3306}/${AUTH_DB_NAME:-auth}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_NAME: ${AUTH_DB_NAME:-auth}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/authorization-server/api/actuator/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
@@ -32,6 +37,8 @@ services:
       - "${MARKETPLACE_SERVICE_PORT:-8084}:8080"
     environment:
       <<: *sharity-common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PC_MYSQL_HOST:?PC_MYSQL_HOST must point to the Windows MySQL host or replica}:${PC_MYSQL_PORT:-3306}/${MARKETPLACE_DB_NAME:-marketplace_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      MARKETPLACE_DB_NAME: ${MARKETPLACE_DB_NAME:-marketplace_db}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/marketplace-service/actuator/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
@@ -45,6 +52,8 @@ services:
       - "${PAYMENT_SERVICE_PORT:-8085}:8080"
     environment:
       <<: *sharity-common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PC_MYSQL_HOST:?PC_MYSQL_HOST must point to the Windows MySQL host or replica}:${PC_MYSQL_PORT:-3306}/${PAYMENT_DB_NAME:-payment_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      PAYMENT_DB_NAME: ${PAYMENT_DB_NAME:-payment_db}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/payment-service/actuator/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
@@ -58,6 +67,8 @@ services:
       - "${WALLET_SERVICE_PORT:-8086}:8080"
     environment:
       <<: *sharity-common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PC_MYSQL_HOST:?PC_MYSQL_HOST must point to the Windows MySQL host or replica}:${PC_MYSQL_PORT:-3306}/${WALLET_DB_NAME:-wallet_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      WALLET_DB_NAME: ${WALLET_DB_NAME:-wallet_db}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/wallet-service/actuator/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
@@ -71,6 +82,8 @@ services:
       - "${PLATFORM_WEB_BFF_PORT:-8083}:8080"
     environment:
       <<: *sharity-common-env
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PC_MYSQL_HOST:?PC_MYSQL_HOST must point to the Windows MySQL host or replica}:${PC_MYSQL_PORT:-3306}/${BFF_DB_NAME:-auth}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      BFF_DB_NAME: ${BFF_DB_NAME:-auth}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
