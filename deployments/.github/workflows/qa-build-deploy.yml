@@ -22,10 +22,19 @@ on:
           - sharity-app-ui
           - wallet-service
           - all
+      qa_target:
+        description: QA target
+        required: false
+        default: mac
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
 
 jobs:
   deploy:
-    runs-on: [self-hosted, macOS, ARM64, sharity-qa]
+    runs-on: ${{ fromJSON(inputs.qa_target == 'windows' && '["self-hosted","Windows","sharity-qa"]' || inputs.qa_target == 'linux' && '["self-hosted","Linux","sharity-qa"]' || '["self-hosted","macOS","ARM64","sharity-qa"]') }}
     timeout-minutes: 60
     env:
       DEPLOYMENTS_DIR: ${{ github.workspace }}/deployments
@@ -99,12 +108,12 @@ jobs:
           ref: ${{ inputs.workflow_from }}
           path: sources/wallet-service
 
-      - name: Deploy selected component to Mac Docker Compose
+      - name: Deploy selected component to QA Docker Compose
         working-directory: deployments
         run: |
           ./scripts/deploy-component.sh \
             --workflow-from "${{ inputs.workflow_from }}" \
             --component "${{ inputs.component }}" \
             --deploy-environment qa \
-            --qa-target mac \
+            --qa-target "${{ inputs.qa_target }}" \
             --mode apply
