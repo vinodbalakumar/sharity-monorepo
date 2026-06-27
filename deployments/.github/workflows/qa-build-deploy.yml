@@ -49,6 +49,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vinodbalakumar/authorization-server
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
           ref: ${{ inputs.workflow_from }}
           path: sources/authorization-server
 
@@ -57,6 +58,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vinodbalakumar/marketplace-service
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
           ref: ${{ inputs.workflow_from }}
           path: sources/marketplace-service
 
@@ -65,6 +67,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vinodbalakumar/payment-service
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
           ref: ${{ inputs.workflow_from }}
           path: sources/payment-service
 
@@ -73,6 +76,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vinodbalakumar/platform-web-bff
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
           ref: ${{ inputs.workflow_from }}
           path: sources/platform-web-bff
 
@@ -81,6 +85,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vinodbalakumar/sharity-app-ui
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
           ref: ${{ inputs.workflow_from }}
           path: sources/sharity-app-ui
 
@@ -89,6 +94,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vinodbalakumar/wallet-service
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
           ref: ${{ inputs.workflow_from }}
           path: sources/wallet-service
 
