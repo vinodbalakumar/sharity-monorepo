@@ -205,6 +205,7 @@ write_env_file() {
     echo "TRAFFIC_MODE=${traffic_mode}"
     echo "ROLLBACK_ENABLED=${rollback_enabled}"
     echo "RETRY_COUNT=${retry_count}"
+    echo "CERTS_DIR=${CERTS_DIR:-}"
     echo "PC_MYSQL_HOST=${pc_mysql_host}"
     echo "PC_MYSQL_PORT=${pc_mysql_port}"
     echo "PC_MYSQL_USERNAME=${pc_mysql_username}"
