@@ -43,14 +43,16 @@ This repository centralizes Sharity deployment metadata, compose layouts, helper
 - The QA route is designed to have only one active public target at a time.
 - Rollback and retry behavior are described in helper scripts and workflow inputs.
 - These files prepare the deployment flow; they do not change application code.
+- QA app containers must use the Windows MySQL database or an approved Windows replica. Do not add a local MySQL service to Mac/Linux QA compose files.
 
 ## Required secrets / environment values
 
 The workflows expect these values to be provided in GitHub Secrets or the runner environment when the workflows are eventually executed:
 
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
+- `DB_HOST` repository variable: Windows MySQL host or approved replica host.
+- `DB_PORT` repository variable: MySQL port, usually `3306`.
+- `DB_USERNAME` repository variable: MySQL user.
+- `DB_PASSWORD` repository secret: MySQL password.
 - `SPRING_REDIS_HOST`
 - `SPRING_REDIS_PORT`
 - `AUTHORIZATION_SERVER_URL`

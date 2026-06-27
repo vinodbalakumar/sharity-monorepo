@@ -35,5 +35,5 @@ All repositories are standardized to the `claude_cop_patch` deployment branch in
 
 - QA can reference `windows`, `mac`, or `linux` targets.
 - Production references the IONOS/Linux deployment model.
-- The workflows are prepared in the repository only; they do not deploy anything by themselves.
-
+- QA deploy runs on the selected self-hosted runner and passes `DB_HOST`, `DB_PORT`, `DB_USERNAME`, and `DB_PASSWORD` into compose as `PC_MYSQL_*`.
+- For Mac QA, `DB_HOST` must point at Windows MySQL or the approved Windows replica. The workflow must not create a local MySQL container.
