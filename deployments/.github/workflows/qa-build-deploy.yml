@@ -129,6 +129,14 @@ jobs:
           echo "DOCKER_CONFIG=${docker_config}" >> "${GITHUB_ENV}"
           DOCKER_CONFIG="${docker_config}" docker version
           DOCKER_CONFIG="${docker_config}" docker compose version
+          for image in \
+            maven:3.9-eclipse-temurin-21 \
+            eclipse-temurin:21-jre-alpine \
+            node:22-alpine \
+            nginx:1.27-alpine
+          do
+            DOCKER_CONFIG="${docker_config}" docker pull "$image"
+          done
 
       - name: Deploy selected component to QA Docker Compose
         working-directory: deployments

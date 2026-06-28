@@ -146,6 +146,7 @@ build_image() {
 
   if [[ ${#build_args[@]} -gt 0 ]]; then
     docker build \
+      --pull=false \
       -f "$dockerfile_path" \
       "${build_args[@]}" \
       -t "${image_name}:${tag}" \
@@ -153,6 +154,7 @@ build_image() {
       "$repo_dir"
   else
     docker build \
+      --pull=false \
       -f "$dockerfile_path" \
       -t "${image_name}:${tag}" \
       -t "${image_name}:latest" \
