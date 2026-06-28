@@ -8,7 +8,8 @@ component_list() {
     payment-service \
     wallet-service \
     platform-web-bff \
-    sharity-app-ui
+    sharity-app-ui \
+    nginx
 }
 
 component_repo() {
@@ -19,6 +20,7 @@ component_repo() {
     wallet-service) echo "vinodbalakumar/wallet-service" ;;
     platform-web-bff) echo "vinodbalakumar/platform-web-bff" ;;
     sharity-app-ui) echo "vinodbalakumar/sharity-app-ui" ;;
+    nginx) echo "vinodbalakumar/deployments" ;;
     *) return 1 ;;
   esac
 }
@@ -27,6 +29,9 @@ component_default_branch() {
   case "$1" in
     authorization-server|marketplace-service|payment-service|wallet-service|platform-web-bff|sharity-app-ui)
       echo "claude_cop_patch"
+      ;;
+    nginx)
+      echo "main"
       ;;
     *) return 1 ;;
   esac
@@ -44,6 +49,7 @@ component_service() {
     wallet-service) echo "wallet-service" ;;
     platform-web-bff) echo "platform-web-bff" ;;
     sharity-app-ui) echo "sharity-app" ;;
+    nginx) echo "nginx" ;;
     *) return 1 ;;
   esac
 }
@@ -56,6 +62,7 @@ component_dockerfile_path() {
     wallet-service) echo "dockerfiles/wallet-service.Dockerfile" ;;
     platform-web-bff) echo "dockerfiles/platform-web-bff.Dockerfile" ;;
     sharity-app-ui) echo "dockerfiles/sharity-app.Dockerfile" ;;
+    nginx) echo "nginx/nginx.conf" ;;
     *) return 1 ;;
   esac
 }
@@ -68,6 +75,7 @@ component_build_command() {
     wallet-service) echo "cd wallet-service && mvn clean package -DskipTests" ;;
     platform-web-bff) echo "cd platform-web-bff && mvn clean package -DskipTests" ;;
     sharity-app-ui) echo "cd sharity-app-ui && npm run build:web" ;;
+    nginx) echo "n/a" ;;
     *) return 1 ;;
   esac
 }
@@ -80,6 +88,7 @@ component_image_name() {
     wallet-service) echo "sharity/wallet-service" ;;
     platform-web-bff) echo "sharity/platform-web-bff" ;;
     sharity-app-ui) echo "sharity/sharity-app-ui" ;;
+    nginx) echo "nginx:1.27-alpine" ;;
     *) return 1 ;;
   esac
 }
@@ -92,6 +101,7 @@ component_health_endpoint() {
     wallet-service) echo "/wallet-service/internal/health" ;;
     platform-web-bff) echo "/actuator/health" ;;
     sharity-app-ui) echo "/" ;;
+    nginx) echo "nginx-config" ;;
     *) return 1 ;;
   esac
 }
@@ -104,6 +114,7 @@ component_default_port() {
     wallet-service) echo "8086" ;;
     platform-web-bff) echo "8083" ;;
     sharity-app-ui) echo "3001" ;;
+    nginx) echo "8080" ;;
     *) return 1 ;;
   esac
 }
@@ -125,6 +136,7 @@ component_dependencies() {
     wallet-service) echo "authorization-server" ;;
     platform-web-bff) echo "authorization-server marketplace-service payment-service wallet-service" ;;
     sharity-app-ui) echo "platform-web-bff marketplace-service authorization-server payment-service wallet-service" ;;
+    nginx) echo "" ;;
     *) return 1 ;;
   esac
 }
@@ -137,6 +149,7 @@ component_paths_for_changes() {
     wallet-service) printf '%s\n' 'wallet-service/' 'dockerfiles/wallet-service.Dockerfile' ;;
     platform-web-bff) printf '%s\n' 'platform-web-bff/' 'dockerfiles/platform-web-bff.Dockerfile' ;;
     sharity-app-ui) printf '%s\n' 'sharity-app-ui/' 'dockerfiles/sharity-app.Dockerfile' ;;
+    nginx) printf '%s\n' 'nginx/' 'docker-compose*.yml' '.github/workflows/' 'deployment-manifest.yml' ;;
     all) printf '%s\n' 'docker-compose' '.github/workflows/' 'dockerfiles/' 'nginx/' ;;
     *) return 1 ;;
   esac
@@ -145,7 +158,7 @@ component_paths_for_changes() {
 component_is_supported() {
   local candidate="$1"
   case "$candidate" in
-    authorization-server|marketplace-service|payment-service|wallet-service|platform-web-bff|sharity-app-ui|all)
+    authorization-server|marketplace-service|payment-service|wallet-service|platform-web-bff|sharity-app-ui|nginx|all)
       return 0
       ;;
     *)
@@ -176,7 +189,8 @@ components_from_paths() {
       dockerfiles/wallet-service.Dockerfile|wallet-service/*) component="wallet-service" ;;
       dockerfiles/platform-web-bff.Dockerfile|platform-web-bff/*) component="platform-web-bff" ;;
       dockerfiles/sharity-app.Dockerfile|sharity-app-ui/*) component="sharity-app-ui" ;;
-      docker-compose*.yml|nginx/*|.github/workflows/*|deployment-manifest.yml)
+      nginx/*) component="nginx" ;;
+      docker-compose*.yml|.github/workflows/*|deployment-manifest.yml)
         for component in $(component_list); do
           if ! has_match "$component"; then
             matches+=("$component")

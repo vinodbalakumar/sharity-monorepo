@@ -14,6 +14,7 @@ This repository centralizes Sharity deployment metadata, compose layouts, helper
 
 - authorization-server
 - marketplace-service
+- nginx
 - payment-service
 - platform-web-bff
 - sharity-app-ui
@@ -41,6 +42,7 @@ This repository centralizes Sharity deployment metadata, compose layouts, helper
 - The deployment branch is standardized to `claude_cop_patch`.
 - QA target choices are `windows`, `mac`, and `linux`.
 - The QA route is designed to have only one active public target at a time.
+- Selecting `nginx` in GitHub Actions updates only the nginx service. It does not rebuild or redeploy the backend application services.
 - Rollback and retry behavior are described in helper scripts and workflow inputs.
 - These files prepare the deployment flow; they do not change application code.
 - QA app containers must use the Windows MySQL primary or an approved DB endpoint. Do not add independent local MySQL services to Mac/Linux QA compose files.

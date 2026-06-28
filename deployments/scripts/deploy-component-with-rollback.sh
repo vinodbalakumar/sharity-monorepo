@@ -129,6 +129,9 @@ sync_repo() {
 build_image() {
   local component_name="$1"
   local repo_dir="$2"
+  if [[ "$component_name" == "nginx" ]]; then
+    return 0
+  fi
   local dockerfile_path="$ROOT_DIR/$(component_dockerfile_path "$component_name")"
   local image_name
   image_name="$(component_image_name "$component_name")"
@@ -174,6 +177,17 @@ wait_for_service() {
   health_path="$(health_endpoint_for "$component_name")"
   local attempt=0
   local max_attempts="${retry_count:-3}"
+
+  if [[ "$component_name" == "nginx" ]]; then
+    while (( attempt < max_attempts )); do
+      if docker inspect -f '{{.State.Health.Status}}' sharity-nginx 2>/dev/null | grep -q '^healthy$'; then
+        return 0
+      fi
+      attempt=$((attempt + 1))
+      sleep 3
+    done
+    return 1
+  fi
 
   while (( attempt < max_attempts )); do
     if "$ROOT_DIR/scripts/health-check.sh" --base-url "$base_url:$port" --path "$health_path" --timeout-seconds 90; then
@@ -301,6 +315,9 @@ previous_image_for() {
 for target in "${targets[@]}"; do
   previous_components+=("$target")
   previous_images+=("$(capture_previous_image "$target")")
+  if [[ "$target" == "nginx" ]]; then
+    continue
+  fi
   repo_slug="$(component_repo "$target")"
   repo_dir="$source_root/$target"
   sync_repo "$repo_dir" "$repo_slug" "$workflow_from"

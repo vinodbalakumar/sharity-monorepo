@@ -17,6 +17,7 @@ on:
         options:
           - authorization-server
           - marketplace-service
+          - nginx
           - payment-service
           - platform-web-bff
           - sharity-app-ui
