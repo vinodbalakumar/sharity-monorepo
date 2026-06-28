@@ -128,7 +128,6 @@ jobs:
           done
           echo "DOCKER_CONFIG=${docker_config}" >> "${GITHUB_ENV}"
           DOCKER_CONFIG="${docker_config}" docker version
-          DOCKER_CONFIG="${docker_config}" docker compose version
           for image in \
             maven:3.9-eclipse-temurin-21 \
             eclipse-temurin:21-jre-alpine \
