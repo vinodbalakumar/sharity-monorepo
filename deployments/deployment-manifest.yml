@@ -35,7 +35,7 @@ repositories:
     dockerfile_path: deployments/dockerfiles/marketplace-service.Dockerfile
     build_command: cd marketplace-service && mvn clean package -DskipTests
     image_name: sharity/marketplace-service
-    health_endpoint: /marketplace-service/actuator/health
+    health_endpoint: /marketplace-service/internal/health
     compose_service_name: marketplace-service
 
   payment-service:
@@ -57,7 +57,7 @@ repositories:
     dockerfile_path: deployments/dockerfiles/wallet-service.Dockerfile
     build_command: cd wallet-service && mvn clean package -DskipTests
     image_name: sharity/wallet-service
-    health_endpoint: /wallet-service/actuator/health
+    health_endpoint: /wallet-service/internal/health
     compose_service_name: wallet-service
 
   platform-web-bff:

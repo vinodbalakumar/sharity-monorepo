@@ -3,9 +3,9 @@
 | Repository | Default Branch | Deployment Branch | Dockerfile Path | Build Command | Image Name | Health Endpoint | Compose Service |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | authorization-server | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/authorization-server.Dockerfile` | `cd authorization-server && mvn clean package -DskipTests` | `sharity/authorization-server` | `/authorization-server/api/actuator/health` | `authorization-server` |
-| marketplace-service | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/marketplace-service.Dockerfile` | `cd marketplace-service && mvn clean package -DskipTests` | `sharity/marketplace-service` | `/marketplace-service/actuator/health` | `marketplace-service` |
+| marketplace-service | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/marketplace-service.Dockerfile` | `cd marketplace-service && mvn clean package -DskipTests` | `sharity/marketplace-service` | `/marketplace-service/internal/health` | `marketplace-service` |
 | payment-service | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/payment-service.Dockerfile` | `cd payment-service && mvn clean package -DskipTests` | `sharity/payment-service` | `/payment-service/actuator/health` | `payment-service` |
-| wallet-service | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/wallet-service.Dockerfile` | `cd wallet-service && mvn clean package -DskipTests` | `sharity/wallet-service` | `/wallet-service/actuator/health` | `wallet-service` |
+| wallet-service | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/wallet-service.Dockerfile` | `cd wallet-service && mvn clean package -DskipTests` | `sharity/wallet-service` | `/wallet-service/internal/health` | `wallet-service` |
 | platform-web-bff | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/platform-web-bff.Dockerfile` | `cd platform-web-bff && mvn clean package -DskipTests` | `sharity/platform-web-bff` | `/actuator/health` | `platform-web-bff` |
 | sharity-app-ui | `claude_cop_patch` | `claude_cop_patch` | `deployments/dockerfiles/sharity-app.Dockerfile` | `cd sharity-app-ui && npm run build:web` | `sharity/sharity-app-ui` | `/` | `sharity-app` |
 

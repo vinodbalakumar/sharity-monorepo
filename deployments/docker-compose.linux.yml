@@ -33,7 +33,7 @@ services:
     environment:
       <<: *sharity-common-env
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/marketplace-service/actuator/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/marketplace-service/internal/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 12
@@ -59,7 +59,7 @@ services:
     environment:
       <<: *sharity-common-env
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/wallet-service/actuator/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/wallet-service/internal/health >/dev/null 2>&1 || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 12

@@ -87,9 +87,9 @@ component_image_name() {
 component_health_endpoint() {
   case "$1" in
     authorization-server) echo "/authorization-server/api/actuator/health" ;;
-    marketplace-service) echo "/marketplace-service/actuator/health" ;;
+    marketplace-service) echo "/marketplace-service/internal/health" ;;
     payment-service) echo "/payment-service/actuator/health" ;;
-    wallet-service) echo "/wallet-service/actuator/health" ;;
+    wallet-service) echo "/wallet-service/internal/health" ;;
     platform-web-bff) echo "/actuator/health" ;;
     sharity-app-ui) echo "/" ;;
     *) return 1 ;;
