@@ -137,13 +137,19 @@ export function WelcomeScreen({
   const mobileSectionPadding = isTinyPhone ? 14 : 16;
   const mobileGap = isTinyPhone ? 10 : 14;
   const mobileSectionInnerWidth = Math.max(0, width - contentPadding * 2 - mobileSectionPadding * 2);
-  const mobileRailCardWidth = Math.min(320, Math.max(240, Math.round(width * 0.82)));
+  const mobileGridColumns = width < 360 ? 1 : 2;
+  const mobileGridCardWidth = mobileGridColumns === 2
+    ? Math.floor((mobileSectionInnerWidth - mobileGap) / 2)
+    : mobileSectionInnerWidth;
+  const mobileRailCardWidth = isTinyPhone
+    ? Math.min(Math.round(width * 0.88), 320)
+    : Math.min(Math.round(width * 0.76), 300);
   const mobileCollectionCardWidth = isTinyPhone
     ? Math.min(Math.round(width * 0.88), 340)
     : Math.min(Math.round(width * 0.84), 340);
   const stackSectionActions = width < 340;
   const heroCardHeight = isMobile ? 220 : width < 992 ? 440 : 520;
-  const productImageHeight = isMobile ? 180 : width < 992 ? 200 : 260;
+  const productImageHeight = isMobile ? 160 : width < 992 ? 200 : 260;
   const categoryVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
   const productVisibleCount = isDesktop ? 4 : isTablet ? 2 : 1;
   const collectionVisibleCount = isDesktop ? 3 : isTablet ? 2 : 1;
@@ -276,7 +282,7 @@ export function WelcomeScreen({
   const trustedSellers = sellerCards;
   const sellerCarouselRef = useRef<ScrollView | null>(null);
   const sellerScrollOffsetRef = useRef(0);
-  const sellerCardWidth = isMobile ? Math.min(width * 0.78, 320) : 300;
+  const sellerCardWidth = isMobile ? Math.min(width * 0.72, 280) : 300;
   const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
   const isHomeInitialLoading = homeLoading && !home;
   const isHomeErrorState = homeError && !home;
@@ -791,7 +797,14 @@ export function WelcomeScreen({
                           <View style={styles.categoryIconPill}>
                             <Ionicons color={palette.blue} name={category.icon} size={16} />
                           </View>
-                          <Text style={[styles.categoryName, isMobile && styles.categoryNameMobile]}>{category.categoryName}</Text>
+                          <Text
+                            style={[
+                              styles.categoryName,
+                              isMobile ? styles.categoryNameMobile : styles.categoryNameWeb
+                            ]}
+                          >
+                            {category.categoryName}
+                          </Text>
                           <Text style={[styles.categoryCount, isMobile && styles.categoryCountMobile]}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
                         </View>
                       </>
@@ -800,7 +813,14 @@ export function WelcomeScreen({
                         <View style={styles.categoryPlaceholderIcon}>
                           <Ionicons color={palette.blue} name={category.icon} size={20} />
                         </View>
-                        <Text style={[styles.categoryName, isMobile && styles.categoryNameMobile]}>{category.categoryName}</Text>
+                        <Text
+                          style={[
+                            styles.categoryName,
+                            isMobile ? styles.categoryNameMobile : styles.categoryNameWeb
+                          ]}
+                        >
+                          {category.categoryName}
+                        </Text>
                         <Text style={[styles.categoryCount, isMobile && styles.categoryCountMobile]}>{category.soldCount > 0 ? `${category.soldCount} sold` : 'Curated collection'}</Text>
                       </View>
                     )}
@@ -829,6 +849,7 @@ export function WelcomeScreen({
                 decelerationRate="fast"
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
+                style={styles.productRail}
                 contentContainerStyle={[
                   styles.productRailContent,
                   {
@@ -854,7 +875,7 @@ export function WelcomeScreen({
                     {item.imageUrl ? (
                       <LazyImage
                         alt={item.title}
-                        containerStyle={[styles.productMedia, { height: 176 }]}
+                        containerStyle={[styles.productMedia, { height: 160 }]}
                         fitMode="contain"
                         imageStyle={styles.productImage}
                         priority={index < productVisibleCount ? 'high' : 'lazy'}
@@ -866,7 +887,7 @@ export function WelcomeScreen({
                         </View>
                       </LazyImage>
                     ) : (
-                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
+                      <View style={[styles.productPlaceholder, { minHeight: 160 }]}>
                         <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
                         <Text style={styles.productPlaceholderText}>Discounted item</Text>
                       </View>
@@ -920,7 +941,7 @@ export function WelcomeScreen({
                     {item.imageUrl ? (
                       <LazyImage
                         alt={item.title}
-                        containerStyle={[styles.productMedia, { height: 176 }]}
+                        containerStyle={[styles.productMedia, { height: 160 }]}
                         fitMode="contain"
                         imageStyle={styles.productImage}
                         priority={index < productVisibleCount ? 'high' : 'lazy'}
@@ -932,7 +953,7 @@ export function WelcomeScreen({
                         </View>
                       </LazyImage>
                     ) : (
-                      <View style={[styles.productPlaceholder, { minHeight: 176 }]}>
+                      <View style={[styles.productPlaceholder, { minHeight: 160 }]}>
                         <Ionicons color={palette.blue} name="pricetag-outline" size={26} />
                         <Text style={styles.productPlaceholderText}>Discounted item</Text>
                       </View>
@@ -1583,11 +1604,11 @@ export function WelcomeScreen({
                     }
                   ]}
                 >
-                  <View style={[styles.sellerHeader, isMobile && styles.sellerHeaderMobile]}>
-                    <View style={[styles.sellerAvatar, isMobile && styles.sellerAvatarMobile]}>
-                      <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
-                    </View>
-                    <View style={styles.sellerHeaderCopy}>
+                    <View style={[styles.sellerHeader, isMobile && styles.sellerHeaderMobile]}>
+                      <View style={[styles.sellerAvatar, isMobile && styles.sellerAvatarMobile]}>
+                        <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
+                      </View>
+                      <View style={styles.sellerHeaderCopy}>
                       <Text style={styles.sellerName} numberOfLines={1}>
                         {seller.name}
                       </Text>
@@ -1597,7 +1618,10 @@ export function WelcomeScreen({
                           <Text style={styles.sellerBadgeText}>Verified seller</Text>
                         </View>
                       </View>
-                      <Text numberOfLines={1} style={styles.sellerStars}>⭐ {seller.rating.toFixed(1)}</Text>
+                      <View style={styles.sellerStarsRow}>
+                        <Ionicons color="#f59e0b" name="star" size={12} />
+                        <Text numberOfLines={1} style={styles.sellerStars}>{seller.rating.toFixed(1)}</Text>
+                      </View>
                     </View>
                   </View>
 
@@ -1641,9 +1665,9 @@ export function WelcomeScreen({
                     styles.featureCard,
                     isMobile && styles.featureCardMobile,
                     isMobile && {
-                      flexBasis: isTinyPhone ? '100%' : '48%',
-                      maxWidth: isTinyPhone ? '100%' : '48%',
-                      width: isTinyPhone ? '100%' : '48%'
+                      flexBasis: isTinyPhone ? '100%' : mobileGridCardWidth,
+                      maxWidth: isTinyPhone ? '100%' : mobileGridCardWidth,
+                      width: isTinyPhone ? '100%' : mobileGridCardWidth
                     },
                     !isMobile && styles.gridCardFullWidth
                   ]}
@@ -1680,9 +1704,9 @@ export function WelcomeScreen({
                     styles.metricCard,
                     isMobile && styles.metricCardMobile,
                     isMobile && {
-                      flexBasis: isTinyPhone ? '100%' : '48%',
-                      maxWidth: isTinyPhone ? '100%' : '48%',
-                      width: isTinyPhone ? '100%' : '48%'
+                      flexBasis: isTinyPhone ? '100%' : mobileGridCardWidth,
+                      maxWidth: isTinyPhone ? '100%' : mobileGridCardWidth,
+                      width: isTinyPhone ? '100%' : mobileGridCardWidth
                     },
                     !isMobile && styles.gridCardFullWidth
                   ]}
@@ -1816,6 +1840,7 @@ function LazyImage({ alt, children, containerStyle, fitMode = 'contain', imageSt
   const [hasLoaded, setHasLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const containerRef = useRef<View | null>(null);
+  const resolvedSource = normalizeImageSource(source);
 
   useEffect(() => {
     if (!isWeb || shouldLoadImmediately || shouldLoad) {
@@ -1875,7 +1900,7 @@ function LazyImage({ alt, children, containerStyle, fitMode = 'contain', imageSt
             loading={priority === 'high' ? 'eager' : 'lazy'}
             onError={() => setHasError(true)}
             onLoad={() => setHasLoaded(true)}
-            src={source}
+            src={resolvedSource}
             style={webImageStyle}
           />
         ) : (
@@ -1883,7 +1908,7 @@ function LazyImage({ alt, children, containerStyle, fitMode = 'contain', imageSt
             onError={() => setHasError(true)}
             onLoadEnd={() => setHasLoaded(true)}
             resizeMode={fitMode}
-            source={{ uri: source }}
+            source={{ uri: resolvedSource }}
             style={[styles.lazyImageNative, imageStyle as StyleProp<ImageStyle>]}
           />
         )
@@ -1892,6 +1917,23 @@ function LazyImage({ alt, children, containerStyle, fitMode = 'contain', imageSt
       {children ? <View pointerEvents="box-none" style={styles.lazyImageChildren}>{children}</View> : null}
     </View>
   );
+}
+
+function normalizeImageSource(source: string) {
+  const trimmed = source.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+
+  try {
+    return encodeURI(trimmed);
+  } catch {
+    return trimmed;
+  }
 }
 
 function buildTopCategories(home: MarketplaceHomeResponse | null): TopCategoryCard[] {
@@ -2228,13 +2270,13 @@ function resolveHeroImageUrls(source: string | Record<string, unknown> | null | 
       return [];
     }
     return trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')
-      ? [trimmed]
+      ? [normalizeImageSource(trimmed)]
       : [];
   }
 
   const imageUrls = firstArray(source, ['imageUrls', 'image_urls', 'urls', 'publicUrls', 'public_urls', 'mediaUrls', 'media_urls']);
   if (imageUrls.length > 0) {
-    return imageUrls.filter((url) => url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:'));
+    return imageUrls.filter((url) => url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')).map(normalizeImageSource);
   }
 
   const directImage = firstString(source, [
@@ -2252,7 +2294,7 @@ function resolveHeroImageUrls(source: string | Record<string, unknown> | null | 
   ]);
   if (directImage) {
     return directImage.startsWith('http://') || directImage.startsWith('https://') || directImage.startsWith('data:')
-      ? [directImage]
+      ? [normalizeImageSource(directImage)]
       : [];
   }
 
@@ -2537,8 +2579,8 @@ function productDiscountBadgeStyle(percent: number): any | undefined {
         boxShadow: '0 10px 22px rgba(100, 116, 139, 0.20)'
       } as any)
     : ({
-        backgroundcolor: '#475569',
-        shadowcolor: '#475569',
+        backgroundColor: '#475569',
+        shadowColor: '#475569',
         shadowOpacity: 0.2,
         shadowRadius: 10,
         shadowOffset: { height: 4, width: 0 }
@@ -3267,31 +3309,31 @@ const styles = StyleSheet.create({
     shadowRadius: 70
   },
   sectionBlockTopCategories: {
-    backgroundColor: 'rgba(244,247,255,0.92)'
+    backgroundColor: 'rgba(255,255,255,0.72)'
   },
   sectionBlockDiscounts: {
-    backgroundColor: 'rgba(255,249,242,0.94)'
+    backgroundColor: 'rgba(255,255,255,0.72)'
   },
   sectionBlockPopular: {
-    backgroundColor: 'rgba(255,255,255,0.92)'
+    backgroundColor: 'rgba(255,255,255,0.72)'
   },
   sectionBlockFeatured: {
-    backgroundColor: 'rgba(245,243,255,0.92)'
+    backgroundColor: 'rgba(255,255,255,0.72)'
   },
   sectionBlockRollback: {
-    backgroundColor: 'rgba(255,247,237,0.98)',
-    borderColor: 'rgba(249,115,22,0.18)'
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderColor: 'rgba(148,163,184,0.22)'
   },
   sectionBlockClearance: {
-    backgroundColor: 'rgba(236,253,245,0.98)',
-    borderColor: 'rgba(16,185,129,0.18)'
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderColor: 'rgba(148,163,184,0.22)'
   },
   sectionBlockSellersDark: {
     backgroundColor: '#101936',
     borderColor: 'rgba(148,163,184,0.16)'
   },
   sectionBlockWhy: {
-    backgroundColor: 'rgba(248,250,252,0.92)'
+    backgroundColor: 'rgba(255,255,255,0.72)'
   },
   sectionBlockMobile: {
     marginTop: 28,
@@ -3434,8 +3476,8 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     alignSelf: 'stretch',
-    height: '100%',
-    width: '100%',
+    height: 'auto',
+    width: 'auto',
     overflow: 'hidden'
   },
   collectionCardMobile: {
@@ -3443,7 +3485,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     height: 'auto',
-    minHeight: 430,
+    minHeight: 0,
     width: '100%'
   },
   collectionMediaWrap: {
@@ -3496,8 +3538,8 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   collectionTitleMobile: {
-    fontSize: 28,
-    lineHeight: 32
+    fontSize: 22,
+    lineHeight: 26
   },
   collectionMeta: {
     color: palette.body,
@@ -3545,8 +3587,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     alignSelf: 'stretch',
-    maxWidth: 240,
-    minHeight: 312,
+    maxWidth: 264,
+    minHeight: 332,
     width: '100%',
     overflow: 'hidden'
   },
@@ -3717,10 +3759,14 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     color: palette.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
-    lineHeight: 22,
+    lineHeight: 24,
     marginTop: 6
+  },
+  categoryNameWeb: {
+    fontSize: 18,
+    letterSpacing: -0.2
   },
   categoryNameMobile: {
     fontSize: 13,
@@ -3764,6 +3810,8 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   productRailContent: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: 14,
     paddingBottom: 2,
     paddingRight: 2
@@ -3774,9 +3822,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     alignSelf: 'stretch',
-    height: '100%',
+    height: 'auto',
     flexDirection: 'column',
-    width: '100%',
+    width: 'auto',
     overflow: 'hidden',
     shadowColor: '#0f172a',
     shadowOffset: { height: 10, width: 0 },
@@ -3864,11 +3912,11 @@ const styles = StyleSheet.create({
   },
   productBodyMobile: {
     flex: 0,
-    padding: 16
+    padding: 14
   },
   productBodyRailMobile: {
     flex: 0,
-    padding: 16
+    padding: 14
   },
   productCategory: {
     alignSelf: 'flex-start',
@@ -3890,12 +3938,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     lineHeight: 24,
-    minHeight: 48,
     marginTop: 8
   },
   productTitleMobile: {
-    fontSize: 17,
-    lineHeight: 23
+    fontSize: 16,
+    lineHeight: 21
   },
   productMetaRow: {
     alignItems: 'center',
@@ -3906,8 +3953,8 @@ const styles = StyleSheet.create({
     paddingTop: 14
   },
   productPriceStack: {
-    marginTop: 'auto',
-    paddingTop: 14
+    marginTop: 8,
+    paddingTop: 10
   },
   productPrice: {
     color: '#15803D',
@@ -3950,6 +3997,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start'
   },
   sellerCarouselContent: {
+    flexDirection: 'row',
     alignItems: 'stretch',
     gap: 24,
     paddingBottom: 4,
@@ -3977,8 +4025,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     alignSelf: 'stretch',
-    height: '100%',
-    width: '100%',
+    height: 'auto',
+    width: 'auto',
     overflow: 'hidden',
     padding: 20
   },
@@ -3988,7 +4036,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     height: 'auto',
     minHeight: 0,
-    width: 250
+    width: 280
   },
   sellerHeader: {
     alignItems: 'center',
@@ -4085,6 +4133,12 @@ const styles = StyleSheet.create({
     color: '#f59e0b',
     fontSize: 12,
     fontWeight: '800',
+    marginTop: 0
+  },
+  sellerStarsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
     marginTop: 8
   },
   featureGrid: {
@@ -4107,8 +4161,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     alignSelf: 'stretch',
-    height: '100%',
-    width: '100%',
+    height: 'auto',
+    width: 'auto',
     padding: 22
   },
   featureCardMobile: {
@@ -4116,10 +4170,10 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     height: 'auto',
-    minHeight: 160,
+    minHeight: 148,
     minWidth: 0,
-    padding: 16,
-    width: '48%'
+    padding: 14,
+    width: 'auto'
   },
   featureIcon: {
     alignItems: 'center',
@@ -4140,8 +4194,8 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   featureTitleMobile: {
-    fontSize: 18,
-    lineHeight: 22
+    fontSize: 16,
+    lineHeight: 20
   },
   featureText: {
     color: palette.body,
@@ -4151,8 +4205,8 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   featureTextMobile: {
-    fontSize: 14,
-    lineHeight: 20
+    fontSize: 13,
+    lineHeight: 18
   },
   metricSection: {
     display: 'flex',
@@ -4203,8 +4257,8 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   itemsSoldValueMobile: {
-    fontSize: 44,
-    lineHeight: 48
+    fontSize: 40,
+    lineHeight: 44
   },
   itemsSoldLabel: {
     color: 'rgba(255,255,255,0.82)',
@@ -4213,8 +4267,8 @@ const styles = StyleSheet.create({
     marginTop: 6
   },
   itemsSoldLabelMobile: {
-    fontSize: 14,
-    lineHeight: 20
+    fontSize: 13,
+    lineHeight: 18
   },
   metricGrid: {
     backgroundColor: palette.surface,
@@ -4241,9 +4295,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: palette.pageAlt,
     borderRadius: 22,
-    flex: 1,
-    height: '100%',
-    minWidth: 150,
+    flex: 0,
+    height: 'auto',
+    minWidth: 0,
     paddingVertical: 22
   },
   metricCardMobile: {
@@ -4251,10 +4305,10 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     height: 'auto',
-    minHeight: 88,
+    minHeight: 116,
     minWidth: 0,
-    paddingVertical: 18,
-    width: '48%'
+    paddingVertical: 14,
+    width: 'auto'
   },
   metricValue: {
     color: palette.blue,
@@ -4263,8 +4317,8 @@ const styles = StyleSheet.create({
     lineHeight: 34
   },
   metricValueMobile: {
-    fontSize: 22,
-    lineHeight: 26
+    fontSize: 20,
+    lineHeight: 24
   },
   metricLabel: {
     color: palette.body,
@@ -4273,8 +4327,8 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   metricLabelMobile: {
-    fontSize: 11,
-    lineHeight: 15
+    fontSize: 10,
+    lineHeight: 14
   },
   ctaSection: {
     alignItems: 'center',
