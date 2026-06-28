@@ -36,7 +36,7 @@ It does not directly configure Windows MySQL, create replication users, copy phy
 ### Primary
 
 - Host: Windows QA MySQL
-- Example host: `192.168.0.200`
+- Example host: `desktop-g9ov8mo.tail97dce3.ts.net`
 - Role: primary/write source
 - Required: binary logging enabled
 - Required: stable `server_id`
@@ -132,7 +132,7 @@ mysqldump \
   --events \
   --set-gtid-purged=ON \
   --all-databases \
-  -h 192.168.0.200 \
+  -h desktop-g9ov8mo.tail97dce3.ts.net \
   -u root \
   -p > sharity-qa-primary.sql
 ```
@@ -153,7 +153,7 @@ MySQL 8.0+ syntax:
 
 ```sql
 CHANGE REPLICATION SOURCE TO
-  SOURCE_HOST='192.168.0.200',
+  SOURCE_HOST='desktop-g9ov8mo.tail97dce3.ts.net',
   SOURCE_PORT=3306,
   SOURCE_USER='sharity_repl',
   SOURCE_PASSWORD='change-me',
@@ -166,7 +166,7 @@ Older MySQL syntax:
 
 ```sql
 CHANGE MASTER TO
-  MASTER_HOST='192.168.0.200',
+  MASTER_HOST='desktop-g9ov8mo.tail97dce3.ts.net',
   MASTER_PORT=3306,
   MASTER_USER='sharity_repl',
   MASTER_PASSWORD='change-me',
@@ -234,7 +234,7 @@ Do not use this unless the service code and configuration explicitly support rea
 For the current safe model, keep app deployment pointed at the primary:
 
 ```text
-DB_HOST=192.168.0.200
+DB_HOST=desktop-g9ov8mo.tail97dce3.ts.net
 DB_PORT=3306
 DB_USERNAME=<qa app user>
 DB_PASSWORD=<qa app password secret>

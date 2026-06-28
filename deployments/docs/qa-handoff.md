@@ -146,7 +146,7 @@ See `docs/mysql-replication-runbook.md` for the full setup steps.
 The Mac can reach Windows MySQL at the network level:
 
 ```text
-192.168.0.200:3306 reachable
+desktop-g9ov8mo.tail97dce3.ts.net:3306 reachable
 ```
 
 The active blocker found during testing was MySQL authorization:
@@ -174,7 +174,7 @@ Set these in the `vinodbalakumar/deployments` repository.
 Repository variables:
 
 ```text
-DB_HOST=192.168.0.200
+DB_HOST=desktop-g9ov8mo.tail97dce3.ts.net
 DB_PORT=3306
 DB_USERNAME=root
 ```
@@ -226,7 +226,7 @@ If labels do not match exactly, GitHub will not send the job to the intended run
 6. Confirm the machine can reach Windows MySQL:
 
 ```bash
-nc -vz 192.168.0.200 3306
+nc -vz desktop-g9ov8mo.tail97dce3.ts.net 3306
 ```
 
 7. Add the machine host/IP to Windows MySQL grants.

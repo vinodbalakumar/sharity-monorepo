@@ -21,7 +21,7 @@ Windows hosts the primary QA MySQL database for Sharity.
 
 The QA workflow maps these values into the compose runtime:
 
-- Repository variable `DB_HOST`: Windows MySQL host or approved replica host, for example `192.168.0.200`.
+- Repository variable `DB_HOST`: Windows MySQL host or approved replica host, for example `desktop-g9ov8mo.tail97dce3.ts.net`.
 - Repository variable `DB_PORT`: MySQL port, usually `3306`.
 - Repository variable `DB_USERNAME`: MySQL user.
 - Repository secret `DB_PASSWORD`: MySQL password.
