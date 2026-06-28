@@ -33,4 +33,10 @@ http://localhost:8080/wallet-service/swagger-ui/index.html
 wallet_db
 ```
 
-MySQL runs on the PC, not in Docker.
+Datasource credentials and URL are injected through environment variables:
+
+- `WALLET_DB_URL`
+- `WALLET_DB_USERNAME`
+- `WALLET_DB_PASSWORD`
+
+GitHub environment variables or deployment secrets should provide those values at runtime.
