@@ -118,6 +118,8 @@ PC_MYSQL_PASSWORD from DB_PASSWORD
 11. Health checks run.
 12. If all required services are healthy, GitHub marks the workflow successful.
 
+The `QA Build & Deploy` job runs its shell steps with `bash` on Windows, Mac, and Linux. That is required because the workflow uses Bash syntax such as `mkdir -p`, `source`, and `set -euo pipefail`.
+
 The Mac workflow must not create or start an independent local MySQL container for Sharity data. If Mac stores a copy of QA data, that copy must be a configured replica of the Windows primary.
 
 ## MySQL Replication

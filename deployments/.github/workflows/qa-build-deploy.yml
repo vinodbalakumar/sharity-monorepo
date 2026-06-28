@@ -37,6 +37,9 @@ jobs:
   deploy:
     runs-on: ${{ fromJSON(inputs.qa_target == 'windows' && '["self-hosted","Windows","sharity-qa"]' || inputs.qa_target == 'linux' && '["self-hosted","Linux","sharity-qa"]' || '["self-hosted","macOS","ARM64","sharity-qa"]') }}
     timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
     env:
       DEPLOYMENTS_DIR: ${{ github.workspace }}/deployments
       SHARITY_SOURCE_ROOT: ${{ github.workspace }}/sources
