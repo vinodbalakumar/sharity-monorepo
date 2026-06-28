@@ -45,6 +45,8 @@ This repository centralizes Sharity deployment metadata, compose layouts, helper
 - These files prepare the deployment flow; they do not change application code.
 - QA app containers must use the Windows MySQL primary or an approved DB endpoint. Do not add independent local MySQL services to Mac/Linux QA compose files.
 - If QA data must exist on Mac/Linux too, configure MySQL replication from the Windows primary. See `docs/mysql-replication-runbook.md`.
+- marketplace-service and wallet-service do not ship Spring Actuator in this repo state, so QA health checks use the shared `/internal/health` endpoint exposed by each service.
+- The same compose health model is used on QA, Mac, Linux, Windows, and prod so the workflow behaves the same across runner targets.
 
 ## Required secrets / environment values
 

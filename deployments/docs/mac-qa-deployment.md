@@ -24,7 +24,7 @@ The Mac runner host must be allowed by Windows MySQL. The observed Mac hostname 
 MACBOOKAIR-BF8A
 ```
 
-If deploy logs show `Host 'MACBOOKAIR-BF8A' is not allowed to connect`, grant that host access on Windows MySQL before running QA deploy again.
+If deploy logs show `Host '<runner-hostname>' is not allowed to connect`, grant that host access on Windows MySQL before running QA deploy again.
 
 ## What this repository provides
 

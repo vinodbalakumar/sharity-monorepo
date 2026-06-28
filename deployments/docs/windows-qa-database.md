@@ -30,17 +30,17 @@ The deploy scripts export these as `PC_MYSQL_HOST`, `PC_MYSQL_PORT`, `PC_MYSQL_U
 
 ## Windows MySQL access
 
-Windows MySQL must allow the Mac runner host to connect. If MySQL rejects the Mac with:
+Windows MySQL must allow the runner host to connect. If MySQL rejects the host with:
 
 ```text
-Host 'MACBOOKAIR-BF8A' is not allowed to connect to this MySQL server
+Host '<runner-hostname>' is not allowed to connect to this MySQL server
 ```
 
 run the grant on the Windows MySQL machine as an admin/root MySQL user:
 
 ```sql
-CREATE USER IF NOT EXISTS 'root'@'MACBOOKAIR-BF8A' IDENTIFIED BY 'root';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'MACBOOKAIR-BF8A' WITH GRANT OPTION;
+CREATE USER IF NOT EXISTS 'root'@'<runner-hostname>' IDENTIFIED BY 'root';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'<runner-hostname>' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 ```
 
@@ -50,3 +50,4 @@ Prefer a dedicated application user instead of `root` for long-running QA usage,
 
 - The repository only documents the integration points.
 - It does not change database schema, data, or access policies.
+- The current validated QA flow uses Tailscale DNS for `DB_HOST` and completes successfully against the Windows QA MySQL host.

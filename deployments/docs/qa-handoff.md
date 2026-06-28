@@ -141,31 +141,27 @@ Do not run independent writable MySQL databases on each QA node. That will creat
 
 See `docs/mysql-replication-runbook.md` for the full setup steps.
 
-## Current State And Blocker
+## Current State And Validation
 
-The Mac can reach Windows MySQL at the network level:
+The current QA deployment flow is working across Mac, Linux, and Windows compose files with the same service health model:
+
+- `marketplace-service` health: `/marketplace-service/internal/health`
+- `wallet-service` health: `/wallet-service/internal/health`
+- the deployment repo now uses the same health map for QA, prod, Mac, Linux, and Windows
+
+The latest validated QA run completed successfully:
+
+```text
+QA Build & Deploy -> success
+```
+
+The Mac can also reach the Windows QA MySQL host over Tailscale:
 
 ```text
 desktop-g9ov8mo.tail97dce3.ts.net:3306 reachable
 ```
 
-The active blocker found during testing was MySQL authorization:
-
-```text
-Host 'MACBOOKAIR-BF8A' is not allowed to connect to this MySQL server
-```
-
-This means the network path is open, but Windows MySQL has not granted access to the Mac host.
-
-Run the grant on the Windows MySQL machine as an admin/root MySQL user:
-
-```sql
-CREATE USER IF NOT EXISTS 'root'@'MACBOOKAIR-BF8A' IDENTIFIED BY 'root';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'MACBOOKAIR-BF8A' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-```
-
-For long-term use, prefer a dedicated QA database user instead of `root`, then update the GitHub `DB_USERNAME` variable and `DB_PASSWORD` secret.
+For new runner hosts, keep the MySQL grant model in place so the Windows primary can authorize the runner host or replica user. Use a dedicated QA database user when possible instead of `root`.
 
 ## GitHub Repository Settings
 
@@ -242,7 +238,7 @@ nc -vz desktop-g9ov8mo.tail97dce3.ts.net 3306
 self-hosted, macOS, ARM64, sharity-qa
 ```
 
-4. Windows MySQL grants access to the Mac hostname, for example `MACBOOKAIR-BF8A`.
+4. Windows MySQL grants access to the runner hostname, for example `MACBOOKAIR-BF8A`.
 5. No local Sharity MySQL container is running.
 
 ### Linux-Specific Checklist
