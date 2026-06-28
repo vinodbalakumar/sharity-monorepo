@@ -30,7 +30,8 @@ public class InternalServiceTokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        if (request.getRequestURI().contains("/internal/")) {
+        String requestUri = request.getRequestURI();
+        if (requestUri.contains("/internal/") && !requestUri.endsWith("/internal/health")) {
             String token = request.getHeader("X-Internal-Service-Token");
             if (internalServiceToken == null || internalServiceToken.isBlank() || !internalServiceToken.equals(token)) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Valid internal service token is required");
