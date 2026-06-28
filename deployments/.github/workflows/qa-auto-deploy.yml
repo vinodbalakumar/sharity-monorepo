@@ -20,6 +20,7 @@ on:
         options:
           - authorization-server
           - marketplace-service
+          - nginx
           - payment-service
           - wallet-service
           - platform-web-bff
