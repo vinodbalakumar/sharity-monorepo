@@ -39,6 +39,8 @@ jobs:
     env:
       DEPLOYMENTS_DIR: ${{ github.workspace }}/deployments
       SHARITY_SOURCE_ROOT: ${{ github.workspace }}/sources
+      DOCKER_BUILDKIT: "0"
+      COMPOSE_DOCKER_CLI_BUILD: "0"
       CERTS_DIR: ${{ vars.CERTS_DIR }}
       DB_HOST: ${{ vars.DB_HOST }}
       DB_PORT: ${{ vars.DB_PORT }}
