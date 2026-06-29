@@ -35,7 +35,13 @@ http://localhost:8080/marketplace-service/swagger-ui/index.html
 marketplace_db
 ```
 
-Local database selection is profile-based:
+Datasource env vars:
+
+- `MARKETPLACE_DB_URL`
+- `MARKETPLACE_DB_USERNAME`
+- `MARKETPLACE_DB_PASSWORD`
+
+Local database selection is still profile-based for migration scripts:
 
 - `local,mysql` uses [src/main/resources/application-mysql.yml](c:/data/apps/marketplace-service/src/main/resources/application-mysql.yml)
 - `local,postgresql` uses [src/main/resources/application-postgresql.yml](c:/data/apps/marketplace-service/src/main/resources/application-postgresql.yml)
