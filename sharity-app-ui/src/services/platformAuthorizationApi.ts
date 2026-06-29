@@ -1,6 +1,7 @@
 import { getBffCsrfToken } from './sessionService';
+import { resolvePublicBaseUrl } from './publicUrl';
 
-const platformAuthBaseUrl = process.env.EXPO_PUBLIC_AUTH_BASE_URL ?? '/bff/api/authorization-server/api/v1';
+const platformAuthBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_AUTH_BASE_URL, '/bff/api/authorization-server/api/v1');
 
 export type ProviderEnrollment = {
   moduleCode: string;

@@ -1,8 +1,9 @@
 import type { BrowserSessionSummary, SessionCheckResult } from '../types/session';
 import { appStorage } from '../storage/storage';
+import { resolvePublicBaseUrl } from './publicUrl';
 
 const sessionTimeoutMs = 2500;
-const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const logoutOverrideKey = 'sharity_logout_override';
 
 export async function checkSession(): Promise<SessionCheckResult> {

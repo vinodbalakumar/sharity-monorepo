@@ -1,7 +1,8 @@
 import { getBffCsrfToken } from './sessionService';
+import { resolvePublicBaseUrl } from './publicUrl';
 
-const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
-const userBaseUrl = process.env.EXPO_PUBLIC_AUTH_USER_BASE_URL ?? `${bffBaseUrl}/api/authorization-server/api/v1`;
+const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
+const userBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_AUTH_USER_BASE_URL, '/bff/api/authorization-server/api/v1');
 
 type BffSessionResponse = {
   authenticated?: boolean;

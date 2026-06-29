@@ -1,8 +1,9 @@
 import { getMarketplaceListing } from './marketplaceApi';
 import { getBffCsrfToken } from './sessionService';
+import { resolvePublicBaseUrl } from './publicUrl';
 import { placeholderImageUrl, resolveMockImageUrl } from '../utils/mockImages';
 
-const marketplaceOrdersBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
+const marketplaceOrdersBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const requestTimeoutMs = 7000;
 
 type MarketplaceOrderResponse = {
@@ -200,6 +201,5 @@ function formatDateLabel(isoDate: string) {
     ? isoDate
     : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
-
 
 

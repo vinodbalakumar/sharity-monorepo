@@ -1,12 +1,14 @@
 import type { MarketplaceHomeResponse, MarketplaceListing } from '../types/marketplace';
+import { resolvePublicBaseUrl } from './publicUrl';
 
-const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
-const bffPublicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL ?? '';
-const marketplaceEnvBaseUrl = process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL;
-const marketplaceBaseUrl = resolveMarketplaceBaseUrl(marketplaceEnvBaseUrl);
+const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
+const bffPublicBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL, '');
+const marketplaceBaseUrl = resolveMarketplaceBaseUrl(
+  resolvePublicBaseUrl(process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL, '/marketplace-service/api/v1/marketplace')
+);
 const requestTimeoutMs = 6000;
 
-function resolveMarketplaceBaseUrl(baseUrl: string | undefined) {
+function resolveMarketplaceBaseUrl(baseUrl: string) {
   const proxyBaseUrl = `${(bffBaseUrl || bffPublicBaseUrl || '/bff').replace(/\/$/, '')}/public/marketplace-service/api/v1/marketplace`;
 
   if (baseUrl && /^https?:\/\//i.test(baseUrl)) {

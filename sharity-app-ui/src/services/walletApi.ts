@@ -1,4 +1,6 @@
-const walletBaseUrl = process.env.EXPO_PUBLIC_WALLET_BASE_URL ?? '/bff/api/wallet-service/api/v1/wallet';
+import { resolvePublicBaseUrl } from './publicUrl';
+
+const walletBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_WALLET_BASE_URL, '/bff/api/wallet-service/api/v1/wallet');
 
 export type WalletSummary = {
   pendingAmount: number;

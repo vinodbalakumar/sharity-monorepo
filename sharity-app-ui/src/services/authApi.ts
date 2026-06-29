@@ -1,4 +1,6 @@
-const authBaseUrl = process.env.EXPO_PUBLIC_AUTH_BASE_URL ?? '/authorization-server/api/v1/auth';
+import { resolvePublicBaseUrl } from './publicUrl';
+
+const authBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_AUTH_BASE_URL, '/authorization-server/api/v1/auth');
 
 export type RegisterRequest = {
   appVersion?: string;
