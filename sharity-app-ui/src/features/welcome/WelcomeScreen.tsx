@@ -133,6 +133,7 @@ export function WelcomeScreen({
   const isTinyPhone = width < 480;
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
+  const useCompactMobileRows = isWeb && isMobile;
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
   const mobileSectionPadding = isTinyPhone ? 14 : 16;
   const mobileGap = isTinyPhone ? 10 : 14;
@@ -201,7 +202,12 @@ export function WelcomeScreen({
     isWeb
       ? ({
           display: 'grid',
-          gridTemplateColumns: width >= 992 ? 'repeat(4, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gridTemplateColumns:
+            width >= 992
+              ? 'repeat(4, minmax(0, 1fr))'
+              : width >= 360
+                ? 'repeat(2, minmax(0, 1fr))'
+                : '1fr',
           gap: 24,
           width: '100%'
         } as never)
@@ -210,7 +216,12 @@ export function WelcomeScreen({
     isWeb
       ? ({
           display: 'grid',
-          gridTemplateColumns: width >= 992 ? 'repeat(4, minmax(0, 1fr))' : width >= 768 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+          gridTemplateColumns:
+            width >= 992
+              ? 'repeat(4, minmax(0, 1fr))'
+              : width >= 360
+                ? 'repeat(2, minmax(0, 1fr))'
+                : '1fr',
           gap: 24,
           width: '100%'
         } as never)
@@ -843,7 +854,59 @@ export function WelcomeScreen({
               stackActionsOnMobile={stackSectionActions}
             />
 
-            {isMobile ? (
+            {useCompactMobileRows ? (
+              <View style={styles.mobileListingStack}>
+                {topDiscounts.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={styles.mobileListingRow}
+                  >
+                    <View style={styles.mobileListingMediaWrap}>
+                      {item.imageUrl ? (
+                        <LazyImage
+                          alt={item.title}
+                          containerStyle={styles.mobileListingMedia}
+                          fitMode="cover"
+                          imageStyle={styles.mobileListingImage}
+                          priority={index < productVisibleCount ? 'high' : 'lazy'}
+                          source={item.imageUrl}
+                          style={styles.mobileListingMedia}
+                        >
+                          <View style={styles.productImageOverlay} />
+                          <View style={[styles.productBadge, productDiscountBadgeStyle(item.discountPercentage)]}>
+                            <Text style={styles.productBadgeText}>{`${Math.round(item.discountPercentage)}% OFF`}</Text>
+                          </View>
+                        </LazyImage>
+                      ) : (
+                        <View style={styles.mobileListingPlaceholder}>
+                          <Ionicons color={palette.blue} name="pricetag-outline" size={24} />
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.mobileListingCopy}>
+                      <Text style={styles.mobileListingTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={styles.mobileListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                      <View style={styles.mobileListingMetaRow}>
+                        <Text style={styles.mobileListingSavings}>
+                          Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                        </Text>
+                        <Text style={styles.mobileListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      </View>
+                      <Text style={styles.mobileListingTrust}>Protected checkout</Text>
+                    </View>
+
+                    <Ionicons color={palette.blue} name="chevron-forward" size={20} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : isMobile ? (
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -1053,7 +1116,59 @@ export function WelcomeScreen({
               stackActionsOnMobile={stackSectionActions}
             />
 
-            {isMobile ? (
+            {useCompactMobileRows ? (
+              <View style={styles.mobileListingStack}>
+                {rollbackDeals.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={styles.mobileListingRow}
+                  >
+                    <View style={styles.mobileListingMediaWrap}>
+                      {item.imageUrl ? (
+                        <LazyImage
+                          alt={item.title}
+                          containerStyle={styles.mobileListingMedia}
+                          fitMode="cover"
+                          imageStyle={styles.mobileListingImage}
+                          priority={index < productVisibleCount ? 'high' : 'lazy'}
+                          source={item.imageUrl}
+                          style={styles.mobileListingMedia}
+                        >
+                          <View style={styles.productImageOverlay} />
+                          <View style={[styles.productBadge, styles.productBadgeRollback]}>
+                            <Text style={styles.productBadgeText}>Rollback</Text>
+                          </View>
+                        </LazyImage>
+                      ) : (
+                        <View style={styles.mobileListingPlaceholder}>
+                          <Ionicons color={palette.blue} name="time-outline" size={24} />
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.mobileListingCopy}>
+                      <Text style={styles.mobileListingTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={styles.mobileListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                      <View style={styles.mobileListingMetaRow}>
+                        <Text style={styles.mobileListingSavings}>
+                          Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                        </Text>
+                        <Text style={styles.mobileListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      </View>
+                      <Text style={styles.mobileListingTrust}>Protected checkout</Text>
+                    </View>
+
+                    <Ionicons color={palette.blue} name="chevron-forward" size={20} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : isMobile ? (
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -1190,7 +1305,59 @@ export function WelcomeScreen({
               stackActionsOnMobile={stackSectionActions}
             />
 
-            {isMobile ? (
+            {useCompactMobileRows ? (
+              <View style={styles.mobileListingStack}>
+                {clearanceDeals.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={styles.mobileListingRow}
+                  >
+                    <View style={styles.mobileListingMediaWrap}>
+                      {item.imageUrl ? (
+                        <LazyImage
+                          alt={item.title}
+                          containerStyle={styles.mobileListingMedia}
+                          fitMode="cover"
+                          imageStyle={styles.mobileListingImage}
+                          priority={index < productVisibleCount ? 'high' : 'lazy'}
+                          source={item.imageUrl}
+                          style={styles.mobileListingMedia}
+                        >
+                          <View style={styles.productImageOverlay} />
+                          <View style={[styles.productBadge, styles.productBadgeClearance]}>
+                            <Text style={styles.productBadgeText}>Clearance</Text>
+                          </View>
+                        </LazyImage>
+                      ) : (
+                        <View style={styles.mobileListingPlaceholder}>
+                          <Ionicons color={palette.blue} name="trash-bin-outline" size={24} />
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.mobileListingCopy}>
+                      <Text style={styles.mobileListingTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        {item.categoryName}
+                      </Text>
+                      <Text style={styles.mobileListingPrice}>{formatMoney(item.discountedPrice, item.currencyCode)}</Text>
+                      <View style={styles.mobileListingMetaRow}>
+                        <Text style={styles.mobileListingSavings}>
+                          Save {formatMoney(Math.max(0, item.originalPrice - item.discountedPrice), item.currencyCode)}
+                        </Text>
+                        <Text style={styles.mobileListingOriginalPrice}>{formatMoney(item.originalPrice, item.currencyCode)}</Text>
+                      </View>
+                      <Text style={styles.mobileListingTrust}>Protected checkout</Text>
+                    </View>
+
+                    <Ionicons color={palette.blue} name="chevron-forward" size={20} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : isMobile ? (
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -1326,7 +1493,53 @@ export function WelcomeScreen({
               stackActionsOnMobile={stackSectionActions}
             />
 
-            {isMobile ? (
+            {useCompactMobileRows ? (
+              <View style={styles.mobileListingStack}>
+                {featuredProducts.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={styles.mobileListingRow}
+                  >
+                    <View style={styles.mobileListingMediaWrap}>
+                      {item.imageUrl ? (
+                        <LazyImage
+                          alt={item.title}
+                          containerStyle={styles.mobileListingMedia}
+                          fitMode="cover"
+                          imageStyle={styles.mobileListingImage}
+                          priority={index < collectionVisibleCount ? 'high' : 'lazy'}
+                          source={item.imageUrl}
+                          style={styles.mobileListingMedia}
+                        />
+                      ) : (
+                        <View style={styles.mobileListingPlaceholder}>
+                          <Ionicons color={palette.blue} name="images-outline" size={24} />
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.mobileListingCopy}>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        Featured
+                      </Text>
+                      <Text style={styles.mobileListingTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        {item.sellerName}
+                      </Text>
+                      <Text style={styles.mobileListingPrice}>{formatMoney(item.price, item.currencyCode)}</Text>
+                      <Text style={styles.mobileListingTrust}>
+                        {item.verifiedSeller ? '✔ Verified Seller' : '🚚 Instant Delivery'}
+                      </Text>
+                    </View>
+
+                    <Ionicons color={palette.blue} name="chevron-forward" size={20} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : isMobile ? (
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -1454,7 +1667,53 @@ export function WelcomeScreen({
               stackActionsOnMobile={stackSectionActions}
             />
 
-            {isMobile ? (
+            {useCompactMobileRows ? (
+              <View style={styles.mobileListingStack}>
+                {featuredProducts.map((item, index) => (
+                  <Pressable
+                    key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
+                    onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
+                    style={styles.mobileListingRow}
+                  >
+                    <View style={styles.mobileListingMediaWrap}>
+                      {item.imageUrl ? (
+                        <LazyImage
+                          alt={item.title}
+                          containerStyle={styles.mobileListingMedia}
+                          fitMode="cover"
+                          imageStyle={styles.mobileListingImage}
+                          priority={index < collectionVisibleCount ? 'high' : 'lazy'}
+                          source={item.imageUrl}
+                          style={styles.mobileListingMedia}
+                        />
+                      ) : (
+                        <View style={styles.mobileListingPlaceholder}>
+                          <Ionicons color={palette.blue} name="images-outline" size={24} />
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.mobileListingCopy}>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        Featured
+                      </Text>
+                      <Text style={styles.mobileListingTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.mobileListingSubtitle} numberOfLines={1}>
+                        {item.sellerName}
+                      </Text>
+                      <Text style={styles.mobileListingPrice}>{formatMoney(item.price, item.currencyCode)}</Text>
+                      <Text style={styles.mobileListingTrust}>
+                        {item.verifiedSeller ? '✔ Verified Seller' : '🚚 Instant Delivery'}
+                      </Text>
+                    </View>
+
+                    <Ionicons color={palette.blue} name="chevron-forward" size={20} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : isMobile ? (
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -1573,75 +1832,130 @@ export function WelcomeScreen({
               }
             />
 
-            <ScrollView
-              contentContainerStyle={[
-                styles.sellerCarouselContent,
-                isMobile && { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
-              ]}
-              horizontal
-              decelerationRate="fast"
-              keyboardShouldPersistTaps="handled"
-              onScroll={(event) => {
-                sellerScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
-              }}
-              scrollEventThrottle={16}
-              ref={sellerCarouselRef}
-              snapToAlignment="start"
-              snapToInterval={sellerCarouselStep}
-              showsHorizontalScrollIndicator={false}
-            >
-              {trustedSellers.map((seller, index) => (
-                <Pressable
-                  key={`${seller.name}-${index}`}
-                  onPress={onBrowse}
-                  style={[
-                    styles.sellerCard,
-                    isMobile && styles.sellerCardMobile,
-                    isWeb && styles.gridCardFullWidth,
-                    {
-                      backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
-                      width: isMobile ? sellerCardWidth : sellerCardWidth
-                    }
-                  ]}
-                >
+            {useCompactMobileRows ? (
+              <View style={styles.mobileListingStack}>
+                {trustedSellers.map((seller, index) => (
+                  <Pressable
+                    key={`${seller.name}-${index}`}
+                    onPress={onBrowse}
+                    style={[
+                      styles.sellerCard,
+                      styles.sellerCardMobile,
+                      {
+                        backgroundColor: ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4],
+                        width: '100%'
+                      }
+                    ]}
+                  >
+                    <View style={[styles.sellerHeader, styles.sellerHeaderMobile]}>
+                      <View style={[styles.sellerAvatar, styles.sellerAvatarMobile]}>
+                        <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
+                      </View>
+                      <View style={styles.sellerHeaderCopy}>
+                        <Text style={styles.sellerName} numberOfLines={1}>
+                          {seller.name}
+                        </Text>
+                        <View style={styles.sellerBadgeRow}>
+                          <View style={styles.sellerBadge}>
+                            <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
+                            <Text style={styles.sellerBadgeText}>Verified seller</Text>
+                          </View>
+                        </View>
+                        <View style={styles.sellerStarsRow}>
+                          <Ionicons color="#f59e0b" name="star" size={12} />
+                          <Text numberOfLines={1} style={styles.sellerStars}>{seller.rating.toFixed(1)}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={[styles.sellerStatsRow, styles.sellerStatsRowMobile]}>
+                      <View style={[styles.sellerStat, styles.sellerStatMobile]}>
+                        <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
+                        <Text style={styles.sellerStatLabel}>Review score</Text>
+                      </View>
+                      <View style={[styles.sellerStat, styles.sellerStatMobile]}>
+                        <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
+                        <Text style={styles.sellerStatLabel}>Completed orders</Text>
+                      </View>
+                    </View>
+
+                    <Text style={[styles.sellerFooterText, styles.sellerFooterTextMobile]}>
+                      {seller.listings[0]?.title ?? 'Curated storefront'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <ScrollView
+                contentContainerStyle={[
+                  styles.sellerCarouselContent,
+                  isMobile && { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
+                ]}
+                horizontal
+                decelerationRate="fast"
+                keyboardShouldPersistTaps="handled"
+                onScroll={(event) => {
+                  sellerScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
+                }}
+                scrollEventThrottle={16}
+                ref={sellerCarouselRef}
+                snapToAlignment="start"
+                snapToInterval={sellerCarouselStep}
+                showsHorizontalScrollIndicator={false}
+              >
+                {trustedSellers.map((seller, index) => (
+                  <Pressable
+                    key={`${seller.name}-${index}`}
+                    onPress={onBrowse}
+                    style={[
+                      styles.sellerCard,
+                      isMobile && styles.sellerCardMobile,
+                      isWeb && styles.gridCardFullWidth,
+                      {
+                        backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
+                        width: isMobile ? sellerCardWidth : sellerCardWidth
+                      }
+                    ]}
+                  >
                     <View style={[styles.sellerHeader, isMobile && styles.sellerHeaderMobile]}>
                       <View style={[styles.sellerAvatar, isMobile && styles.sellerAvatarMobile]}>
                         <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
                       </View>
                       <View style={styles.sellerHeaderCopy}>
-                      <Text style={styles.sellerName} numberOfLines={1}>
-                        {seller.name}
-                      </Text>
-                      <View style={styles.sellerBadgeRow}>
-                        <View style={styles.sellerBadge}>
-                          <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
-                          <Text style={styles.sellerBadgeText}>Verified seller</Text>
+                        <Text style={styles.sellerName} numberOfLines={1}>
+                          {seller.name}
+                        </Text>
+                        <View style={styles.sellerBadgeRow}>
+                          <View style={styles.sellerBadge}>
+                            <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
+                            <Text style={styles.sellerBadgeText}>Verified seller</Text>
+                          </View>
+                        </View>
+                        <View style={styles.sellerStarsRow}>
+                          <Ionicons color="#f59e0b" name="star" size={12} />
+                          <Text numberOfLines={1} style={styles.sellerStars}>{seller.rating.toFixed(1)}</Text>
                         </View>
                       </View>
-                      <View style={styles.sellerStarsRow}>
-                        <Ionicons color="#f59e0b" name="star" size={12} />
-                        <Text numberOfLines={1} style={styles.sellerStars}>{seller.rating.toFixed(1)}</Text>
+                    </View>
+
+                    <View style={[styles.sellerStatsRow, isMobile && styles.sellerStatsRowMobile]}>
+                      <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
+                        <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
+                        <Text style={styles.sellerStatLabel}>Review score</Text>
+                      </View>
+                      <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
+                        <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
+                        <Text style={styles.sellerStatLabel}>Completed orders</Text>
                       </View>
                     </View>
-                  </View>
 
-                  <View style={[styles.sellerStatsRow, isMobile && styles.sellerStatsRowMobile]}>
-                    <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
-                      <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
-                      <Text style={styles.sellerStatLabel}>Review score</Text>
-                    </View>
-                    <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
-                      <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
-                      <Text style={styles.sellerStatLabel}>Completed orders</Text>
-                    </View>
-                  </View>
-
-                  <Text style={[styles.sellerFooterText, isMobile && styles.sellerFooterTextMobile]}>
-                    {seller.listings[0]?.title ?? 'Curated storefront'}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+                    <Text style={[styles.sellerFooterText, isMobile && styles.sellerFooterTextMobile]}>
+                      {seller.listings[0]?.title ?? 'Curated storefront'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           <View style={[styles.sectionBlock, styles.sectionBlockWhy, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
