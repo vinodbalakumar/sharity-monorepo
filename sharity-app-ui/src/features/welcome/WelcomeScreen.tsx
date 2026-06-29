@@ -143,11 +143,11 @@ export function WelcomeScreen({
     ? Math.floor((mobileSectionInnerWidth - mobileGap) / 2)
     : mobileSectionInnerWidth;
   const mobileRailCardWidth = isTinyPhone
-    ? Math.min(Math.round(width * 0.92), 320)
-    : Math.min(Math.round(width * 0.84), 340);
+    ? Math.min(Math.round(mobileSectionInnerWidth * 0.94), 320)
+    : Math.min(Math.round(mobileSectionInnerWidth * 0.9), 340);
   const mobileCollectionCardWidth = isTinyPhone
-    ? Math.min(Math.round(width * 0.92), 340)
-    : Math.min(Math.round(width * 0.88), 360);
+    ? Math.min(Math.round(mobileSectionInnerWidth * 0.96), 340)
+    : Math.min(Math.round(mobileSectionInnerWidth * 0.92), 360);
   const stackSectionActions = width < 340;
   const heroCardHeight = isMobile ? 220 : width < 992 ? 440 : 520;
   const productImageHeight = isMobile ? 160 : width < 992 ? 200 : 260;
@@ -293,7 +293,7 @@ export function WelcomeScreen({
   const trustedSellers = sellerCards;
   const sellerCarouselRef = useRef<ScrollView | null>(null);
   const sellerScrollOffsetRef = useRef(0);
-  const sellerCardWidth = isMobile ? Math.min(width * 0.84, 340) : 300;
+  const sellerCardWidth = isMobile ? Math.min(Math.round(mobileSectionInnerWidth * 0.94), 340) : 300;
   const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
   const isHomeErrorState = homeError && !home;
   const activeHeroSlide = heroSlides[activeHeroIndex] ?? heroSlides[0] ?? null;
