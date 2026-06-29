@@ -20,8 +20,10 @@ import type { AppRoute } from '../../types/navigation';
 
 type LoadState = {
   dealsError: boolean;
+  dealsLoading: boolean;
   home: MarketplaceHomeResponse | null;
   homeError: boolean;
+  homeLoading: boolean;
   listings: MarketplaceListing[];
   loading: boolean;
 };
@@ -62,13 +64,16 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [state, setState] = useState<LoadState>({
     dealsError: false,
+    dealsLoading: true,
     home: null,
     homeError: false,
+    homeLoading: true,
     listings: [],
     loading: true
   });
   const [selectedCountryCode, setSelectedCountryCode] = useState(visitorContext?.countryCode ?? '');
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
+  const dashboardRequestIdRef = useRef(0);
 
   useEffect(() => {
     let disposed = false;
@@ -117,22 +122,49 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
     }
   }, []);
 
-  const loadDashboard = useCallback(async () => {
-    setState((current) => ({ ...current, dealsError: false, homeError: false, loading: true }));
+  const loadDashboard = useCallback(() => {
+    const requestId = dashboardRequestIdRef.current + 1;
+    dashboardRequestIdRef.current = requestId;
+
+    setState((current) => ({
+      ...current,
+      dealsError: false,
+      dealsLoading: true,
+      homeError: false,
+      homeLoading: true,
+      loading: true
+    }));
 
     const countryQuery = selectedCountryCode ? `?countryCode=${encodeURIComponent(selectedCountryCode)}` : '';
-    const [homeResult, listingsResult] = await Promise.allSettled([
-      getMarketplaceHome(countryQuery),
-      getMarketplaceListings(selectedCountryCode || undefined)
-    ]);
+    const applyStateUpdate = (update: Partial<LoadState>) => {
+      if (dashboardRequestIdRef.current !== requestId) {
+        return;
+      }
 
-    setState({
-      dealsError: listingsResult.status === 'rejected',
-      home: homeResult.status === 'fulfilled' ? homeResult.value : null,
-      homeError: homeResult.status === 'rejected',
-      listings: listingsResult.status === 'fulfilled' ? listingsResult.value : [],
-      loading: false
-    });
+      setState((current) => ({ ...current, ...update }));
+    };
+
+    void getMarketplaceHome(countryQuery)
+      .then((home) => {
+        applyStateUpdate({ home, homeError: false });
+      })
+      .catch(() => {
+        applyStateUpdate({ home: null, homeError: true });
+      })
+      .finally(() => {
+        applyStateUpdate({ homeLoading: false, loading: false });
+      });
+
+    void getMarketplaceListings(selectedCountryCode || undefined)
+      .then((listings) => {
+        applyStateUpdate({ listings, dealsError: false });
+      })
+      .catch(() => {
+        applyStateUpdate({ listings: [], dealsError: true });
+      })
+      .finally(() => {
+        applyStateUpdate({ dealsLoading: false, loading: false });
+      });
   }, [selectedCountryCode]);
 
   useEffect(() => {
@@ -229,9 +261,10 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
     [onOpenDigitalProduct, recentlyViewedIds]
   );
 
-  const hasError = state.homeError || state.dealsError;
+  const isInitialLoading = state.loading && state.homeLoading && state.dealsLoading && !state.home && state.listings.length === 0;
+  const hasBlockingError = state.homeError && !state.home && state.dealsError && state.listings.length === 0;
 
-  if (state.loading) {
+  if (isInitialLoading) {
     return (
       <InteriorShell onNavigate={onNavigate} title="Home" activeLabel="Home" scrollable={true}>
         <View style={styles.contentStack}>
@@ -241,7 +274,7 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
     );
   }
 
-  if (hasError) {
+  if (hasBlockingError) {
     return (
       <InteriorShell onNavigate={onNavigate} title="Home" activeLabel="Home" scrollable={true}>
         <View style={styles.contentStack}>
@@ -376,7 +409,7 @@ export function HomeScreen({ onNavigate, onOpenDigitalProduct, visitorContext }:
 
         <ExploreServicesSection
           error={state.homeError}
-          loading={state.loading}
+          loading={state.homeLoading}
           onNavigate={onNavigate}
           onRetry={loadDashboard}
           services={services}

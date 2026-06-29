@@ -295,7 +295,6 @@ export function WelcomeScreen({
   const sellerScrollOffsetRef = useRef(0);
   const sellerCardWidth = isMobile ? Math.min(width * 0.84, 340) : 300;
   const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
-  const isHomeInitialLoading = homeLoading && !home;
   const isHomeErrorState = homeError && !home;
   const activeHeroSlide = heroSlides[activeHeroIndex] ?? heroSlides[0] ?? null;
 
@@ -400,84 +399,6 @@ export function WelcomeScreen({
     },
     [heroSlides.length, heroViewportWidth, pauseHeroAutoplay]
   );
-
-  if (isHomeInitialLoading) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.homeStateShell, webGlassPanel, isMobile && styles.homeStateShellMobile]}>
-            <View style={styles.homeStateHeader}>
-              <View style={styles.skeletonBrandRow}>
-                <View style={styles.skeletonBrandMark} />
-                <View style={styles.skeletonHeaderTextBlock}>
-                  <View style={styles.skeletonLineLarge} />
-                  <View style={styles.skeletonLineSmall} />
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.homeStateHeroRow, isCompact && styles.homeStateHeroRowStacked]}>
-              <View style={styles.skeletonHeroCard}>
-                <View style={styles.skeletonEyebrow} />
-                <View style={styles.skeletonHeroTitle} />
-                <View style={styles.skeletonHeroTitleShort} />
-                <View style={styles.skeletonBodyLine} />
-                <View style={styles.skeletonBodyLineShort} />
-                <View style={styles.skeletonButtonRow}>
-                  <View style={styles.skeletonButton} />
-                  <View style={styles.skeletonButtonSecondary} />
-                </View>
-                <View style={styles.skeletonPillRow}>
-                  <View style={styles.skeletonPill} />
-                  <View style={styles.skeletonPill} />
-                  <View style={styles.skeletonPill} />
-                </View>
-              </View>
-              <View style={styles.skeletonVisualCard} />
-            </View>
-
-            <View style={styles.homeStateSection}>
-              <View style={styles.skeletonSectionHeader}>
-                <View style={styles.skeletonEyebrow} />
-                <View style={styles.skeletonSectionTitle} />
-                <View style={styles.skeletonBodyLineShort} />
-              </View>
-              <View style={[styles.skeletonGrid, categoryGridWebStyle]}>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <View key={`category-skeleton-${index}`} style={styles.skeletonCard}>
-                    <View style={styles.skeletonMedia} />
-                    <View style={styles.skeletonCardBody}>
-                      <View style={styles.skeletonLineLarge} />
-                      <View style={styles.skeletonLineSmall} />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.homeStateSection}>
-              <View style={styles.skeletonSectionHeader}>
-                <View style={styles.skeletonEyebrow} />
-                <View style={styles.skeletonSectionTitle} />
-                <View style={styles.skeletonBodyLineShort} />
-              </View>
-              <View style={[styles.skeletonGrid, productGridWebStyle]}>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <View key={`product-skeleton-${index}`} style={styles.skeletonCard}>
-                    <View style={styles.skeletonMediaTall} />
-                    <View style={styles.skeletonCardBody}>
-                      <View style={styles.skeletonLineLarge} />
-                      <View style={styles.skeletonLineMedium} />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   if (isHomeErrorState) {
     return (
@@ -4731,4 +4652,3 @@ const styles = StyleSheet.create({
     lineHeight: 21
   }
 });
-
