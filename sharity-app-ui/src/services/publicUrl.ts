@@ -23,6 +23,20 @@ const UNSAFE_HOST_PATTERNS = [
   '://172.31.'
 ];
 
+function isLocalBrowserHost(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
+function isUnsafePublicHost(normalizedUrl: string): boolean {
+  const lower = normalizedUrl.toLowerCase();
+  return UNSAFE_HOST_PATTERNS.some((pattern) => lower.includes(pattern));
+}
+
 export function resolvePublicBaseUrl(rawValue: string | undefined, fallbackValue: string): string {
   const value = rawValue?.trim();
   if (!value) {
@@ -38,8 +52,12 @@ export function resolvePublicBaseUrl(rawValue: string | undefined, fallbackValue
   }
 
   const normalized = value.replace(/\/+$/, '');
-  const lower = normalized.toLowerCase();
-  if (UNSAFE_HOST_PATTERNS.some((pattern) => lower.includes(pattern))) {
+
+  if (isLocalBrowserHost()) {
+    return isUnsafePublicHost(normalized) ? normalized : fallbackValue;
+  }
+
+  if (isUnsafePublicHost(normalized)) {
     return fallbackValue;
   }
 
