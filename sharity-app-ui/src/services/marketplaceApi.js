@@ -2,7 +2,9 @@ const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const bffPublicBaseUrl = process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL ?? '';
 const marketplaceBaseUrl = process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL
     ?? `${bffPublicBaseUrl || bffBaseUrl}/public/marketplace-service/api/v1/marketplace`;
-const requestTimeoutMs = 6000;
+// Marketplace home can be slow on a cold QA load, so keep the client alive
+// long enough for the origin to respond instead of failing the whole screen.
+const requestTimeoutMs = 20000;
 async function getJson(path) {
     const controller = new AbortController();
     const timeout = setTimeout(() => {

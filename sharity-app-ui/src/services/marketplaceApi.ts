@@ -6,7 +6,9 @@ const bffPublicBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_PUBLIC
 const marketplaceBaseUrl = resolveMarketplaceBaseUrl(
   resolvePublicBaseUrl(process.env.EXPO_PUBLIC_MARKETPLACE_BASE_URL, '/marketplace-service/api/v1/marketplace')
 );
-const requestTimeoutMs = 6000;
+// Marketplace home can be slow on a cold QA load, so keep the client alive
+// long enough for the origin to respond instead of failing the whole screen.
+const requestTimeoutMs = 20000;
 
 function resolveMarketplaceBaseUrl(baseUrl: string) {
   const proxyBaseUrl = `${(bffBaseUrl || bffPublicBaseUrl || '/bff').replace(/\/$/, '')}/public/marketplace-service/api/v1/marketplace`;
