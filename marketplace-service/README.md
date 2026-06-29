@@ -48,3 +48,23 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local,postgresql
 ```
 
 The shared settings stay in [src/main/resources/application.yml](c:/data/apps/marketplace-service/src/main/resources/application.yml).
+
+## Slow Query Diagnostics
+
+Marketplace service can log slow SQL and print an `EXPLAIN` for the exact statement that crossed the threshold.
+
+Enable it with:
+
+```text
+MARKETPLACE_SLOW_QUERY_LOGGING_ENABLED=true
+MARKETPLACE_SLOW_QUERY_THRESHOLD_MS=500
+```
+
+When enabled, the app logs:
+
+- the exact SQL statement
+- the bound parameter values
+- the elapsed time in milliseconds
+- an `EXPLAIN` result for slow `SELECT` queries
+
+This is meant for QA and troubleshooting. Keep it off in production unless you are actively investigating a performance issue.
