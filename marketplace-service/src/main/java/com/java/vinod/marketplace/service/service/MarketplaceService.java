@@ -1564,17 +1564,11 @@ public class MarketplaceService {
     private List<MarketplaceDtos.ListingResponse> mostSelectedListings(String countryCode, List<Listing> listings, List<String> publicStatuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
 
-        java.util.Map<String, Long> selectionCounts = new java.util.HashMap<>();
-        for (OrderHeader order : orderHeaderRepository.findAllByOrderByCreatedAtDesc()) {
-            if (order.getListing() == null || order.getListing().getPublicId() == null) {
-                continue;
-            }
-            if (order.getCompletedAt() == null && !"COMPLETED".equalsIgnoreCase(order.getOrderStatus())) {
-                continue;
-            }
-            String listingPublicId = order.getListing().getPublicId();
-            selectionCounts.put(listingPublicId, selectionCounts.getOrDefault(listingPublicId, 0L) + 1L);
-        }
+        java.util.Map<String, Long> selectionCounts = orderHeaderRepository.countCompletedOrdersByListingPublicId().stream()
+                .filter(view -> view.getListingPublicId() != null && !view.getListingPublicId().isBlank())
+                .collect(java.util.stream.Collectors.toMap(
+                        OrderHeaderRepository.ListingSelectionCountView::getListingPublicId,
+                        OrderHeaderRepository.ListingSelectionCountView::getCompletedCount));
 
         return listings.stream()
                 .sorted((left, right) -> {
@@ -1650,11 +1644,15 @@ public class MarketplaceService {
                     .add(listing);
         }
 
+        java.util.Map<String, SellerProfile> sellerProfiles = sellerProfileRepository.findByProviderAccountPublicIdIn(listingsByProvider.keySet())
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(SellerProfile::getProviderAccountPublicId, profile -> profile));
+
         List<MarketplaceDtos.SellerHighlightResponse> sellers = new ArrayList<>();
         for (java.util.Map.Entry<String, List<Listing>> entry : listingsByProvider.entrySet()) {
             String providerPublicId = entry.getKey();
             List<Listing> providerListings = entry.getValue();
-            SellerProfile sellerProfile = sellerProfileRepository.findByProviderAccountPublicId(providerPublicId).orElse(null);
+            SellerProfile sellerProfile = sellerProfiles.get(providerPublicId);
             if (sellerProfile == null) {
                 continue;
             }
