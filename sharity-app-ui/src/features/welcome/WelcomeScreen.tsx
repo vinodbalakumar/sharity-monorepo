@@ -143,11 +143,11 @@ export function WelcomeScreen({
     ? Math.floor((mobileSectionInnerWidth - mobileGap) / 2)
     : mobileSectionInnerWidth;
   const mobileRailCardWidth = isTinyPhone
-    ? Math.min(Math.round(width * 0.88), 320)
-    : Math.min(Math.round(width * 0.76), 300);
-  const mobileCollectionCardWidth = isTinyPhone
-    ? Math.min(Math.round(width * 0.88), 340)
+    ? Math.min(Math.round(width * 0.92), 320)
     : Math.min(Math.round(width * 0.84), 340);
+  const mobileCollectionCardWidth = isTinyPhone
+    ? Math.min(Math.round(width * 0.92), 340)
+    : Math.min(Math.round(width * 0.88), 360);
   const stackSectionActions = width < 340;
   const heroCardHeight = isMobile ? 220 : width < 992 ? 440 : 520;
   const productImageHeight = isMobile ? 160 : width < 992 ? 200 : 260;
@@ -293,7 +293,7 @@ export function WelcomeScreen({
   const trustedSellers = sellerCards;
   const sellerCarouselRef = useRef<ScrollView | null>(null);
   const sellerScrollOffsetRef = useRef(0);
-  const sellerCardWidth = isMobile ? Math.min(width * 0.72, 280) : 300;
+  const sellerCardWidth = isMobile ? Math.min(width * 0.84, 340) : 300;
   const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
   const isHomeInitialLoading = homeLoading && !home;
   const isHomeErrorState = homeError && !home;
@@ -508,6 +508,8 @@ export function WelcomeScreen({
     <SafeAreaView style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
         showsVerticalScrollIndicator={isWeb}
         style={[styles.pageScroll, isWeb && styles.pageScrollWeb]}
       >
@@ -938,7 +940,7 @@ export function WelcomeScreen({
                     ]}
                   >
                     {item.imageUrl ? (
-                      <LazyImage
+                        <LazyImage
                         alt={item.title}
                         containerStyle={[styles.productMedia, { height: 160 }]}
                         fitMode="contain"
@@ -1006,7 +1008,7 @@ export function WelcomeScreen({
                     ]}
                   >
                     {item.imageUrl ? (
-                      <LazyImage
+                        <LazyImage
                         alt={item.title}
                         containerStyle={[styles.productMedia, { height: 160 }]}
                         fitMode="contain"
@@ -1198,7 +1200,7 @@ export function WelcomeScreen({
                     ]}
                   >
                     {item.imageUrl ? (
-                      <LazyImage
+                        <LazyImage
                         alt={item.title}
                         containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
@@ -1389,7 +1391,7 @@ export function WelcomeScreen({
                     ]}
                   >
                     {item.imageUrl ? (
-                      <LazyImage
+                        <LazyImage
                         alt={item.title}
                         containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
@@ -1573,7 +1575,7 @@ export function WelcomeScreen({
                     ]}
                   >
                     {item.imageUrl ? (
-                      <LazyImage
+                        <LazyImage
                         alt={item.title}
                         containerStyle={[styles.productMedia, { height: 176 }]}
                         fitMode="contain"
@@ -1739,13 +1741,13 @@ export function WelcomeScreen({
                   <Pressable
                     key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
                     onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
-                        style={[styles.collectionCard, styles.collectionCardMobile, { width: mobileCollectionCardWidth }]}
+                    style={[styles.collectionCard, styles.collectionCardMobile, { width: mobileCollectionCardWidth }]}
                   >
                     <View style={styles.collectionMediaWrap}>
                       {item.imageUrl ? (
                         <LazyImage
                           alt={item.title}
-                          containerStyle={styles.collectionMedia}
+                          containerStyle={[styles.collectionMedia, isMobile && { height: 220 }]}
                           imageStyle={styles.collectionImage}
                           priority={index < collectionVisibleCount ? 'high' : 'lazy'}
                           source={item.imageUrl}
@@ -1784,7 +1786,7 @@ export function WelcomeScreen({
                 >
                   <View style={styles.collectionMediaWrap}>
                     {item.imageUrl ? (
-                      <LazyImage
+                        <LazyImage
                         alt={item.title}
                         containerStyle={styles.collectionMedia}
                         imageStyle={styles.collectionImage}
