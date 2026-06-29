@@ -1,4 +1,4 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -133,7 +133,7 @@ export function WelcomeScreen({
   const isTinyPhone = width < 480;
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
-  const useCompactMobileRows = isWeb && isMobile;
+  const useCompactMobileRows = false;
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
   const mobileSectionPadding = isTinyPhone ? 14 : 16;
   const mobileGap = isTinyPhone ? 10 : 14;
@@ -910,6 +910,8 @@ export function WelcomeScreen({
               <ScrollView
                 horizontal
                 decelerationRate="fast"
+                directionalLockEnabled
+                nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
@@ -982,6 +984,8 @@ export function WelcomeScreen({
               <ScrollView
                 horizontal
                 decelerationRate="fast"
+                directionalLockEnabled
+                nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
@@ -1053,7 +1057,7 @@ export function WelcomeScreen({
                   style={({ pressed }) => [
                     styles.productCard,
                     isMobile && styles.productCardMobile,
-                    isWeb && styles.gridCardFullWidth,
+                    isWeb && !isMobile && styles.gridCardFullWidth,
                     isWeb && pressed && styles.productCardPressed
                   ]}
                 >
@@ -1172,6 +1176,8 @@ export function WelcomeScreen({
               <ScrollView
                 horizontal
                 decelerationRate="fast"
+                directionalLockEnabled
+                nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
@@ -1243,7 +1249,7 @@ export function WelcomeScreen({
                   style={({ pressed }) => [
                     styles.productCard,
                     isMobile && styles.productCardMobile,
-                    isWeb && styles.gridCardFullWidth,
+                    isWeb && !isMobile && styles.gridCardFullWidth,
                     isWeb && pressed && styles.productCardPressed
                   ]}
                 >
@@ -1361,6 +1367,8 @@ export function WelcomeScreen({
               <ScrollView
                 horizontal
                 decelerationRate="fast"
+                directionalLockEnabled
+                nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
@@ -1432,7 +1440,7 @@ export function WelcomeScreen({
                   style={({ pressed }) => [
                     styles.productCard,
                     isMobile && styles.productCardMobile,
-                    isWeb && styles.gridCardFullWidth,
+                    isWeb && !isMobile && styles.gridCardFullWidth,
                     isWeb && pressed && styles.productCardPressed
                   ]}
                 >
@@ -1543,6 +1551,8 @@ export function WelcomeScreen({
               <ScrollView
                 horizontal
                 decelerationRate="fast"
+                directionalLockEnabled
+                nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 snapToAlignment="start"
                 style={styles.productRail}
@@ -1610,7 +1620,7 @@ export function WelcomeScreen({
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
                   style={({ pressed }) => [
                     styles.productCard,
-                    isWeb && styles.gridCardFullWidth,
+                    isWeb && !isMobile && styles.gridCardFullWidth,
                     isWeb && pressed && styles.productCardPressed
                   ]}
                 >
@@ -1770,7 +1780,7 @@ export function WelcomeScreen({
                 <Pressable
                   key={`${item.verticalCode}-${item.title}-${item.sellerName}-${index}`}
                   onPress={() => onOpenMarketplace(getMarketplaceRoute(item.verticalCode, home?.verticals ?? []))}
-                  style={[styles.collectionCard, isWeb && styles.gridCardFullWidth]}
+                  style={[styles.collectionCard, isWeb && !isMobile && styles.gridCardFullWidth]}
                 >
                   <View style={styles.collectionMediaWrap}>
                     {item.imageUrl ? (
@@ -1893,6 +1903,8 @@ export function WelcomeScreen({
                 ]}
                 horizontal
                 decelerationRate="fast"
+                directionalLockEnabled
+                nestedScrollEnabled
                 keyboardShouldPersistTaps="handled"
                 onScroll={(event) => {
                   sellerScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
@@ -1910,7 +1922,7 @@ export function WelcomeScreen({
                     style={[
                       styles.sellerCard,
                       isMobile && styles.sellerCardMobile,
-                      isWeb && styles.gridCardFullWidth,
+                      isWeb && !isMobile && styles.gridCardFullWidth,
                       {
                         backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
                         width: isMobile ? sellerCardWidth : sellerCardWidth
@@ -4717,5 +4729,4 @@ const styles = StyleSheet.create({
     lineHeight: 21
   }
 });
-
 
