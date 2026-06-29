@@ -99,8 +99,7 @@ Profiles: local,mysql
 Database: auth
 MySQL host: localhost
 MySQL port: 3306
-Username: root
-Password: root
+Datasource env vars: AUTH_DB_URL, AUTH_DB_USERNAME, AUTH_DB_PASSWORD
 JWT private key: C:/Users/HP/projects/certs/jwt-private.pem
 JWT public key: C:/Users/HP/projects/certs/jwt-public.pem
 ```
