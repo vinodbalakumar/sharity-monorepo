@@ -17,15 +17,16 @@ public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Long> 
     List<OrderHeader> findAllByOrderByCreatedAtDesc();
 
     @Query("""
-            SELECT o.listing.publicId AS listingPublicId, COUNT(o) AS completedCount
+            SELECT l.publicId AS listingPublicId, COUNT(o.id) AS completedCount
             FROM OrderHeader o
+            JOIN o.listing l
             WHERE o.completedAt IS NOT NULL OR UPPER(o.orderStatus) = 'COMPLETED'
-            GROUP BY o.listing.publicId
+            GROUP BY l.publicId
             """)
     List<ListingSelectionCountView> countCompletedOrdersByListingPublicId();
 
     interface ListingSelectionCountView {
         String getListingPublicId();
-        long getCompletedCount();
+        Long getCompletedCount();
     }
 }

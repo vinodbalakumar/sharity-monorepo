@@ -1644,9 +1644,11 @@ public class MarketplaceService {
                     .add(listing);
         }
 
-        java.util.Map<String, SellerProfile> sellerProfiles = sellerProfileRepository.findByProviderAccountPublicIdIn(listingsByProvider.keySet())
-                .stream()
-                .collect(java.util.stream.Collectors.toMap(SellerProfile::getProviderAccountPublicId, profile -> profile));
+        java.util.Map<String, SellerProfile> sellerProfiles = listingsByProvider.isEmpty()
+                ? java.util.Collections.emptyMap()
+                : sellerProfileRepository.findByProviderAccountPublicIdIn(listingsByProvider.keySet())
+                        .stream()
+                        .collect(java.util.stream.Collectors.toMap(SellerProfile::getProviderAccountPublicId, profile -> profile));
 
         List<MarketplaceDtos.SellerHighlightResponse> sellers = new ArrayList<>();
         for (java.util.Map.Entry<String, List<Listing>> entry : listingsByProvider.entrySet()) {
