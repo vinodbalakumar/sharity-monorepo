@@ -115,6 +115,7 @@ const webItemsSoldGradient = Platform.OS === 'web'
         'radial-gradient(circle at 10% 20%, rgba(37,99,235,0.25), transparent 28%), radial-gradient(circle at 88% 12%, rgba(245,158,11,0.12), transparent 26%), linear-gradient(135deg, #0b1028 0%, #121a3a 52%, #0f172a 100%)'
     } as never)
   : null;
+const HOME_LOAD_TIMEOUT_MS = 8000;
 
 export function WelcomeScreen({
   onBrowse,
@@ -255,12 +256,24 @@ export function WelcomeScreen({
 
     try {
       const countryQuery = visitorContext?.countryCode ? `?countryCode=${encodeURIComponent(visitorContext.countryCode)}` : '';
-      const response = await getMarketplaceHome(countryQuery);
+      const response = await new Promise<MarketplaceHomeResponse>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Marketplace home request timed out'));
+        }, HOME_LOAD_TIMEOUT_MS);
+
+        getMarketplaceHome(countryQuery)
+          .then((value) => resolve(value))
+          .catch((error) => reject(error))
+          .finally(() => clearTimeout(timeoutId));
+      });
       if (homeRequestIdRef.current === requestId) {
         setHome(response);
         setHomeError(false);
       }
-    } catch {
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('Marketplace home load failed:', error);
+      }
       if (homeRequestIdRef.current === requestId) {
         setHomeError(true);
       }
@@ -295,7 +308,6 @@ export function WelcomeScreen({
   const sellerScrollOffsetRef = useRef(0);
   const sellerCardWidth = isMobile ? Math.min(Math.round(mobileSectionInnerWidth * 0.94), 340) : 300;
   const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
-  const isHomeErrorState = homeError && !home;
   const activeHeroSlide = heroSlides[activeHeroIndex] ?? heroSlides[0] ?? null;
 
   const scrollHeroToIndex = useCallback(
@@ -399,23 +411,6 @@ export function WelcomeScreen({
     },
     [heroSlides.length, heroViewportWidth, pauseHeroAutoplay]
   );
-
-  if (isHomeErrorState) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.homeErrorShell, webGlassPanel, isMobile && styles.homeErrorShellMobile]}>
-            <Ionicons color={palette.blue} name="cloud-offline-outline" size={38} />
-            <Text style={styles.homeErrorTitle}>We couldn&apos;t load the marketplace right now.</Text>
-            <Text style={styles.homeErrorText}>Please check your connection and try again.</Text>
-            <Pressable onPress={loadHome} style={styles.homeRetryButton}>
-              <Text style={styles.homeRetryButtonText}>Retry</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   function submitSearch() {
     const trimmed = searchQuery.trim();
