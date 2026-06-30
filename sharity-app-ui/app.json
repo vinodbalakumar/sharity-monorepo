@@ -9,9 +9,11 @@
     "plugins": [
       "expo-dev-client"
     ],
+    "icon": "./assets/favicon.png",
     "web": {
       "bundler": "metro",
-      "publicPath": "/app/"
+      "publicPath": "/app/",
+      "favicon": "./assets/favicon.png"
     }
   }
 }
