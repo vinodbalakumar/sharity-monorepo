@@ -134,7 +134,7 @@ export function WelcomeScreen({
   const isTinyPhone = width < 480;
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
-  const useCompactMobileRows = isMobile;
+  const useCompactMobileRows = false;
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
   const mobileSectionPadding = isTinyPhone ? 14 : 16;
   const mobileGap = isTinyPhone ? 10 : 14;
@@ -306,7 +306,7 @@ export function WelcomeScreen({
   const trustedSellers = sellerCards;
   const sellerCarouselRef = useRef<ScrollView | null>(null);
   const sellerScrollOffsetRef = useRef(0);
-  const sellerCardWidth = isMobile ? Math.min(Math.round(mobileSectionInnerWidth * 0.94), 340) : 300;
+  const sellerCardWidth = isMobile ? Math.min(Math.round(mobileSectionInnerWidth * 0.82), 320) : 300;
   const sellerCarouselStep = sellerCardWidth + (isMobile ? mobileGap : 24);
   const activeHeroSlide = heroSlides[activeHeroIndex] ?? heroSlides[0] ?? null;
 
@@ -1760,132 +1760,89 @@ export function WelcomeScreen({
               }
             />
 
-            {useCompactMobileRows ? (
-              <View style={styles.mobileListingStack}>
-                {trustedSellers.map((seller, index) => (
-                  <Pressable
-                    key={`${seller.name}-${index}`}
-                    onPress={onBrowse}
-                    style={[
-                      styles.sellerCard,
-                      styles.sellerCardMobile,
-                      {
-                        backgroundColor: ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4],
-                        width: '100%'
-                      }
-                    ]}
-                  >
-                    <View style={[styles.sellerHeader, styles.sellerHeaderMobile]}>
-                      <View style={[styles.sellerAvatar, styles.sellerAvatarMobile]}>
-                        <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
+            <ScrollView
+              contentContainerStyle={[
+                styles.sellerCarouselContent,
+                isMobile && {
+                  paddingLeft: mobileSectionPadding,
+                  paddingRight: mobileSectionPadding,
+                  gap: mobileGap
+                }
+              ]}
+              horizontal
+              decelerationRate="fast"
+              directionalLockEnabled
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              onScroll={(event) => {
+                sellerScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
+              }}
+              scrollEventThrottle={16}
+              ref={sellerCarouselRef}
+              snapToAlignment="start"
+              snapToInterval={sellerCarouselStep}
+              showsHorizontalScrollIndicator={false}
+            >
+              {trustedSellers.map((seller, index) => (
+                <Pressable
+                  key={`${seller.name}-${index}`}
+                  onPress={onBrowse}
+                  style={[
+                    styles.sellerCard,
+                    isMobile && styles.sellerCardMobile,
+                    isWeb && !isMobile && styles.gridCardFullWidth,
+                    {
+                      backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
+                      width: isMobile ? sellerCardWidth : sellerCardWidth
+                    }
+                  ]}
+                >
+                  <View style={[styles.sellerHeader, isMobile && styles.sellerHeaderMobile]}>
+                    <View style={[styles.sellerAvatar, isMobile && styles.sellerAvatarMobile]}>
+                      <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
+                    </View>
+                    <View style={styles.sellerHeaderCopy}>
+                      <Text style={styles.sellerName} numberOfLines={1}>
+                        {seller.name}
+                      </Text>
+                      <View style={styles.sellerBadgeRow}>
+                        <View style={styles.sellerBadge}>
+                          <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
+                          <Text style={styles.sellerBadgeText} numberOfLines={1}>
+                            Verified seller
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.sellerHeaderCopy}>
-                        <Text style={styles.sellerName} numberOfLines={1}>
-                          {seller.name}
+                      <View style={styles.sellerStarsRow}>
+                        <Ionicons color="#f59e0b" name="star" size={12} />
+                        <Text numberOfLines={1} style={styles.sellerStars}>
+                          {seller.rating.toFixed(1)}
                         </Text>
-                        <View style={styles.sellerBadgeRow}>
-                          <View style={styles.sellerBadge}>
-                            <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
-                            <Text style={styles.sellerBadgeText}>Verified seller</Text>
-                          </View>
-                        </View>
-                        <View style={styles.sellerStarsRow}>
-                          <Ionicons color="#f59e0b" name="star" size={12} />
-                          <Text numberOfLines={1} style={styles.sellerStars}>{seller.rating.toFixed(1)}</Text>
-                        </View>
                       </View>
                     </View>
+                  </View>
 
-                    <View style={[styles.sellerStatsRow, styles.sellerStatsRowMobile]}>
-                      <View style={[styles.sellerStat, styles.sellerStatMobile]}>
-                        <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
-                        <Text style={styles.sellerStatLabel}>Review score</Text>
-                      </View>
-                      <View style={[styles.sellerStat, styles.sellerStatMobile]}>
-                        <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
-                        <Text style={styles.sellerStatLabel}>Completed orders</Text>
-                      </View>
+                  <View style={[styles.sellerStatsRow, isMobile && styles.sellerStatsRowMobile]}>
+                    <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
+                      <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
+                      <Text style={styles.sellerStatLabel} numberOfLines={1}>
+                        Review score
+                      </Text>
                     </View>
-
-                    <Text style={[styles.sellerFooterText, styles.sellerFooterTextMobile]}>
-                      {seller.listings[0]?.title ?? 'Curated storefront'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <ScrollView
-                contentContainerStyle={[
-                  styles.sellerCarouselContent,
-                  isMobile && { paddingLeft: mobileSectionPadding, paddingRight: mobileSectionPadding, gap: mobileGap }
-                ]}
-                horizontal
-                decelerationRate="fast"
-                directionalLockEnabled
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-                onScroll={(event) => {
-                  sellerScrollOffsetRef.current = event.nativeEvent.contentOffset.x;
-                }}
-                scrollEventThrottle={16}
-                ref={sellerCarouselRef}
-                snapToAlignment="start"
-                snapToInterval={sellerCarouselStep}
-                showsHorizontalScrollIndicator={false}
-              >
-                {trustedSellers.map((seller, index) => (
-                  <Pressable
-                    key={`${seller.name}-${index}`}
-                    onPress={onBrowse}
-                    style={[
-                      styles.sellerCard,
-                      isMobile && styles.sellerCardMobile,
-                      isWeb && !isMobile && styles.gridCardFullWidth,
-                      {
-                        backgroundColor: isMobile ? ['#f8fbff', '#fff8f0', '#f0fdf4', '#f5f3ff'][index % 4] : palette.surface,
-                        width: isMobile ? sellerCardWidth : sellerCardWidth
-                      }
-                    ]}
-                  >
-                    <View style={[styles.sellerHeader, isMobile && styles.sellerHeaderMobile]}>
-                      <View style={[styles.sellerAvatar, isMobile && styles.sellerAvatarMobile]}>
-                        <Ionicons color={palette.blue} name="person-circle-outline" size={28} />
-                      </View>
-                      <View style={styles.sellerHeaderCopy}>
-                        <Text style={styles.sellerName} numberOfLines={1}>
-                          {seller.name}
-                        </Text>
-                        <View style={styles.sellerBadgeRow}>
-                          <View style={styles.sellerBadge}>
-                            <Ionicons color={palette.blue} name="shield-checkmark-outline" size={12} />
-                            <Text style={styles.sellerBadgeText}>Verified seller</Text>
-                          </View>
-                        </View>
-                        <View style={styles.sellerStarsRow}>
-                          <Ionicons color="#f59e0b" name="star" size={12} />
-                          <Text numberOfLines={1} style={styles.sellerStars}>{seller.rating.toFixed(1)}</Text>
-                        </View>
-                      </View>
+                    <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
+                      <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
+                      <Text style={styles.sellerStatLabel} numberOfLines={1}>
+                        Completed orders
+                      </Text>
                     </View>
+                  </View>
 
-                    <View style={[styles.sellerStatsRow, isMobile && styles.sellerStatsRowMobile]}>
-                      <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
-                        <Text style={styles.sellerStatValue}>{seller.rating.toFixed(1)}</Text>
-                        <Text style={styles.sellerStatLabel}>Review score</Text>
-                      </View>
-                      <View style={[styles.sellerStat, isMobile && styles.sellerStatMobile]}>
-                        <Text style={styles.sellerStatValue}>{seller.completedOrders}</Text>
-                        <Text style={styles.sellerStatLabel}>Completed orders</Text>
-                      </View>
-                    </View>
-
-                    <Text style={[styles.sellerFooterText, isMobile && styles.sellerFooterTextMobile]}>
-                      {seller.listings[0]?.title ?? 'Curated storefront'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            )}
+                  <Text style={[styles.sellerFooterText, isMobile && styles.sellerFooterTextMobile]} numberOfLines={2}>
+                    {seller.listings[0]?.title ?? 'Curated storefront'}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
 
           <View style={[styles.sectionBlock, styles.sectionBlockWhy, webGlassPanel, isMobile && styles.sectionBlockMobile]}>
@@ -4280,7 +4237,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     height: 'auto',
     minHeight: 0,
-    width: 280
+    padding: 16
   },
   sellerHeader: {
     alignItems: 'center',
@@ -4306,7 +4263,8 @@ const styles = StyleSheet.create({
     width: 48
   },
   sellerHeaderCopy: {
-    flex: 1
+    flex: 1,
+    minWidth: 0
   },
   sellerName: {
     color: palette.text,
