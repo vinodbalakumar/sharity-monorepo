@@ -133,7 +133,7 @@ export function WelcomeScreen({
   const isTinyPhone = width < 480;
   const isDesktop = width >= 992;
   const isWeb = Platform.OS === 'web';
-  const useCompactMobileRows = false;
+  const useCompactMobileRows = isMobile;
   const contentPadding = isMobile ? 16 : width >= 1600 ? 64 : width >= 1400 ? 48 : 32;
   const mobileSectionPadding = isTinyPhone ? 14 : 16;
   const mobileGap = isTinyPhone ? 10 : 14;
