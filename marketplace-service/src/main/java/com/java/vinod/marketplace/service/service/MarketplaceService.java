@@ -40,6 +40,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -70,6 +73,9 @@ public class MarketplaceService {
     private final String authorizationProviderEligibilityUrl;
     private final String paymentInternalUrl;
     private final String internalServiceToken;
+    private volatile String cachedAssetPublicBaseUrl;
+    private volatile List<String> cachedPublicListingStatuses;
+    private volatile List<String> cachedHomeListingStatuses;
 
     /**
      * Creates the marketplace service with repositories and internal payment configuration.
@@ -244,17 +250,16 @@ public class MarketplaceService {
         String normalizedCountry = normalizeCountryCode(countryCode);
         List<String> publicStatuses = publicListingStatuses();
         List<String> homeStatuses = homeListingStatuses(publicStatuses);
-        List<Listing> homeListings = homeListings(normalizedCountry, homeStatuses);
         return new MarketplaceDtos.HomeResponse(
                 timedHomeSection("verticals", this::activeVerticals),
-                timedHomeSection("featuredListings", () -> featuredListings(normalizedCountry)),
-                timedHomeSection("categoryHighlights", () -> toCategoryHighlights(normalizedCountry, homeListings)),
-                timedHomeSection("topDiscountedSubcategories", () -> topDiscountedSubcategories(normalizedCountry, homeListings)),
-                timedHomeSection("rollbackOffers", () -> rollbackOfferListings(normalizedCountry, homeListings)),
-                timedHomeSection("clearanceOffers", () -> clearanceListings(normalizedCountry, homeListings)),
-                timedHomeSection("topRatedSellers", () -> topRatedSellers(normalizedCountry, homeListings, publicStatuses)),
-                timedHomeSection("mostSelectedListings", () -> mostSelectedListings(normalizedCountry, homeListings, publicStatuses)),
-                homeListings.stream().filter(listing -> "SOLD".equalsIgnoreCase(listing.getListingStatus())).count());
+                timedHomeSection("featuredListings", () -> featuredListings(normalizedCountry, homeStatuses)),
+                timedHomeSection("categoryHighlights", () -> toCategoryHighlights(normalizedCountry, publicStatuses)),
+                timedHomeSection("topDiscountedSubcategories", () -> topDiscountedSubcategories(normalizedCountry, publicStatuses)),
+                timedHomeSection("rollbackOffers", () -> rollbackOfferListings(normalizedCountry, homeStatuses)),
+                timedHomeSection("clearanceOffers", () -> clearanceListings(normalizedCountry, homeStatuses)),
+                timedHomeSection("topRatedSellers", () -> topRatedSellers(normalizedCountry, homeStatuses)),
+                timedHomeSection("mostSelectedListings", () -> mostSelectedListings(normalizedCountry, homeStatuses)),
+                timedHomeSection("itemsSoldCount", () -> itemsSoldCount(normalizedCountry)));
     }
 
     /**
@@ -270,13 +275,17 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public List<MarketplaceDtos.ListingResponse> featuredListings(String countryCode) {
+        return featuredListings(countryCode, homeListingStatuses());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MarketplaceDtos.ListingResponse> featuredListings(String countryCode, List<String> statuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
-        List<String> publicStatuses = homeListingStatuses();
         List<Listing> listings = normalizedCountry == null
-                ? listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(publicStatuses)
-                : listingRepository.findTop8ByListingStatusInAndFeaturedTrueAndProviderCountryCodeOrderByUpdatedAtDesc(publicStatuses, normalizedCountry);
+                ? listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(statuses)
+                : listingRepository.findTop8ByListingStatusInAndFeaturedTrueAndProviderCountryCodeOrderByUpdatedAtDesc(statuses, normalizedCountry);
         if (listings.isEmpty() && normalizedCountry != null) {
-            listings = listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(publicStatuses);
+            listings = listingRepository.findTop8ByListingStatusInAndFeaturedTrueOrderByUpdatedAtDesc(statuses);
         }
         return toListingResponses(listings, normalizedCountry);
     }
@@ -954,69 +963,78 @@ public class MarketplaceService {
                 .toList();
     }
 
-    private List<MarketplaceDtos.CategoryHighlightResponse> toCategoryHighlights(String countryCode, List<Listing> listings) {
-        if (listings.isEmpty()) {
+    private List<MarketplaceDtos.CategoryHighlightResponse> toCategoryHighlights(String countryCode, List<String> publicStatuses) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<MarketplaceCategory> categories = categoriesByCountry(normalizedCountry);
+        if (categories.isEmpty() && normalizedCountry != null) {
+            categories = categoriesByCountry(null);
+        }
+        List<String> categoryCodes = categories.stream()
+                .map(MarketplaceCategory::getCategoryCode)
+                .filter(code -> code != null && !code.isBlank())
+                .map(code -> code.trim().toUpperCase())
+                .distinct()
+                .toList();
+        if (categoryCodes.isEmpty()) {
             return List.of();
         }
 
-        java.util.Map<String, List<Listing>> listingsByCategory = new java.util.HashMap<>();
-        for (Listing listing : listings) {
+        List<Listing> discountedSamples = topDiscountedListings(normalizedCountry, publicStatuses);
+        Map<String, String> discountedSampleImages = new HashMap<>();
+        for (Listing listing : discountedSamples) {
             if (listing.getCategoryCode() == null || listing.getCategoryCode().isBlank()) {
                 continue;
             }
-            listingsByCategory.computeIfAbsent(listing.getCategoryCode().trim().toUpperCase(), key -> new ArrayList<>())
-                    .add(listing);
+            String imageUrl = resolveImageUrl(listing.getImageKey(), null);
+            if (imageUrl == null || imageUrl.isBlank()) {
+                continue;
+            }
+            discountedSampleImages.putIfAbsent(listing.getCategoryCode().trim().toUpperCase(), imageUrl);
         }
 
+        Map<String, MarketplaceCategory> categoryMap = marketplaceCategoryRepository.findByCategoryCodeIn(categoryCodes).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        category -> category.getCategoryCode().trim().toUpperCase(),
+                        category -> category,
+                        (left, right) -> left));
+
         List<MarketplaceDtos.CategoryHighlightResponse> highlights = new ArrayList<>();
-        for (java.util.Map.Entry<String, List<Listing>> entry : listingsByCategory.entrySet()) {
-            String categoryCode = entry.getKey();
-            List<Listing> categoryListings = entry.getValue();
-            MarketplaceCategory category = marketplaceCategoryRepository.findByCategoryCode(categoryCode).orElse(null);
-            Listing representativeListing = categoryListings.get(0);
+        List<ListingRepository.HomepageCategoryAggregateView> aggregates = listingRepository.findHomepageCategoryAggregates(
+                publicStatuses,
+                normalizedCountry,
+                PageRequest.of(0, 20));
+        if (aggregates.isEmpty() && normalizedCountry != null) {
+            aggregates = listingRepository.findHomepageCategoryAggregates(publicStatuses, null, PageRequest.of(0, 20));
+        }
 
-            long soldCount = categoryListings.stream()
-                    .filter(listing -> "SOLD".equalsIgnoreCase(listing.getListingStatus()))
-                    .count();
-            long activeCount = categoryListings.stream()
-                    .filter(listing -> isPublicListingStatus(listing.getListingStatus()))
-                    .count();
-            int maxDiscountPercent = categoryListings.stream()
-                    .mapToInt(this::discountPercent)
-                    .max()
-                    .orElse(0);
-            Listing highlightListing = categoryListings.stream()
-                    .sorted((left, right) -> {
-                        LocalDateTime leftUpdated = left.getUpdatedAt();
-                        LocalDateTime rightUpdated = right.getUpdatedAt();
-                        if (leftUpdated == null && rightUpdated == null) {
-                            return 0;
-                        }
-                        if (leftUpdated == null) {
-                            return 1;
-                        }
-                        if (rightUpdated == null) {
-                            return -1;
-                        }
-                        return rightUpdated.compareTo(leftUpdated);
-                    })
-                    .findFirst()
-                    .orElse(null);
+        Map<String, ListingRepository.HomepageCategoryAggregateView> aggregateByCode = new HashMap<>();
+        for (ListingRepository.HomepageCategoryAggregateView aggregate : aggregates) {
+            if (aggregate.getCategoryCode() == null || aggregate.getCategoryCode().isBlank()) {
+                continue;
+            }
+            aggregateByCode.putIfAbsent(aggregate.getCategoryCode().trim().toUpperCase(), aggregate);
+        }
 
-            String imageUrl = resolveImageUrl(
-                    category == null ? null : category.getImageKey(),
-                    highlightListing == null ? null : resolveImageUrl(highlightListing.getImageKey(), null));
-
+        for (String categoryCode : categoryCodes) {
+            MarketplaceCategory category = categoryMap.get(categoryCode);
+            ListingRepository.HomepageCategoryAggregateView aggregate = aggregateByCode.get(categoryCode);
+            if (aggregate == null) {
+                continue;
+            }
+            String imageUrl = category == null ? null : resolveImageUrl(category.getImageKey(), null);
+            if (imageUrl == null || imageUrl.isBlank()) {
+                imageUrl = discountedSampleImages.get(categoryCode);
+            }
             highlights.add(new MarketplaceDtos.CategoryHighlightResponse(
                     category == null ? categoryCode : category.getCategoryCode(),
                     category == null ? categoryCode : category.getCategoryName(),
                     category == null ? categoryCode.toLowerCase() : category.getCategorySlug(),
-                    category == null ? representativeListing.getVerticalCode() : category.getVerticalCode(),
+                    category == null ? null : category.getVerticalCode(),
                     category == null ? null : category.getIconRef(),
                     imageUrl,
-                    soldCount,
-                    activeCount,
-                    maxDiscountPercent
+                    aggregate.getSoldCount() == null ? 0L : aggregate.getSoldCount(),
+                    aggregate.getActiveCount() == null ? 0L : aggregate.getActiveCount(),
+                    aggregate.getMaxDiscountPercent() == null ? 0 : aggregate.getMaxDiscountPercent()
             ));
         }
 
@@ -1258,10 +1276,18 @@ public class MarketplaceService {
     }
 
     private String resolveAssetPublicBaseUrl() {
-        return assetStorageProviderRepository.findFirstByActiveTrueOrderByUpdatedAtDesc()
-                .map(AssetStorageProvider::getPublicBaseUrl)
-                .filter(baseUrl -> baseUrl != null && !baseUrl.isBlank())
-                .orElse(null);
+        if (cachedAssetPublicBaseUrl != null) {
+            return cachedAssetPublicBaseUrl;
+        }
+        synchronized (this) {
+            if (cachedAssetPublicBaseUrl == null) {
+                cachedAssetPublicBaseUrl = assetStorageProviderRepository.findFirstByActiveTrueOrderByUpdatedAtDesc()
+                        .map(AssetStorageProvider::getPublicBaseUrl)
+                        .filter(baseUrl -> baseUrl != null && !baseUrl.isBlank())
+                        .orElse("");
+            }
+        }
+        return cachedAssetPublicBaseUrl.isBlank() ? null : cachedAssetPublicBaseUrl;
     }
 
     private String resolveImageUrl(String imageKey, String fallback, String publicBaseUrl) {
@@ -1298,7 +1324,15 @@ public class MarketplaceService {
     }
 
     private List<String> homeListingStatuses() {
-        return homeListingStatuses(publicListingStatuses());
+        if (cachedHomeListingStatuses != null) {
+            return cachedHomeListingStatuses;
+        }
+        synchronized (this) {
+            if (cachedHomeListingStatuses == null) {
+                cachedHomeListingStatuses = List.copyOf(homeListingStatuses(publicListingStatuses()));
+            }
+        }
+        return cachedHomeListingStatuses;
     }
 
     private List<String> homeListingStatuses(List<String> publicStatuses) {
@@ -1309,19 +1343,22 @@ public class MarketplaceService {
         return statuses;
     }
 
-    private List<Listing> homeListings(String countryCode) {
-        return homeListings(countryCode, homeListingStatuses());
-    }
-
-    private List<Listing> homeListings(String countryCode, List<String> statuses) {
-        String normalizedCountry = normalizeCountryCode(countryCode);
-        List<Listing> listings = normalizedCountry == null
-                ? listingRepository.findByListingStatusInOrderByCreatedAtDesc(statuses)
-                : listingRepository.findByListingStatusInAndProviderCountryCodeOrderByCreatedAtDesc(statuses, normalizedCountry);
-        if (listings.isEmpty() && normalizedCountry != null) {
-            listings = listingRepository.findByListingStatusInOrderByCreatedAtDesc(statuses);
+    private List<String> publicListingStatuses() {
+        if (cachedPublicListingStatuses != null) {
+            return cachedPublicListingStatuses;
         }
-        return listings;
+        synchronized (this) {
+            if (cachedPublicListingStatuses == null) {
+                List<String> statuses = listingStatusMasterRepository.findByCustomerVisibleTrueAndActiveTrueOrderBySortOrderAscDisplayLabelAsc()
+                        .stream()
+                        .map(ListingStatusMaster::getStatusCode)
+                        .toList();
+                cachedPublicListingStatuses = statuses.isEmpty()
+                        ? List.of("ACTIVE", "PUBLISHED")
+                        : List.copyOf(statuses);
+            }
+        }
+        return cachedPublicListingStatuses;
     }
 
     private <T> T timedHomeSection(String section, Supplier<T> supplier) {
@@ -1355,14 +1392,6 @@ public class MarketplaceService {
                 .findFirst()
                 .map(ListingStatusMaster::getStatusCode)
                 .orElse("ACTIVE");
-    }
-
-    private List<String> publicListingStatuses() {
-        List<String> statuses = listingStatusMasterRepository.findByCustomerVisibleTrueAndActiveTrueOrderBySortOrderAscDisplayLabelAsc()
-                .stream()
-                .map(ListingStatusMaster::getStatusCode)
-                .toList();
-        return statuses.isEmpty() ? List.of("ACTIVE", "PUBLISHED") : statuses;
     }
 
     private List<MarketplaceCategory> categoriesByCountry(String countryCode) {
@@ -1516,64 +1545,114 @@ public class MarketplaceService {
      * Returns top 20 highly discounted sub-categories with their best-discounted listings for homepage.
      */
     @Transactional(readOnly = true)
-    private List<MarketplaceDtos.SubcategoryHighlightResponse> topDiscountedSubcategories(String countryCode, List<Listing> listings) {
+    private List<MarketplaceDtos.SubcategoryHighlightResponse> topDiscountedSubcategories(String countryCode, List<String> publicStatuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
-        List<MarketplaceDtos.SubcategoryHighlightResponse> highlights = listings.stream()
-                .filter(listing -> listing.getOriginalPriceAmount() != null && listing.getPriceAmount() != null)
-                .map(listing -> {
-                    int discountPercent = discountPercent(listing);
-                    if (discountPercent <= 0) {
-                        return null;
-                    }
+        List<Listing> discountedListings = topDiscountedListings(normalizedCountry, publicStatuses);
+        if (discountedListings.isEmpty() && normalizedCountry != null) {
+            discountedListings = topDiscountedListings(null, publicStatuses);
+        }
+        if (discountedListings.isEmpty()) {
+            return List.of();
+        }
 
-                    MarketplaceCategory category = listing.getCategoryCode() == null
-                            ? null
-                            : marketplaceCategoryRepository.findByCategoryCode(listing.getCategoryCode()).orElse(null);
-                    String categoryName = category == null ? listing.getCategoryCode() : category.getCategoryName();
-                    String subcategoryName = categoryName;
-                    String verticalCode = category != null && category.getVerticalCode() != null
-                            ? category.getVerticalCode()
-                            : listing.getVerticalCode();
+        Map<String, Listing> bestListingByCategory = new LinkedHashMap<>();
+        for (Listing listing : discountedListings) {
+            if (listing.getCategoryCode() == null || listing.getCategoryCode().isBlank()) {
+                continue;
+            }
+            int discountPercent = discountPercent(listing);
+            if (discountPercent <= 0) {
+                continue;
+            }
+            String categoryCode = listing.getCategoryCode().trim().toUpperCase();
+            bestListingByCategory.putIfAbsent(categoryCode, listing);
+        }
 
-                    return new MarketplaceDtos.SubcategoryHighlightResponse(
-                            category == null ? listing.getCategoryCode() : category.getCategoryCode(),
-                            subcategoryName,
-                            categoryName,
-                            verticalCode,
-                            discountPercent,
-                            resolveImageUrl(listing.getImageKey(), null),
-                            listing.getTitle(),
-                            listing.getOriginalPriceAmount(),
-                            listing.getPriceAmount(),
-                            listing.getCurrencyCode()
-                    );
-                })
-                .filter(java.util.Objects::nonNull)
+        List<String> categoryCodes = bestListingByCategory.keySet().stream().toList();
+        Map<String, MarketplaceCategory> categories = marketplaceCategoryRepository.findByCategoryCodeIn(categoryCodes).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        category -> category.getCategoryCode().trim().toUpperCase(),
+                        category -> category,
+                        (left, right) -> left));
+
+        List<MarketplaceDtos.SubcategoryHighlightResponse> highlights = new ArrayList<>();
+        for (Map.Entry<String, Listing> entry : bestListingByCategory.entrySet()) {
+            String categoryCode = entry.getKey();
+            Listing listing = entry.getValue();
+            MarketplaceCategory category = categories.get(categoryCode);
+            String categoryName = category == null ? listing.getCategoryCode() : category.getCategoryName();
+            String subcategoryName = categoryName;
+            String verticalCode = category != null && category.getVerticalCode() != null
+                    ? category.getVerticalCode()
+                    : listing.getVerticalCode();
+
+            highlights.add(new MarketplaceDtos.SubcategoryHighlightResponse(
+                    category == null ? listing.getCategoryCode() : category.getCategoryCode(),
+                    subcategoryName,
+                    categoryName,
+                    verticalCode,
+                    discountPercent(listing),
+                    resolveImageUrl(listing.getImageKey(), null),
+                    listing.getTitle(),
+                    listing.getOriginalPriceAmount(),
+                    listing.getPriceAmount(),
+                    listing.getCurrencyCode()
+            ));
+        }
+
+        return highlights.stream()
                 .sorted(Comparator.comparingInt(MarketplaceDtos.SubcategoryHighlightResponse::discountPercentage).reversed()
                         .thenComparing(MarketplaceDtos.SubcategoryHighlightResponse::subcategoryName, String.CASE_INSENSITIVE_ORDER))
                 .limit(20)
                 .toList();
-
-        return highlights;
     }
 
     /**
      * Returns the 10 most selected listings for the public homepage.
      */
     @Transactional(readOnly = true)
-    private List<MarketplaceDtos.ListingResponse> mostSelectedListings(String countryCode, List<Listing> listings, List<String> publicStatuses) {
+    private List<MarketplaceDtos.ListingResponse> mostSelectedListings(String countryCode, List<String> publicStatuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
+        List<ListingRepository.ListingSelectionCountView> selectionCounts = listingRepository
+                .findTopCompletedOrdersByListingPublicId(publicStatuses, normalizedCountry, PageRequest.of(0, 20));
+        if (selectionCounts.isEmpty() && normalizedCountry != null) {
+            selectionCounts = listingRepository.findTopCompletedOrdersByListingPublicId(publicStatuses, null, PageRequest.of(0, 20));
+        }
+        List<String> listingPublicIds = selectionCounts.stream()
+                .map(ListingRepository.ListingSelectionCountView::getListingPublicId)
+                .filter(publicId -> publicId != null && !publicId.isBlank())
+                .limit(10)
+                .toList();
+        if (listingPublicIds.isEmpty()) {
+            return List.of();
+        }
 
-        java.util.Map<String, Long> selectionCounts = orderHeaderRepository.countCompletedOrdersByListingPublicId().stream()
+        Map<String, Long> countsByListing = selectionCounts.stream()
                 .filter(view -> view.getListingPublicId() != null && !view.getListingPublicId().isBlank())
                 .collect(java.util.stream.Collectors.toMap(
-                        OrderHeaderRepository.ListingSelectionCountView::getListingPublicId,
-                        OrderHeaderRepository.ListingSelectionCountView::getCompletedCount));
+                        view -> view.getListingPublicId().trim(),
+                        view -> view.getCompletedCount() == null ? 0L : view.getCompletedCount(),
+                        Long::max,
+                        LinkedHashMap::new));
 
-        return listings.stream()
+        Map<String, Listing> listingsByPublicId = listingRepository.findByPublicIdIn(listingPublicIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Listing::getPublicId,
+                        listing -> listing,
+                        (left, right) -> left));
+
+        List<Listing> orderedListings = new ArrayList<>();
+        for (String publicId : listingPublicIds) {
+            Listing listing = listingsByPublicId.get(publicId);
+            if (listing != null) {
+                orderedListings.add(listing);
+            }
+        }
+
+        return orderedListings.stream()
                 .sorted((left, right) -> {
-                    long rightCount = selectionCounts.getOrDefault(right.getPublicId(), 0L);
-                    long leftCount = selectionCounts.getOrDefault(left.getPublicId(), 0L);
+                    long rightCount = countsByListing.getOrDefault(right.getPublicId(), 0L);
+                    long leftCount = countsByListing.getOrDefault(left.getPublicId(), 0L);
                     if (rightCount != leftCount) {
                         return Long.compare(rightCount, leftCount);
                     }
@@ -1599,15 +1678,12 @@ public class MarketplaceService {
      * Returns top 20 active rollback offers that still have time remaining.
      */
     @Transactional(readOnly = true)
-    private List<MarketplaceDtos.ListingResponse> rollbackOfferListings(String countryCode, List<Listing> listings) {
+    private List<MarketplaceDtos.ListingResponse> rollbackOfferListings(String countryCode, List<String> statuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
-        List<Listing> filtered = listings.stream()
-                .filter(listing -> listing.getRollbackOfferExpiresAt() != null)
-                .filter(listing -> listing.getRollbackOfferExpiresAt().isAfter(LocalDateTime.now()))
-                .sorted(Comparator.comparing(Listing::getRollbackOfferExpiresAt, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Listing::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(20)
-                .toList();
+        List<Listing> filtered = listingRepository.findTopRollbackOfferListings(statuses, LocalDateTime.now(), normalizedCountry, PageRequest.of(0, 20));
+        if (filtered.isEmpty() && normalizedCountry != null) {
+            filtered = listingRepository.findTopRollbackOfferListings(statuses, LocalDateTime.now(), null, PageRequest.of(0, 20));
+        }
         return toListingResponses(filtered, normalizedCountry);
     }
 
@@ -1615,17 +1691,13 @@ public class MarketplaceService {
      * Returns top 20 clearance listings older than three months and discounted by 50% or more.
      */
     @Transactional(readOnly = true)
-    private List<MarketplaceDtos.ListingResponse> clearanceListings(String countryCode, List<Listing> listings) {
+    private List<MarketplaceDtos.ListingResponse> clearanceListings(String countryCode, List<String> statuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
         LocalDateTime clearanceCutoff = LocalDateTime.now().minusMonths(3);
-        List<Listing> filtered = listings.stream()
-                .filter(listing -> listing.getCreatedAt() != null && listing.getCreatedAt().isBefore(clearanceCutoff))
-                .filter(listing -> discountPercent(listing) >= 50)
-                .sorted(Comparator.comparingInt(this::discountPercent).reversed()
-                        .thenComparing(Listing::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Listing::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(20)
-                .toList();
+        List<Listing> filtered = listingRepository.findTopClearanceListings(statuses, clearanceCutoff, normalizedCountry);
+        if (filtered.isEmpty() && normalizedCountry != null) {
+            filtered = listingRepository.findTopClearanceListings(statuses, clearanceCutoff, null);
+        }
         return toListingResponses(filtered, normalizedCountry);
     }
 
@@ -1633,28 +1705,44 @@ public class MarketplaceService {
      * Returns top 20 high-rated sellers with their featured listings for homepage.
      */
     @Transactional(readOnly = true)
-    private List<MarketplaceDtos.SellerHighlightResponse> topRatedSellers(String countryCode, List<Listing> listings, List<String> publicStatuses) {
+    private List<MarketplaceDtos.SellerHighlightResponse> topRatedSellers(String countryCode, List<String> publicStatuses) {
         String normalizedCountry = normalizeCountryCode(countryCode);
-        java.util.Map<String, List<Listing>> listingsByProvider = new java.util.HashMap<>();
-        for (Listing listing : listings) {
+        List<SellerProfile> sellerProfiles = sellerProfileRepository.findTopVerifiedSellers(PageRequest.of(0, 20));
+        if (sellerProfiles.isEmpty()) {
+            return List.of();
+        }
+        List<String> providerPublicIds = sellerProfiles.stream()
+                .map(SellerProfile::getProviderAccountPublicId)
+                .filter(providerPublicId -> providerPublicId != null && !providerPublicId.isBlank())
+                .toList();
+        if (providerPublicIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Listing> providerListings = normalizedCountry == null
+                ? listingRepository.findByProviderAccountPublicIdInAndListingStatusInOrderByUpdatedAtDesc(providerPublicIds, publicStatuses)
+                : listingRepository.findByProviderAccountPublicIdInAndListingStatusInAndProviderCountryCodeOrderByUpdatedAtDesc(providerPublicIds, publicStatuses, normalizedCountry);
+        if (providerListings.isEmpty() && normalizedCountry != null) {
+            providerListings = listingRepository.findByProviderAccountPublicIdInAndListingStatusInOrderByUpdatedAtDesc(providerPublicIds, publicStatuses);
+        }
+
+        Map<String, List<Listing>> listingsByProvider = new HashMap<>();
+        for (Listing listing : providerListings) {
             if (listing.getProviderAccountPublicId() == null || listing.getProviderAccountPublicId().isBlank()) {
                 continue;
             }
-            listingsByProvider.computeIfAbsent(listing.getProviderAccountPublicId(), key -> new java.util.ArrayList<>())
+            listingsByProvider.computeIfAbsent(listing.getProviderAccountPublicId(), key -> new ArrayList<>())
                     .add(listing);
         }
 
-        java.util.Map<String, SellerProfile> sellerProfiles = listingsByProvider.isEmpty()
-                ? java.util.Collections.emptyMap()
-                : sellerProfileRepository.findByProviderAccountPublicIdIn(listingsByProvider.keySet())
-                        .stream()
-                        .collect(java.util.stream.Collectors.toMap(SellerProfile::getProviderAccountPublicId, profile -> profile));
+        Map<String, SellerProfile> sellerProfileMap = sellerProfiles.stream()
+                .collect(java.util.stream.Collectors.toMap(SellerProfile::getProviderAccountPublicId, profile -> profile, (left, right) -> left));
 
         List<MarketplaceDtos.SellerHighlightResponse> sellers = new ArrayList<>();
         for (java.util.Map.Entry<String, List<Listing>> entry : listingsByProvider.entrySet()) {
             String providerPublicId = entry.getKey();
-            List<Listing> providerListings = entry.getValue();
-            SellerProfile sellerProfile = sellerProfiles.get(providerPublicId);
+            List<Listing> sellerListingsSource = entry.getValue();
+            SellerProfile sellerProfile = sellerProfileMap.get(providerPublicId);
             if (sellerProfile == null) {
                 continue;
             }
@@ -1663,52 +1751,17 @@ public class MarketplaceService {
 
             String sellerName = sellerProfile.getSellerName();
             if (sellerName == null || sellerName.isBlank()) {
-                sellerName = providerListings.stream()
+                sellerName = sellerListingsSource.stream()
                         .map(Listing::getSellerDisplayName)
                         .filter(s -> s != null && !s.isBlank())
                         .findFirst()
                         .orElse("Unknown Seller");
             }
 
-            List<MarketplaceDtos.ListingResponse> sellerListings = providerListings.stream()
-                    .filter(listing -> publicStatuses.contains(listing.getListingStatus()))
-                    .sorted((left, right) -> {
-                        LocalDateTime leftUpdated = left.getUpdatedAt();
-                        LocalDateTime rightUpdated = right.getUpdatedAt();
-                        if (leftUpdated == null && rightUpdated == null) {
-                            return 0;
-                        }
-                        if (leftUpdated == null) {
-                            return 1;
-                        }
-                        if (rightUpdated == null) {
-                            return -1;
-                        }
-                        return rightUpdated.compareTo(leftUpdated);
-                    })
+            List<MarketplaceDtos.ListingResponse> sellerListings = sellerListingsSource.stream()
                     .limit(3)
                     .map(listing -> toListingResponse(listing, normalizedCountry))
                     .toList();
-            if (sellerListings.isEmpty()) {
-                sellerListings = providerListings.stream()
-                        .sorted((left, right) -> {
-                            LocalDateTime leftUpdated = left.getUpdatedAt();
-                            LocalDateTime rightUpdated = right.getUpdatedAt();
-                            if (leftUpdated == null && rightUpdated == null) {
-                                return 0;
-                            }
-                            if (leftUpdated == null) {
-                                return 1;
-                            }
-                            if (rightUpdated == null) {
-                                return -1;
-                            }
-                            return rightUpdated.compareTo(leftUpdated);
-                        })
-                        .limit(3)
-                        .map(listing -> toListingResponse(listing, normalizedCountry))
-                        .toList();
-            }
 
             sellers.add(new MarketplaceDtos.SellerHighlightResponse(
                     providerPublicId,
@@ -1726,5 +1779,28 @@ public class MarketplaceService {
                 .thenComparing(MarketplaceDtos.SellerHighlightResponse::sellerName, String.CASE_INSENSITIVE_ORDER));
 
         return sellers.stream().limit(20).toList();
+    }
+
+    @Transactional(readOnly = true)
+    private List<Listing> topDiscountedListings(String countryCode, List<String> publicStatuses) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<Listing> listings = listingRepository.findTopDiscountedListings(publicStatuses, normalizedCountry);
+        if (listings.isEmpty() && normalizedCountry != null) {
+            listings = listingRepository.findTopDiscountedListings(publicStatuses, null);
+        }
+        return listings;
+    }
+
+    @Transactional(readOnly = true)
+    private long itemsSoldCount(String countryCode) {
+        String normalizedCountry = normalizeCountryCode(countryCode);
+        List<String> soldStatuses = List.of("SOLD");
+        long soldCount = normalizedCountry == null
+                ? listingRepository.countByListingStatusIn(soldStatuses)
+                : listingRepository.countByListingStatusInAndProviderCountryCode(soldStatuses, normalizedCountry);
+        if (soldCount == 0 && normalizedCountry != null) {
+            soldCount = listingRepository.countByListingStatusIn(soldStatuses);
+        }
+        return soldCount;
     }
 }

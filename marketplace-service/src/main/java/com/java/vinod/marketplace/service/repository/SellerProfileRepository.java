@@ -3,6 +3,7 @@ package com.java.vinod.marketplace.service.repository;
 import com.java.vinod.marketplace.service.entity.SellerProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -25,6 +26,10 @@ public interface SellerProfileRepository extends JpaRepository<SellerProfile, In
     @Query("SELECT sp FROM SellerProfile sp WHERE sp.verificationStatus IN ('VERIFIED', 'PREMIUM') AND sp.active = TRUE " +
            "ORDER BY sp.sellerRating DESC, sp.completedOrders DESC")
     List<SellerProfile> findTopVerifiedSellers();
+
+    @Query("SELECT sp FROM SellerProfile sp WHERE sp.verificationStatus IN ('VERIFIED', 'PREMIUM') AND sp.active = TRUE " +
+           "ORDER BY sp.sellerRating DESC, sp.completedOrders DESC")
+    List<SellerProfile> findTopVerifiedSellers(Pageable pageable);
 
     List<SellerProfile> findByActiveTrueOrderBySellerRatingDescCompletedOrdersDesc();
 }
