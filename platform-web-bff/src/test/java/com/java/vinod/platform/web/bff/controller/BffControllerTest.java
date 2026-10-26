@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -39,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
+@ActiveProfiles("test")
 @SpringBootTest(classes = PlatformWebBffApplication.class, properties = {
         "server.port=0",
         "spring.main.allow-bean-definition-overriding=true",
@@ -50,6 +52,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
         "app.security.allowed-origin=https://vinodbalakumar.com",
         "app.oauth2.client-id=sharity-web-bff",
         "app.oauth2.client-secret=test-secret",
+        "spring.security.oauth2.client.registration.sharity-web-bff.client-secret=test-secret",
         "app.oauth2.redirect-uri=https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff",
         "app.oauth2.authorization-server-public-base-url=https://vinodbalakumar.com/authorization-server/api",
         "app.oauth2.authorization-server-base-url=http://localhost:8083/authorization-server/api",

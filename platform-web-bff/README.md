@@ -94,3 +94,6 @@ mvn test
 - Local module tests passed earlier
 - Docker Compose config and image build passed earlier
 - Public live callback/session validation is still pending until real runtime secrets and deployed host values are provided
+
+`SHARITY_WEB_BFF_CLIENT_SECRET` is required at runtime and is supplied by the private deployment env file. No real OAuth client-secret fallback is embedded in source. Rotate credentials previously present in Git history.
+Controller integration tests explicitly activate the test profile and supply test-only credentials/H2 settings; CI does not import the workstation deployment env file.
