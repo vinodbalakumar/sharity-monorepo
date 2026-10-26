@@ -1,3 +1,5 @@
+Deployment environment profiles are maintained in `../deployments/config/authorization-server/`; use `SPRING_CONFIG_ADDITIONAL_LOCATION` when starting outside Compose. Dockerfiles and server configuration are maintained in `../deployments`.
+
 ## Operations and commerce follow-up (2026-10-25)
 
 This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
@@ -149,20 +151,20 @@ http://localhost:8083/authorization-server/api/swagger-ui/index.html
 Deployment files are not stored in this service folder. They are centralized in:
 
 ```text
-C:\Users\HP\projects\deployments
+C:\Users\HP\projects\springbootrestdemo\deployments
 ```
 
 Deploy this service only:
 
 ```powershell
-cd C:\Users\HP\projects\deployments
+cd C:\Users\HP\projects\springbootrestdemo\deployments
 docker compose up -d --build authorization-server
 ```
 
 Deploy all services:
 
 ```powershell
-cd C:\Users\HP\projects\deployments
+cd C:\Users\HP\projects\springbootrestdemo\deployments
 docker compose up -d --build
 ```
 

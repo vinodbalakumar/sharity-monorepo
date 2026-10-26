@@ -123,7 +123,7 @@ public class PageController {
                             align-items: center;
                             gap: 12px;
                             color: #12263a;
-                            font-weight: 900;
+                            font-weight: 700;
                             font-size: 21px;
                             text-decoration: none;
                         }
@@ -134,15 +134,15 @@ public class PageController {
                             display: grid;
                             place-items: center;
                             border-radius: 10px;
-                            background: #3f88c5;
+                            background: #2459d3;
                             color: #ffffff;
-                            font-weight: 900;
+                            font-weight: 700;
                         }
 
                         .top-link {
                             color: #12263a;
                             font-size: 14px;
-                            font-weight: 800;
+                            font-weight: 600;
                             text-decoration: none;
                         }
 
@@ -156,9 +156,9 @@ public class PageController {
                         main {
                             width: 100%;
                             max-width: 520px;
-                            background: rgba(255, 253, 249, 0.98);
+                            background: #ffffff;
                             border: 1px solid rgba(219, 228, 239, 0.78);
-                            border-radius: 28px;
+                            border-radius: 16px;
                             padding: 34px;
                             box-shadow: 0 24px 64px rgba(18, 38, 58, 0.10);
                             color: #12263a;
@@ -187,11 +187,11 @@ public class PageController {
                             min-height: 56px;
                             margin: 4px 0 18px;
                             border: 1px solid #dbe4ef;
-                            border-radius: 999px;
+                            border-radius: 10px;
                             background: #ffffff;
                             color: #12263a;
                             font-size: 16px;
-                            font-weight: 900;
+                            font-weight: 700;
                             text-decoration: none;
                             box-shadow: 0 10px 24px rgba(18, 38, 58, 0.08);
                         }
@@ -213,7 +213,7 @@ public class PageController {
                             color: #fff;
                             font-size: 12px;
                             line-height: 1;
-                            font-weight: 900;
+                            font-weight: 700;
                         }
 
                         .social-note {
@@ -242,9 +242,12 @@ public class PageController {
                             outline: none;
                         }
 
+                        input, button { font-family: inherit; }
+                        a:focus-visible, button:focus-visible { outline: 3px solid #8ab1ff; outline-offset: 3px; }
+
                         input:focus {
-                            border-color: #3f88c5;
-                            box-shadow: 0 0 0 4px rgba(63, 136, 197, 0.14);
+                            border-color: #2459d3;
+                            box-shadow: 0 0 0 4px rgba(36, 89, 211, 0.14);
                         }
 
                         button {
@@ -252,16 +255,16 @@ public class PageController {
                             min-height: 56px;
                             padding: 15px 18px;
                             border: 0;
-                            border-radius: 999px;
-                            background: #3f88c5;
+                            border-radius: 10px;
+                            background: #2459d3;
                             color: #ffffff;
                             font-size: 17px;
-                            font-weight: 900;
+                            font-weight: 700;
                             cursor: pointer;
                         }
 
                         button:hover {
-                            background: #2f78b5;
+                            background: #1945ad;
                         }
 
                         .alert {
@@ -298,8 +301,8 @@ public class PageController {
                         }
 
                         .links a {
-                            color: #3f88c5;
-                            font-weight: 800;
+                            color: #2459d3;
+                            font-weight: 600;
                             text-decoration: none;
                         }
 
@@ -309,7 +312,7 @@ public class PageController {
 
                         .register a {
                             color: #12263a;
-                            font-weight: 900;
+                            font-weight: 700;
                             text-decoration: none;
                         }
 
