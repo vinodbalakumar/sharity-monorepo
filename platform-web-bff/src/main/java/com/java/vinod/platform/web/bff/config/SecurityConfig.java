@@ -69,8 +69,8 @@ public class SecurityConfig {
                         .anyRequest().denyAll())
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(authorizationRequestResolver))
-                        .failureHandler(oauth2LoginFailureHandler())
-                        .defaultSuccessUrl(successRedirectUrl(properties.web().redirectUri()), true))
+                        .failureHandler(oauth2LoginFailureHandler(properties))
+                        .successHandler(oauth2LoginSuccessHandler(properties)))
                 .oauth2Client(Customizer.withDefaults())
                 .build();
     }
@@ -89,17 +89,36 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationFailureHandler oauth2LoginFailureHandler() {
+    public org.springframework.security.web.authentication.AuthenticationSuccessHandler oauth2LoginSuccessHandler(BffProperties properties) {
+        var redirect = new org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler(
+                successRedirectUrl(properties.web().redirectUri()));
+        redirect.setAlwaysUseDefaultTargetUrl(true);
+        return (request, response, authentication) -> {
+            response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE,
+                    org.springframework.http.ResponseCookie.from(FORCE_REAUTH_COOKIE, "").path("/")
+                            .httpOnly(true).secure(true).sameSite("Lax").maxAge(java.time.Duration.ZERO).build().toString());
+            redirect.onAuthenticationSuccess(request, response, authentication);
+        };
+    }
+
+    @Bean
+    public AuthenticationFailureHandler oauth2LoginFailureHandler(BffProperties properties) {
         return (request, response, exception) -> {
             Throwable rootCause = exception;
             while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
                 rootCause = rootCause.getCause();
             }
-            log.info("OAuth2 login failed. exceptionType={}, rootCauseType={}, correlationId={}",
+            String errorCode = exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException oauth
+                    ? oauth.getError().getErrorCode() : "authentication_failed";
+            if (!java.util.Set.of("authorization_request_not_found", "invalid_state_parameter", "access_denied",
+                    "invalid_token_response", "invalid_client", "invalid_id_token", "invalid_user_info_response").contains(errorCode))
+                errorCode = "authentication_failed";
+            log.info("OAuth2 login failed. exceptionType={}, errorCode={}, rootCauseType={}, correlationId={}",
                     exception.getClass().getSimpleName(),
+                    errorCode,
                     rootCause.getClass().getSimpleName(),
                     correlationId(request));
-            response.sendRedirect("/login?error");
+            response.sendRedirect(browserAuthorizationServerBaseUrl(null, properties) + "/login?error=oauth");
         };
     }
 
@@ -228,8 +247,8 @@ public class SecurityConfig {
     }
 
     private String successRedirectUrl(String redirectUri) {
-        String trimmed = trimTrailingSlash(redirectUri);
-        return trimmed + (trimmed.contains("?") ? "&" : "?") + "login=success";
+        return org.springframework.web.util.UriComponentsBuilder.fromUriString(redirectUri)
+                .replaceQueryParam("login", "success").build().toUriString();
     }
 
     private String trimTrailingSlash(String value) {

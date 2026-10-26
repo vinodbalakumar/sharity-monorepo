@@ -193,6 +193,16 @@ class BffControllerTest {
     }
 
     @Test
+    void logoutClearsTheHttpOnlyAccessCookieEvenWithoutARefreshTokenBody() throws Exception {
+        var response = mockMvc.perform(post("/bff/logout").with(oidcLogin()).with(csrf()))
+                .andExpect(status().isNoContent()).andReturn().getResponse();
+        assertThat(response.getHeaders("Set-Cookie")).anySatisfy(cookie ->
+                assertThat(cookie).startsWith("SHARITY_ACCESS_TOKEN=").contains("Max-Age=0", "HttpOnly", "Secure"));
+        assertThat(response.getHeaders("Set-Cookie")).anySatisfy(cookie ->
+                assertThat(cookie).startsWith("JSESSIONID=").contains("Path=/authorization-server/api", "Max-Age=0"));
+    }
+
+    @Test
     void logoutAddsAForceReauthCookieAndLoginUsesPromptLoginWhenPresent() throws Exception {
         MockHttpSession session = new MockHttpSession();
 

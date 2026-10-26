@@ -37,14 +37,17 @@ public class BffController {
     private final BffProperties properties;
     private final BffProxyService proxyService;
     private final org.springframework.web.client.RestTemplate restTemplate;
+    private final String authorizationSessionCookieName;
 
     /**
      * Creates the browser BFF controller with its public configuration and proxy service.
      */
-    public BffController(BffProperties properties, BffProxyService proxyService, org.springframework.web.client.RestTemplate restTemplate) {
+    public BffController(BffProperties properties, BffProxyService proxyService, org.springframework.web.client.RestTemplate restTemplate,
+                         @org.springframework.beans.factory.annotation.Value("${app.oauth2.authorization-session-cookie-name:JSESSIONID}") String authorizationSessionCookieName) {
         this.properties = properties;
         this.proxyService = proxyService;
         this.restTemplate = restTemplate;
+        this.authorizationSessionCookieName = authorizationSessionCookieName;
     }
 
     /**
@@ -152,6 +155,19 @@ public class BffController {
         SecurityContextHolder.clearContext();
         response.addHeader(HttpHeaders.SET_COOKIE,
                 FORCE_REAUTH_COOKIE + "=1; Max-Age=120; Path=/; SameSite=Lax; Secure; HttpOnly");
+        response.addHeader(HttpHeaders.SET_COOKIE,
+                org.springframework.http.ResponseCookie.from(
+                        com.java.vinod.platform.web.bff.security.SharityAccessTokenAuthenticationFilter.COOKIE_NAME, "")
+                        .path("/").httpOnly(true).secure(true).sameSite("Lax")
+                        .maxAge(java.time.Duration.ZERO).build().toString());
+        String authorizationCookiePath = java.net.URI.create(properties.oauth2().authorizationServerPublicBaseUrl()).getPath();
+        if (authorizationCookiePath == null || authorizationCookiePath.isBlank() || authorizationCookiePath.equals("/"))
+            authorizationCookiePath = "/";
+        else authorizationCookiePath = authorizationCookiePath.replaceAll("/+$", "");
+        response.addHeader(HttpHeaders.SET_COOKIE,
+                org.springframework.http.ResponseCookie.from(authorizationSessionCookieName, "")
+                        .path(authorizationCookiePath).httpOnly(true).secure(true).sameSite("Lax")
+                        .maxAge(java.time.Duration.ZERO).build().toString());
         return ResponseEntity.noContent().build();
     }
 
