@@ -1,3 +1,5 @@
+Deployment environment profiles are maintained in `../deployments/config/platform-web-bff/`; use `SPRING_CONFIG_ADDITIONAL_LOCATION` when starting outside Compose. Dockerfiles and server configuration are maintained in `../deployments`.
+
 ## Sharity AI chat (2026-10-25)
 
 The narrowly allowlisted `/bff/ai/*` proxy supports public guest chat and private signed-in
@@ -84,7 +86,7 @@ mvn test
 
 ## Docker And Nginx Expectations
 
-- The service is deployed by `C:\Users\HP\projects\deployments\docker-compose.yml`
+- The service is deployed by `C:\Users\HP\projects\springbootrestdemo\deployments\docker-compose.yml`
 - Nginx routes `/bff/` to the BFF container
 - Nginx also proxies `/oauth2/authorization/sharity-web-bff` and `/login/oauth2/code/sharity-web-bff`
 - The Sharity React Native Web app still loads from `/app/`
