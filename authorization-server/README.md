@@ -333,3 +333,5 @@ docker compose logs -f authorization-server
 ```
 
 Local profile-image storage credentials must be supplied through `AUTH_PROFILE_IMAGE_ACCESS_KEY_ID` and `AUTH_PROFILE_IMAGE_SECRET_ACCESS_KEY`. They are no longer embedded in `application-local.properties`. The local Docker env file supplies these variables; keep its values out of Git and rotate previously committed credentials.
+
+`SHARITY_WEB_BFF_CLIENT_SECRET` is required at runtime and is supplied by the private deployment env file. No real OAuth client-secret fallback is embedded in source. Rotate credentials previously present in Git history.
