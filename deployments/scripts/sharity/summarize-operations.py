@@ -60,7 +60,7 @@ lines += ['## Dependency scans', '',
           '- Validate live OAuth, native deep links and installed-device journeys, and apply/test Flyway V54 on MySQL/PostgreSQL. Database locking/idempotency unit tests do not prove database-level concurrent behavior.',
           '- Finish remaining legacy/mock routes, seller media/management, account-synced saved items and support messaging. This work does not establish complete Gameflip feature parity.',
           '- Resolve Expo findings; test load, recovery, multi-instance retention and alert delivery. The embedded recent-incident cache resets on restart.', '',
-          'Setup, behavior and limitations: [OPERATIONS.md](../OPERATIONS.md). Shared Markdown documentation is updated in `C:/Users/HP/projects/docs`; existing DOCX copies are not regenerated.', '',
+          'Setup, behavior and limitations: [OPERATIONS.md](../OPERATIONS.md). Shared Markdown documentation is updated in `C:/Users/HP/projects/springbootrestdemo/docs`; existing DOCX copies are not regenerated.', '',
           'Visual previews use API fixtures: [mobile storefront](operations-mobile-preview.png) and [admin operations](operations-admin-preview.png).']
 (out / 'operations-verification.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 print('Report written:', total, 'backend tests')

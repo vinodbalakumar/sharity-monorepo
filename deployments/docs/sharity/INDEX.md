@@ -12,3 +12,6 @@
 - [Readiness review and remaining release gates](production/2026-10-25_READINESS_REVIEW.md)
 
 These are curated guides. Raw logs, screenshots, private runtime state and generated artifacts stay in the local workspace. Historical reports describe their respective verification runs; current security, payments and native-device gates remain open until independently resolved.
+
+- [Functional flows and catalog/UI integrity review](architecture/SHARITY_FUNCTIONAL_FLOWS.md)
+- [UI/data integrity verification and deployment review](production/UI_FUNCTIONAL_REVIEW.md)

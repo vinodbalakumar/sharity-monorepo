@@ -61,6 +61,6 @@ lines += ['', '## Practical limits and release gates', '',
           '- Outstanding npm findings, live payment/webhook validation, staging/load tests, operational recovery and placeholder business endpoints block production approval.',
           '- README files and shared Markdown docs are updated; existing DOCX copies were not regenerated.',
           '- Pre-existing service properties and demo-password migration changes were preserved. No release commit or deployment was made.',
-          '', 'Review `C:/Users/HP/projects/docs/production/2026-10-25_READINESS_REVIEW.md` for the release checklist.']
+          '', 'Review `C:/Users/HP/projects/springbootrestdemo/docs/production/2026-10-25_READINESS_REVIEW.md` for the release checklist.']
 (out / 'production-verification.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 print(out / 'production-verification.md')

@@ -4,8 +4,8 @@ services:
   # Sharity App UI with 4 sections
   sharity-app:
     build:
-      context: ./sharity-app-ui
-      dockerfile: Dockerfile
+      context: ../sharity-app-ui
+      dockerfile: ../deployments/dockerfiles/sharity-app.Dockerfile
     container_name: sharity-app-ui
     ports:
       - "3001:3000"

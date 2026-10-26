@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 def workspace_root():
-    default = Path(__file__).resolve().parents[3] / 'springbootrestdemo'
+    default = Path(__file__).resolve().parents[3]
     root = Path(os.environ.get('SHARITY_WORKSPACE_ROOT', str(default))).resolve()
     if not root.is_dir():
         raise RuntimeError('Set SHARITY_WORKSPACE_ROOT to the component checkout directory')
@@ -11,7 +11,7 @@ def workspace_root():
     return root
 
 def docs_root():
-    default = workspace_root().parent / 'docs'
+    default = workspace_root() / 'docs'
     if not default.is_dir():
         default = Path(__file__).resolve().parents[2] / 'docs/sharity'
     return Path(os.environ.get('SHARITY_DOCS_ROOT', str(default))).resolve()

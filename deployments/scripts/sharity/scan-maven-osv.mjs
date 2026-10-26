@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 // Generate build-resolved runtime/test inventories after Maven verify:
 // python scripts/extract-maven-dependencies.py
 // Public dependency coordinates only are sent to OSV. No source or credentials.
-const root = path.resolve(process.env.SHARITY_WORKSPACE_ROOT || path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../springbootrestdemo'));
+const root = path.resolve(process.env.SHARITY_WORKSPACE_ROOT || path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..'));
 const modules = ['authorization-server','marketplace-service','payment-service','wallet-service','platform-web-bff','tesla-dashboard-services','platform-ai-service'];
 const packages = new Map();
 const failures = [];

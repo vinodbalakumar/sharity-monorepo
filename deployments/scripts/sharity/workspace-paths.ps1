@@ -1,7 +1,7 @@
 function Get-SharityWorkspaceRoot {
     $candidate = $env:SHARITY_WORKSPACE_ROOT
     if ([string]::IsNullOrWhiteSpace($candidate)) {
-        $candidate = Join-Path $PSScriptRoot '../../../springbootrestdemo'
+        $candidate = Join-Path $PSScriptRoot '../../..'
     }
     $resolved = [IO.Path]::GetFullPath($candidate)
     if (-not (Test-Path -LiteralPath $resolved -PathType Container)) {

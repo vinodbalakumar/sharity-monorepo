@@ -29,8 +29,8 @@ services:
 
   sharity-admin-portal:
     build:
-      context: ../webapps/sharity-admin-portal
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-admin-portal.Dockerfile
+      context: ../sharity-admin-portal
+      dockerfile: ../deployments/dockerfiles/sharity-admin-portal.Dockerfile
       args:
         SHARITY_VITE_API_BASE_URL: ""
         SHARITY_VITE_TESLA_APP_URL: /tesla/
@@ -48,8 +48,8 @@ services:
 
   sharity-app:
     build:
-      context: ../springbootrestdemo/sharity-app-ui
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-app.Dockerfile
+      context: ../sharity-app-ui
+      dockerfile: ../deployments/dockerfiles/sharity-app.Dockerfile
       args:
         EXPO_PUBLIC_BFF_BASE_URL: ${EXPO_PUBLIC_BFF_BASE_URL:-https://vinodbalakumar.com/bff}
         EXPO_PUBLIC_SITE_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-https://vinodbalakumar.com}
@@ -69,8 +69,8 @@ services:
     profiles:
       - disabled-tesla
     build:
-      context: ../webapps/tesla-dashboard-react
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/tesla-dashboard-ui.Dockerfile
+      context: ../../webapps/tesla-dashboard-react
+      dockerfile: ../../springbootrestdemo/deployments/dockerfiles/tesla-dashboard-ui.Dockerfile
       args:
         TESLA_VITE_API_BASE_URL: ""
     image: tesla-dashboard-ui:latest
@@ -85,8 +85,8 @@ services:
 
   authorization-server:
     build:
-      context: ../springbootrestdemo/authorization-server
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/authorization-server.Dockerfile
+      context: ../authorization-server
+      dockerfile: ../deployments/dockerfiles/authorization-server.Dockerfile
     image: authorization-server:latest
     environment:
       SERVER_PORT: 8080
@@ -144,8 +144,8 @@ services:
 
   platform-web-bff:
     build:
-      context: ../springbootrestdemo/platform-web-bff
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/platform-web-bff.Dockerfile
+      context: ../platform-web-bff
+      dockerfile: ../deployments/dockerfiles/platform-web-bff.Dockerfile
     image: platform-web-bff:latest
     environment:
       SERVER_PORT: 8080
@@ -181,8 +181,8 @@ services:
 
   marketplace-service:
     build:
-      context: ../springbootrestdemo/marketplace-service
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/marketplace-service.Dockerfile
+      context: ../marketplace-service
+      dockerfile: ../deployments/dockerfiles/marketplace-service.Dockerfile
     image: marketplace-service:latest
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -225,8 +225,8 @@ services:
 
   payment-service:
     build:
-      context: ../springbootrestdemo/payment-service
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/payment-service.Dockerfile
+      context: ../payment-service
+      dockerfile: ../deployments/dockerfiles/payment-service.Dockerfile
     image: payment-service:latest
     environment:
       SERVER_PORT: 8080
@@ -259,8 +259,8 @@ services:
 
   wallet-service:
     build:
-      context: ../springbootrestdemo/wallet-service
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/wallet-service.Dockerfile
+      context: ../wallet-service
+      dockerfile: ../deployments/dockerfiles/wallet-service.Dockerfile
     image: wallet-service:latest
     environment:
       SERVER_PORT: 8080
@@ -292,8 +292,8 @@ services:
     profiles:
       - disabled-tesla
     build:
-      context: ../springbootrestdemo/tesla-dashboard-services
-      dockerfile: C:/Users/HP/projects/deployments/dockerfiles/tesla-dashboard-services.Dockerfile
+      context: ../tesla-dashboard-services
+      dockerfile: ../deployments/dockerfiles/tesla-dashboard-services.Dockerfile
     image: tesla-dashboard-services:latest
     environment:
       SERVER_PORT: 8080

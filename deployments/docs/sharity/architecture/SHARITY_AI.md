@@ -1,3 +1,5 @@
+Current provider/configuration: Mac Ollama `qwen3:8b`; see `deployments/docs/MAC_OLLAMA.md` (or `../MAC_OLLAMA.md` from the deployments docs tree). Earlier Windows CPU profiles below are historical.
+
 # Sharity AI implementation and operating guide
 
 Review date: 2026-10-25. Branch: `feature/sharity-production-responsive`.
@@ -208,7 +210,7 @@ is not implemented; responses arrive as bounded complete answers. No fake posts/
 
 Direct `/chat` and refresh resolve through the existing app router and static history fallback.
 Existing `/app/*`, `/bff/*`, OAuth callbacks and admin paths are retained. The inspected deployment
-is `C:/Users/HP/projects/deployments/nginx/nginx.conf`, which currently routes `/app/` to the
+is `C:/Users/HP/projects/springbootrestdemo/deployments/nginx/nginx.conf`, which currently routes `/app/` to the
 Expo static container. That container already has an index fallback. The prepared snippet
 `platform-ai-service/deploy/chat.nginx.conf` maps exact `/chat` to that existing frontend and
 gives `/bff/ai/` an appropriate inference timeout. It has **not** been applied or syntax-tested

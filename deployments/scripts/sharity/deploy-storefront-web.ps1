@@ -16,7 +16,7 @@ $current=docker inspect --format '{{.Image}}' sharity-local-sharity-app-1
 if ($LASTEXITCODE -ne 0) { throw 'Cannot preserve previous web image.' }
 Docker-Step @('tag',$current,$rollback) 'preserve'
 @{rollbackImage=$rollback;previousImageId=$current;releaseImage=$image}|ConvertTo-Json|Set-Content (Join-Path $workspace 'outputs/storefront-web-rollback.json')
-Docker-Step @('build','--progress=plain','--label','sharity.source=verified-storefront','-t',$image,'-f',(Join-Path $deploy 'dockerfiles/verified-web.Dockerfile'),(Join-Path $workspace 'sharity-app-ui')) 'build'
+Docker-Step @('build','--build-context',"deployment=$deploy",'--progress=plain','--label','sharity.source=verified-storefront','-t',$image,'-f',(Join-Path $deploy 'dockerfiles/verified-web.Dockerfile'),(Join-Path $workspace 'sharity-app-ui')) 'build'
 $compose=@('compose','-p','sharity-local','--env-file','.env','--env-file','.env.backend-local.properties','--env-file','.env.ai.local','-f','docker-compose.yml','-f','docker-compose.local.yml','-f','docker-compose.ai.yml')
 try {
     Docker-Step ($compose+@('up','-d','--no-deps','--no-build','sharity-app')) 'up'

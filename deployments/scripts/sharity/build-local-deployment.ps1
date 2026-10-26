@@ -5,7 +5,7 @@ $deploy=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $state=Get-Content (Join-Path $workspace 'outputs/local-deployment-state.json') -Raw | ConvertFrom-Json
 function Build-ReleaseImage([string]$image,[string]$dockerfile,[string]$context,[string]$name,[string]$source) {
     Write-Output "BUILDING $name"
-    $arguments=@('build','--progress=plain','--label',"sharity.release=$($state.release)",'--label',"sharity.source=$source",'-t',$image,'-f',$dockerfile,$context)
+    $arguments=@('build','--build-context',"deployment=$deploy",'--progress=plain','--label',"sharity.release=$($state.release)",'--label',"sharity.source=$source",'-t',$image,'-f',$dockerfile,$context)
     $process=Start-Process -FilePath 'docker.exe' -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput (Join-Path $workspace "outputs/deploy-build-$name.out.log") -RedirectStandardError (Join-Path $workspace "outputs/deploy-build-$name.log")
     if ($process.ExitCode -ne 0) { throw "Image build failed for $name; see its deployment build log." }
 }

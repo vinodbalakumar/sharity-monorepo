@@ -78,7 +78,7 @@ lines = [
     'on that schema. Existing databases were preserved and backed up before rollout.',
     'Private BFF/diagnostic tokens and database credentials remain outside source control and the Expo bundle.',
     'AI and diagnostic gateway share the BFF network namespace; AI has no published host port.',
-    'Ollama runs on Windows with `qwen3:1.7b`; it must remain available while this local origin is used.',
+    'Ollama inference uses the private Mac `qwen3:8b` provider configured under deployments/config/ai; Windows Ollama is not required. See docs/MAC_OLLAMA.md for current verification status.',
     'The model uses four threads, batch 128, context 2048 and at most 256 generated tokens.',
     'Chat allows two concurrent model calls; structured answers bypass this limit. Model keep-alive is fifteen minutes.',
     'Programming prompts omit unrelated project passages. Inference incidents retain measured errors',

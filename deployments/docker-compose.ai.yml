@@ -20,9 +20,13 @@ x-trust-volumes: &trust-volumes
 services:
   authorization-server:
     image: authorization-server:release-${SHARITY_RELEASE:?Set verified release}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/authorization-server:/run/sharity/config:ro
     environment:
       <<: *diagnostics
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
     healthcheck:
       test: [CMD-SHELL, "wget -qO- http://127.0.0.1:8080/authorization-server/api/actuator/health >/dev/null || exit 1"]
       start_period: 120s
@@ -31,9 +35,13 @@ services:
       retries: 12
   marketplace-service:
     image: marketplace-service:release-${SHARITY_RELEASE}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/marketplace-service:/run/sharity/config:ro
     environment:
       <<: *diagnostics
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
       COMMERCE_DEMO_PURCHASES_ENABLED: "false"
       APP_MARKETPLACE_QUERY_SLOW_LOGGING_ENABLED: "false"
     healthcheck:
@@ -44,9 +52,13 @@ services:
       retries: 12
   payment-service:
     image: payment-service:release-${SHARITY_RELEASE}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/payment-service:/run/sharity/config:ro
     environment:
       <<: *diagnostics
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
       COMMERCE_DEMO_PURCHASES_ENABLED: "false"
     healthcheck:
       test: [CMD-SHELL, "wget -qO- http://127.0.0.1:8080/payment-service/actuator/health >/dev/null || exit 1"]
@@ -56,9 +68,13 @@ services:
       retries: 12
   wallet-service:
     image: wallet-service:release-${SHARITY_RELEASE}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/wallet-service:/run/sharity/config:ro
     environment:
       <<: *diagnostics
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
     healthcheck:
       test: [CMD-SHELL, "wget -qO- http://127.0.0.1:8080/wallet-service/actuator/health >/dev/null || exit 1"]
       start_period: 120s
@@ -67,9 +83,13 @@ services:
       retries: 12
   platform-web-bff:
     image: platform-web-bff:release-${SHARITY_RELEASE}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/platform-web-bff:/run/sharity/config:ro
     environment:
       <<: *diagnostics
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
       CHAT_BFF_TOKEN: ${CHAT_BFF_TOKEN:?Private chat channel token required}
       APP_BACKENDS_AI_SERVICE: http://127.0.0.1:8086
       JWT_ISSUER: ${AUTH_SERVER_PUBLIC_BASE_URL:-https://vinodbalakumar.com/authorization-server/api}
@@ -82,7 +102,11 @@ services:
       retries: 12
   platform-ai-service:
     image: platform-ai-service:release-${SHARITY_RELEASE}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/ai:/run/sharity/config:ro
+      - ./knowledge:/run/sharity/knowledge:ro
     # The BFF uses loopback; AI/Ollama have no published host/public ports.
     network_mode: service:platform-web-bff
     depends_on:
@@ -94,15 +118,10 @@ services:
       SERVER_PORT: "8086"
       AI_SERVICE_PORT: "8086"
       AI_ENABLED: "true"
-      AI_CHAT_PROVIDER: ollama
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
-      OLLAMA_CHAT_MODEL: qwen3:1.7b
-      OLLAMA_NUM_CTX: "2048"
-      OLLAMA_NUM_PREDICT: "256"
-      OLLAMA_KEEP_ALIVE: 15m
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/run/sharity/config/
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.0.149:11434}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-10m}
       CHAT_MAX_CONCURRENT_GENERATIONS: "2"
-      SPRING_AI_OLLAMA_CHAT_NUM_THREAD: "4"
-      SPRING_AI_OLLAMA_CHAT_NUM_BATCH: "128"
       AI_DATABASE_INIT: never
       AI_JWK_SET_URI: http://authorization-server:8080/authorization-server/api/oauth2/jwks
       JWT_ISSUER: ${AUTH_SERVER_PUBLIC_BASE_URL:-https://vinodbalakumar.com/authorization-server/api}
@@ -123,9 +142,13 @@ services:
       retries: 12
   tesla-dashboard-services:
     image: tesla-dashboard-services:release-${SHARITY_RELEASE}
-    volumes: *trust-volumes
+    volumes:
+      - ${SHARITY_TLS_DIR}/java-cacerts:/run/sharity/java-cacerts:ro
+      - ${SHARITY_TLS_DIR}/TlsProbe.class:/run/sharity/TlsProbe.class:ro
+      - ./config/tesla-dashboard-services:/run/sharity/config:ro
     environment:
       <<: *diagnostics
+      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
     healthcheck:
       test: [CMD-SHELL, "wget -qO- http://127.0.0.1:8080/tesla-dashboard-services/api/actuator/health >/dev/null || exit 1"]
       start_period: 120s
