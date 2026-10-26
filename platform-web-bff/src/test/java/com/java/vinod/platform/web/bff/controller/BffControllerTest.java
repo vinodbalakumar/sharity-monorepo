@@ -73,7 +73,7 @@ class BffControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = webAppContextSetup(context).apply(SecurityMockMvcConfigurers.springSecurity()).build();
-        ((TestOverrides.ProxyServiceStub) proxyService).calls.set(0);
+        proxyStub().calls.set(0);
     }
 
     @Test
@@ -81,6 +81,13 @@ class BffControllerTest {
         mockMvc.perform(get("/bff/login"))
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", "/oauth2/authorization/sharity-web-bff"));
+    }
+    @Test void publicChatRetainsCsrfProtection() throws Exception {
+        mockMvc.perform(post("/bff/ai/chat").contentType("application/json").content("{\"message\":\"hello\"}"))
+                .andExpect(status().isForbidden());
+        // Missing service-channel configuration fails closed after CSRF validation.
+        mockMvc.perform(post("/bff/ai/chat").with(csrf()).contentType("application/json").content("{\"message\":\"hello\"}"))
+                .andExpect(status().isServiceUnavailable());
     }
 
     @Test
@@ -93,7 +100,7 @@ class BffControllerTest {
                 .andExpect(jsonPath("$.applications").isArray())
                 .andExpect(jsonPath("$.accessToken").doesNotExist())
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
-        assertThat(((TestOverrides.ProxyServiceStub) proxyService).calls.get()).isZero();
+        assertThat(proxyStub().calls.get()).isZero();
     }
 
     @Test
@@ -156,7 +163,7 @@ class BffControllerTest {
     void unauthenticatedApiProxyIsRejected() throws Exception {
         mockMvc.perform(get("/bff/api/marketplace-service/api/v1/marketplace/categories"))
                 .andExpect(status().isUnauthorized());
-        assertThat(((TestOverrides.ProxyServiceStub) proxyService).calls.get()).isZero();
+        assertThat(proxyStub().calls.get()).isZero();
     }
 
     @Test
@@ -165,7 +172,7 @@ class BffControllerTest {
                         .with(oidcLogin()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("proxy-ok"));
-        assertThat(((TestOverrides.ProxyServiceStub) proxyService).calls.get()).isEqualTo(1);
+        assertThat(proxyStub().calls.get()).isEqualTo(1);
     }
 
     @Test
@@ -179,7 +186,7 @@ class BffControllerTest {
                 .andExpect(status().isNoContent());
 
         assertThat(session.isInvalid()).isTrue();
-        assertThat(((TestOverrides.ProxyServiceStub) proxyService).calls.get()).isZero();
+        assertThat(proxyStub().calls.get()).isZero();
     }
 
     @Test
@@ -209,6 +216,10 @@ class BffControllerTest {
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", containsString("https://vinodbalakumar.com/authorization-server/api/oauth2/authorize")))
                 .andExpect(header().string("Location", containsString("redirect_uri=https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff")));
+    }
+
+    private TestOverrides.ProxyServiceStub proxyStub() {
+        return org.springframework.test.util.AopTestUtils.getUltimateTargetObject(proxyService);
     }
 
     @Configuration

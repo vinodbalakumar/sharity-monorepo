@@ -36,7 +36,9 @@ public class SharityAccessTokenAuthenticationFilter extends OncePerRequestFilter
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            String token = cookieValue(request, COOKIE_NAME);
+            String authorization=request.getHeader("Authorization");
+            boolean bearer=authorization!=null && authorization.startsWith("Bearer ");
+            String token = bearer ? authorization.substring(7) : cookieValue(request, COOKIE_NAME);
             if (token != null && !token.isBlank()) {
                 try {
                     Jwt jwt = jwtDecoder.decode(token);
@@ -47,6 +49,7 @@ public class SharityAccessTokenAuthenticationFilter extends OncePerRequestFilter
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } catch (JwtException ignored) {
                     SecurityContextHolder.clearContext();
+                    if (bearer) { response.setStatus(401); return; }
                 }
             }
         }
@@ -76,7 +79,8 @@ public class SharityAccessTokenAuthenticationFilter extends OncePerRequestFilter
         return roles.stream()
                 .map(Object::toString)
                 .filter(role -> !role.isBlank())
-                .map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
+                .map(role -> role.trim().toUpperCase(java.util.Locale.ROOT))
+                .map(role -> (GrantedAuthority) new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role))
                 .toList();
     }
 }

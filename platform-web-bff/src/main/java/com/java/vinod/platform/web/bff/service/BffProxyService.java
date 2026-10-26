@@ -30,6 +30,9 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Service
 public class BffProxyService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BffProxyService.class);
+    @org.springframework.beans.factory.annotation.Value("${app.backends.ai-service:http://localhost:8086}")
+    private String aiServiceBase = "http://localhost:8086";
     private static final String REGISTRATION_ID = "sharity-web-bff";
     private static final Set<String> HOP_BY_HOP_HEADERS = Set.of(
             HttpHeaders.CONNECTION,
@@ -109,12 +112,31 @@ public class BffProxyService {
         if (headers.get(HttpHeaders.ACCEPT) == null) {
             headers.setAccept(MediaType.parseMediaTypes(MediaType.APPLICATION_JSON_VALUE));
         }
+        String correlationId = String.valueOf(request.getAttribute("X-Correlation-ID"));
+        if (correlationId.matches("[A-Za-z0-9_-]{1,64}")) headers.set("X-Correlation-ID", correlationId);
+        // Internal telemetry credentials must never be forwarded from the browser.
+        headers.remove("X-Diagnostics-Token");
         byte[] body = readBody(request);
         HttpEntity<byte[]> entity = allowsRequestBody(request.getMethod()) && body.length > 0
                 ? new HttpEntity<>(body, headers)
                 : new HttpEntity<>(headers);
         HttpMethod method = HttpMethod.valueOf(request.getMethod());
-        ResponseEntity<byte[]> backendResponse = restTemplate.exchange(target, method, entity, byte[].class);
+        long start = System.nanoTime();
+        ResponseEntity<byte[]> backendResponse;
+        try {
+            backendResponse = restTemplate.exchange(target, method, entity, byte[].class);
+        } catch (org.springframework.web.client.ResourceAccessException ex) {
+            log.warn("downstream_unavailable correlationId={} service={} durationMs={} exceptionType={}",
+                    correlationId, serviceKey, (System.nanoTime() - start) / 1_000_000, ex.getClass().getSimpleName());
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "Service unavailable");
+        }
+        log.info("downstream_completed correlationId={} service={} status={} durationMs={}",
+                correlationId, serviceKey, backendResponse.getStatusCode().value(), (System.nanoTime() - start) / 1_000_000);
+        if (backendResponse.getStatusCode().is5xxServerError()) {
+            byte[] safeBody = ("{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"This service is temporarily unavailable. Please try again shortly.\",\"correlationId\":\""
+                    + (correlationId.matches("[A-Za-z0-9_-]{1,64}") ? correlationId : "unavailable") + "\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            return ResponseEntity.status(backendResponse.getStatusCode()).contentType(MediaType.APPLICATION_JSON).body(safeBody);
+        }
         return ResponseEntity.status(backendResponse.getStatusCode())
                 .headers(responseHeaders -> backendResponse.getHeaders().forEach((key, values) -> {
                     if (!HttpHeaders.SET_COOKIE.equalsIgnoreCase(key)
@@ -155,6 +177,7 @@ public class BffProxyService {
             case "marketplace-service", "cart", "rewards" -> properties.backends().marketplaceService();
             case "payment-service" -> properties.backends().paymentService();
             case "wallet-service" -> properties.backends().walletService();
+            case "platform-ai-service" -> aiServiceBase;
             default -> throw new ResponseStatusException(NOT_FOUND, "Unknown backend service");
         };
     }

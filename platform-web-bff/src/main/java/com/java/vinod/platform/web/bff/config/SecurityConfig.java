@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/login/oauth2/code/" + REGISTRATION_ID).permitAll()
                         .requestMatchers(HttpMethod.GET, "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/bff/session").permitAll()
+                        .requestMatchers("/bff/ai/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/bff/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/bff/logout").authenticated()
@@ -75,8 +76,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder sharityAccessTokenJwtDecoder(BffProperties properties) {
-        return NimbusJwtDecoder.withJwkSetUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/jwks").build();
+    public JwtDecoder sharityAccessTokenJwtDecoder(BffProperties properties,
+            @org.springframework.beans.factory.annotation.Value("${app.jwt.issuer:${app.oauth2.authorization-server-public-base-url}}") String issuer,
+            @org.springframework.beans.factory.annotation.Value("${app.jwt.audience:auth-clients}") String audience) {
+        var decoder=NimbusJwtDecoder.withJwkSetUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/jwks").build();
+        org.springframework.security.oauth2.core.OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt> audienceCheck = jwt ->
+                jwt.getAudience().contains(audience) ? org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.success()
+                        : org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.failure(new org.springframework.security.oauth2.core.OAuth2Error("invalid_token"));
+        decoder.setJwtValidator(new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
+                org.springframework.security.oauth2.jwt.JwtValidators.createDefaultWithIssuer(issuer),audienceCheck));
+        return decoder;
     }
 
     @Bean
@@ -86,12 +95,9 @@ public class SecurityConfig {
             while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
                 rootCause = rootCause.getCause();
             }
-            log.info("OAuth2 login failed. exceptionType={}, exceptionMessage={}, rootCauseType={}, rootCauseMessage={}, requestUri={}, correlationId={}",
+            log.info("OAuth2 login failed. exceptionType={}, rootCauseType={}, correlationId={}",
                     exception.getClass().getSimpleName(),
-                    exception.getMessage(),
                     rootCause.getClass().getSimpleName(),
-                    rootCause.getMessage(),
-                    request.getRequestURI(),
                     correlationId(request));
             response.sendRedirect("/login?error");
         };
@@ -266,8 +272,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(allowedBrowserOrigins(properties));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-TOKEN", "X-Requested-With"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-TOKEN", "X-Requested-With", "Idempotency-Key"));
         configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(List.of("X-Correlation-ID", "Retry-After"));
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -308,7 +315,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(org.springframework.boot.restclient.RestTemplateBuilder builder) {
+        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(3));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(15));
+        return builder.requestFactory(() -> factory).build();
     }
 }

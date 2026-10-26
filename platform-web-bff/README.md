@@ -1,4 +1,28 @@
+## Sharity AI chat (2026-10-25)
+
+The narrowly allowlisted `/bff/ai/*` proxy supports public guest chat and private signed-in
+history. Mutations retain session CSRF protection. Native bearer tokens validate issuer/audience;
+channel identities come from verified principals or server sessions, never browser JSON/headers.
+Set a matching `CHAT_BFF_TOKEN` in this BFF and `platform-ai-service`; it must never be public.
+Non-loopback AI backend addresses require HTTPS. See [SHARITY_AI.md](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/SHARITY_AI.md).
+
+## Operations and commerce follow-up (2026-10-25)
+
+This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
+
+See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+
 # Platform Web BFF
+
+> October 25, 2026 development update: `feature/sharity-production-responsive`.
+> Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
+> Run `mvn -B -ntp verify`; CI also reviews dependency changes.
+> A passing build does not establish production readiness. See the workspace
+> `outputs/production-verification.md` and shared docs
+> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+>
+> Browser tokens remain server-side. Validate login/logout, callback URLs, session cookie attributes and CSRF on the deployed domain. The optional AI service is not yet included in proxy routing.
+
 
 Secure browser-session backend-for-frontend for the `sharity-app` React Native Web app.
 
