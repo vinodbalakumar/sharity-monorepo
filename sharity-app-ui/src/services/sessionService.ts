@@ -50,13 +50,16 @@ export async function getBrowserSessionSummary(): Promise<BrowserSessionSummary 
 }
 
 export async function logoutBrowserSession(): Promise<void> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const session = await getBffCsrfToken();
     const refreshToken = await appStorage.getItem('refresh_token');
 
     const body = refreshToken ? { refreshToken } : undefined;
 
-    await fetch(`${bffBaseUrl}/logout`, {
+    const response = await fetch(`${bffBaseUrl}/logout`, {
+      signal: controller.signal,
       credentials: 'include',
       headers: {
         ...(session.csrfToken ? { 'X-CSRF-TOKEN': session.csrfToken } : {}),
@@ -65,12 +68,12 @@ export async function logoutBrowserSession(): Promise<void> {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined
     });
-  } catch (error) {
-    console.error('Error calling logout endpoint:', error);
-  } finally {
+    if (!response.ok) throw new Error('Unable to sign out. Please try again.');
     await appStorage.setItem(logoutOverrideKey, '1');
     // Clear all tokens and authentication state
     await clearAllAuthTokens();
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

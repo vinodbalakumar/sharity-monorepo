@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { appStorage } from '../../storage/storage';
 import { getBrowserSessionSummary } from '../../services/sessionService';
+import { SignOutButton } from '../../components/appShell/SignOutButton';
 import { chatRequest, ChatError, type AiAnswer, type AiConversation, type AiMessage, type AiSummary } from '../../services/sharityAiApi';
 import { systemFontFamily } from '../../theme/typography';
 import type { AppRoute } from '../../types/navigation';
@@ -95,7 +96,7 @@ export function SharityAiScreen({ onNavigate }: { onNavigate: (route: AppRoute) 
         {button('Back to marketplace', () => onNavigate('marketplaces'), 'arrow-back-outline')}
       </View>}
       <View style={styles.main}>
-        <View style={[styles.header, { borderColor: palette.border }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{mobile && button('Open menu', () => setSidebar(!sidebar), 'menu-outline')}<Text style={[styles.headerTitle, { color: palette.text }]}>Sharity AI</Text>{!mobile && <Text style={[styles.caption, { color: palette.muted }]}>Your curious companion</Text>}</View><Pressable accessibilityRole="button" accessibilityLabel="Toggle theme" onPress={() => { appStorage.setString('ai-theme', dark ? 'light' : 'dark'); setDark(!dark); }} style={styles.iconButton}><Ionicons name={dark ? 'sunny-outline' : 'moon-outline'} size={21} color={palette.text} /></Pressable></View>
+        <View style={[styles.header, { borderColor: palette.border, paddingHorizontal: mobile ? 12 : 20 }]}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{mobile && <Pressable accessibilityRole="button" accessibilityLabel="Open menu" onPress={() => setSidebar(!sidebar)} style={styles.iconButton}><Ionicons name="menu-outline" size={21} color={palette.text}/></Pressable>}<Text style={[styles.headerTitle, { color: palette.text }]}>Sharity AI</Text>{!mobile && <Text style={[styles.caption, { color: palette.muted }]}>Your curious companion</Text>}</View><Pressable accessibilityRole="button" accessibilityLabel="Toggle theme" onPress={() => { appStorage.setString('ai-theme', dark ? 'light' : 'dark'); setDark(!dark); }} style={styles.iconButton}><Ionicons name={dark ? 'sunny-outline' : 'moon-outline'} size={21} color={palette.text} /></Pressable><SignOutButton /></View>
         {adminOpen && admin ? <ScrollView contentContainerStyle={{ padding: 20 }}><FounderContentPanel onClose={() => setAdminOpen(false)} /></ScrollView> : <>
           <ScrollView ref={scroll} testID="chat-messages" style={{ flex: 1 }} contentContainerStyle={[styles.messages, mobile && { padding: 18 }]} onContentSizeChange={() => { if (messages.length > 0 && !infoId) scroll.current?.scrollToEnd({ animated: true }); }}>
             <View style={styles.column}>

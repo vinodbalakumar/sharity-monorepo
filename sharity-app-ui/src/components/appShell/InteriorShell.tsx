@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "@legendapp/state/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
+import { MemberSessionContext } from "./MemberSessionContext";
+import { SignOutButton } from "./SignOutButton";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Searchbar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -46,8 +48,10 @@ export function InteriorShell({
   subtitle,
   title,
 }: Props) {
-  const { isMobile } = useResponsiveLayout();
-  const [authenticated, setAuthenticated] = useState(false);
+  const { isMobile, isCompactPhone } = useResponsiveLayout();
+  const member = useContext(MemberSessionContext);
+  const [sessionAuthenticated, setAuthenticated] = useState(false);
+  const authenticated = member?.authenticated ?? sessionAuthenticated;
   const [isAdmin, setIsAdmin] = useState(false);
   const query = useSelector(appState$.marketplace.searchQuery);
   useEffect(() => {
@@ -100,10 +104,20 @@ export function InteriorShell({
             <View style={styles.brandMark}>
               <Text style={styles.brandLetter}>S</Text>
             </View>
-            <Text style={styles.brandName}>Sharity</Text>
+            {!isCompactPhone && <Text style={styles.brandName}>Sharity</Text>}
           </Pressable>
           {!isMobile && <View style={styles.searchWrap}>{search}</View>}
-          <View style={styles.actions}>
+          <View
+            style={[
+              styles.actions,
+              isMobile && {
+                flex: 1,
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+                gap: 4,
+              },
+            ]}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={authenticated ? "Profile" : "Sign in"}
@@ -117,9 +131,11 @@ export function InteriorShell({
                 size={21}
                 color={colors.primary}
               />
-              <Text style={styles.actionText}>
-                {authenticated ? "Account" : "Sign in"}
-              </Text>
+              {(!isMobile || !authenticated) && (
+                <Text style={styles.actionText}>
+                  {authenticated ? "Account" : "Sign in"}
+                </Text>
+              )}
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -148,6 +164,7 @@ export function InteriorShell({
                 />
               </Pressable>
             )}
+            <SignOutButton />
           </View>
           {isMobile && <View style={styles.mobileSearch}>{search}</View>}
         </View>

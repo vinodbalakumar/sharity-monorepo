@@ -196,7 +196,7 @@ test('sign-out clears private navigation before browser Back',async({page})=>{
  await page.route('**/public/registration-options',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({countries:[],genders:[]})}));
  await page.goto('/app/home');await expect(page.getByTestId('member-storefront')).toBeVisible();
  await page.getByRole('button',{name:'Profile',exact:true}).click();
- await page.getByRole('button',{name:/Sign Out/}).click();
+ await page.getByRole('button',{name:'Sign out',exact:true}).click();
  await expect(page.getByTestId('guest-storefront')).toBeVisible();
  await page.goBack();await expect(page.getByTestId('guest-storefront')).toBeVisible();
  await expect(page).toHaveURL(/\/app\/$/);

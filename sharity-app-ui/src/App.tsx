@@ -51,6 +51,7 @@ import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { getVisitorContext, type VisitorContextResponse } from './services/publicContentApi';
 import { checkSession, clearBrowserSessionArtifacts, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
 import { appState$ } from './state/appState';
+import { MemberSessionContext } from './components/appShell/MemberSessionContext';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
@@ -361,6 +362,15 @@ function publicSectionFromSlug(slug: string): 'legal' | 'support' | 'company' {
 export default function App() {
   const [route, setRouteState] = useState<AppRoute>('splash');
   const verifiedAuth = useRef(false);
+  const [authenticated, setAuthenticatedState] = useState(false);
+  function setAuthenticated(value: boolean) { verifiedAuth.current = value; setAuthenticatedState(value); }
+  function onSignedOut() {
+    setAuthenticated(false);
+    clearLoginReturn();
+    setGuestNotice('');
+    setRouteState('welcome');
+    if (Platform.OS === 'web') window.history.replaceState({route:'welcome'}, '', '/app/');
+  }
   const [guestNotice, setGuestNotice] = useState('');
   const [digitalProductId, setDigitalProductId] = useState<string | null>(null);
   const [electronicsProductId, setElectronicsProductId] = useState<string | null>(null);
@@ -504,7 +514,7 @@ export default function App() {
       }
 
       const loginSuccessReturn = isLoginSuccessReturn();
-      const logoutOverride = await hasLogoutOverride();
+      let logoutOverride = await hasLogoutOverride();
 
       console.log('[bootstrap] auth restore started');
       let session: Awaited<ReturnType<typeof checkSession>>;
@@ -515,13 +525,18 @@ export default function App() {
         console.error('[bootstrap] auth restore failed', error);
         session = { status: 'anonymous' as const };
       }
+      // Only a server-verified new login may clear a previous local logout.
+      if (loginSuccessReturn && session.status === 'authenticated') {
+        await clearLogoutOverride();
+        logoutOverride = false;
+      }
       if (session.status === 'anonymous' && !logoutOverride) {
         await clearBrowserSessionArtifacts();
       }
 
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(minimumSplashMs - elapsed, 0);
-      verifiedAuth.current = !logoutOverride && session.status === 'authenticated';
+      setAuthenticated(!logoutOverride && session.status === 'authenticated');
       const returnSnapshot=verifiedAuth.current && loginSuccessReturn ? pendingLoginReturn() : null;
       const targetSnapshot=verifiedAuth.current
         ? (returnSnapshot ?? locationSnapshot ?? { route: 'home' as const })
@@ -621,9 +636,9 @@ export default function App() {
         return;
       }
       if (!(await hasLogoutOverride()) && session.status === 'authenticated') {
-        verifiedAuth.current=true;
+        setAuthenticated(true);
       } else if (session.status === 'anonymous') {
-        verifiedAuth.current=false;
+        setAuthenticated(false);
         const current=routeSnapshotFromLocation(window.location.pathname,window.location.search,window.history.state);
         if (current && !isPublicRoute(current.route)) setRoute('welcome');
       }
@@ -717,6 +732,7 @@ export default function App() {
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
       <PaperProvider theme={paperTheme}>
       <SafeAreaProvider>
+        <MemberSessionContext.Provider value={{authenticated, onSignedOut}}>
           <StatusBar style="dark" />
           {route === 'splash' ? <SplashScreen isTakingLonger={isTakingLonger} /> : null}
           {route === 'chat' ? <SharityAiScreen onNavigate={setRoute} /> : null}
@@ -932,7 +948,7 @@ export default function App() {
           {route === 'adminDiagnostics' ? <DiagnosticsScreen onNavigate={setRoute} /> : null}
           {route === 'appSettings' ? <AppSettingsScreen onNavigate={setRoute} /> : null}
           {route === 'loginSecurity' ? <LoginSecurityScreen onNavigate={setRoute} /> : null}
-          {route === 'profilePrivacy' ? <ProfilePrivacyScreen onNavigate={setRoute} onSignedOut={()=>{verifiedAuth.current=false;clearLoginReturn();setGuestNotice('');setRouteState('welcome');}} /> : null}
+          {route === 'profilePrivacy' ? <ProfilePrivacyScreen onNavigate={setRoute} /> : null}
           {route === 'accountSwitcher' ? <AccountSwitcherScreen onNavigate={setRoute} /> : null}
           {route === 'paymentAuthorization' ? <PaymentAuthorizationScreen onNavigate={setRoute} /> : null}
           {route === 'pricingPromotions' ? <PricingPromotionsScreen onNavigate={setRoute} /> : null}
@@ -951,6 +967,7 @@ export default function App() {
             />
           ) : null}
           {route === 'support' ? <SupportScreen onNavigate={setRoute} /> : null}
+        </MemberSessionContext.Provider>
         </SafeAreaProvider>
       </PaperProvider>
     </TamaguiProvider>

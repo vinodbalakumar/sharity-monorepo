@@ -1,5 +1,13 @@
 Source-reference badges and source update dates are no longer displayed below chat answers (October 26 follow-up). Message info, response timing and token totals remain available.
 
+## Signed-in navigation and account settings (2026-10-26)
+
+Signed-in screens expose a labeled **Sign out** button in the shared header, including AI chat. The header uses the same verified session state as navigation. Successful logout clears that state and returns to the guest landing page; a failed server response preserves the session and offers retry.
+
+`/app/profile` separates Personal details, Privacy, and Security & devices. Save/discard actions track unsaved edits, dates are submitted in ISO format, profile photos can be cancelled without leaving a stuck upload, and optional device-service failures do not hide the profile. Current-browser sign-out is distinct from revoking saved device sessions. Existing legacy privacy values are preserved until deliberately changed.
+
+Run `npx playwright test tests/e2e/member-account.spec.ts` after exporting the web build for focused account checks. The suite uses synthetic data and covers 320/390/768/1440-pixel layouts, fonts, save/discard/error behavior and header logout. See the [account experience and deployment record](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/releases/2026-10-26-member-account.md). Browser-engine checks and native exports do not certify physical devices or implement native OAuth.
+
 ## Storefront refresh (2026-10-26)
 
 The landing page, customer home and all-products catalog share `StorefrontContent`; category catalogs and product details use the same shell, colors and system fonts. React Native Paper is already installed and now provides the root theme, shared buttons, search and filter chips. No runtime UI dependency was added.
