@@ -10,6 +10,20 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RateLimitingFilterTest {
+    @Test void photographsDoNotExhaustTheTransactionalApiBudget() throws Exception {
+        var configuration = RateLimiterConfig.custom().limitForPeriod(1)
+                .limitRefreshPeriod(Duration.ofMinutes(1)).timeoutDuration(Duration.ZERO).build();
+        var filter = new RateLimitingFilter(RateLimiterRegistry.of(configuration));
+        var calls = new AtomicInteger();
+        filter.doFilter(new MockHttpServletRequest("GET", "/marketplace-service/api/v1/marketplace/listings/sample/image"),
+                new MockHttpServletResponse(), (request, response) -> calls.incrementAndGet());
+        var api = new MockHttpServletResponse();
+        filter.doFilter(new MockHttpServletRequest("GET", "/api/orders"), api,
+                (request, response) -> calls.incrementAndGet());
+        assertThat(api.getStatus()).isEqualTo(200);
+        assertThat(calls.get()).isEqualTo(2);
+    }
+
     @Test void exhaustedLimitReturns429InsteadOfThrowingServerError() throws Exception {
         var configuration = RateLimiterConfig.custom().limitForPeriod(1)
                 .limitRefreshPeriod(Duration.ofMinutes(1)).timeoutDuration(Duration.ZERO).build();

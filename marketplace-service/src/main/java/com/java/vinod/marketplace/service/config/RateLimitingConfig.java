@@ -28,6 +28,18 @@ public class RateLimitingConfig {
     }
 
     @Bean
+    public RateLimiter imageRateLimiter(RateLimiterRegistry registry) {
+        // A catalog page loads many photographs; these must not consume the
+        // transactional API budget. The edge also limits anonymous requests.
+        RateLimiterConfig config = RateLimiterConfig.custom()
+            .limitRefreshPeriod(Duration.ofMinutes(1))
+            .limitForPeriod(600)
+            .timeoutDuration(Duration.ZERO)
+            .build();
+        return registry.rateLimiter("image-limiter", config);
+    }
+
+    @Bean
     public RateLimiter searchRateLimiter(RateLimiterRegistry registry) {
         RateLimiterConfig config = RateLimiterConfig.custom()
             .limitRefreshPeriod(Duration.ofMinutes(1))

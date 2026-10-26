@@ -1,3 +1,5 @@
+Deployment environment profiles are maintained in `../deployments/config/marketplace-service/`; use `SPRING_CONFIG_ADDITIONAL_LOCATION` when starting outside Compose. Dockerfiles and server configuration are maintained in `../deployments`.
+
 ## Operations and commerce follow-up (2026-10-25)
 
 This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
@@ -92,3 +94,7 @@ When enabled, the app logs:
 - an `EXPLAIN` result for slow `SELECT` queries
 
 This is meant for QA and troubleshooting. Keep it off in production unless you are actively investigating a performance issue.
+
+## UI and catalog integrity review (2026-10-26)
+
+See `../docs/architecture/SHARITY_FUNCTIONAL_FLOWS.md` for navigation, image delivery, order-state correctness, verification scope and remaining preview features. Versioned guide: `../deployments/docs/sharity/architecture/SHARITY_FUNCTIONAL_FLOWS.md`.

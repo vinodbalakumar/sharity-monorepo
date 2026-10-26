@@ -66,6 +66,7 @@ public class SecurityConfig {
                                 "/api/v1/marketplace/listings/search",
                                 "/api/v1/marketplace/listings/*",
                                 "/api/v1/marketplace/listings/*/reviews",
+                                "/api/v1/marketplace/listings/*/image",
                                 "/api/v1/marketplace/reviews",
                                 "/api/v1/marketplace/reviews/**",
                                 "/marketplace-service/api/v1/marketplace/verticals",
@@ -78,6 +79,7 @@ public class SecurityConfig {
                                 "/marketplace-service/api/v1/marketplace/listings/search",
                                 "/marketplace-service/api/v1/marketplace/listings/*",
                                 "/marketplace-service/api/v1/marketplace/listings/*/reviews",
+                                "/marketplace-service/api/v1/marketplace/listings/*/image",
                                 "/marketplace-service/api/v1/marketplace/reviews",
                                 "/marketplace-service/api/v1/marketplace/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD,
@@ -91,6 +93,7 @@ public class SecurityConfig {
                                 "/api/v1/marketplace/listings/search",
                                 "/api/v1/marketplace/listings/*",
                                 "/api/v1/marketplace/listings/*/reviews",
+                                "/api/v1/marketplace/listings/*/image",
                                 "/api/v1/marketplace/reviews",
                                 "/api/v1/marketplace/reviews/**",
                                 "/marketplace-service/api/v1/marketplace/verticals",
@@ -103,6 +106,7 @@ public class SecurityConfig {
                                 "/marketplace-service/api/v1/marketplace/listings/search",
                                 "/marketplace-service/api/v1/marketplace/listings/*",
                                 "/marketplace-service/api/v1/marketplace/listings/*/reviews",
+                                "/marketplace-service/api/v1/marketplace/listings/*/image",
                                 "/marketplace-service/api/v1/marketplace/reviews",
                                 "/marketplace-service/api/v1/marketplace/reviews/**").permitAll()
                         .requestMatchers(MARKETPLACE_BASE_PATH_MATCHER.matcher(HttpMethod.GET, "/api/v1/marketplace/listings/{listingPublicId}")).permitAll()

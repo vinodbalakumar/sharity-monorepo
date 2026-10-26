@@ -185,8 +185,45 @@ public class AssetStorageService {
         return saved;
     }
 
+    public record ListingImage(byte[] bytes, String contentType) {}
+
+    // Only the public image attached to a visible listing can reach this method.
+    // Never accept a bucket, object key or remote URL from an HTTP request.
+    public ListingImage readListingImage(String imageKey) {
+        validateStorageConfigured();
+        String key = imageKey == null ? "" : imageKey.trim();
+        String base = publicBaseUrl.replaceAll("/+$", "") + "/";
+        if (key.startsWith(base)) key = key.substring(base.length());
+        if (!(key.startsWith("listings/") || key.matches("sellers/[^/]+/listings/[^/]+/.+"))
+                || key.contains("..") || key.contains("\\") || key.contains("%")) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+        }
+        long limit = Math.min(maxFileSizeBytes, 5 * 1024 * 1024);
+        try (S3Client client = s3Client();
+             var stream = client.getObject(software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                     .bucket(bucketName).key(key).build())) {
+            String type = stream.response().contentType();
+            if (!Set.of("image/jpeg", "image/png", "image/webp", "image/avif").contains(type)
+                    || stream.response().contentLength() == null || stream.response().contentLength() > limit) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+            }
+            byte[] bytes = stream.readNBytes((int) limit + 1);
+            if (bytes.length == 0 || bytes.length > limit) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+            }
+            return new ListingImage(bytes, type);
+        } catch (software.amazon.awssdk.services.s3.model.NoSuchKeyException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+        } catch (software.amazon.awssdk.core.exception.SdkException | IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Listing image temporarily unavailable", ex);
+        }
+    }
+
     private S3Client s3Client() {
         return S3Client.builder()
+                .overrideConfiguration(software.amazon.awssdk.core.client.config.ClientOverrideConfiguration.builder()
+                        .apiCallTimeout(java.time.Duration.ofSeconds(12))
+                        .apiCallAttemptTimeout(java.time.Duration.ofSeconds(6)).build())
                 .endpointOverride(URI.create(endpointUrl))
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId, secretAccessKey)))

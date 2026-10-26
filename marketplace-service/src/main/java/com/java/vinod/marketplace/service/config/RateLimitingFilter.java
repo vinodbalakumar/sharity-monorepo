@@ -56,7 +56,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private RateLimiter selectRateLimiter(String path, String customerId) {
         RateLimiter limiter;
 
-        if (path.contains("/search")) {
+        if (path.matches("(?:/marketplace-service)?/api/v1/marketplace/listings/[a-zA-Z0-9_-]{1,100}/image")) {
+            limiter = rateLimiterRegistry.rateLimiter("image-limiter");
+        } else if (path.contains("/search")) {
             limiter = rateLimiterRegistry.rateLimiter("search-limiter");
         } else if (path.contains("/auth")) {
             limiter = rateLimiterRegistry.rateLimiter("auth-limiter");

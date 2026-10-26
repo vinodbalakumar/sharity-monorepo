@@ -62,6 +62,15 @@ class MarketplaceControllerSecurityTest {
         }
 
         @Bean
+        com.java.vinod.marketplace.service.service.ListingImageService listingImageService() {
+            return mock(com.java.vinod.marketplace.service.service.ListingImageService.class);
+        }
+        @Bean
+        ListingImageController listingImageController(com.java.vinod.marketplace.service.service.ListingImageService images) {
+            return new ListingImageController(images);
+        }
+
+        @Bean
         MarketplaceMasterService marketplaceMasterService() {
             return mock(MarketplaceMasterService.class);
         }
@@ -110,6 +119,16 @@ class MarketplaceControllerSecurityTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+    }
+
+    @Test
+    void publicListingImageDoesNotRequireLogin() throws Exception {
+        var images = context.getBean(com.java.vinod.marketplace.service.service.ListingImageService.class);
+        when(images.image("image-test")).thenReturn(new com.java.vinod.marketplace.service.service.AssetStorageService.ListingImage(new byte[]{1,2}, "image/jpeg"));
+        mockMvc.perform(get("/api/v1/marketplace/listings/image-test/image"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType("image/jpeg"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "max-age=300, public"));
     }
 
     @Test

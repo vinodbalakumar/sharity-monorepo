@@ -27,6 +27,20 @@ import static org.mockito.Mockito.when;
 import org.springframework.data.domain.PageRequest;
 
 class MarketplaceServiceCatalogTest {
+    @Test
+    void anonymousListingDetailsDoNotExposeUnpublishedDrafts() {
+        var listingRepository = mock(ListingRepository.class);
+        var draft = listing("draft-private", "Unpublished listing", "MARKETPLACE");
+        draft.setListingStatus("DRAFT");
+        when(listingRepository.findByPublicId("draft-private")).thenReturn(java.util.Optional.of(draft));
+        var service = newService(listingRepository, mock(MarketplaceCategoryRepository.class), mock(MarketplaceVerticalRepository.class));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.listing("draft-private"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("404");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.listing("draft-private", "USA"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
 
     @Test
     void homeReturnsVerticalsCategoriesAndFeaturedListings() {

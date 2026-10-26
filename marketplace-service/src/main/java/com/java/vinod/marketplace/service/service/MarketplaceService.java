@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -394,7 +395,7 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public MarketplaceDtos.ListingResponse listing(String listingPublicId) {
-        return toListingResponse(findListing(listingPublicId), null);
+        return toListingResponse(findPublicListing(listingPublicId), null);
     }
 
     /**
@@ -402,7 +403,7 @@ public class MarketplaceService {
      */
     @Transactional(readOnly = true)
     public MarketplaceDtos.ListingResponse listing(String listingPublicId, String countryCode) {
-        return toListingResponse(findListing(listingPublicId), normalizeCountryCode(countryCode));
+        return toListingResponse(findPublicListing(listingPublicId), normalizeCountryCode(countryCode));
     }
 
     /**
@@ -819,6 +820,14 @@ public class MarketplaceService {
         listing.setVerifiedSeller(isProviderVerified(provider));
     }
 
+    private Listing findPublicListing(String listingPublicId) {
+        Listing listing = findListing(listingPublicId);
+        if (!Set.of("ACTIVE", "PUBLISHED", "SOLD").contains(listing.getListingStatus())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found");
+        }
+        return listing;
+    }
+
     private Listing findListing(String listingPublicId) {
         return listingRepository.findByPublicId(listingPublicId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found"));
@@ -1092,11 +1101,22 @@ public class MarketplaceService {
                 : marketplaceCurrencyService.convert(listing.getOriginalPriceAmount(), listing.getCurrencyCode(), priceView.displayCurrencyCode());
         return new MarketplaceDtos.ListingResponse(listing.getPublicId(), safeListingTitle(listing), listing.getDescription(),
                 listing.getProductType(), listing.getDeliveryType(), normalizeFulfillmentScope(listing.getFulfillmentScope()), listing.getCurrencyCode(), listing.getPriceAmount(),
-                listing.getOriginalPriceAmount(), resolveImageUrl(listing.getImageKey(), null), safeSellerDisplayName(listing),
+                listing.getOriginalPriceAmount(), listingImageUrl(listing), safeSellerDisplayName(listing),
                 listing.isVerifiedSeller(), listing.getCategoryCode(), listing.getVerticalCode(), safeCountryCode(listing), listing.getListingStatus(),
                 listing.getConditionLabel(), listing.getStockQuantity(), listing.getSourceType(), listing.getSourceName(),
                 listing.getSourceUrl(), listing.getLicenseNote(), listing.isDemoSeed(), List.of(),
                 listing.getCreatedAt(), priceView.displayCurrencyCode(), priceView.displayPriceAmount(), displayOriginalPrice);
+    }
+
+    private String listingImageUrl(Listing listing) {
+        String key = listing.getImageKey();
+        if (key == null || key.isBlank()) return null;
+        String base = resolveAssetPublicBaseUrl();
+        if (key.startsWith("listings/") || key.startsWith("sellers/")
+                || (base != null && key.startsWith(base.replaceAll("/+$", "") + "/"))) {
+            return "/marketplace-service/api/v1/marketplace/listings/" + listing.getPublicId() + "/image";
+        }
+        return resolveImageUrl(key, null);
     }
 
     private MarketplaceDtos.ListingStatusResponse toListingStatusResponse(ListingStatusMaster status) {
