@@ -23,6 +23,11 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     const response = await fetch(pathname, { credentials: 'include', ...(csrfToken ? {method: 'POST', headers: {'X-CSRF-TOKEN': csrfToken}} : {}) });
     return { status: response.status, ok: response.ok, body: response.status === 204 ? null : await response.json() };
   }, {pathname, csrfToken});
+  const signOutInUi = async () => {
+    await page.getByRole('button', {name:'Sign out', exact:true}).click();
+    await expect(page.getByRole('button', {name:'Sign in', exact:true}).first()).toBeVisible();
+    await page.waitForLoadState('networkidle', {timeout:45000});
+  };
   page.setDefaultTimeout(20000);
   const report = { checkedAt: new Date().toISOString(), engine, width, redirects: [], browserSessions: [], browserErrors: [], authenticated: false };
   report.failedRequests = [];
@@ -74,7 +79,25 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     const refreshed = (await browserApi('/bff/session')).body;
     report.authenticatedAfterReload = refreshed.authenticated === true;
     expect(report.authenticatedAfterReload).toBe(true);
-    expect((await browserApi('/bff/logout', refreshed.csrfToken)).ok).toBe(true);
+    if (process.env.SHARITY_LOGIN_SCREEN_AUDIT === '1') {
+      report.signedInScreens = [];
+      for (const pathname of ['/app/home','/app/marketplaces','/app/orders','/app/wallet','/app/profile','/chat']) {
+        await page.goto(`${origin}${pathname}`, {waitUntil:'domcontentloaded'});
+        await page.waitForLoadState('networkidle', {timeout:45000});
+        await expect(page.getByRole('button', {name:'Sign out',exact:true})).toBeInViewport();
+        if (pathname === '/app/profile') {
+          await expect(page.getByRole('heading', {name:'Account settings',exact:true})).toBeVisible();
+          await expect(page.getByLabel('First name', {exact:true})).toBeVisible();
+          await expect(page.getByRole('button',{name:'Save changes',exact:true})).toBeDisabled();
+          await page.getByRole('tab',{name:'Security & devices',exact:true}).click();
+          await expect(page.getByText('This browser',{exact:true})).toBeVisible();
+        }
+        const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+        expect(overflow).toBe(false);
+        report.signedInScreens.push({path:pathname, overflow, signOutVisible:true});
+      }
+    }
+    await signOutInUi();
     const loggedOut = (await browserApi('/bff/session')).body;
     report.logoutVerified = loggedOut.authenticated === false;
     expect(report.logoutVerified).toBe(true);
@@ -108,7 +131,7 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     expect(report.logoutMarkerCleared).toBe(true);
     report.browserSessionVerified = report.browserSessions.some(session => session.authenticated);
     expect(report.browserSessionVerified).toBe(true);
-    expect((await browserApi('/bff/logout', recovered.csrfToken)).ok).toBe(true);
+    await signOutInUi();
     report.finalUrl = safeUrl(page.url());
     expect(report.redirects.some(item => /:8080(?:\/|$)/.test(item.location || ''))).toBe(false);
     // Functional authentication assertions are the gate. Keep console/network
