@@ -9,6 +9,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PageControllerTest {
     private PageController pageController;
 
+    @Test
+    void oauthFailureOffersAFreshSignInInsteadOfResubmittingAStaleForm() {
+        var request = new MockHttpServletRequest("GET", "/authorization-server/api/login");
+        var body = pageController.login(request, "oauth", null, null).getBody();
+        assertThat(body).contains("Please start a new sign-in session.")
+                .contains("href=\"/bff/login\"").contains("Try sign-in again").contains("<div hidden>")
+                .doesNotContain("Invalid credentials.");
+    }
+
     @BeforeEach
     void setUp() {
         pageController = new PageController(

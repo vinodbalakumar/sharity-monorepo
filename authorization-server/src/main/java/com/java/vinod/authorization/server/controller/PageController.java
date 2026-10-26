@@ -47,10 +47,10 @@ public class PageController {
                                         @RequestParam(value = "continue", required = false) String continueUrl) {
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
-                .body(buildLoginPage(request, error != null, socialError, continueUrl));
+                .body(buildLoginPage(request, error, socialError, continueUrl));
     }
 
-    private String buildLoginPage(HttpServletRequest request, boolean error, String socialError, String continueUrl) {
+    private String buildLoginPage(HttpServletRequest request, String error, String socialError, String continueUrl) {
         String loginAction = "/authorization-server/api/login";
         CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
         if (csrfToken == null) {
@@ -61,7 +61,13 @@ public class PageController {
                 """
                 .replace("__CSRF_PARAMETER__", csrfToken.getParameterName())
                 .replace("__CSRF_TOKEN__", csrfToken.getToken());
-        String errorBanner = error
+        boolean oauthFailure = "oauth".equals(error);
+        String errorBanner = oauthFailure ? """
+                <div class="alert" role="alert">
+                    Your sign-in could not be completed. Please start a new sign-in session.
+                    <a class="social" href="/bff/login">Try sign-in again</a>
+                </div>
+                """ : error != null
                 ? """
                 <div class="alert" role="alert">
                     Invalid credentials.
@@ -393,12 +399,13 @@ public class PageController {
                     <main>
                         <h1>Sign in</h1>
                         <p>Use your Sharity account email and password to continue.</p>
+                        __ERROR_BANNER__
+                        <div __CREDENTIALS_HIDDEN__>
                         <a class="social" href="/authorization-server/api/v1/auth/social/google/start?flow=login">
                             <span class="social-icon" aria-hidden="true">G</span>
                             <span>Sign in with Google</span>
                         </a>
                         <div class="social-note">Use the Google account linked to your Sharity profile.</div>
-                        __ERROR_BANNER__
                         __SOCIAL_ERROR_BANNER__
                         <form method="post" action="__LOGIN_ACTION__">
                             __CONTINUE_INPUT__
@@ -416,6 +423,7 @@ public class PageController {
                             <a href="__FORGOT_PASSWORD_URL__">Forgot password?</a>
                             <a href="__FRONTEND_REGISTER_URL__">Create an account</a>
                         </div>
+                        </div>
                     </main>
                 </div>
                 </body>
@@ -426,6 +434,7 @@ public class PageController {
                 .replace("__CONTINUE_INPUT__", continueInput)
                 .replace("__CSRF_INPUT__", csrfInput)
                 .replace("__LOGIN_ACTION__", loginAction)
+                .replace("__CREDENTIALS_HIDDEN__", oauthFailure ? "hidden" : "")
                 .replace("__FRONTEND_HOME_URL__", htmlAttribute(frontendHomeUrl))
                 .replace("__FRONTEND_REGISTER_URL__", htmlAttribute(frontendRegisterUrl))
                 .replace("__FORGOT_PASSWORD_URL__", htmlAttribute(frontendForgotPasswordUrl));
