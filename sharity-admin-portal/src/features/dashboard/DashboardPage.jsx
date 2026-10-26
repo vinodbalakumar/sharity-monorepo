@@ -10,6 +10,7 @@ const teslaUrl = import.meta.env.VITE_TESLA_APP_URL || '/tesla/';
 
 export function DashboardPage() {
   const { applications, user } = useAuth();
+  const [error, setError] = useState('');
   const [stats, setStats] = useState({ users: '-', apps: '-', logs: '-', sessions: '-' });
   const showTesla = applications.includes('*') || applications.includes('TESLA');
 
@@ -21,11 +22,12 @@ export function DashboardPage() {
         logs: summary.auditEvents ?? '-',
         sessions: summary.activeSessions ?? '-',
       }))
-      .catch(() => {});
+      .catch(() => setError('Dashboard summary is temporarily unavailable. Refresh to try again.'));
   }, []);
 
   return (
     <div className="page-grid">
+      {error && <div className="alert alert-error wide" role="alert">{error}</div>}
       <Card className="metric"><Users /><span>Users</span><strong>{stats.users}</strong></Card>
       <Card className="metric"><AppWindow /><span>Applications</span><strong>{stats.apps}</strong></Card>
       <Card className="metric"><Activity /><span>Audit logs</span><strong>{stats.logs}</strong></Card>

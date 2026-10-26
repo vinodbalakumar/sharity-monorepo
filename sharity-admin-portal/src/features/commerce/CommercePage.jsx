@@ -25,21 +25,24 @@ export function CommercePage() {
   const load = async () => {
     setLoading(true);
     setError('');
+    const unavailable = [];
+    const track = (label, fallback) => () => { unavailable.push(label); return fallback; };
     try {
       const [orders, disputes, paymentTransactions, paymentPayouts, payoutHolds, accounts, activity] = await Promise.all([
-        adminService.marketplaceOrders().catch(() => []),
-        adminService.marketplaceDisputes().catch(() => []),
-        adminService.paymentTransactions().catch(() => []),
-        adminService.paymentPayouts().catch(() => []),
-        adminService.blockedPayouts().catch(() => []),
-        adminService.walletAccounts().catch(() => []),
-        adminService.walletActivity().catch(() => []),
+        adminService.marketplaceOrders().catch(track('marketplaceOrders', [])),
+        adminService.marketplaceDisputes().catch(track('marketplaceDisputes', [])),
+        adminService.paymentTransactions().catch(track('paymentTransactions', [])),
+        adminService.paymentPayouts().catch(track('paymentPayouts', [])),
+        adminService.blockedPayouts().catch(track('blockedPayouts', [])),
+        adminService.walletAccounts().catch(track('walletAccounts', [])),
+        adminService.walletActivity().catch(track('walletActivity', [])),
       ]);
       const [catalog, policies, recommendation] = await Promise.all([
-        adminService.paymentGatewayCatalog().catch(() => []),
-        adminService.paymentGatewayPolicies().catch(() => []),
-        gatewayCountryCode ? adminService.paymentGatewayRecommendation(gatewayCountryCode).catch(() => null) : Promise.resolve(null),
+        adminService.paymentGatewayCatalog().catch(track('paymentGatewayCatalog', [])),
+        adminService.paymentGatewayPolicies().catch(track('paymentGatewayPolicies', [])),
+        gatewayCountryCode ? adminService.paymentGatewayRecommendation(gatewayCountryCode).catch(track('gateway recommendation', null)) : Promise.resolve(null),
       ]);
+      if (unavailable.length) setError(`Some sections could not be loaded: ${unavailable.join(', ')}. Empty sections may reflect a service failure. Retry to refresh.`);
       setMarketplaceOrders(orders);
       setMarketplaceDisputes(disputes);
       setTransactions(paymentTransactions);

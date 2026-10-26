@@ -32,8 +32,8 @@ function avatarUrl(user) {
   if (!url) return '';
   if (/^(https?:)?\/\//i.test(url) || /^(data|blob):/i.test(url)) return url;
   if (url.startsWith('/')) {
-    const baseUrl = API_BASE_URL || import.meta.env.VITE_BACKEND_ORIGIN || 'http://localhost:8083';
-    return `${baseUrl}${url}`;
+    const baseUrl = API_BASE_URL || import.meta.env.VITE_BACKEND_ORIGIN || '';
+    return baseUrl ? `${baseUrl.replace(/\/$/, '')}${url}` : url;
   }
   return url;
 }

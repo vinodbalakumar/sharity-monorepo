@@ -50,20 +50,20 @@ http://localhost:8080/sharity-admin/
 Do not deploy from this folder. Deployment files live in:
 
 ```text
-C:\Users\HP\projects\deployments
+C:\Users\HP\projects\springbootrestdemo\deployments
 ```
 
 Deploy only this UI:
 
 ```powershell
-cd C:\Users\HP\projects\deployments
+cd C:\Users\HP\projects\springbootrestdemo\deployments
 docker compose up -d --build sharity-admin-portal
 ```
 
 Deploy all services:
 
 ```powershell
-cd C:\Users\HP\projects\deployments
+cd C:\Users\HP\projects\springbootrestdemo\deployments
 docker compose up -d --build
 ```
 
@@ -96,3 +96,7 @@ src/styles          Global styles
 npm run build
 npm run lint
 ```
+
+## UI and catalog integrity review (2026-10-26)
+
+See `../docs/architecture/SHARITY_FUNCTIONAL_FLOWS.md` for navigation, image delivery, order-state correctness, verification scope and remaining preview features. Versioned guide: `../deployments/docs/sharity/architecture/SHARITY_FUNCTIONAL_FLOWS.md`.

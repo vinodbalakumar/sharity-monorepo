@@ -12,7 +12,16 @@ export function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState({ type: '', text: '' });
 
-  const load = () => adminService.applications().then((data) => setApps(Array.isArray(data) ? data : data.content || data.items || []));
+  const load = async () => {
+    try {
+      const data = await adminService.applications();
+      setApps(Array.isArray(data) ? data : data.content || data.items || []);
+      return true;
+    } catch (error) {
+      setNotice({ type: 'error', text: apiErrorMessage(error, 'Unable to load applications. Please retry.') });
+      return false;
+    }
+  };
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -25,8 +34,8 @@ export function ApplicationsPage() {
     try {
       await adminService.createApplication(form);
       setForm(initialForm);
-      await load();
-      setNotice({ type: 'success', text: 'Application created.' });
+      const refreshed = await load();
+      setNotice({ type: refreshed ? 'success' : 'error', text: refreshed ? 'Application created.' : 'Application created, but the list could not refresh. Reload before creating another application.' });
     } catch (error) {
       setNotice({ type: 'error', text: apiErrorMessage(error, 'Unable to create application.') });
     }
@@ -42,6 +51,7 @@ export function ApplicationsPage() {
             <h2>Applications</h2>
           </div>
         </div>
+        {notice.type === 'error' && <Button variant="ghost" onClick={load}>Retry loading applications</Button>}
         {apps.length === 0 ? <EmptyState title="No applications" text="" /> : (
           <div className="table-wrap">
             <table className="standard-table">
