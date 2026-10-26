@@ -30,6 +30,13 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ProblemDetail handleStatus(org.springframework.web.server.ResponseStatusException exception, HttpServletRequest request) {
+        request.setAttribute("diagnosticExceptionType", exception.getClass().getSimpleName());
+        return problem(exception.getStatusCode(), "Request could not be completed", exception.getStatusCode().is5xxServerError()
+                ? "This service is temporarily unavailable. Please try again shortly." : "Please check your request and try again.", request, "REQUEST_FAILED");
+    }
+
     @ExceptionHandler(ApiException.class)
     public ProblemDetail handleApiException(ApiException exception, HttpServletRequest request) {
         String correlationId = correlationId(request);
@@ -99,7 +106,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(Exception exception, HttpServletRequest request) {
         String correlationId = correlationId(request);
-        log.error("Unexpected error correlationId={} path={} method={}", correlationId, request.getRequestURI(), request.getMethod(), exception);
+        request.setAttribute("diagnosticExceptionType", exception.getClass().getSimpleName());
+        log.error("Unexpected error correlationId={} method={} exceptionType={} frames={}", correlationId, request.getMethod(), exception.getClass().getSimpleName(), java.util.Arrays.stream(exception.getStackTrace()).limit(12).toList());
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Unexpected server error", request, "INTERNAL_SERVER_ERROR");
     }
 

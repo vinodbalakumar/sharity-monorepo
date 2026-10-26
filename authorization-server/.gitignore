@@ -45,3 +45,6 @@ tmp/
 temp/
 *.tmp
 *.bak
+
+# Component-local verification output
+outputs/

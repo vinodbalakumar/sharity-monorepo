@@ -1,11 +1,27 @@
+## Operations and commerce follow-up (2026-10-25)
+
+This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
+
+See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+
 # Authorization Server
+
+> October 25, 2026 development update: `feature/sharity-production-responsive`.
+> Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
+> Run `mvn -B -ntp verify`; CI also reviews dependency changes.
+> A passing build does not establish production readiness. See the workspace
+> `outputs/production-verification.md` and shared docs
+> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+>
+> Identity and token issuance remain deterministic. Verify deployed OAuth redirects, mail delivery, issuer/audience and provider eligibility before release.
+
 
 Spring Boot authorization service for Sharity and connected service modules.
 
 ## Tech Stack
 
 - Java 21
-- Spring Boot 4.0.6
+- Spring Boot 4.0.9
 - Spring Security
 - Spring Data JPA
 - MySQL 8
@@ -315,3 +331,5 @@ mvn test
 mvn -DskipTests compile
 docker compose logs -f authorization-server
 ```
+
+Local profile-image storage credentials must be supplied through `AUTH_PROFILE_IMAGE_ACCESS_KEY_ID` and `AUTH_PROFILE_IMAGE_SECRET_ACCESS_KEY`. They are no longer embedded in `application-local.properties`. The local Docker env file supplies these variables; keep its values out of Git and rotate previously committed credentials.
