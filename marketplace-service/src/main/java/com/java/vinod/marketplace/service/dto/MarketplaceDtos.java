@@ -150,7 +150,8 @@ public final class MarketplaceDtos {
                                  Integer stockQuantity) {
     }
 
-    public record OrderRequest(@NotBlank String listingPublicId) {
+    public record OrderRequest(@NotBlank String listingPublicId, BigDecimal expectedAmount, String expectedCurrency) {
+        public OrderRequest(String listingPublicId) { this(listingPublicId, null, null); }
     }
 
     public record OrderResponse(String publicId, String listingPublicId, String orderStatus,

@@ -1,4 +1,22 @@
+## Operations and commerce follow-up (2026-10-25)
+
+This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
+
+Apply Flyway V54 on MySQL/PostgreSQL before the new idempotent purchase path. Carts enforce user ownership. New orders start pending; payment refresh checks downstream state. `COMMERCE_DEMO_PURCHASES_ENABLED` is false by default and must never stand in for live payment approval.
+
+See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+
 # Marketplace Service
+
+> October 25, 2026 development update: `feature/sharity-production-responsive`.
+> Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
+> Run `mvn -B -ntp verify`; CI also reviews dependency changes.
+> A passing build does not establish production readiness. See the workspace
+> `outputs/production-verification.md` and shared docs
+> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+>
+> JWT resource-server validation is enabled. Anonymous access is limited to explicit public routes; unmatched routes require authentication. Rate-limit exhaustion returns JSON 429. Catalog image tests configure the storage-provider fixture explicitly.
+
 
 V3 marketplace backend foundation.
 

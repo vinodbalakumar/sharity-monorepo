@@ -54,6 +54,8 @@ import org.slf4j.LoggerFactory;
  */
 @Service
 public class MarketplaceService {
+    @Value("${app.commerce.demo-purchases-enabled:false}")
+    private boolean demoPurchasesEnabled;
     private static final Logger log = LoggerFactory.getLogger(MarketplaceService.class);
     private final ListingRepository listingRepository;
     private final ListingStatusMasterRepository listingStatusMasterRepository;
@@ -494,10 +496,29 @@ public class MarketplaceService {
      */
     @Transactional
     public MarketplaceDtos.OrderResponse createOrder(MarketplaceDtos.OrderRequest request, Jwt jwt) {
-        Listing listing = findListing(request.listingPublicId());
+        return createOrder(request, jwt, null);
+    }
+
+    @Transactional
+    public MarketplaceDtos.OrderResponse createOrder(MarketplaceDtos.OrderRequest request, Jwt jwt, String requestKey) {
+        if (requestKey != null && !requestKey.matches("[A-Za-z0-9_-]{16,64}")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid purchase reference");
+        String scopedKey = requestKey == null ? null : userPublicId(jwt) + ":" + requestKey;
+        Listing listing = listingRepository.findForPurchase(request.listingPublicId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (scopedKey != null) {
+            var previous = orderHeaderRepository.findByPurchaseRequestKey(scopedKey);
+            if (previous.isPresent()) {
+                if (!previous.get().getListing().getPublicId().equals(request.listingPublicId())) throw new ResponseStatusException(HttpStatus.CONFLICT);
+                return toOrderResponse(previous.get());
+            }
+        }
+        if (!demoPurchasesEnabled) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Purchases are not enabled");
+        if (request.expectedAmount() != null && (request.expectedAmount().compareTo(listing.getPriceAmount()) != 0
+                || !listing.getCurrencyCode().equals(request.expectedCurrency()))) throw new ResponseStatusException(HttpStatus.CONFLICT, "Price changed");
         if (!isPublicListingStatus(listing.getListingStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Listing is not available for purchase");
         }
+        if (listing.getStockQuantity() == null || listing.getStockQuantity() < 1) throw new ResponseStatusException(HttpStatus.CONFLICT, "Listing is out of stock");
         String customerPublicId = userPublicId(jwt);
         if (listing.getCreatedByUserPublicId().equals(customerPublicId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider cannot purchase their own listing");
@@ -505,6 +526,7 @@ public class MarketplaceService {
         BigDecimal platformFee = listing.getPriceAmount().multiply(BigDecimal.valueOf(0.05)).setScale(2, RoundingMode.HALF_UP);
         LocalDateTime now = LocalDateTime.now();
         OrderHeader order = new OrderHeader();
+        order.setPurchaseRequestKey(scopedKey);
         order.setPublicId(UUID.randomUUID().toString());
         order.setListing(listing);
         order.setCustomerUserPublicId(customerPublicId);
@@ -516,10 +538,10 @@ public class MarketplaceService {
         order.setPlatformFeeAmount(platformFee);
         order.setCustomerTotalAmount(listing.getPriceAmount());
         order.setProviderExpectedAmount(listing.getPriceAmount().subtract(platformFee));
-        order.setOrderStatus("PURCHASED");
-        order.setPaymentStatus("CAPTURED");
+        order.setOrderStatus("PAYMENT_PENDING");
+        order.setPaymentStatus("PENDING");
         order.setFulfillmentStatus("PENDING_DELIVERY");
-        order.setPayoutStatus("ON_HOLD");
+        order.setPayoutStatus("PAYMENT_PENDING");
         order.setPurchasedAt(now);
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
@@ -556,6 +578,15 @@ public class MarketplaceService {
     public MarketplaceDtos.OrderResponse purchase(String orderPublicId, Jwt jwt) {
         OrderHeader order = findOrder(orderPublicId);
         ensureCustomer(order, jwt);
+        return toOrderResponse(order);
+    }
+
+    @Transactional
+    public MarketplaceDtos.OrderResponse refreshPurchase(String orderPublicId, Jwt jwt) {
+        OrderHeader order = findOrder(orderPublicId);
+        ensureCustomer(order, jwt);
+        syncPaymentState(order);
+        if ("CAPTURED".equalsIgnoreCase(order.getPaymentStatus()) && "PAYMENT_PENDING".equals(order.getOrderStatus())) order.setOrderStatus("PURCHASED");
         return toOrderResponse(order);
     }
 

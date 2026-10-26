@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Long> {
+    Optional<OrderHeader> findByPurchaseRequestKey(String purchaseRequestKey);
     Optional<OrderHeader> findByPublicId(String publicId);
 
     List<OrderHeader> findByCustomerUserPublicIdOrderByCreatedAtDesc(String customerUserPublicId);

@@ -58,6 +58,24 @@ class CartServiceTest {
         assertEquals("Digital products cannot be added to cart. Use Buy Now.", exception.getReason());
     }
 
+    @Test void cannotReadAnotherCustomersCart() {
+        when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart("cart-1")));
+        ResponseStatusException error = assertThrows(ResponseStatusException.class, () -> cartService.requireOwner("cart-1", "another-customer"));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+    }
+
+    @Test void ownerCanAccessTheirCart() {
+        when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart("cart-1")));
+        cartService.requireOwner("cart-1", "customer-1");
+    }
+
+    @Test void excessiveQuantityIsRejectedBeforeWriting() {
+        when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart("cart-1")));
+        when(listingRepository.findByPublicId("listing-physical")).thenReturn(Optional.of(listing("listing-physical", "PHYSICAL", "SHIPPING_REQUIRED")));
+        assertThrows(ResponseStatusException.class, () -> cartService.addToCart("cart-1", CartDtos.AddToCartRequest.builder().listingId("listing-physical").quantity(100).build()));
+        org.mockito.Mockito.verifyNoInteractions(cartItemRepository);
+    }
+
     @Test
     void addToCartAllowsPhysicalListings() {
         Cart cart = cart("cart-1");

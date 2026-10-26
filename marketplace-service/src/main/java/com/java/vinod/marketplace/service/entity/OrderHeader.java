@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "order_header")
 public class OrderHeader {
+    @Column(name = "purchase_request_key", unique = true, length = 120)
+    private String purchaseRequestKey;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

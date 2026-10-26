@@ -187,8 +187,14 @@ public class MarketplaceController {
     @PostMapping("/orders")
     @ResponseStatus(HttpStatus.CREATED)
     public MarketplaceDtos.OrderResponse createOrder(@Valid @RequestBody MarketplaceDtos.OrderRequest request,
+                                                    @org.springframework.web.bind.annotation.RequestHeader(name = "Idempotency-Key", required = false) String requestKey,
                                                     @AuthenticationPrincipal Jwt jwt) {
-        return marketplaceService.createOrder(request, jwt);
+        return marketplaceService.createOrder(request, jwt, requestKey);
+    }
+
+    @PostMapping("/orders/purchases/{orderPublicId}/refresh")
+    public MarketplaceDtos.OrderResponse refreshPurchase(@PathVariable String orderPublicId, @AuthenticationPrincipal Jwt jwt) {
+        return marketplaceService.refreshPurchase(orderPublicId, jwt);
     }
 
     /**

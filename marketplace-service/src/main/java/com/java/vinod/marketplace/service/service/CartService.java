@@ -30,6 +30,12 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ListingRepository listingRepository;
 
+    @Transactional(readOnly = true)
+    public void requireOwner(String cartId, String customerId) {
+        Cart cart = cartRepository.findByCartId(cartId).orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
+        if (!cart.getCustomerId().equals(customerId)) throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
+    }
+
     @Transactional
     @Retryable("database-retry")
     public CartDtos.CartResponse getOrCreateCart(String customerId) {
@@ -69,10 +75,15 @@ public class CartService {
         if (isDigitalListing(listing)) {
             throw new ResponseStatusException(BAD_REQUEST, "Digital products cannot be added to cart. Use Buy Now.");
         }
+        if (request.getQuantity() > 99) throw new ResponseStatusException(BAD_REQUEST, "Quantity exceeds limit");
+        if (cart.getCustomerId().equals(listing.getCreatedByUserPublicId())) throw new ResponseStatusException(BAD_REQUEST, "Cannot buy your own listing");
+        if (cart.getTotalItems() == null || cart.getTotalItems() == 0) cart.setCurrencyCode(listing.getCurrencyCode());
+        else if (!cart.getCurrencyCode().equals(listing.getCurrencyCode())) throw new ResponseStatusException(BAD_REQUEST, "Use a separate cart for another currency");
 
         // Check if item already in cart
         Optional<CartItem> existing = cartItemRepository.findByCartCartIdAndListingId(cartId, listing.getPublicId());
         if (existing.isPresent()) {
+            if (existing.get().getQuantity() + request.getQuantity() > 99) throw new ResponseStatusException(BAD_REQUEST, "Quantity exceeds limit");
             return updateCartItemQuantity(existing.get(), existing.get().getQuantity() + request.getQuantity());
         }
 
@@ -161,6 +172,7 @@ public class CartService {
     }
 
     private CartDtos.CartItemResponse updateCartItemQuantity(CartItem item, int newQuantity) {
+        if (newQuantity > 99) throw new ResponseStatusException(BAD_REQUEST, "Quantity exceeds limit");
         if (newQuantity <= 0) {
             cartItemRepository.delete(item);
             recalculateCartTotals(item.getCart());

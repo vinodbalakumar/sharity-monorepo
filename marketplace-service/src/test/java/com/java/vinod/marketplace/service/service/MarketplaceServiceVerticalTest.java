@@ -143,6 +143,10 @@ class MarketplaceServiceVerticalTest {
         DeliveryTypeMasterRepository deliveryTypeRepository = mock(DeliveryTypeMasterRepository.class);
         when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue("SHIPPING")).thenReturn(true);
         when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue("DIGITAL")).thenReturn(true);
+        var storageRepository = mock(com.java.vinod.marketplace.service.repository.AssetStorageProviderRepository.class);
+        var storage = new com.java.vinod.marketplace.service.entity.AssetStorageProvider();
+        storage.setPublicBaseUrl("https://pub.example");
+        when(storageRepository.findFirstByActiveTrueOrderByUpdatedAtDesc()).thenReturn(java.util.Optional.of(storage));
         return new MarketplaceService(
                 mock(ListingRepository.class),
                 mock(ListingStatusMasterRepository.class),
@@ -155,7 +159,7 @@ class MarketplaceServiceVerticalTest {
                 mock(DeliverySubmissionRepository.class),
                 mock(CustomerAcceptanceRepository.class),
                 mock(DisputeCaseRepository.class),
-                mock(com.java.vinod.marketplace.service.repository.AssetStorageProviderRepository.class),
+                storageRepository,
                 mock(MarketplaceEventOutboxService.class),
                 mockCurrencyService(),
                 "http://authorization-server:8080/authorization-server/api/internal/providers",

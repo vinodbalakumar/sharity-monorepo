@@ -40,13 +40,15 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         // Select appropriate rate limiter based on endpoint
         RateLimiter limiter = selectRateLimiter(path, customerId);
 
-        if (limiter == null || limiter.executeSupplier(() -> true)) {
+        if (limiter == null || limiter.acquirePermission()) {
             // Within rate limit
             filterChain.doFilter(request, response);
         } else {
             // Rate limit exceeded
             log.warn("Rate limit exceeded for customer {} on path {}", customerId, path);
             response.setStatus(429);
+            response.setContentType("application/json");
+            response.setHeader("Retry-After", "60");
             response.getWriter().write("{\"error\": \"Rate limit exceeded\", \"retryAfter\": 60}");
         }
     }

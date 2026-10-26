@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ListingRepository extends JpaRepository<Listing, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select l from Listing l where l.publicId = :publicId")
+    Optional<Listing> findForPurchase(@Param("publicId") String publicId);
     Optional<Listing> findByPublicId(String publicId);
 
     List<Listing> findByListingStatusInOrderByCreatedAtDesc(List<String> listingStatuses);
