@@ -130,10 +130,10 @@ export function SellerOrderRefundScreen({ onNavigate, onOpenRefundStatus, orderI
               <Panel title="Refund Timeline">
                 <TimelineList data={timeline} estimatedItemSize={112} keyExtractor={(item) => item.eventId} renderItem={({ item, index }) => <TimelineRow event={item} index={index} />} />
               </Panel>
-              <Button disabled={submitLoading} theme="purple" onPress={handleSubmit}>{submitLoading ? 'Submitting...' : 'Submit Refund Request'}</Button>
+              <Button disabled={submitLoading} theme="blue" onPress={handleSubmit}>{submitLoading ? 'Submitting...' : 'Submit Refund Request'}</Button>
               <Button>Escalate to Sharity Review</Button>
               <Button>Cancel Refund Request</Button>
-              {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
+              {message ? <PremiumCard p="$4"><Paragraph color="$blue10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
         </XStack>
       </YStack>
@@ -142,7 +142,7 @@ export function SellerOrderRefundScreen({ onNavigate, onOpenRefundStatus, orderI
 }
 
 function ParentSummary({ summary }: { summary: ParentOrderRefundSummaryResponse }) {
-  return <Panel title="Parent Order Summary"><YStack gap="$2"><Text fontWeight="900">{summary.parentOrderReference}</Text><Paragraph color="$gray10">{summary.totalSellerOrders} seller orders / {summary.totalItems} items / {summary.orderStatus}</Paragraph><Paragraph color="$gray10">Payment: {summary.paymentStatus}</Paragraph></YStack></Panel>;
+  return <Panel title="Parent Order Summary"><YStack gap="$2"><Text fontWeight="700">{summary.parentOrderReference}</Text><Paragraph color="$gray10">{summary.totalSellerOrders} seller orders / {summary.totalItems} items / {summary.orderStatus}</Paragraph><Paragraph color="$gray10">Payment: {summary.paymentStatus}</Paragraph></YStack></Panel>;
 }
 
 function DigitalContext({ item }: { item: SellerOrderItemRefundEligibility }) {
@@ -163,7 +163,7 @@ function Breakdown({ breakdown }: { breakdown: RefundBreakdown }) {
     { id: 'credit', label: 'Sharity Credit return', value: breakdown.sharityCreditReturnBehavior },
     { id: 'total', label: 'Estimated refund', value: money(breakdown.totalEstimatedRefund) }
   ];
-  return <Panel title="Refund Breakdown"><BreakdownList data={rows} estimatedItemSize={64} keyExtractor={(item) => item.id} renderItem={({ item }) => <XStack jc="space-between" gap="$3" py="$2"><Text color="$gray10" fontWeight="700">{item.label}</Text><Text fontWeight="900">{item.value}</Text></XStack>} /></Panel>;
+  return <Panel title="Refund Breakdown"><BreakdownList data={rows} estimatedItemSize={64} keyExtractor={(item) => item.id} renderItem={({ item }) => <XStack jc="space-between" gap="$3" py="$2"><Text color="$gray10" fontWeight="700">{item.label}</Text><Text fontWeight="700">{item.value}</Text></XStack>} /></Panel>;
 }
 
 function PhysicalReturnPlaceholder() {
@@ -172,22 +172,22 @@ function PhysicalReturnPlaceholder() {
 
 const SellerOrderRow = memo(function SellerOrderRow({ sellerOrder, selected, index }: { sellerOrder: SellerOrderRefundSummary; selected: boolean; index: number }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor={selected ? '$purple8' : '$borderColor'} borderTopWidth={1} gap="$3" py="$3"><Image source={sellerOrder.productThumbnails[0]} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{sellerOrder.sellerOrderReference}</Text><Paragraph color="$gray10">{sellerOrder.storeName} / {sellerOrder.digitalDeliveryStatus}</Paragraph></YStack><Button theme={selected ? 'purple' : undefined} onPress={() => appState$.sellerOrderRefund.selectedSellerOrderId.set(sellerOrder.sellerOrderId)}>{selected ? 'Selected' : 'Select'}</Button></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor={selected ? '$purple8' : '$borderColor'} borderTopWidth={1} gap="$3" py="$3"><Image source={sellerOrder.productThumbnails[0]} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{sellerOrder.sellerOrderReference}</Text><Paragraph color="$gray10">{sellerOrder.storeName} / {sellerOrder.digitalDeliveryStatus}</Paragraph></YStack><Button theme={selected ? 'purple' : undefined} onPress={() => appState$.sellerOrderRefund.selectedSellerOrderId.set(sellerOrder.sellerOrderId)}>{selected ? 'Selected' : 'Select'}</Button></XStack></Animated.View>;
 });
 
 function ItemRow({ item, selected, index }: { item: SellerOrderItemRefundEligibility; selected: boolean; index: number }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor={selected ? '$purple8' : '$borderColor'} borderTopWidth={1} gap="$3" py="$3"><Image source={item.productImageUrl} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{item.productTitle}</Text><Paragraph color="$gray10">{item.deliveryType} / Max {money(item.maxRefundAmount)}</Paragraph></YStack><Button theme={selected ? 'purple' : undefined} onPress={() => { appState$.sellerOrderRefund.selectedItemId.set(item.sellerOrderItemId); appState$.sellerOrderRefund.requestedAmount.set(item.maxRefundAmount.toFixed(2)); }}>{selected ? 'Selected' : 'Select'}</Button></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor={selected ? '$purple8' : '$borderColor'} borderTopWidth={1} gap="$3" py="$3"><Image source={item.productImageUrl} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{item.productTitle}</Text><Paragraph color="$gray10">{item.deliveryType} / Max {money(item.maxRefundAmount)}</Paragraph></YStack><Button theme={selected ? 'purple' : undefined} onPress={() => { appState$.sellerOrderRefund.selectedItemId.set(item.sellerOrderItemId); appState$.sellerOrderRefund.requestedAmount.set(item.maxRefundAmount.toFixed(2)); }}>{selected ? 'Selected' : 'Select'}</Button></XStack></Animated.View>;
 }
 
 function ReasonRow({ reason, selected, index }: { reason: RefundReasonOption; selected: boolean; index: number }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor={selected ? '$purple8' : '$borderColor'} borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{reason.label}</Text><Paragraph color="$gray10">{reason.description} Evidence: {reason.evidenceRecommended}</Paragraph></YStack><Button theme={selected ? 'purple' : undefined} onPress={() => { appState$.sellerOrderRefund.selectedReasonCode.set(reason.reasonCode); appStorage.setString('refundLastReason', reason.reasonCode); }}>{selected ? 'Chosen' : 'Choose'}</Button></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor={selected ? '$purple8' : '$borderColor'} borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="700">{reason.label}</Text><Paragraph color="$gray10">{reason.description} Evidence: {reason.evidenceRecommended}</Paragraph></YStack><Button theme={selected ? 'purple' : undefined} onPress={() => { appState$.sellerOrderRefund.selectedReasonCode.set(reason.reasonCode); appStorage.setString('refundLastReason', reason.reasonCode); }}>{selected ? 'Chosen' : 'Choose'}</Button></XStack></Animated.View>;
 }
 
 function EvidenceRow({ evidence, index }: { evidence: RefundEvidenceItem; index: number }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={evidence.previewUrl} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{evidence.fileName}</Text><Paragraph color="$gray10">{evidence.uploadStatus} / {evidence.visibilityPolicy}</Paragraph></YStack><Badge label="Uploaded" tone="success" /></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={evidence.previewUrl} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{evidence.fileName}</Text><Paragraph color="$gray10">{evidence.uploadStatus} / {evidence.visibilityPolicy}</Paragraph></YStack><Badge label="Uploaded" tone="success" /></XStack></Animated.View>;
 }
 
 function TimelineRow({ event, index }: { event: RefundTimelineEvent; index: number }) {
@@ -195,10 +195,10 @@ function TimelineRow({ event, index }: { event: RefundTimelineEvent; index: numb
   return <Animated.View style={style}><Row title={event.title} meta={`${event.actorType} / ${event.message}`} badge={event.status} tone={event.status === 'PENDING' ? 'warning' : 'info'} /></Animated.View>;
 }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
-function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="700">{title}</Text>{children}</YStack></PremiumCard>; }
+function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="700">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="700" ta="center">{title}</Text></PremiumCard>; }
+function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="700" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function money(value: number) { const sign = value < 0 ? '-' : ''; return `${sign}$${Math.abs(value).toFixed(2)}`; }
 function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 35, withTiming(1, { duration: 220 })); translateY.value = withDelay(index * 35, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }

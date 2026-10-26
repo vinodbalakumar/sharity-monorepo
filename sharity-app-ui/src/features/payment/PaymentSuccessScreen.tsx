@@ -86,7 +86,7 @@ export function PaymentSuccessScreen({ onNavigate }: PaymentSuccessScreenProps) 
     return (
       <InteriorShell onNavigate={onNavigate} title="Error Loading Order" subtitle="Please try again" scrollable={false}>
         <CenteredCard>
-          <Text fontSize="$6" fontWeight="900" color="$color">Payment was received, but we could not load your order details.</Text>
+          <Text fontSize="$6" fontWeight="700" color="$color">Payment was received, but we could not load your order details.</Text>
           <Button theme="blue" onPress={() => onNavigate('orders')}>Go to Orders</Button>
           <Button onPress={() => onNavigate('marketplaces')}>Contact Support</Button>
         </CenteredCard>
@@ -103,7 +103,7 @@ export function PaymentSuccessScreen({ onNavigate }: PaymentSuccessScreenProps) 
                 <YStack ai="center" bg="$green5" br="$10" h={86} jc="center" w={86}>
                   <Ionicons color="green" name="checkmark" size={48} />
                 </YStack>
-                <Text fontSize="$6" fontWeight="900" ta="center">Order Confirmed</Text>
+                <Text fontSize="$6" fontWeight="700" ta="center">Order Confirmed</Text>
                 <Paragraph ta="center">Your payment was successful and your order has been created.</Paragraph>
                 <XStack flexWrap="wrap" gap="$3" jc="center">
                   <StatusPill label="Payment: PayPal" tone="success" />
@@ -127,7 +127,7 @@ export function PaymentSuccessScreen({ onNavigate }: PaymentSuccessScreenProps) 
             <PremiumCard p="$5" width={360} $sm={{ width: '100%' }}>
               <YStack gap="$4">
                 <Text fontSize="$6" fontWeight="800">Next steps</Text>
-                <Button theme="purple" onPress={() => onNavigate(isDigitalOnly ? 'library' : 'orders')}>
+                <Button theme="blue" onPress={() => onNavigate(isDigitalOnly ? 'library' : 'orders')}>
                   {isDigitalOnly ? 'Go to Library' : 'View Order Details'}
                 </Button>
                 <Button onPress={() => onNavigate('marketplaces')}>Continue Shopping</Button>

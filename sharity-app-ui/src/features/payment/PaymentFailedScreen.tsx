@@ -105,8 +105,8 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
     return (
       <InteriorShell onNavigate={onNavigate} title="Error Loading Details" subtitle="Please try again" scrollable={false}>
         <CenteredCard>
-          <Text fontSize="$6" fontWeight="900">We couldn't load your payment attempt details.</Text>
-          <Button theme="purple" onPress={() => onNavigate('cart')}>Go to Cart</Button>
+          <Text fontSize="$6" fontWeight="700">We couldn't load your payment attempt details.</Text>
+          <Button theme="blue" onPress={() => onNavigate('cart')}>Go to Cart</Button>
           <Button onPress={support}>Contact Support</Button>
         </CenteredCard>
       </InteriorShell>
@@ -123,7 +123,7 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
                   <Ionicons color="orange" name="alert" size={42} />
                 </YStack>
               </Animated.View>
-              <Text fontSize="$6" fontWeight="900" ta="center">{statusCopy.title}</Text>
+              <Text fontSize="$6" fontWeight="700" ta="center">{statusCopy.title}</Text>
               <Paragraph ta="center">{statusCopy.message}</Paragraph>
               <XStack flexWrap="wrap" gap="$3" jc="center">
                 <StatusPill label={`Payment method: ${attempt.provider}`} tone="info" />
@@ -156,7 +156,7 @@ export function PaymentFailedScreen({ onNavigate, status = 'PAYMENT_CANCELLED' }
             <PremiumCard p="$5" width={370} $sm={{ width: '100%' }}>
               <YStack gap="$3">
                 <Text fontSize="$6" fontWeight="800">Recover checkout</Text>
-                <Button theme="purple" onPress={tryAgain}>{statusCopy.primaryAction}</Button>
+                <Button theme="blue" onPress={tryAgain}>{statusCopy.primaryAction}</Button>
                 <Button onPress={() => onNavigate('checkout')}>Return to Checkout</Button>
                 <Button onPress={() => onNavigate('checkout')}>Change Payment Method</Button>
                 <Button onPress={() => onNavigate('cart')}>Go to Cart</Button>

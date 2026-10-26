@@ -411,7 +411,7 @@ export function ProfilePrivacyScreen({ onNavigate, onSignedOut }: Props) {
               </View>
 
               <View style={[styles.actionsFooter, isCompactPhone && styles.actionsFooterCompact]}>
-                <Button accessibilityLabel="Save profile" disabled={saving || loading} icon={<Ionicons name="save-outline" size={18} />} onPress={saveProfile} theme="purple">
+                <Button accessibilityLabel="Save profile" disabled={saving || loading} icon={<Ionicons name="save-outline" size={18} />} onPress={saveProfile} theme="blue">
                   {saving ? 'Saving...' : 'Save Profile'}
                 </Button>
                 <Button accessibilityLabel="Sign out" icon={<Ionicons name="log-out-outline" size={18} />} onPress={signOut} theme="red">

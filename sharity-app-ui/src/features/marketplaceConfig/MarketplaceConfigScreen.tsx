@@ -1,3 +1,4 @@
+import { FeaturePreviewNotice } from '../../components/ui/FeaturePreviewNotice';
 import { useSelector } from '@legendapp/state/react';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -42,12 +43,14 @@ export function MarketplaceConfigScreen({ onNavigate }: Props) {
     setMessage(result.message);
   }
 
-  if (!dashboard) return <InteriorShell onNavigate={onNavigate} title="Marketplace Settings" subtitle="Please wait..." scrollable={false}><Centered title="Loading country and marketplace settings..." /></InteriorShell>;
+  if (!dashboard) return <InteriorShell onNavigate={onNavigate} title="Marketplace Settings" subtitle="Please wait..." scrollable={false}>
+      <Centered title="Loading country and marketplace settings..." /></InteriorShell>;
 
   const configs = dashboard.configs.filter((item) => item.countryCode === selectedCountry);
 
   return (
     <InteriorShell onNavigate={onNavigate} title="Country & Marketplace Settings" subtitle="Configure country availability, buyer/seller access, eligibility, and feature flags" scrollable={true}>
+      <FeaturePreviewNotice />
       <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
         <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.marketplaceConfig.selectedTab.set(tab); appStorage.setString('marketplaceConfigLastTab', tab); }}>{tab}</Button>)}</XStack>
 
@@ -63,7 +66,7 @@ export function MarketplaceConfigScreen({ onNavigate }: Props) {
             <YStack gap="$4" width={360} $md={{ width: '100%' }}>
               <Panel title="Selected Country"><Badge label={selectedCountry} tone="info" /><Paragraph color="$gray10">Registration and later country changes must follow this config. Existing orders keep original snapshots.</Paragraph></Panel>
               <Panel title="Status Summary"><Badge label={`${configs.filter((item) => item.status === 'ENABLED').length} enabled`} tone="success" /><Badge label={`${configs.filter((item) => item.status === 'COMING_SOON').length} coming soon`} tone="warning" /><Badge label={`${configs.filter((item) => item.status === 'DISABLED').length} disabled`} tone="critical" /></Panel>
-              {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
+              {message ? <PremiumCard p="$4"><Paragraph color="$blue10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
           </XStack>
       </YStack>
@@ -78,7 +81,7 @@ const CountryRow = memo(function CountryRow({ country, index }: { country: Count
 
 function ConfigRow({ config, index }: { config: MarketplaceConfigDetail; index: number }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={config.marketplaceIconUrl} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{config.marketplaceName}</Text><Paragraph color="$gray10">Buyer {config.buyerAvailability.buyerStatus} / Seller {config.sellerAvailability.sellerStatus} / order {config.displayOrder}</Paragraph></YStack><Badge label={config.status} tone={toneFor(config.status)} /></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={config.marketplaceIconUrl} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{config.marketplaceName}</Text><Paragraph color="$gray10">Buyer {config.buyerAvailability.buyerStatus} / Seller {config.sellerAvailability.sellerStatus} / order {config.displayOrder}</Paragraph></YStack><Badge label={config.status} tone={toneFor(config.status)} /></XStack></Animated.View>;
 }
 
 function Simulator({ dashboard }: { dashboard: MarketplaceConfigDashboard }) {
@@ -87,10 +90,10 @@ function Simulator({ dashboard }: { dashboard: MarketplaceConfigDashboard }) {
 }
 
 function AuditRow({ audit, index }: { audit: MarketplaceConfigAuditLogItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={audit.action} meta={`${audit.actorName} / ${audit.countryCode} ${audit.marketplaceCode} / ${audit.reason}`} badge={`v${audit.version}`} tone="info" /></Animated.View>; }
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
-function Row({ title, meta, badge, tone, action }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success'; action?: () => void }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} />{action ? <Button onPress={action}>Select</Button> : null}</XStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text></PremiumCard>; }
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
+function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="700">{title}</Text>{children}</YStack></PremiumCard>; }
+function Row({ title, meta, badge, tone, action }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success'; action?: () => void }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="700">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} />{action ? <Button onPress={action}>Select</Button> : null}</XStack>; }
+function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><Text fontSize="$6" fontWeight="700" ta="center">{title}</Text></PremiumCard>; }
+function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="700" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function toneFor(status: string) { return status === 'ENABLED' ? 'success' : status === 'DISABLED' || status === 'SUSPENDED' ? 'critical' : status === 'COMING_SOON' || status.includes('REQUIRES') || status === 'PILOT_BETA' ? 'warning' : 'info'; }
 function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 35, withTiming(1, { duration: 220 })); translateY.value = withDelay(index * 35, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }

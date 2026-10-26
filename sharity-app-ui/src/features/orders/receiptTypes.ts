@@ -8,7 +8,7 @@ export type ReceiptHeader = {
   receiptStatus: 'PAID' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'NOT_AVAILABLE';
   orderDate: string;
   paymentDate: string;
-  currency: 'USD';
+  currency: string;
 };
 
 export type ReceiptPaymentSummary = {
@@ -16,7 +16,7 @@ export type ReceiptPaymentSummary = {
   paymentMethod: string;
   paymentProvider: string;
   safePaymentReference: string;
-  currency: 'USD';
+  currency: string;
   subtotal: number;
   tax: number;
   shipping: number;
@@ -63,7 +63,7 @@ export type ReceiptFeeBreakdown = {
   totalPaid: number;
   refundAmount: number;
   netPaidAfterRefund: number;
-  currency: 'USD';
+  currency: string;
 };
 
 export type ReceiptAddressSummary = {

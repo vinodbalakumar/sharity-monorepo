@@ -1,3 +1,4 @@
+import { CurrencyAmount, OrderCurrencyContext } from '../../components/ui/CurrencyAmount';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -13,7 +14,6 @@ import type { AppRoute } from '../../types/navigation';
 import {
   cancelOrder,
   getBuyerOrderDetails,
-  reportOrderIssue,
   startDispute,
   startRefundRequest
 } from './orderDetailsMockApi';
@@ -59,10 +59,11 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
     }
     setError(false);
     setLoading(true);
-    const response = await getBuyerOrderDetails(orderId);
-    setDetails(response);
-    setError(!response);
-    setLoading(false);
+    try {
+      const response = await getBuyerOrderDetails(orderId);
+      setDetails(response); setError(!response);
+    } catch { setDetails(null); setError(true); }
+    finally { setLoading(false); }
   }, [orderId]);
 
   useEffect(() => {
@@ -107,8 +108,7 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
     if (!details) {
       return;
     }
-    await reportOrderIssue(details.order.orderId);
-    setMessage('Order issue reported for review.');
+    onNavigate('support');
   }
 
   function openTracking() {
@@ -156,6 +156,7 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
   const canTrack = canTrackOrder(details.order.orderStatus);
 
   return (
+    <OrderCurrencyContext.Provider value={details.order.currency}>
     <InteriorShell onNavigate={onNavigate} title="Order Details" subtitle={`Order ${details.order.orderReference}`} scrollable={true}>
       <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
         <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
@@ -184,9 +185,9 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
               <SellerCard details={details} />
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Actions</Text>
-                  {isDigital ? <Button theme="purple" onPress={() => onNavigate('library')}>Go to Library</Button> : null}
-                  {isElectronics && canTrack ? <Button theme="purple" onPress={openTracking}>Track Package</Button> : null}
+                  <Text fontSize="$6" fontWeight="700">Actions</Text>
+                  {isDigital ? <Button theme="blue" onPress={() => onNavigate('library')}>Go to Library</Button> : null}
+                  {isElectronics && canTrack ? <Button theme="blue" onPress={openTracking}>Track Package</Button> : null}
                   <Button disabled={!canRefund} onPress={requestRefund}>{canRefund ? 'Request Refund / Return' : 'Refund not available'}</Button>
                   <Button disabled={!canDispute} onPress={openDispute}>{canDispute ? 'Open Dispute' : 'Dispute not available'}</Button>
                   <Button disabled={!details.eligibility.canCancel} onPress={cancelCurrentOrder}>{details.eligibility.canCancel ? 'Cancel Order' : 'Cannot cancel'}</Button>
@@ -201,6 +202,7 @@ export function OrderDetailsScreen({ onNavigate, onOpenDispute, onOpenReceipt, o
         </YStack>
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
     </InteriorShell>
+    </OrderCurrencyContext.Provider>
   );
 }
 
@@ -215,11 +217,11 @@ function SummaryCard({ details }: { details: OrderDetailsResponse }) {
       <YStack gap="$4">
         <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$3">
           <YStack gap="$1">
-            <Text fontSize="$7" fontWeight="900">{details.order.orderReference}</Text>
+            <Text fontSize="$7" fontWeight="700">{details.order.orderReference}</Text>
             <Paragraph color="$gray10">{details.order.marketplaceName} - Seller: {details.seller.sellerDisplayName}</Paragraph>
             <Text color="$gray10">Placed {formatDate(details.order.orderDate)} - Updated {formatDate(details.order.updatedAt)}</Text>
           </YStack>
-          <Text fontSize="$7" fontWeight="900">{formatMoney(details.order.totalAmount)}</Text>
+          <Text fontSize="$7" fontWeight="700"><CurrencyAmount amount={details.order.totalAmount} /></Text>
         </XStack>
         <XStack flexWrap="wrap" gap="$2" ai="center">
           <XStack ai="center" gap="$1">
@@ -260,12 +262,12 @@ const ItemCard = memo(function ItemCard({ index, item }: { index: number; item: 
         <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
           <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: item.productImageUrl }} style={{ borderRadius: 14, height: 78, width: 78 }} />
           <YStack flex={1} gap="$1">
-            <Text fontWeight="900">{item.productTitle}</Text>
+            <Text fontWeight="700">{item.productTitle}</Text>
             <Text color="$gray10">{item.productType} - Qty {item.quantity} - {item.deliveryType === 'DIGITAL' ? 'Digital access' : 'Shipping required'}</Text>
             {item.condition ? <Text color="$gray10">{item.condition}</Text> : null}
             <Text>{item.refundReturnSummary}</Text>
           </YStack>
-          <Text fontWeight="900">{formatMoney(item.price)}</Text>
+          <Text fontWeight="700"><CurrencyAmount amount={item.price} /></Text>
         </XStack>
       </PremiumCard>
     </Animated.View>
@@ -277,14 +279,14 @@ function DigitalAccessCard({ details, onNavigate }: { details: OrderDetailsRespo
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Digital access</Text>
+        <Text color="$blue10" fontWeight="700">Digital access</Text>
         <Paragraph>{summary.message}</Paragraph>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={labelize(summary.accessStatus)} tone="info" />
           <StatusPill label={summary.refundEligibilityStatus} tone="warning" />
           <StatusPill label={summary.riskReviewStatus} tone="success" />
         </XStack>
-        <Button theme="purple" onPress={() => onNavigate('library')}>Go to Library</Button>
+        <Button theme="blue" onPress={() => onNavigate('library')}>Go to Library</Button>
       </YStack>
     </PremiumCard>
   );
@@ -295,7 +297,7 @@ function ShippingCard({ details }: { details: OrderDetailsResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Shipping / tracking</Text>
+        <Text color="$blue10" fontWeight="700">Shipping / tracking</Text>
         <Paragraph>{shipping.trackingAvailable ? 'Tracking is available for this package.' : 'Tracking will be available after the seller ships your item.'}</Paragraph>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={labelize(shipping.shippingStatus)} tone={shipping.trackingAvailable ? 'info' : 'warning'} />
@@ -312,7 +314,7 @@ function ShippingAddressCard({ details }: { details: OrderDetailsResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$2">
-        <Text color="$blue10" fontWeight="900">Shipping address</Text>
+        <Text color="$blue10" fontWeight="700">Shipping address</Text>
         <Text>{address.fullName}</Text>
         <Text>{address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ''}</Text>
         <Text>{address.city}, {address.state} {address.postalCode}</Text>
@@ -331,7 +333,7 @@ function SellerCard({ details }: { details: OrderDetailsResponse }) {
             <Ionicons color={colors.primary} name="storefront-outline" size={24} />
           </YStack>
           <YStack flex={1}>
-            <Text fontSize="$6" fontWeight="900">{details.seller.sellerDisplayName}</Text>
+            <Text fontSize="$6" fontWeight="700">{details.seller.sellerDisplayName}</Text>
             <Text color="$gray10">{details.seller.country} - Rating {details.seller.sellerRating}</Text>
           </YStack>
         </XStack>
@@ -366,7 +368,7 @@ const TimelineCard = memo(function TimelineCard({ event, index }: { event: Order
             <Ionicons color={colors.info} name="checkmark" size={20} />
           </YStack>
           <YStack flex={1} gap="$1">
-            <Text fontWeight="900">{event.title}</Text>
+            <Text fontWeight="700">{event.title}</Text>
             <Text>{event.description}</Text>
             <Text color="$gray10" fontSize="$2">{formatDate(event.timestamp)}</Text>
           </YStack>
@@ -377,7 +379,7 @@ const TimelineCard = memo(function TimelineCard({ event, index }: { event: Order
 });
 
 function SectionTitle({ title }: { title: string }) {
-  return <Text fontSize="$6" fontWeight="900">{title}</Text>;
+  return <Text fontSize="$6" fontWeight="700">{title}</Text>;
 }
 
 function CenteredState({ actionLabel, message, onAction }: { actionLabel?: string; message: string; onAction?: () => void }) {
@@ -386,8 +388,8 @@ function CenteredState({ actionLabel, message, onAction }: { actionLabel?: strin
       <YStack ai="center" f={1} jc="center" p="$5">
         <PremiumCard maxWidth={560} p="$6" width="100%">
           <YStack ai="center" gap="$4">
-            <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
-            {actionLabel && onAction ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}
+            <Text fontSize="$6" fontWeight="700" ta="center">{message}</Text>
+            {actionLabel && onAction ? <Button theme="blue" onPress={onAction}>{actionLabel}</Button> : null}
           </YStack>
         </PremiumCard>
       </YStack>
@@ -447,8 +449,4 @@ function labelize(value: string) {
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('en-US', { currency: 'USD', style: 'currency' }).format(value);
 }

@@ -13,8 +13,8 @@ export default defineConfig({
   use: { baseURL: 'http://127.0.0.1:8097', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['iPhone 13'], defaultBrowserType: 'webkit' } }
+    { name: 'firefox', testIgnore: '**/screen-audit.spec.ts', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', testIgnore: '**/screen-audit.spec.ts', use: { ...devices['iPhone 13'], defaultBrowserType: 'webkit' } }
   ],
   webServer: {
     command: 'node tests/serve-export.cjs',

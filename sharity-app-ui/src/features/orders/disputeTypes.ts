@@ -44,7 +44,7 @@ export type DisputeEligibilityResponse = {
 };
 
 export type DisputeOrderSummary = {
-  currency: 'USD';
+  currency: string;
   marketplaceCode: 'DIGITAL' | 'ELECTRONICS';
   marketplaceName: string;
   orderId: string;

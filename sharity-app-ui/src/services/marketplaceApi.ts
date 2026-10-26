@@ -39,10 +39,20 @@ async function getJson<T>(path: string): Promise<T> {
       throw new Error(`Request failed: ${response.status}`);
     }
 
-    return (await response.json()) as T;
+    return normalizeMarketplaceImages(await response.json()) as T;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// Keep native clients and browser clients on the same controlled image route.
+function normalizeMarketplaceImages(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeMarketplaceImages);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key,
+    key === 'imageUrl' && typeof item === 'string' && item.startsWith('/marketplace-service/')
+      ? `${bffBaseUrl}/public${item}` : normalizeMarketplaceImages(item)
+  ]));
 }
 
 export async function getMarketplaceHome(query = ''): Promise<MarketplaceHomeResponse> {

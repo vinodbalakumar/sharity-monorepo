@@ -1,3 +1,4 @@
+import { FeaturePreviewNotice } from '../../components/ui/FeaturePreviewNotice';
 import { useSelector } from '@legendapp/state/react';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -47,6 +48,7 @@ export function PricingPromotionsScreen({ onNavigate }: Props) {
 
   return (
     <InteriorShell onNavigate={onNavigate} title="Pricing, Fees & Promotions" subtitle="Configure buyer fees, seller commissions, coupons, fee waivers, free product rules, simulations, snapshots, and audit logs" scrollable={true}>
+      <FeaturePreviewNotice />
       <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
         <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.pricingPromotions.selectedTab.set(tab); appStorage.setString('pricingPromotionsLastTab', tab); }}>{tab}</Button>)}</XStack>
           <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
@@ -60,8 +62,8 @@ export function PricingPromotionsScreen({ onNavigate }: Props) {
               {selectedTab === 'Seller View' && simulation ? <SellerSafeView simulation={simulation} /> : null}
             </YStack>
             <YStack gap="$4" width={360} $md={{ width: '100%' }}>
-              <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Summary</Text><Badge label={`${rules.filter((rule) => rule.status === 'ACTIVE').length} active rules`} tone="success" /><Badge label={`${rules.filter((rule) => rule.status === 'DRAFT').length} draft rules`} tone="warning" /><Badge label="1 conflict warning" tone="critical" /><Paragraph color="$gray10">Buyer-safe pricing is used in cart and payment screens. Seller commission is never shown to buyers.</Paragraph></YStack></PremiumCard>
-              <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Rule Editor</Text><Input bg="$background" borderColor="$borderColor" value="Buyer service fee fixed + percentage" /><Button theme="purple">Save Rule</Button><Button>Simulate Pricing</Button></YStack></PremiumCard>
+              <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Summary</Text><Badge label={`${rules.filter((rule) => rule.status === 'ACTIVE').length} active rules`} tone="success" /><Badge label={`${rules.filter((rule) => rule.status === 'DRAFT').length} draft rules`} tone="warning" /><Badge label="1 conflict warning" tone="critical" /><Paragraph color="$gray10">Buyer-safe pricing is used in cart and payment screens. Seller commission is never shown to buyers.</Paragraph></YStack></PremiumCard>
+              <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Rule Editor</Text><Input bg="$background" borderColor="$borderColor" value="Buyer service fee fixed + percentage" /><Button theme="blue">Save Rule</Button><Button>Simulate Pricing</Button></YStack></PremiumCard>
             </YStack>
           </XStack>
         </YStack>
@@ -69,7 +71,7 @@ export function PricingPromotionsScreen({ onNavigate }: Props) {
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="900">{title}</Text>{children}</YStack></PremiumCard>; }
+function Panel({ title, children }: { title: string; children: React.ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><Text fontSize="$6" fontWeight="700">{title}</Text>{children}</YStack></PremiumCard>; }
 const RuleRow = memo(function RuleRow({ rule, index }: { rule: PricingRule; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={rule.ruleName} meta={`${rule.ruleType} • ${rule.scope} • ${rule.marketplaceCode}/${rule.categoryCode}/${rule.countryCode}`} badge={`${rule.feeModel} v${rule.version}`} tone={rule.status === 'ACTIVE' ? 'success' : 'warning'} /></Animated.View>; });
 function CouponRow({ coupon, index }: { coupon: CouponRule; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={coupon.couponCode} meta={`${coupon.couponType} • ${coupon.fundingSource} • Stackable: ${coupon.stackable ? 'Yes' : 'No'}`} badge={coupon.status} tone="success" /></Animated.View>; }
 function WaiverRow({ waiver, index }: { waiver: FeeWaiverSellerRule; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={waiver.storeName} meta={`${waiver.waiverType} • ${waiver.reason}`} badge={`${waiver.waiverPercentage}% waiver`} tone="info" /></Animated.View>; }
@@ -77,7 +79,7 @@ function FreeRuleRow({ freeRule, index }: { freeRule: FreeProductRule; index: nu
 function AuditRow({ auditItem, index }: { auditItem: PricingAuditLogItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={auditItem.action} meta={`${auditItem.actorName} • ${auditItem.entityType} ${auditItem.entityId} • ${auditItem.reason}`} badge={`v${auditItem.version}`} tone="info" /></Animated.View>; }
 
 function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
-  return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={placeholderImageUrl('gift_cards')} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>;
+  return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={placeholderImageUrl('gift_cards')} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>;
 }
 
 function Simulator({ simulation }: { simulation: PricingSimulationResponse }) {
@@ -90,7 +92,7 @@ function SellerSafeView({ simulation }: { simulation: PricingSimulationResponse 
 }
 
 function Price({ label, value, strong }: { label: string; value: number; strong?: boolean }) { return <XStack jc="space-between"><Text color={strong ? '$color' : '$gray10'} fontWeight={strong ? '900' : '600'}>{label}</Text><Text fontWeight={strong ? '900' : '600'}>{money(value)}</Text></XStack>; }
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
+function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="700" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function money(value: number) { const sign = value < 0 ? '-' : ''; return `${sign}$${Math.abs(value).toFixed(2)}`; }
 function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 45, withTiming(1, { duration: 220 })); translateY.value = withDelay(index * 45, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }

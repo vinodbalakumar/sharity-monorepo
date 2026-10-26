@@ -54,7 +54,7 @@ export type OrderTracking = {
   quantity: number;
   orderDate: string;
   totalAmount: number;
-  currency: 'USD';
+  currency: string;
 };
 
 export type TrackingTimelineEvent = {

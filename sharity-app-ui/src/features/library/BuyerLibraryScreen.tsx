@@ -336,7 +336,7 @@ const LibraryItemCard = memo(function LibraryItemCard({
 
           <XStack flexWrap="wrap" gap="$2">
             {canReveal ? (
-              <Button disabled={revealLoadingAccessId === item.accessId} theme="purple" onPress={() => onReveal(item)}>
+              <Button disabled={revealLoadingAccessId === item.accessId} theme="blue" onPress={() => onReveal(item)}>
                 {revealLoadingAccessId === item.accessId ? 'Preparing...' : 'Reveal Code'}
               </Button>
             ) : null}
@@ -404,7 +404,7 @@ function RevealOverlay({
                 <Paragraph color="$gray10">The revealed area is watermarked and each reveal is logged for fraud, refund, and dispute review.</Paragraph>
                 <XStack flexWrap="wrap" gap="$2">
                   <Button onPress={onClose}>Cancel</Button>
-                  <Button theme="purple" onPress={onAgree}>Continue</Button>
+                  <Button theme="blue" onPress={onAgree}>Continue</Button>
                 </XStack>
               </>
             ) : null}
@@ -416,7 +416,7 @@ function RevealOverlay({
                 <Paragraph color="$gray10">Location is not shown to the seller and is not collected silently.</Paragraph>
                 <XStack flexWrap="wrap" gap="$2">
                   <Button onPress={onDeny}>Cancel</Button>
-                  <Button theme="purple" onPress={onReveal}>Agree & Reveal Code</Button>
+                  <Button theme="blue" onPress={onReveal}>Agree & Reveal Code</Button>
                 </XStack>
               </>
             ) : null}
@@ -424,14 +424,14 @@ function RevealOverlay({
               <>
                 <YStack bg="$background" br="$5" borderColor="$borderColor" borderWidth={1} gap="$2" p="$4" style={Platform.OS === 'web' ? ({ userSelect: 'none' } as never) : undefined}>
                   <Text color="$gray10" fontSize="$2" fontWeight="800">Watermarked secure reveal - visible for 60 seconds</Text>
-                  <Text color="$purple10" fontSize="$8" fontWeight="900" ta="center">
+                  <Text color="$blue10" fontSize="$8" fontWeight="700" ta="center">
                     {hidden ? revealed?.maskedCode : revealed?.revealedCode}
                   </Text>
                   <Text color="$gray10" fontSize="$2" ta="center">{revealed?.watermarkText}</Text>
                 </YStack>
                 <Paragraph color="$orange10">This code has been revealed. Refunds may require admin review.</Paragraph>
                 <XStack flexWrap="wrap" gap="$2">
-                  <Button theme="purple" onPress={onClose}>Hide Code</Button>
+                  <Button theme="blue" onPress={onClose}>Hide Code</Button>
                   <Button>View Order Details</Button>
                   <Button>Contact Support</Button>
                 </XStack>
@@ -473,7 +473,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <CenteredCard>
       <Text fontSize="$6" fontWeight="800">Unable to load your library.</Text>
-      <Button theme="purple" onPress={onRetry}>Retry</Button>
+      <Button theme="blue" onPress={onRetry}>Retry</Button>
     </CenteredCard>
   );
 }
@@ -483,7 +483,7 @@ function EmptyState({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
     <CenteredCard>
       <Text fontSize="$6" fontWeight="800">Your library is empty.</Text>
       <Paragraph ta="center">Your purchased digital codes, downloads, courses, and subscriptions will appear here.</Paragraph>
-      <Button theme="purple" onPress={() => onNavigate('marketplaces')}>Browse Digital Products</Button>
+      <Button theme="blue" onPress={() => onNavigate('marketplaces')}>Browse Digital Products</Button>
     </CenteredCard>
   );
 }

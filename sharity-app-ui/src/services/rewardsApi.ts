@@ -18,7 +18,16 @@ export async function getRewardsDashboard(): Promise<RewardsDashboardResponse> {
     throw new Error(`Failed to load rewards dashboard: ${response.statusText}`);
   }
 
-  return await response.json();
+  const body = await response.json() as RewardsDashboardResponse;
+  const arrays: (keyof RewardsDashboardResponse)[] = ['availableRewards', 'creditHistory', 'campaigns', 'creditIssuance', 'creditRedemption', 'giveawayClaims', 'auditLog', 'abuseQueue'];
+  if (!body?.creditBalance || !Number.isFinite(body.creditBalance.availableBalance)
+      || !Number.isFinite(body.creditBalance.expiringSoonAmount)
+      || !Array.isArray(body.creditBalance.typeBreakdown)
+      || !body.creditAllocation || !body.sellerPromotionImpact || !body.simulation
+      || arrays.some(key => !Array.isArray(body[key]))) {
+    throw new Error('Rewards information is temporarily unavailable. Please try again.');
+  }
+  return body;
 }
 
 export async function claimGiveaway(campaignId: string): Promise<GiveawayClaimResponse> {

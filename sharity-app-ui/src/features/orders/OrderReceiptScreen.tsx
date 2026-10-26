@@ -1,3 +1,4 @@
+import { CurrencyAmount, OrderCurrencyContext } from '../../components/ui/CurrencyAmount';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from '@legendapp/state/react';
 import { FlashList } from '@shopify/flash-list';
@@ -48,17 +49,14 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
   const loadReceipt = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const nextReceipt = await getReceiptByOrder(orderId);
-    if (!nextReceipt) {
-      setError('NOT_FOUND');
-      setLoading(false);
-      return;
-    }
-    const refundHistory = await getReceiptRefundHistory(nextReceipt.receipt.receiptId);
-    setReceipt({ ...nextReceipt, refundHistory });
-    appState$.receipt.expandedGroupId.set(nextReceipt.marketplaceGroups[0]?.sellerId ?? '');
-    appState$.receipt.refundHistoryExpanded.set(nextReceipt.refundHistory.length > 0);
-    setLoading(false);
+    try {
+      const nextReceipt = await getReceiptByOrder(orderId);
+      if (!nextReceipt) { setReceipt(null); setError('NOT_FOUND'); return; }
+      setReceipt(nextReceipt);
+      appState$.receipt.expandedGroupId.set(nextReceipt.marketplaceGroups[0]?.sellerId ?? '');
+      appState$.receipt.refundHistoryExpanded.set(nextReceipt.refundHistory.length > 0);
+    } catch { setReceipt(null); setError('NOT_FOUND'); }
+    finally { setLoading(false); }
   }, [orderId]);
 
   useEffect(() => {
@@ -98,6 +96,7 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
   const actions = receipt.availableActions;
 
   return (
+    <OrderCurrencyContext.Provider value={receipt.receipt.currency}>
     <InteriorShell onNavigate={onNavigate} title="Order Receipt" subtitle={`Receipt ${receipt.receipt.receiptNumber} - Order ${receipt.receipt.orderReference}`} scrollable={true}>
       <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
         <XStack $sm={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
@@ -123,7 +122,7 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
                 <PremiumCard p="$4">
                   <YStack gap="$3">
                     <XStack ai="center" jc="space-between" gap="$3">
-                      <Text color="$blue10" fontWeight="900">Refund history</Text>
+                      <Text color="$blue10" fontWeight="700">Refund history</Text>
                       <Button size="$3" onPress={() => appState$.receipt.refundHistoryExpanded.set(!refundHistoryExpanded)}>
                         {refundHistoryExpanded ? 'Hide' : 'Show'}
                       </Button>
@@ -147,11 +146,11 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
               <FeeBreakdownCard receipt={receipt} />
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Actions</Text>
+                  <Text fontSize="$6" fontWeight="700">Actions</Text>
                   {actions.canBackToOrder ? <Button onPress={() => onNavigate('orderDetails')}>Back to Order Details</Button> : null}
                   {actions.canViewOrders ? <Button onPress={() => onNavigate('orders')}>View Orders</Button> : null}
-                  {actions.canGoToLibrary ? <Button theme="purple" onPress={() => onNavigate('library')}>Go to Library</Button> : null}
-                  {actions.canTrackPackage ? <Button theme="purple" onPress={() => onNavigate('tracking')}>Track Package</Button> : null}
+                  {actions.canGoToLibrary ? <Button theme="blue" onPress={() => onNavigate('library')}>Go to Library</Button> : null}
+                  {actions.canTrackPackage ? <Button theme="blue" onPress={() => onNavigate('tracking')}>Track Package</Button> : null}
                   {actions.canContactSupport ? <Button onPress={() => setMessage('Support routing will open /support/orders when backend routing is ready.')}>Contact Support</Button> : null}
                   <Button disabled onPress={futurePdf}>Download PDF Future</Button>
                   <Button disabled onPress={futureEmail}>Email Receipt Future</Button>
@@ -163,6 +162,7 @@ export function OrderReceiptScreen({ onNavigate, orderId }: OrderReceiptScreenPr
       </YStack>
       {message ? <Toast message={message} onClose={() => setMessage('')} /> : null}
     </InteriorShell>
+    </OrderCurrencyContext.Provider>
   );
 }
 
@@ -186,7 +186,7 @@ function ReceiptStatusCard({ receipt }: { receipt: ReceiptResponse }) {
         <YStack gap="$4">
           <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$3">
             <YStack gap="$1">
-              <Text fontSize="$7" fontWeight="900">{receipt.receipt.receiptNumber}</Text>
+              <Text fontSize="$7" fontWeight="700">{receipt.receipt.receiptNumber}</Text>
               <Paragraph color="$gray10">Order {receipt.receipt.orderReference} - Checkout {receipt.receipt.checkoutReference}</Paragraph>
               <Text color="$gray10">Paid {formatDate(receipt.receipt.paymentDate)} - Ordered {formatDate(receipt.receipt.orderDate)}</Text>
             </YStack>
@@ -195,7 +195,7 @@ function ReceiptStatusCard({ receipt }: { receipt: ReceiptResponse }) {
           <XStack flexWrap="wrap" gap="$2">
             <StatusPill label={`${receipt.marketplaceGroups.length} marketplace group${receipt.marketplaceGroups.length === 1 ? '' : 's'}`} tone="info" />
             <StatusPill label={receipt.paymentSummary.paymentMethod} tone="info" />
-            <StatusPill label={`Total ${formatMoney(receipt.paymentSummary.totalPaid)}`} tone="success" />
+            <StatusPill label={`Total $<CurrencyAmount amount={receipt.paymentSummary.totalPaid} />`} tone="success" />
           </XStack>
         </YStack>
       </PremiumCard>
@@ -231,11 +231,11 @@ const ReceiptGroupCard = memo(function ReceiptGroupCard({ expanded, group, index
               <Ionicons color={colors.info} name={group.marketplaceCode === 'DIGITAL' ? 'key-outline' : 'laptop-outline'} size={22} />
             </YStack>
             <YStack flex={1} gap="$1">
-              <Text fontSize="$6" fontWeight="900">{group.marketplaceName}</Text>
+              <Text fontSize="$6" fontWeight="700">{group.marketplaceName}</Text>
               <Text color="$gray10">Seller: {group.sellerDisplayName}</Text>
             </YStack>
             <YStack ai="flex-end" gap="$2">
-              <Text fontWeight="900">{formatMoney(group.groupSubtotal)}</Text>
+              <Text fontWeight="700"><CurrencyAmount amount={group.groupSubtotal} /></Text>
               <StatusPill label={group.sellerVerified ? 'Verified seller' : 'Seller review'} tone={group.sellerVerified ? 'success' : 'warning'} />
             </YStack>
           </XStack>
@@ -257,15 +257,15 @@ function ReceiptItemRow({ item }: { item: ReceiptMarketplaceGroup['items'][numbe
       <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
         <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: item.productImageUrl }} style={{ borderRadius: 12, height: 70, width: 70 }} />
         <YStack flex={1} gap="$1">
-          <Text fontWeight="900">{item.productTitle}</Text>
+          <Text fontWeight="700">{item.productTitle}</Text>
           <Text color="$gray10">{item.productType} - Qty {item.quantity}</Text>
           <Text>{item.deliveryStatusSummary}</Text>
           {item.accessStatusSummary ? <Text color="$gray10">{item.accessStatusSummary}</Text> : null}
           {item.shippingStatusSummary ? <Text color="$gray10">{labelize(item.shippingStatusSummary)}</Text> : null}
         </YStack>
         <YStack ai="flex-end">
-          <Text fontWeight="900">{formatMoney(item.lineTotal)}</Text>
-          <Text color="$gray10">{formatMoney(item.unitPrice)} each</Text>
+          <Text fontWeight="700"><CurrencyAmount amount={item.lineTotal} /></Text>
+          <Text color="$gray10"><CurrencyAmount amount={item.unitPrice} /> each</Text>
         </YStack>
       </XStack>
     </YStack>
@@ -277,11 +277,11 @@ function PaymentSummaryCard({ receipt }: { receipt: ReceiptResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Payment summary</Text>
-        <Text fontSize="$8" fontWeight="900">{formatMoney(payment.totalPaid)}</Text>
+        <Text color="$blue10" fontWeight="700">Payment summary</Text>
+        <Text fontSize="$8" fontWeight="700"><CurrencyAmount amount={payment.totalPaid} /></Text>
         <StatusPill label={labelize(payment.paymentStatus)} tone={payment.paymentStatus === 'PAID' ? 'success' : 'warning'} />
         <YStack bg="$blue4" br="$5" gap="$1" p="$3">
-          <Text fontWeight="900">{payment.paymentProvider}</Text>
+          <Text fontWeight="700">{payment.paymentProvider}</Text>
           <Text>{payment.paymentMethod} - Reference {payment.safePaymentReference}</Text>
         </YStack>
         <Paragraph color="$gray10">Safe payment reference only. Provider payloads, payer private data, tokens, and internal payment IDs are not shown.</Paragraph>
@@ -295,7 +295,7 @@ function FeeBreakdownCard({ receipt }: { receipt: ReceiptResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Fee, tax, and discount breakdown</Text>
+        <Text color="$blue10" fontWeight="700">Fee, tax, and discount breakdown</Text>
         <MoneyLine label="Subtotal" value={fee.subtotal} />
         <MoneyLine label="Tax" value={fee.tax} />
         <MoneyLine label="Shipping" value={fee.shipping} />
@@ -315,7 +315,7 @@ function MoneyLine({ emphasis, label, value }: { emphasis?: boolean; label: stri
   return (
     <XStack ai="center" jc="space-between" gap="$3">
       <Text color={emphasis ? '$color' : '$gray10'} fontWeight={emphasis ? '900' : '600'}>{label}</Text>
-      <Text fontSize={emphasis ? '$6' : undefined} fontWeight="900">{formatMoney(value)}</Text>
+      <Text fontSize={emphasis ? '$6' : undefined} fontWeight="700"><CurrencyAmount amount={value} /></Text>
     </XStack>
   );
 }
@@ -328,7 +328,7 @@ function DigitalAccessCard({ onNavigate, receipt }: { onNavigate: (route: AppRou
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Digital access status</Text>
+        <Text color="$blue10" fontWeight="700">Digital access status</Text>
         <Paragraph>{access.message}</Paragraph>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={labelize(access.accessStatus)} tone="info" />
@@ -336,7 +336,7 @@ function DigitalAccessCard({ onNavigate, receipt }: { onNavigate: (route: AppRou
           <StatusPill label={`Download: ${access.downloadAvailable ? 'Available' : 'Not available'}`} tone={access.downloadAvailable ? 'success' : 'warning'} />
         </XStack>
         <Paragraph color="$gray10">Digital code values, raw download URLs, signed URLs, reveal location, device ID, and risk score are not shown.</Paragraph>
-        <Button theme="purple" onPress={() => onNavigate('library')}>Go to Library</Button>
+        <Button theme="blue" onPress={() => onNavigate('library')}>Go to Library</Button>
       </YStack>
     </PremiumCard>
   );
@@ -350,7 +350,7 @@ function AddressSummaryCard({ receipt }: { receipt: ReceiptResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Address summary</Text>
+        <Text color="$blue10" fontWeight="700">Address summary</Text>
         {address.billingSummaryAvailable && address.billingDisplayText ? <Text>{address.billingDisplayText}</Text> : <Text color="$gray10">Billing summary unavailable from provider.</Text>}
         {address.shippingSummaryAvailable && address.shippingDisplayText ? <Text>{address.shippingDisplayText}</Text> : null}
         <Paragraph color="$gray10">Receipt uses summary address only for MVP and avoids full address unless policy requires it.</Paragraph>
@@ -381,7 +381,7 @@ const RefundHistoryCard = memo(function RefundHistoryCard({ index, item }: { ind
             <Ionicons color={colors.success} name="return-down-back-outline" size={20} />
           </YStack>
           <YStack flex={1} gap="$1">
-            <Text fontWeight="900">{labelize(item.refundStatus)} - {formatMoney(item.refundAmount)}</Text>
+            <Text fontWeight="700">{labelize(item.refundStatus)} - <CurrencyAmount amount={item.refundAmount} /></Text>
             <Text>{item.refundReasonSummary}</Text>
             <Text color="$gray10">{formatDate(item.refundDate)} - {item.safeProviderRefundReference}</Text>
           </YStack>
@@ -395,7 +395,7 @@ function LegalNoteCard({ receipt }: { receipt: ReceiptResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$2">
-        <Text color="$blue10" fontWeight="900">Legal note</Text>
+        <Text color="$blue10" fontWeight="700">Legal note</Text>
         <Paragraph>{receipt.legalNote}</Paragraph>
         <Paragraph color="$gray10">This receipt does not expose digital codes, seller payout details, or internal marketplace settlement information.</Paragraph>
       </YStack>
@@ -404,7 +404,7 @@ function LegalNoteCard({ receipt }: { receipt: ReceiptResponse }) {
 }
 
 function SectionTitle({ title }: { title: string }) {
-  return <Text fontSize="$6" fontWeight="900">{title}</Text>;
+  return <Text fontSize="$6" fontWeight="700">{title}</Text>;
 }
 
 function CenteredState({ actionLabel, message, onAction }: { actionLabel?: string; message: string; onAction?: () => void }) {
@@ -413,8 +413,8 @@ function CenteredState({ actionLabel, message, onAction }: { actionLabel?: strin
       <YStack ai="center" f={1} jc="center" p="$5">
         <PremiumCard maxWidth={560} p="$6" width="100%">
           <YStack ai="center" gap="$4">
-            <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
-            {actionLabel && onAction ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}
+            <Text fontSize="$6" fontWeight="700" ta="center">{message}</Text>
+            {actionLabel && onAction ? <Button theme="blue" onPress={onAction}>{actionLabel}</Button> : null}
           </YStack>
         </PremiumCard>
       </YStack>
@@ -463,6 +463,6 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('en-US', { currency: 'USD', style: 'currency' }).format(value);
+function formatMoney(value: number, currency = 'USD') {
+  return new Intl.NumberFormat('en-US', { currency, style: 'currency' }).format(value);
 }

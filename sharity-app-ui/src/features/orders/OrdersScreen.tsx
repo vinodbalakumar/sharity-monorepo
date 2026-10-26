@@ -1,3 +1,5 @@
+import { colors } from '../../theme';
+import { systemFontFamily } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps } from 'react';
@@ -34,6 +36,7 @@ type SortMode = 'Newest First' | 'Oldest First' | 'Highest Amount' | 'Lowest Amo
 type BadgeTone = 'delivered' | 'shipped' | 'paid' | 'disputed' | 'refunded' | 'pending' | 'accessReady';
 
 type OrderItem = {
+  currencyCode: string;
   category: string;
   dateIso: string;
   dateLabel: string;
@@ -55,12 +58,12 @@ type ActionConfig = {
   onPress: () => void;
 };
 
-const BRAND = '#1D9E75';
-const BORDER = '#E5E5E5';
-const BG = '#F6F6F4';
+const BRAND = colors.primary;
+const BORDER = colors.border;
+const BG = colors.background;
 const SURFACE = '#FFFFFF';
-const TEXT = '#1A1A1A';
-const TEXT_SECONDARY = '#6B6B6B';
+const TEXT = colors.textPrimary;
+const TEXT_SECONDARY = colors.textSecondary;
 const TEXT_TERTIARY = '#9E9E9E';
 const WHITE = '#FFFFFF';
 const DANGER = '#A32D2D';
@@ -337,7 +340,7 @@ const OrderCard = memo(function OrderCard({
       </Text>
 
       <View style={styles.priceRow}>
-        <Text style={styles.priceText}>{formatMoney(order.price)}</Text>
+        <Text style={styles.priceText}>{formatMoney(order.price, order.currencyCode)}</Text>
         <StatusBadge label={paymentLabel(order.payment)} tone={paymentToneValue} />
       </View>
 
@@ -751,8 +754,8 @@ function trackingStepFor(status: OrderStatus): 1 | 2 | 3 | 4 {
   }
 }
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('en-US', { currency: 'USD', style: 'currency' }).format(value);
+function formatMoney(value: number, currencyCode = 'USD') {
+  return new Intl.NumberFormat('en-US', { currency: currencyCode, style: 'currency' }).format(value);
 }
 
 function handleOpenDetailsFactory(onOpenOrderDetails?: (orderId: string) => void) {
@@ -831,11 +834,13 @@ const styles = StyleSheet.create({
   },
   brandAvatarText: {
     color: WHITE,
+    fontFamily: systemFontFamily,
     fontSize: 20,
     fontWeight: '900'
   },
   headerTitle: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 24,
     fontWeight: '900',
     lineHeight: 28
@@ -852,6 +857,7 @@ const styles = StyleSheet.create({
   },
   userAvatarText: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '900'
   },
@@ -886,6 +892,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: TEXT,
     flex: 1,
+    fontFamily: systemFontFamily,
     fontSize: 14,
     minHeight: 24,
     paddingVertical: 0
@@ -920,6 +927,7 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     color: TEXT_SECONDARY,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '800'
   },
@@ -928,6 +936,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     color: TEXT_SECONDARY,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '700'
   },
@@ -964,17 +973,20 @@ const styles = StyleSheet.create({
   },
   productName: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 16,
     fontWeight: '900',
     lineHeight: 21
   },
   orderIdText: {
     color: TEXT_TERTIARY,
+    fontFamily: systemFontFamily,
     fontSize: 12,
     fontWeight: '700'
   },
   sellerLine: {
     color: TEXT_SECONDARY,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '700'
   },
@@ -985,6 +997,7 @@ const styles = StyleSheet.create({
   },
   priceText: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 18,
     fontWeight: '900'
   },
@@ -995,6 +1008,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6
   },
   statusBadgeText: {
+    fontFamily: systemFontFamily,
     fontSize: 11,
     fontWeight: '900'
   },
@@ -1022,6 +1036,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     flex: 1,
+    fontFamily: systemFontFamily,
     fontSize: 11,
     fontWeight: '800',
     textAlign: 'center'
@@ -1045,6 +1060,7 @@ const styles = StyleSheet.create({
   alertText: {
     color: DANGER,
     flex: 1,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19
@@ -1069,6 +1085,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 12,
     fontWeight: '900'
   },
@@ -1157,12 +1174,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center'
   },
   emptySubtitle: {
     color: TEXT_SECONDARY,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center'
@@ -1177,6 +1196,7 @@ const styles = StyleSheet.create({
   },
   emptyCtaText: {
     color: WHITE,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '900'
   },
@@ -1204,6 +1224,7 @@ const styles = StyleSheet.create({
   },
   filterSheetTitle: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 18,
     fontWeight: '900'
   },
@@ -1230,6 +1251,7 @@ const styles = StyleSheet.create({
   },
   sortOptionText: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '800'
   },
@@ -1254,6 +1276,7 @@ const styles = StyleSheet.create({
   },
   sheetSecondaryButtonText: {
     color: TEXT,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '900'
   },
@@ -1269,6 +1292,7 @@ const styles = StyleSheet.create({
   },
   sheetPrimaryButtonText: {
     color: WHITE,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '900'
   },

@@ -30,6 +30,7 @@ type MarketplaceListingSummary = {
 };
 
 export type BuyerOrderItem = {
+  currencyCode: string;
   category: string;
   dateIso: string;
   dateLabel: string;
@@ -115,11 +116,12 @@ async function loadListing(listingPublicId: string): Promise<MarketplaceListingS
 
 function mapOrder(order: MarketplaceOrderResponse, listing: MarketplaceListingSummary | null): BuyerOrderItem {
   const digital = isDigitalProduct(listing);
-  const status = mapStatus(order.orderStatus, order.fulfillmentStatus, order.payoutStatus, digital);
+  const status = mapPayment(order.paymentStatus) === 'pending' ? 'processing' : mapStatus(order.orderStatus, order.fulfillmentStatus, order.payoutStatus, digital);
   const payment = mapPayment(order.paymentStatus);
   const imageUrl = resolveImage(listing?.imageUrl, digital);
 
   return {
+    currencyCode: order.currencyCode,
     category: listing?.categoryCode ?? 'Marketplace',
     dateIso: order.createdAt,
     dateLabel: formatDateLabel(order.createdAt),
@@ -148,7 +150,7 @@ function isDigitalProduct(listing: MarketplaceListingSummary | null) {
   }
   const productType = listing.productType.toUpperCase();
   const deliveryType = listing.deliveryType.toUpperCase();
-  return productType.includes('DIGITAL') || deliveryType.includes('DIGITAL');
+  return /DIGITAL|GIFT_CARD|GAME|SOFTWARE|COURSE|SUBSCRIPTION/.test(productType) || /DIGITAL|CODE|DOWNLOAD|LICENSE|ACCESS/.test(deliveryType);
 }
 
 function mapStatus(orderStatus: string, fulfillmentStatus: string, payoutStatus: string, digital: boolean) {

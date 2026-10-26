@@ -59,10 +59,12 @@ export function CodeRevealScreen({ accessId, onNavigate }: SecureAccessProps) {
     }
     setError(false);
     setLoading(true);
+    try {
     const access = await getLibraryItemDetails(accessId);
     setItem(access);
     setError(!access);
-    setLoading(false);
+    } catch { setError(true); }
+    finally { setLoading(false); }
   }, [accessId]);
 
   useEffect(() => {
@@ -251,12 +253,14 @@ export function SecureDownloadScreen({ accessId, onNavigate }: SecureAccessProps
     }
     setError(false);
     setLoading(true);
+    try {
     const [access, downloadFiles] = await Promise.all([getLibraryItemDetails(accessId), getDownloadFiles(accessId)]);
     setItem(access);
     setFiles(downloadFiles.files);
     appState$.secureAccess.downloadFileId.set(downloadFiles.files[0]?.fileId ?? '');
     setError(!access);
-    setLoading(false);
+    } catch { setError(true); }
+    finally { setLoading(false); }
   }, [accessId]);
 
   useEffect(() => {

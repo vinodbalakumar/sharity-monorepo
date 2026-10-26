@@ -45,6 +45,7 @@ type UnifiedReview = {
 
 type UnifiedProduct = {
   availability: string;
+  purchasable: boolean;
   demoSeed?: boolean;
   imageUrl?: string | null;
   brand?: string;
@@ -177,6 +178,9 @@ export function ProductDetailsScreen({ mode, onNavigate, productId, onOpenProduc
       }
 
       if (!state.product) return;
+      if ((action === 'purchase' || action === 'cart') && !state.product.purchasable) {
+        setActionMessage('This listing is currently unavailable. Please choose another product.'); return;
+      }
       try {
         if (action === 'purchase') {
           selectPurchase(state.product.id);
@@ -225,6 +229,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId, onOpenProduc
 
       {!state.loading && !state.error && state.product ? (
         <>
+            <View style={{ marginBottom: 18, alignItems: 'flex-start' }}><AppButton variant="ghost" onPress={() => onNavigate('marketplaces')}>Back to marketplace</AppButton></View>
             <View style={[styles.topLayout, !isDesktop && styles.topLayoutMobile]}>
               <ProductImageGallery isDesktop={isDesktop} product={state.product} />
               <ProductSummaryCard
@@ -247,7 +252,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId, onOpenProduc
 
             <ReviewsSection averageRating={averageRating} product={state.product} />
             <RelatedProductsSection products={state.related} onOpenProduct={onOpenProduct} />
-          {!isDesktop ? <ProductActionBar canAddToCart={canAddToCart} onAction={handleAction} /> : null}
+          {!isDesktop ? <ProductActionBar purchasable={state.product.purchasable} canAddToCart={canAddToCart} onAction={handleAction} /> : null}
         </>
       ) : null}
     </InteriorShell>
@@ -307,11 +312,11 @@ function ProductSummaryCard({
         {averageRating ? `${averageRating} rating` : 'No rating yet'} - {product.reviews.length} reviews
       </Text>
       <View style={styles.actionGrid}>
-        <AppButton onPress={() => onAction('purchase')} variant="primary">
+        <AppButton disabled={!product.purchasable} onPress={() => onAction('purchase')} variant="primary">
           Buy Now
         </AppButton>
         {canAddToCart ? (
-          <AppButton onPress={() => onAction('cart')} variant="outline">
+          <AppButton disabled={!product.purchasable} onPress={() => onAction('cart')} variant="outline">
             Add to Cart
           </AppButton>
         ) : null}
@@ -486,14 +491,14 @@ function RelatedProductsSection({ products, onOpenProduct }: { products: Unified
   );
 }
 
-function ProductActionBar({ canAddToCart, onAction }: { canAddToCart: boolean; onAction: (action: ProductAction) => void }) {
+function ProductActionBar({ canAddToCart, onAction, purchasable }: { purchasable: boolean; canAddToCart: boolean; onAction: (action: ProductAction) => void }) {
   return (
     <View style={styles.stickyBar}>
-      <AppButton onPress={() => onAction('purchase')} variant="primary" size="small">
+      <AppButton disabled={!purchasable} onPress={() => onAction('purchase')} variant="primary" size="small">
         Buy Now
       </AppButton>
       {canAddToCart ? (
-        <AppButton onPress={() => onAction('cart')} variant="outline" size="small">
+        <AppButton disabled={!purchasable} onPress={() => onAction('cart')} variant="outline" size="small">
           Add to Cart
         </AppButton>
       ) : null}
@@ -524,7 +529,8 @@ function InfoCard({ children, icon, title }: { children: ReactNode; icon: Compon
 
 function mapDigitalListing(listing: MarketplaceListing): UnifiedProduct {
   return {
-    availability: statusLabel(listing.listingStatus),
+    availability: listing.stockQuantity === 0 ? 'Out of stock' : statusLabel(listing.listingStatus),
+    purchasable: ['ACTIVE', 'PUBLISHED'].includes(listing.listingStatus) && listing.stockQuantity !== 0,
     demoSeed: listing.demoSeed,
     category: listing.categoryCode,
     country: listing.providerCountryCode || 'Global',
@@ -539,7 +545,7 @@ function mapDigitalListing(listing: MarketplaceListing): UnifiedProduct {
     originalPrice: getListingDisplayOriginalPriceAmount(listing),
     price: getListingDisplayPriceAmount(listing),
     productType: listing.productType,
-    reviews: listing.publicReviews.map(mapReview),
+    reviews: (listing.publicReviews ?? []).map(mapReview),
     sellerName: listing.sellerDisplayName || 'Seller alias',
     sellerRating: null,
     title: listing.title,
@@ -560,7 +566,7 @@ function mapReview(review: MarketplaceReview): UnifiedReview {
 }
 
 function isDigitalListing(listing: MarketplaceListing) {
-  return listing.productType === 'DIGITAL' || listing.deliveryType === 'INSTANT' || listing.deliveryType === 'MANUAL';
+  return /DIGITAL|GIFT_CARD|GAME|SOFTWARE|COURSE|SUBSCRIPTION/.test(listing.productType) || /INSTANT|MANUAL|CODE|DOWNLOAD|LICENSE|ACCESS/.test(listing.deliveryType);
 }
 
 function deliveryLabelFor(listing: MarketplaceListing) {

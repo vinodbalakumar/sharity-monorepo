@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ProductArtwork } from '../../components/marketplace/ProductArtwork';
+import { ListingCard } from '../../components/marketplace/ListingCard';
+import { compareListingPrice, listingLabel } from '../../utils/listingPresentation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { InteriorShell } from '../../components/appShell';
@@ -30,20 +31,17 @@ function Catalog({ onNavigate, onOpenListing, title, vertical }: Props & { title
   const categories = [...new Set(listings.map(item => item.categoryCode).filter(Boolean))];
   const filtered = useMemo(() => listings.filter(item => (!category || item.categoryCode === category)
     && `${item.title} ${item.description ?? ''} ${item.sellerDisplayName ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
-    .sort((a, b) => sort === 1 ? a.priceAmount - b.priceAmount : sort === 2 ? b.priceAmount - a.priceAmount : Date.parse(b.createdAt) - Date.parse(a.createdAt)), [category, listings, query, sort]);
+    .sort((a, b) => sort === 1 ? compareListingPrice(a, b) : sort === 2 ? compareListingPrice(b, a) : Date.parse(b.createdAt) - Date.parse(a.createdAt)), [category, listings, query, sort]);
   return <InteriorShell activeLabel="Marketplace" onNavigate={onNavigate} title={title}><View style={styles.stack} testID="commerce-catalog">
     <View style={styles.intro}><Text style={styles.kicker}>THE SHARITY MARKETPLACE</Text><Text accessibilityRole="header" style={styles.title}>{title}</Text><Text style={styles.body}>Discover current listings. Review the seller, delivery method and policies before you buy.</Text></View>
     <View style={styles.toolbar}>
       <View style={styles.search}><Ionicons name="search-outline" color={colors.textSecondary} size={21} /><TextInput accessibilityLabel={`Search ${title}`} placeholder="Search current listings" value={query} onChangeText={setQuery} style={styles.input} /></View>
       <AppButton variant="outline" onPress={() => setSort(value => (value + 1) % 3)}>{['Newest first', 'Price: low to high', 'Price: high to low'][sort]}</AppButton>
     </View>
-    <View style={styles.categories}>{['', ...categories].map(code => <Pressable accessibilityRole="button" accessibilityState={{ selected: category === code }} key={code} onPress={() => setCategory(code)} style={[styles.chip, category === code && styles.selected]}><Text style={[styles.chipText, category === code && { color: colors.white }]}>{code ? code.replace(/_/g, ' ') : 'All categories'}</Text></Pressable>)}</View>
+    <View style={styles.categories}>{['', ...categories].map(code => <Pressable accessibilityRole="button" accessibilityState={{ selected: category === code }} key={code} onPress={() => setCategory(code)} style={[styles.chip, category === code && styles.selected]}><Text style={[styles.chipText, category === code && { color: colors.white }]}>{code ? listingLabel(code) : 'All categories'}</Text></Pressable>)}</View>
     {busy ? <Text style={styles.body}>Loading current listings…</Text> : error ? <View style={styles.empty}><Text accessibilityRole="alert" style={styles.body}>{error}</Text><AppButton onPress={load}>Retry</AppButton></View> : <>
       <Text style={styles.body}>{filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}</Text>
-      <View style={styles.grid}>{filtered.map(item => <Pressable testID="catalog-product" accessibilityRole="button" accessibilityLabel={`View ${item.title}`} onPress={() => onOpenListing(item.publicId)} key={item.publicId} style={[styles.card, { width: isMobile ? '47.5%' : isDesktop ? '23.5%' : '31.5%' }]}>
-        <ProductArtwork item={item} style={styles.image} />
-        <View style={styles.copy}><Text style={styles.productTitle} numberOfLines={2}>{item.title}</Text><Text style={styles.seller} numberOfLines={1}>{item.sellerDisplayName || 'Marketplace seller'}</Text><Text style={styles.price}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: item.displayCurrencyCode || item.currencyCode }).format(item.displayPriceAmount ?? item.priceAmount)}</Text><Text style={styles.seller}>{item.deliveryType.replace(/_/g, ' ')}</Text></View>
-      </Pressable>)}</View>
+      <View style={styles.grid}>{filtered.map(item => <ListingCard testID="catalog-product" key={item.publicId} item={item} onPress={() => onOpenListing(item.publicId)} style={{ width: isMobile ? '47%' : isDesktop ? '23.5%' : '31.5%' }} />)}</View>
       {filtered.length === 0 ? <View style={styles.empty}><Text style={styles.heading}>{query || category ? 'No matching listings' : 'No listings available yet'}</Text><Text style={styles.body}>Try another category or return to the marketplace later.</Text><AppButton variant="outline" onPress={() => { setQuery(''); setCategory(''); }}>Clear filters</AppButton></View> : null}
     </>}
   </View></InteriorShell>;

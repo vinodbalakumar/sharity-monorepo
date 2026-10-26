@@ -48,7 +48,7 @@ export type DisputeStatusSummary = {
 
 export type DisputeEstimatedRefund = {
   amount: number;
-  currency: 'USD';
+  currency: string;
   isEstimated: boolean;
   calculationSummary: string;
   marketplaceFeeRefundStatus: string;

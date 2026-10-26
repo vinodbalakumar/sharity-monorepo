@@ -125,7 +125,7 @@ export function CartScreen({ onNavigate }: Props) {
             <XStack ai="center" gap="$2" jc="space-between">
               <XStack ai="center" gap="$2" flex={1}>
                 <Ionicons name="checkmark-circle" size={20} color="green" />
-                <Text color="$green10" fontWeight="900">You're saving {money(savings)} with coupons!</Text>
+                <Text color="$green10" fontWeight="700">You're saving {money(savings)} with coupons!</Text>
               </XStack>
             </XStack>
           </PremiumCard>
@@ -146,7 +146,7 @@ export function CartScreen({ onNavigate }: Props) {
               <PaymentNotice />
               {preview ? <CheckoutPreview preview={preview} /> : null}
               <PricingSummary cart={cart} />
-              {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
+              {message ? <PremiumCard p="$4"><Paragraph color="$blue10">{message}</Paragraph></PremiumCard> : null}
               <AppButton
                 disabled={!isReadyForCheckout}
                 icon={<Ionicons name="lock-closed-outline" size={18} />}
@@ -171,11 +171,11 @@ function SellerGroupCard({ group, index }: { group: CartSellerGroup; index: numb
           <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
             <Image source={group.storeLogoUrl} placeholder={blurhash} style={{ width: 58, height: 58, borderRadius: 14 }} />
             <YStack flex={1} gap="$1">
-              <Text fontSize="$6" fontWeight="900">{group.storeName}</Text>
+              <Text fontSize="$6" fontWeight="700">{group.storeName}</Text>
               <Paragraph color="$gray10">Seller alias: {group.sellerAlias} • {group.marketplaceCode}</Paragraph>
               <XStack flexWrap="wrap" gap="$2"><Badge label={group.sellerVerificationBadge} tone="success" /><Badge label={group.sellerAcceptanceRequired ? 'Seller acceptance required' : 'Instant digital delivery'} tone={group.sellerAcceptanceRequired ? 'warning' : 'info'} /><Badge label={group.digitalInventoryStatus} tone="success" /></XStack>
             </YStack>
-            <YStack ai="flex-end"><Text fontSize="$6" fontWeight="900">{money(group.groupSubtotal)}</Text><Text color="$gray10">Group subtotal</Text></YStack>
+            <YStack ai="flex-end"><Text fontSize="$6" fontWeight="700">{money(group.groupSubtotal)}</Text><Text color="$gray10">Group subtotal</Text></YStack>
           </XStack>
           <XStack flexWrap="wrap" gap="$2">
             <Badge label={`Seller coupon -${money(group.sellerCouponDiscount)}`} tone="success" />
@@ -196,13 +196,13 @@ const CartItemRow = memo(function CartItemRow({ item, index }: { item: CartItem;
       <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3">
         <Image source={item.productImageUrl} placeholder={blurhash} style={{ width: 72, height: 72, borderRadius: 12 }} />
         <YStack flex={1} gap="$1" minWidth={0}>
-          <Text fontWeight="900">{item.productTitle}</Text>
+          <Text fontWeight="700">{item.productTitle}</Text>
           <Paragraph color="$gray10">{item.productType} • {item.deliveryType.replaceAll('_', ' ')} • Qty {item.quantity}</Paragraph>
           <Paragraph color="$gray10">{item.digitalDeliveryNote} • {item.regionRestriction}</Paragraph>
           <Paragraph color="$gray10">{item.refundRuleSummary}</Paragraph>
         </YStack>
         <YStack ai="flex-end" gap="$2">
-          <Text fontWeight="900">{money(item.price * item.quantity)}</Text>
+          <Text fontWeight="700">{money(item.price * item.quantity)}</Text>
           <Text color="$gray10" textDecorationLine="line-through">{money(item.originalPrice * item.quantity)}</Text>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger><AppButton size="small" icon={<Ionicons name="ellipsis-horizontal" size={16} />}>Item</AppButton></DropdownMenu.Trigger>
@@ -219,11 +219,11 @@ const CartItemRow = memo(function CartItemRow({ item, index }: { item: CartItem;
 });
 
 function CouponPanel({ couponCode, onApply }: { couponCode: string; onApply: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Coupons</Text><Input bg="$background" borderColor="$borderColor" onChangeText={(value) => appState$.multiSellerCart.couponCode.set(value)} placeholder="SELLER5 or SHARITY10" value={couponCode} /><AppButton variant="primary" onPress={onApply}>Apply Coupon</AppButton><Paragraph color="$gray10">Seller coupons reduce eligible seller groups. Platform coupons reduce buyer total or platform-funded portions.</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Coupons</Text><Input bg="$background" borderColor="$borderColor" onChangeText={(value) => appState$.multiSellerCart.couponCode.set(value)} placeholder="SELLER5 or SHARITY10" value={couponCode} /><AppButton variant="primary" onPress={onApply}>Apply Coupon</AppButton><Paragraph color="$gray10">Seller coupons reduce eligible seller groups. Platform coupons reduce buyer total or platform-funded portions.</Paragraph></YStack></PremiumCard>;
 }
 
 function DigitalTermsPanel({ accepted, summary, onAccept }: { accepted: boolean; summary: string; onAccept: () => void }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Digital Terms</Text><Paragraph color="$gray10">{summary}</Paragraph><AppButton icon={<Ionicons name={accepted ? 'checkmark-circle' : 'square-outline'} size={18} />} variant={accepted ? 'success' : 'danger'} onPress={onAccept}>{accepted ? 'Digital Terms Accepted' : 'Accept Digital Terms'}</AppButton></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Digital Terms</Text><Paragraph color="$gray10">{summary}</Paragraph><AppButton icon={<Ionicons name={accepted ? 'checkmark-circle' : 'square-outline'} size={18} />} variant={accepted ? 'success' : 'danger'} onPress={onAccept}>{accepted ? 'Digital Terms Accepted' : 'Accept Digital Terms'}</AppButton></YStack></PremiumCard>;
 }
 
 function PaymentNotice() {
@@ -231,12 +231,12 @@ function PaymentNotice() {
 }
 
 function CheckoutPreview({ preview }: { preview: CheckoutPreviewResponse }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Order Split Preview</Text><Paragraph color="$gray10">Parent order {preview.parentOrderPreview.parentOrderReferencePreview} creates {preview.parentOrderPreview.sellerOrderCount} seller orders.</Paragraph>{preview.sellerOrderPreviews.map((order) => <XStack key={order.sellerOrderReferencePreview} jc="space-between" gap="$3"><Text>{order.sellerOrderReferencePreview}</Text><Text color="$gray10">{order.storeName}</Text></XStack>)}<Badge label={preview.paymentAuthorizationModel} tone="info" /></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Order Split Preview</Text><Paragraph color="$gray10">Parent order {preview.parentOrderPreview.parentOrderReferencePreview} creates {preview.parentOrderPreview.sellerOrderCount} seller orders.</Paragraph>{preview.sellerOrderPreviews.map((order) => <XStack key={order.sellerOrderReferencePreview} jc="space-between" gap="$3"><Text>{order.sellerOrderReferencePreview}</Text><Text color="$gray10">{order.storeName}</Text></XStack>)}<Badge label={preview.paymentAuthorizationModel} tone="info" /></YStack></PremiumCard>;
 }
 
 function PricingSummary({ cart }: { cart: CartResponse }) {
   const p = cart.pricingSummary;
-  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Pricing Summary</Text><PriceRow label="Items total" value={p.itemsTotal} /><PriceRow label="Seller discounts" value={-p.sellerCouponDiscountTotal} /><PriceRow label="Platform coupon" value={-p.platformCouponDiscountTotal} /><PriceRow label="Buyer service fee" value={p.buyerServiceFee} /><PriceRow label="Total authorization" value={p.totalAuthorizationAmount} strong /><Paragraph color="$gray10">Buyer-safe pricing only. Seller commission and fee-waiver rules are not shown.</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Pricing Summary</Text><PriceRow label="Items total" value={p.itemsTotal} /><PriceRow label="Seller discounts" value={-p.sellerCouponDiscountTotal} /><PriceRow label="Platform coupon" value={-p.platformCouponDiscountTotal} /><PriceRow label="Buyer service fee" value={p.buyerServiceFee} /><PriceRow label="Total authorization" value={p.totalAuthorizationAmount} strong /><Paragraph color="$gray10">Buyer-safe pricing only. Seller commission and fee-waiver rules are not shown.</Paragraph></YStack></PremiumCard>;
 }
 
 function ValidationBanner({ issues }: { issues: CartValidationIssue[] }) {
@@ -244,7 +244,7 @@ function ValidationBanner({ issues }: { issues: CartValidationIssue[] }) {
 }
 
 function SavedForLater({ items }: { items: CartItem[] }) {
-  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="900">Saved for Later</Text>{items.map((item) => <XStack key={item.cartItemId} ai="center" gap="$3"><Image source={item.productImageUrl} placeholder={blurhash} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="900">{item.productTitle}</Text><Text color="$gray10">{money(item.price)}</Text></YStack><AppButton variant="secondary">Move to Cart</AppButton></XStack>)}</YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$3"><Text fontSize="$6" fontWeight="700">Saved for Later</Text>{items.map((item) => <XStack key={item.cartItemId} ai="center" gap="$3"><Image source={item.productImageUrl} placeholder={blurhash} style={{ width: 48, height: 48, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{item.productTitle}</Text><Text color="$gray10">{money(item.price)}</Text></YStack><AppButton variant="secondary">Move to Cart</AppButton></XStack>)}</YStack></PremiumCard>;
 }
 
 function PriceRow({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
@@ -252,13 +252,13 @@ function PriceRow({ label, value, strong }: { label: string; value: number; stro
 }
 
 function CenteredState({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
-  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><Text fontSize="$6" fontWeight="900" ta="center">{title}</Text>{action ? <AppButton variant="primary" onPress={onAction}>{action}</AppButton> : null}</YStack></PremiumCard>;
+  return <PremiumCard p="$6"><YStack ai="center" gap="$3"><Text fontSize="$6" fontWeight="700" ta="center">{title}</Text>{action ? <AppButton variant="primary" onPress={onAction}>{action}</AppButton> : null}</YStack></PremiumCard>;
 }
 
 function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) {
   const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3';
   const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10';
-  return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>;
+  return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="700" px="$2" py="$1">{label}</Text>;
 }
 
 function PremiumCard(props: ComponentProps<typeof Card>) {

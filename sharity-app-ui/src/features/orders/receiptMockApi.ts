@@ -9,7 +9,7 @@ const mixedElectronicsImage = 'https://images.unsplash.com/photo-1517336714731-4
 export async function getReceiptByOrder(orderId: string | null): Promise<ReceiptResponse | null> {
   await wait();
   if (!orderId) {
-    return buildMixedReceipt();
+    return null;
   }
   const details = await getBuyerOrderDetails(orderId);
   if (!details || !details.receiptSummary.receiptAvailable) {
@@ -19,20 +19,20 @@ export async function getReceiptByOrder(orderId: string | null): Promise<Receipt
   const isDigital = details.order.marketplaceCode === 'DIGITAL';
   const isElectronics = details.order.marketplaceCode === 'ELECTRONICS';
   const subtotal = details.items.reduce((total, item) => total + item.price * item.quantity, 0);
-  const shipping = isElectronics ? 8.99 : 0;
-  const tax = roundMoney(subtotal * 0.078);
-  const couponDiscount = isDigital ? 5 : 0;
-  const marketplaceFee = 1.49;
-  const refundAmount = details.order.paymentStatus === 'REFUNDED' ? details.order.totalAmount : details.order.refundDisputeStatus === 'REFUND_REQUESTED' ? 10 : 0;
-  const totalPaid = roundMoney(subtotal + shipping + tax + marketplaceFee - couponDiscount);
+  const shipping = 0;
+  const tax = 0;
+  const couponDiscount = 0;
+  const marketplaceFee = 0;
+  const refundAmount = details.order.paymentStatus === 'REFUNDED' ? details.order.totalAmount : 0;
+  const totalPaid = details.order.totalAmount;
   const netPaidAfterRefund = roundMoney(totalPaid - refundAmount);
 
   return {
     addressSummary: {
-      billingDisplayText: 'Billing: Phoenix, AZ, United States',
-      billingSummaryAvailable: true,
-      shippingDisplayText: isElectronics ? 'Shipping to: Phoenix, AZ 85032' : undefined,
-      shippingSummaryAvailable: isElectronics
+      billingDisplayText: 'Billing address not provided',
+      billingSummaryAvailable: false,
+      shippingDisplayText: undefined,
+      shippingSummaryAvailable: false
     },
     availableActions: {
       canBackToOrder: true,
@@ -55,7 +55,7 @@ export async function getReceiptByOrder(orderId: string | null): Promise<Receipt
       : undefined,
     feeBreakdown: {
       couponDiscount,
-      currency: 'USD',
+      currency: details.order.currency,
       marketplaceFee,
       netPaidAfterRefund,
       refundAmount,
@@ -64,7 +64,7 @@ export async function getReceiptByOrder(orderId: string | null): Promise<Receipt
       tax,
       totalPaid
     },
-    legalNote: 'This receipt confirms your Sharity marketplace purchase. Seller-specific tax obligations may vary.',
+    legalNote: 'Order payment summary. A detailed tax invoice and payment-provider reference are not supplied by this API. Zero fee fields indicate that no separate breakdown is available.',
     marketplaceGroups: [
       {
         groupStatus: details.order.orderStatus,
@@ -93,11 +93,11 @@ export async function getReceiptByOrder(orderId: string | null): Promise<Receipt
     ],
     paymentSummary: {
       couponDiscount,
-      currency: 'USD',
+      currency: details.order.currency,
       marketplaceFee,
       netPaidAfterRefund,
-      paymentMethod: 'PayPal',
-      paymentProvider: 'PayPal',
+      paymentMethod: 'Not provided',
+      paymentProvider: 'Not provided',
       paymentStatus: details.order.paymentStatus,
       refundAmount,
       safePaymentReference: details.receiptSummary.safePaymentReference,
@@ -109,7 +109,7 @@ export async function getReceiptByOrder(orderId: string | null): Promise<Receipt
     receipt: {
       checkoutId: details.order.checkoutId,
       checkoutReference: `CHK-${details.order.checkoutId.slice(-4).toUpperCase()}`,
-      currency: 'USD',
+      currency: details.order.currency,
       orderDate: details.order.orderDate,
       orderId: details.order.orderId,
       orderReference: details.order.orderReference,
@@ -125,7 +125,7 @@ export async function getReceiptByOrder(orderId: string | null): Promise<Receipt
 export async function getReceiptByReceiptId(receiptId: string | null): Promise<ReceiptResponse | null> {
   await wait();
   if (!receiptId) {
-    return buildMixedReceipt();
+    return null;
   }
   return getReceiptByOrder(receiptId.replace('receipt-', ''));
 }
@@ -211,8 +211,8 @@ function buildMixedReceipt(): ReceiptResponse {
 
   return {
     addressSummary: {
-      billingDisplayText: 'Billing: Phoenix, AZ, United States',
-      billingSummaryAvailable: true,
+      billingDisplayText: 'Billing address not provided',
+      billingSummaryAvailable: false,
       shippingDisplayText: 'Shipping to: Phoenix, AZ 85032',
       shippingSummaryAvailable: true
     },

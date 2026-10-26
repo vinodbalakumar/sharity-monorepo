@@ -32,7 +32,7 @@ import { OrderDetailsScreen } from './features/orders/OrderDetailsScreen';
 import { OrderReceiptScreen } from './features/orders/OrderReceiptScreen';
 import { OrdersScreen } from './features/orders/OrdersScreen';
 import { RefundReturnStatusScreen } from './features/orders/RefundReturnStatusScreen';
-import { SellerOrderRefundScreen } from './features/refunds/SellerOrderRefundScreen';
+import { OrderIssueScreen } from './features/orders/OrderIssueScreen';
 import { RewardsScreen } from './features/rewards/RewardsScreen';
 import { TrackingScreen } from './features/orders/TrackingScreen';
 import { PaymentFailedScreen } from './features/payment/PaymentFailedScreen';
@@ -171,6 +171,16 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
       return { route: 'checkout' };
     case '/app/library':
       return { route: 'library' };
+    case '/app/library/reveal':
+      return { route: 'codeReveal', secureAccessId: query.get('accessId') };
+    case '/app/library/download':
+      return { route: 'secureDownload', secureAccessId: query.get('accessId') };
+    case '/app/payment/status':
+      return { route: 'paymentSuccess' };
+    case '/app/payment/failed':
+      return { route: 'paymentFailed' };
+    case '/app/payment/cancelled':
+      return { route: 'paymentCancelled' };
     case '/app/orders':
       return { route: 'orders', orderId: query.get('orderId') };
     case '/app/orders/details':
@@ -265,6 +275,16 @@ function snapshotToPath(snapshot: RouteSnapshot): string {
       return '/app/checkout';
     case 'library':
       return '/app/library';
+    case 'codeReveal':
+      return `/app/library/reveal${snapshot.secureAccessId ? `?accessId=${encodeURIComponent(snapshot.secureAccessId)}` : ''}`;
+    case 'secureDownload':
+      return `/app/library/download${snapshot.secureAccessId ? `?accessId=${encodeURIComponent(snapshot.secureAccessId)}` : ''}`;
+    case 'paymentSuccess':
+      return '/app/payment/status';
+    case 'paymentFailed':
+      return '/app/payment/failed';
+    case 'paymentCancelled':
+      return '/app/payment/cancelled';
     case 'orders':
       return `/app/orders${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
     case 'orderDetails':
@@ -879,17 +899,7 @@ export default function App() {
               orderId={orderId}
             />
           ) : null}
-          {route === 'refundRequest' ? (
-            <SellerOrderRefundScreen
-              onNavigate={setRoute}
-              onOpenRefundStatus={(nextRefundRequestId, nextOrderId) => {
-                setRefundRequestId(nextRefundRequestId);
-                if (nextOrderId) setOrderId(nextOrderId);
-                setRoute('refundStatus');
-              }}
-              orderId={orderId}
-            />
-          ) : null}
+          {route === 'refundRequest' ? <OrderIssueScreen onNavigate={setRoute} orderId={orderId} /> : null}
           {route === 'refundStatus' ? (
             <RefundReturnStatusScreen
               onNavigate={setRoute}

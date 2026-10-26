@@ -65,6 +65,7 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
     }
     setLoading(true);
     setError(false);
+    try {
     const [nextEligibility, nextContext, existing] = await Promise.all([
       getDisputeEligibility(orderId),
       getDisputeContext(orderId),
@@ -76,7 +77,8 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
       setMessage(`A dispute already exists: ${existing.disputeId}`);
     }
     setError(!nextEligibility || !nextContext);
-    setLoading(false);
+    } catch { setError(true); }
+    finally { setLoading(false); }
   }, [orderId]);
 
   useEffect(() => {
@@ -172,9 +174,9 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
             <YStack gap="$4" width={420} $sm={{ width: '100%' }}>
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Evidence</Text>
+                  <Text fontSize="$6" fontWeight="700">Evidence</Text>
                   <Paragraph color="$gray10">Evidence is required. Upload screenshots, package photos, error messages, or payment/refund proof.</Paragraph>
-                  <Button theme="purple" onPress={addEvidence}>Upload Evidence</Button>
+                  <Button theme="blue" onPress={addEvidence}>Upload Evidence</Button>
                   {evidence.length > 0 ? (
                     <EvidenceFlashList
                       data={evidence}
@@ -188,7 +190,7 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
 
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Describe the dispute</Text>
+                  <Text fontSize="$6" fontWeight="700">Describe the dispute</Text>
                   <TextArea
                     minHeight={132}
                     onChangeText={setDetails}
@@ -200,7 +202,7 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
 
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text color="$blue10" fontWeight="900">Possible outcomes</Text>
+                  <Text color="$blue10" fontWeight="700">Possible outcomes</Text>
                   <XStack flexWrap="wrap" gap="$2">
                     {outcomes.map((outcome) => <StatusPill key={outcome} label={outcome} tone="info" />)}
                   </XStack>
@@ -215,7 +217,7 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
                       <Ionicons color={colors.warning} name="alert-outline" size={22} />
                     </YStack>
                     <YStack flex={1} gap="$1">
-                      <Text fontWeight="900">Dispute warning</Text>
+                      <Text fontWeight="700">Dispute warning</Text>
                       <Paragraph>Opening false or abusive disputes may affect your account.</Paragraph>
                       <Paragraph color="$gray10">By sending this to Sharity Review, you confirm the information and evidence are accurate to the best of your knowledge.</Paragraph>
                     </YStack>
@@ -223,7 +225,7 @@ export function OpenDisputeScreen({ onNavigate, onOpenDisputeStatus, orderId, re
                   <Button theme={warningAccepted ? 'green' : undefined} onPress={() => appState$.disputes.warningAccepted.set(!warningAccepted)}>
                     {warningAccepted ? 'Warning Acknowledged' : 'Acknowledge Warning'}
                   </Button>
-                  <Button disabled={submitting} theme="purple" onPress={submitDispute}>
+                  <Button disabled={submitting} theme="blue" onPress={submitDispute}>
                     {submitting ? 'Sending...' : 'Send to Sharity Review'}
                   </Button>
                 </YStack>
@@ -243,11 +245,11 @@ function ContextCard({ context }: { context: DisputeContextResponse }) {
       <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
         <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: order.productImageUrl }} style={{ borderRadius: 14, height: 88, width: 88 }} />
         <YStack flex={1} gap="$1">
-          <Text fontSize="$6" fontWeight="900">{order.productTitle}</Text>
+          <Text fontSize="$6" fontWeight="700">{order.productTitle}</Text>
           <Text color="$gray10">{order.marketplaceName} - Seller: {order.sellerDisplayName}</Text>
           <Text color="$gray10">Order {order.orderReference} - {labelize(order.paymentStatus)} - {labelize(order.orderStatus)}</Text>
         </YStack>
-        <Text fontSize="$6" fontWeight="900">{formatMoney(order.totalAmount)}</Text>
+        <Text fontSize="$6" fontWeight="700">{formatMoney(order.totalAmount)}</Text>
       </XStack>
     </PremiumCard>
   );
@@ -271,10 +273,10 @@ function EligibilityCard({ eligibility }: { eligibility: DisputeEligibilityRespo
     <Animated.View style={style}>
       <PremiumCard p="$4">
         <YStack gap="$3">
-          <Text color="$blue10" fontWeight="900">Dispute eligibility</Text>
+          <Text color="$blue10" fontWeight="700">Dispute eligibility</Text>
           <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$3">
             <YStack flex={1} gap="$1">
-              <Text fontSize="$6" fontWeight="900">{labelize(eligibility.eligibilityStatus)}</Text>
+              <Text fontSize="$6" fontWeight="700">{labelize(eligibility.eligibilityStatus)}</Text>
               <Paragraph>{eligibility.reason}</Paragraph>
             </YStack>
             <StatusPill label={eligibility.eligible ? 'Eligible' : 'Not eligible'} tone={eligibility.eligible ? 'success' : 'error'} />
@@ -297,7 +299,7 @@ function HistoryCard({ context }: { context: DisputeContextResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Buyer-safe history summary</Text>
+        <Text color="$blue10" fontWeight="700">Buyer-safe history summary</Text>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={context.refundSummary ?? 'Refund status unavailable'} tone="info" />
           <StatusPill label={context.paymentSummary} tone="info" />
@@ -333,7 +335,7 @@ const ReasonCard = memo(function ReasonCard({ index, reason, selected }: { index
             {selected ? 'Selected' : 'Select'}
           </Button>
           <YStack flex={1} gap="$2">
-            <Text fontWeight="900">{reason.label}</Text>
+            <Text fontWeight="700">{reason.label}</Text>
             <Paragraph color="$gray10">{reason.guidance}</Paragraph>
             <XStack flexWrap="wrap" gap="$2">
               {reason.requiresRefundRequestFirst ? <StatusPill label="Refund first" tone="warning" /> : null}
@@ -373,7 +375,7 @@ const EvidenceCard = memo(function EvidenceCard({ evidence, index }: { evidence:
             </YStack>
           )}
           <YStack flex={1}>
-            <Text fontWeight="900">{evidence.fileName}</Text>
+            <Text fontWeight="700">{evidence.fileName}</Text>
             <Text color="$gray10">{evidence.fileType} - {Math.round(evidence.fileSize / 1000)} KB</Text>
           </YStack>
         </XStack>
@@ -383,7 +385,7 @@ const EvidenceCard = memo(function EvidenceCard({ evidence, index }: { evidence:
 });
 
 function SectionTitle({ title }: { title: string }) {
-  return <Text fontSize="$6" fontWeight="900">{title}</Text>;
+  return <Text fontSize="$6" fontWeight="700">{title}</Text>;
 }
 
 function CenteredState({ actionLabel, message, onAction }: { actionLabel?: string; message: string; onAction?: () => void }) {
@@ -392,8 +394,8 @@ function CenteredState({ actionLabel, message, onAction }: { actionLabel?: strin
       <YStack ai="center" f={1} jc="center" p="$5">
         <PremiumCard maxWidth={560} p="$6" width="100%">
           <YStack ai="center" gap="$4">
-            <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
-            {actionLabel && onAction ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}
+            <Text fontSize="$6" fontWeight="700" ta="center">{message}</Text>
+            {actionLabel && onAction ? <Button theme="blue" onPress={onAction}>{actionLabel}</Button> : null}
           </YStack>
         </PremiumCard>
       </YStack>

@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   searchWrap: { flex: 1, minWidth: 150 },
   mobileSearch: { width: "100%" },
   search: { backgroundColor: colors.primaryLight, borderRadius: 8, height: 46 },
-  searchInput: { fontFamily: systemFontFamily, fontSize: 14, minHeight: 46 },
+  searchInput: { fontFamily: systemFontFamily, fontSize: 16, minHeight: 46 },
   actions: {
     flexDirection: "row",
     alignItems: "center",

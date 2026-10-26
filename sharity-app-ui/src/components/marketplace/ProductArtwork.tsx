@@ -37,12 +37,14 @@ export function ProductArtwork({
   );
   return (
     <View style={[styles.frame, style]}>
-      {item.imageUrl && !item.demoSeed && !failed ? (
+      {item.imageUrl && !failed ? (
         <Image
           accessibilityLabel={item.title}
           source={{ uri: item.imageUrl }}
           contentFit="contain"
-          style={StyleSheet.absoluteFill}
+          testID="listing-image"
+          transition={180}
+          style={styles.image}
           onError={() => setFailed(true)}
         />
       ) : (
@@ -70,8 +72,8 @@ export function ProductArtwork({
           </Text>
           <Text style={styles.caption}>
             {item.demoSeed
-              ? "Demo listing · illustration"
-              : "Product illustration"}
+              ? "Demo listing - image unavailable"
+              : "Image unavailable"}
           </Text>
         </View>
       )}
@@ -82,10 +84,11 @@ const styles = StyleSheet.create({
   frame: {
     width: "100%",
     aspectRatio: 1.35,
-    minHeight: 160,
-    backgroundColor: colors.primaryLight,
+    minHeight: 0,
+    backgroundColor: "#f7f8fa",
     overflow: "hidden",
   },
+  image: { position: "absolute", top: 12, left: 12, right: 12, bottom: 12 },
   artwork: {
     flex: 1,
     padding: 14,

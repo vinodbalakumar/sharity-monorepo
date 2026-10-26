@@ -121,7 +121,7 @@ export function JewelryMarketplaceListingsScreen({ onNavigate, onOpenListing }: 
           />
         ) : (
           <YStack gap="$3">
-            <Text fontSize="$5" fontWeight="900">
+            <Text fontSize="$5" fontWeight="700">
               {filteredAndSorted.length} products available
             </Text>
             <ListingList
@@ -198,7 +198,7 @@ function SearchAndFilters({
             value={maxPrice}
             keyboardType="numeric"
           />
-          <Button theme="purple" onPress={handlePriceFilter}>
+          <Button theme="blue" onPress={handlePriceFilter}>
             Filter Price
           </Button>
         </XStack>
@@ -264,7 +264,7 @@ function ListingCard({ listing, index, onOpenListing }: { listing: MarketplaceLi
           <YStack flex={1} gap="$2">
             <XStack jc="space-between" ai="flex-start">
               <YStack flex={1} gap="$1">
-                <Text fontSize="$5" fontWeight="900" numberOfLines={2}>
+                <Text fontSize="$5" fontWeight="700" numberOfLines={2}>
                   {listing.title}
                 </Text>
                 <Paragraph color="$gray10" numberOfLines={1}>
@@ -281,7 +281,7 @@ function ListingCard({ listing, index, onOpenListing }: { listing: MarketplaceLi
             </Paragraph>
 
             <XStack gap="$2" alignItems="center">
-              <Text fontSize="$4" fontWeight="900">
+              <Text fontSize="$4" fontWeight="700">
                 {getListingDisplayCurrencyCode(listing)} {getListingDisplayPriceAmount(listing).toFixed(2)}
               </Text>
               {discount > 0 ? (
@@ -293,7 +293,7 @@ function ListingCard({ listing, index, onOpenListing }: { listing: MarketplaceLi
                   >
                     {getListingDisplayCurrencyCode(listing)} {getListingDisplayOriginalPriceAmount(listing)?.toFixed(2) ?? getListingDisplayPriceAmount(listing).toFixed(2)}
                   </Text>
-                  <Text color="$green10" fontSize="$3" fontWeight="900">
+                  <Text color="$green10" fontSize="$3" fontWeight="700">
                     {discount}% OFF
                   </Text>
                 </>
@@ -303,14 +303,14 @@ function ListingCard({ listing, index, onOpenListing }: { listing: MarketplaceLi
             {rating > 0 ? (
               <XStack gap="$2" alignItems="center">
                 <Ionicons name="star" size={16} color="gold" />
-                <Text fontSize="$2" fontWeight="900">
+                <Text fontSize="$2" fontWeight="700">
                   {rating.toFixed(1)} ({listing.publicReviews.length} reviews)
                 </Text>
               </XStack>
             ) : null}
 
             {!isAvailable(listing) ? (
-              <Text color="$red10" fontSize="$3" fontWeight="900">
+              <Text color="$red10" fontSize="$3" fontWeight="700">
                 Out of Stock
               </Text>
             ) : null}
@@ -325,11 +325,11 @@ function CenteredState({ title, action, onAction }: { title: string; action?: st
   return (
     <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" p="$6">
       <YStack ai="center" gap="$3">
-        <Text fontSize="$6" fontWeight="900" ta="center">
+        <Text fontSize="$6" fontWeight="700" ta="center">
           {title}
         </Text>
         {action ? (
-          <Button theme="purple" onPress={onAction}>
+          <Button theme="blue" onPress={onAction}>
             {action}
           </Button>
         ) : null}

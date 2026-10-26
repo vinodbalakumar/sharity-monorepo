@@ -43,7 +43,7 @@ export type RefundStatusSummary = {
 export type EstimatedRefundAmount = {
   amount: number;
   calculationSummary: string;
-  currency: 'USD';
+  currency: string;
   isEstimated: boolean;
   marketplaceFeeRefundStatus: string;
   shippingRefundStatus?: string;

@@ -1,3 +1,4 @@
+import { FeaturePreviewNotice } from '../../components/ui/FeaturePreviewNotice';
 import { useSelector } from '@legendapp/state/react';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -133,6 +134,7 @@ export function RewardsScreen({ onNavigate }: Props) {
 
   return (
     <InteriorShell activeLabel="Rewards" onNavigate={onNavigate} scrollable={false} subtitle="Credit, rewards, giveaways, multi-seller allocation, seller-safe impact, and admin campaign placeholders." title="Sharity Credit & Rewards">
+      <FeaturePreviewNotice />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         <YStack gap="$5" maxWidth={1220} mx="auto" p="$5" width="100%">
           <XStack $sm={{ flexDirection: 'column' }} ai="center" jc="space-between" gap="$3">
@@ -197,7 +199,7 @@ export function RewardsScreen({ onNavigate }: Props) {
                   renderItem={({ item, index }) => <AllocationRow allocation={item} index={index} />}
                 />
               </Panel>
-              {message ? <PremiumCard p="$4"><Paragraph color="$purple10">{message}</Paragraph></PremiumCard> : null}
+              {message ? <PremiumCard p="$4"><Paragraph color="$blue10">{message}</Paragraph></PremiumCard> : null}
             </YStack>
           </XStack>
         </YStack>
@@ -212,7 +214,7 @@ function BuyerView({ dashboard, actionLoading, onApplyCredit, onClaim }: { dashb
       <PremiumCard p="$5">
         <YStack gap="$3">
           <H2>Available Sharity Credit</H2>
-          <Text color="$green10" fontSize="$10" fontWeight="900">${dashboard.creditBalance.availableBalance.toFixed(2)}</Text>
+          <Text color="$green10" fontSize="$10" fontWeight="700">${dashboard.creditBalance.availableBalance.toFixed(2)}</Text>
           <Badge label={`$${dashboard.creditBalance.expiringSoonAmount.toFixed(2)} expires ${dashboard.creditBalance.expiryDate}`} tone="warning" />
           <AppButton variant="primary" onPress={onApplyCredit}>Apply Credit</AppButton>
           {dashboard.creditBalance.typeBreakdown.map((item) => (
@@ -294,7 +296,7 @@ function AuditPanel({ audit }: { audit: RewardsAuditLogItem[] }) {
 
 const CampaignRow = memo(function CampaignRow({ campaign, index, actionLoading, onClaim }: { campaign: RewardCampaignSummary; index: number; actionLoading: boolean; onClaim: () => void }) {
   const style = useEntrance(index);
-  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={campaign.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /><YStack flex={1}><Text fontWeight="900">{campaign.campaignName}</Text><Paragraph color="$gray10">{campaign.creditRewardType} / {campaign.fundingSource} / {campaign.antiAbuseSummary}</Paragraph></YStack><AppButton variant="secondary" onPress={onClaim} disabled={actionLoading}>{campaign.creditRewardType === 'GIVEAWAY_REWARD' ? 'Claim Giveaway' : 'View'}</AppButton></XStack></Animated.View>;
+  return <Animated.View style={style}><XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={campaign.imageUrl} style={{ width: 54, height: 54, borderRadius: 12 }} /><YStack flex={1}><Text fontWeight="700">{campaign.campaignName}</Text><Paragraph color="$gray10">{campaign.creditRewardType} / {campaign.fundingSource} / {campaign.antiAbuseSummary}</Paragraph></YStack><AppButton variant="secondary" onPress={onClaim} disabled={actionLoading}>{campaign.creditRewardType === 'GIVEAWAY_REWARD' ? 'Claim Giveaway' : 'View'}</AppButton></XStack></Animated.View>;
 });
 
 const AdminCampaignRow = memo(function AdminCampaignRow({ campaign, index }: { campaign: RewardCampaignConfig; index: number }) {
@@ -323,11 +325,11 @@ function AuditRow({ audit, index }: { audit: RewardsAuditLogItem; index: number 
 }
 
 function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
-function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="900">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
+function Row({ title, meta, badge, tone }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="700">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} /></XStack>; }
 function Price({ label, value, strong }: { label: string; value: number; strong?: boolean }) { const sign = value < 0 ? '-' : ''; return <XStack jc="space-between"><Text color={strong ? '$color' : '$gray10'} fontWeight={strong ? '900' : '600'}>{label}</Text><Text fontWeight={strong ? '900' : '600'}>{sign}${Math.abs(value).toFixed(2)}</Text></XStack>; }
 function Centered({ title, actionLabel, onAction, secondaryActionLabel, onSecondaryAction }: { title: string; actionLabel?: string; onAction?: () => void; secondaryActionLabel?: string; onSecondaryAction?: () => void }) {
   return <PremiumCard p="$6"><YStack gap="$3"><H2 ta="center">{title}</H2>{actionLabel && onAction ? <AppButton onPress={onAction}>{actionLabel}</AppButton> : null}{secondaryActionLabel && onSecondaryAction ? <AppButton variant="secondary" onPress={onSecondaryAction}>{secondaryActionLabel}</AppButton> : null}</YStack></PremiumCard>;
 }
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="900" px="$2" py="$1">{label}</Text>; }
+function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="700" px="$2" py="$1">{label}</Text>; }
 function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
 function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 45, withTiming(1, { duration: 220 })); translateY.value = withDelay(index * 45, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }

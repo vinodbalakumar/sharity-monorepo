@@ -1,85 +1,39 @@
-import type { AccountMode, AccountSwitcherResponse, MarketplaceModuleAvailability, SwitchAccountModeResponse } from './accountSwitcherTypes';
-import { placeholderImageUrl } from '../../utils/mockImages';
+import { getCurrentUser } from '../../services/userApi';
+import { getMyModules, getMyProviderAccounts } from '../../services/platformAuthorizationApi';
+import type { AccountMode, AccountSwitcherResponse, SwitchAccountModeResponse } from './accountSwitcherTypes';
 
-const modules: MarketplaceModuleAvailability[] = [
-  marketplace('DIGITAL', 'Digital Marketplace', 'ENABLED', true, true),
-  marketplace('ELECTRONICS', 'Electronics Marketplace', 'ENABLED', true, true),
-  marketplace('JEWELLERY', 'Imitation Jewellery', 'COMING_SOON', false, false, 'Coming soon'),
-  marketplace('AUTOMOTIVE', 'Automotive', 'DISABLED_BY_ADMIN', false, false, 'Disabled by admin configuration'),
-  marketplace('GROCERY', 'Grocery', 'NOT_AVAILABLE_IN_COUNTRY', false, false, 'Not available in your country'),
-  marketplace('FRESH_MEAT', 'Fresh Meat', 'COMING_SOON', false, false, 'Coming soon'),
-  marketplace('RENTALS', 'Rentals', 'REQUIRES_APPROVAL', true, false, 'Admin approval required'),
-  marketplace('FUTURE', 'Future Marketplace', 'COMING_SOON', false, false, 'Future marketplace placeholder')
-];
-
-export async function getAccountSwitcherSummary(currentMode: AccountMode = 'BUYER', currentMarketplace = 'DIGITAL'): Promise<AccountSwitcherResponse> {
-  const sellerEligible = true;
-  return {
-    currentMode,
-    currentMarketplace,
-    buyerIdentity: {
-      userId: 'user-1000',
-      buyerAlias: 'V***D',
-      displayName: 'Vinod',
-      avatarUrl: placeholderImageUrl('avatar'),
-      country: 'USA',
-      buyerStatus: 'ACTIVE',
-      privacyModeEnabled: true
-    },
-    sellerIdentity: {
-      sellerId: 'seller-1000',
-      sellerAlias: 'TechDealsPhoenix',
-      storeName: 'Tech Deals Phoenix',
-      storeLogoUrl: placeholderImageUrl('store'),
-      sellerStatus: 'ACTIVE',
-      onboardingStatus: sellerEligible ? 'COMPLETE' : 'REQUIRED',
-      verificationStatus: 'VERIFIED',
-      payoutSetupStatus: 'PAYPAL_CONNECTED',
-      activeSellerMarketplace: 'DIGITAL'
-    },
-    availableModes: [
-      { mode: 'BUYER', available: true, active: currentMode === 'BUYER', status: 'AVAILABLE', route: '/home' },
-      { mode: 'SELLER', available: sellerEligible, active: currentMode === 'SELLER', status: sellerEligible ? 'AVAILABLE' : 'SELLER_ONBOARDING_REQUIRED', reasonCode: sellerEligible ? undefined : 'SELLER_ONBOARDING_REQUIRED', reasonMessage: sellerEligible ? undefined : 'Complete your seller profile before switching to Seller Mode.', requiredAction: sellerEligible ? undefined : 'Start Seller Onboarding', route: '/seller' }
-    ],
-    marketplaceModules: modules,
-    sellerModeEligibility: {
-      eligible: sellerEligible,
-      sellerProfileComplete: true,
-      sellerAliasConfigured: true,
-      storeNameConfigured: true,
-      countryEligible: true,
-      policyAccepted: true,
-      verificationRequired: true,
-      verificationComplete: true,
-      payoutSetupRequired: true,
-      payoutSetupComplete: true,
-      requiredActions: sellerEligible ? [] : ['Start Seller Onboarding']
-    }
-  };
+export async function getAccountSwitcherSummary(currentMode: AccountMode = 'BUYER', currentMarketplace = 'MARKETPLACE'): Promise<AccountSwitcherResponse> {
+ const [user, providers, modules] = await Promise.all([getCurrentUser(), getMyProviderAccounts(), getMyModules()]);
+ const provider = providers.find(item => item.overallStatus === 'ACTIVE') ?? providers[0];
+ const eligible = Boolean(provider?.chargesEnabled && provider?.enrollments.some(item => item.sellingEnabled));
+ const mode = currentMode === 'SELLER' && !eligible ? 'BUYER' : currentMode;
+ const selected = modules.find(item => item.moduleCode === currentMarketplace) ?? modules.find(item => item.availableToCustomer);
+ return {
+  currentMode: mode, currentMarketplace: selected?.moduleCode || 'MARKETPLACE',
+  buyerIdentity: { userId: user.publicId, buyerAlias: user.username, displayName: user.username,
+   avatarUrl: user.profile.profileImageUrl || undefined, country: user.profile.countryName || user.profile.countryCode || 'Not provided',
+   buyerStatus: user.status, privacyModeEnabled: user.profile.privacySetting !== 'PUBLIC' },
+  sellerIdentity: { sellerId: provider?.publicId || '', sellerAlias: provider?.displayName || 'No provider account',
+   storeName: provider?.displayName || 'Not configured', sellerStatus: provider?.overallStatus || 'NOT_CONFIGURED',
+   onboardingStatus: eligible ? 'ACTIVE' : 'REQUIRED', verificationStatus: provider?.verificationStatus || 'NOT_STARTED',
+   payoutSetupStatus: provider?.payoutsEnabled ? 'ENABLED' : 'NOT_ENABLED', activeSellerMarketplace: selected?.moduleCode || '' },
+  availableModes: [ { mode: 'BUYER', available: true, active: mode === 'BUYER', status: 'AVAILABLE', route: '/home' },
+   { mode: 'SELLER', available: eligible, active: mode === 'SELLER', status: eligible ? 'AVAILABLE' : 'ONBOARDING_REQUIRED', route: '/sell' } ],
+  marketplaceModules: modules.map(item => ({ marketplaceCode: item.moduleCode, marketplaceName: item.moduleName,
+   buyerAvailable: item.availableToCustomer, sellerAvailable: Boolean(provider?.enrollments.some(enrollment => enrollment.moduleCode === item.moduleCode && enrollment.sellingEnabled)),
+   buyerEnabledByUser: item.availableToCustomer, sellerEnabledByUser: item.providerAccessActive,
+   countryAllowed: item.availableToCustomer, adminAllowed: item.status === 'ACTIVE',
+   status: item.availableToCustomer ? 'ENABLED' : 'DISABLED_BY_ADMIN', comingSoon: false,
+   reasonMessage: item.availableToCustomer ? 'Availability supplied by your platform account.' : 'This module is currently unavailable.' })),
+  sellerModeEligibility: { eligible, sellerProfileComplete: Boolean(provider), sellerAliasConfigured: Boolean(provider?.displayName),
+   storeNameConfigured: Boolean(provider?.displayName), countryEligible: Boolean(provider?.countryCode), policyAccepted: eligible,
+   verificationRequired: true, verificationComplete: provider?.verificationStatus === 'VERIFIED', payoutSetupRequired: true,
+   payoutSetupComplete: Boolean(provider?.payoutsEnabled), requiredActions: eligible ? [] : ['Review seller onboarding and module approval'] }
+ };
 }
-
 export async function switchAccountMode(targetMode: AccountMode, targetMarketplace: string): Promise<SwitchAccountModeResponse> {
-  if (targetMode === 'SELLER' && targetMarketplace === 'GROCERY') {
-    return { currentMode: 'BUYER', currentMarketplace: 'DIGITAL', switched: false, message: 'Seller mode is not available for Grocery in your country.', fallbackApplied: true, fallbackReason: 'MARKETPLACE_NOT_AVAILABLE_IN_COUNTRY' };
-  }
-  return { currentMode: targetMode, currentMarketplace: targetMarketplace, switched: true, message: `Switched to ${targetMode.toLowerCase()} mode.`, fallbackApplied: false };
-}
-
-function marketplace(marketplaceCode: string, marketplaceName: string, status: MarketplaceModuleAvailability['status'], buyerAvailable: boolean, sellerAvailable: boolean, reasonMessage?: string): MarketplaceModuleAvailability {
-  return {
-    marketplaceCode,
-    marketplaceName,
-    iconUrl: placeholderImageUrl('gift_cards'),
-    buyerAvailable,
-    sellerAvailable,
-    buyerEnabledByUser: buyerAvailable,
-    sellerEnabledByUser: sellerAvailable,
-    countryAllowed: status !== 'NOT_AVAILABLE_IN_COUNTRY',
-    adminAllowed: status !== 'DISABLED_BY_ADMIN',
-    status,
-    reasonCode: status === 'ENABLED' ? undefined : status,
-    reasonMessage,
-    requiredAction: status === 'REQUIRES_APPROVAL' ? 'Request Approval' : status === 'NOT_AVAILABLE_IN_COUNTRY' ? 'View Availability' : undefined,
-    comingSoon: status === 'COMING_SOON'
-  };
+ const summary = await getAccountSwitcherSummary(targetMode, targetMarketplace);
+ const switched = targetMode === summary.currentMode;
+ return { currentMode: summary.currentMode, currentMarketplace: summary.currentMarketplace, switched,
+  fallbackApplied: !switched, message: switched ? `Viewing ${targetMode.toLowerCase()} workspace on this device.` : 'Complete seller onboarding before opening the seller workspace.' };
 }

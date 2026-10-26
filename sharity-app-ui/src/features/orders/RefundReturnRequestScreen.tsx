@@ -64,6 +64,7 @@ export function RefundReturnRequestScreen({ onNavigate, onOpenRefundStatus, orde
     }
     setLoading(true);
     setError(false);
+    try {
     const [orderDetails, refundEligibility, existing] = await Promise.all([
       getBuyerOrderDetails(orderId),
       getRefundEligibility(orderId),
@@ -76,7 +77,8 @@ export function RefundReturnRequestScreen({ onNavigate, onOpenRefundStatus, orde
       setMessage(`A refund request already exists: ${existing.refundRequestId}`);
     }
     setError(!orderDetails || !refundEligibility);
-    setLoading(false);
+    } catch { setError(true); }
+    finally { setLoading(false); }
   }, [orderId]);
 
   useEffect(() => {
@@ -173,10 +175,10 @@ export function RefundReturnRequestScreen({ onNavigate, onOpenRefundStatus, orde
             <YStack gap="$4" width={420} $sm={{ width: '100%' }}>
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Evidence</Text>
+                  <Text fontSize="$6" fontWeight="700">Evidence</Text>
                   <Paragraph color="$gray10">Upload screenshots, photos, videos, PDFs, or error messages. Evidence is not public.</Paragraph>
                   <XStack flexWrap="wrap" gap="$2">
-                    <Button theme="purple" onPress={() => addEvidence(isDigital ? 'digital' : 'electronics')}>Upload Evidence</Button>
+                    <Button theme="blue" onPress={() => addEvidence(isDigital ? 'digital' : 'electronics')}>Upload Evidence</Button>
                     <Button onPress={() => setMessage('Evidence upload failed state is mocked for backend integration readiness.')}>Simulate Upload Failed</Button>
                   </XStack>
                   {evidence.length > 0 ? (
@@ -194,7 +196,7 @@ export function RefundReturnRequestScreen({ onNavigate, onOpenRefundStatus, orde
 
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Describe the issue</Text>
+                  <Text fontSize="$6" fontWeight="700">Describe the issue</Text>
                   <TextArea
                     minHeight={126}
                     onChangeText={setIssueDetails}
@@ -212,7 +214,7 @@ export function RefundReturnRequestScreen({ onNavigate, onOpenRefundStatus, orde
                       <Ionicons color={colors.warning} name="alert-outline" size={22} />
                     </YStack>
                     <YStack flex={1} gap="$1">
-                      <Text fontWeight="900">Submission warning</Text>
+                      <Text fontWeight="700">Submission warning</Text>
                       <Paragraph>Submitting false claims may affect your account and refund eligibility.</Paragraph>
                       <Paragraph color="$gray10">Your request may be reviewed by Sharity, the seller, or both.</Paragraph>
                     </YStack>
@@ -223,7 +225,7 @@ export function RefundReturnRequestScreen({ onNavigate, onOpenRefundStatus, orde
                   >
                     {warningAccepted ? 'Warning Acknowledged' : 'Acknowledge Warning'}
                   </Button>
-                  <Button disabled={submitting} theme="purple" onPress={submitRequest}>
+                  <Button disabled={submitting} theme="blue" onPress={submitRequest}>
                     {submitting ? 'Submitting...' : 'Submit Refund Request'}
                   </Button>
                 </YStack>
@@ -243,12 +245,12 @@ function OrderSummary({ details }: { details: OrderDetailsResponse }) {
       <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
         <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: item.productImageUrl }} style={{ borderRadius: 14, height: 88, width: 88 }} />
         <YStack flex={1} gap="$1">
-          <Text fontSize="$6" fontWeight="900">{item.productTitle}</Text>
+          <Text fontSize="$6" fontWeight="700">{item.productTitle}</Text>
           <Text color="$gray10">{item.productType} - Seller: {details.seller.sellerDisplayName}</Text>
           <Text color="$gray10">Placed {formatDate(details.order.orderDate)} - {labelize(details.order.paymentStatus)} - {labelize(details.order.orderStatus)}</Text>
           {item.condition ? <Text color="$gray10">{item.condition}</Text> : null}
         </YStack>
-        <Text fontSize="$6" fontWeight="900">{formatMoney(details.order.totalAmount)}</Text>
+        <Text fontSize="$6" fontWeight="700">{formatMoney(details.order.totalAmount)}</Text>
       </XStack>
     </PremiumCard>
   );
@@ -274,8 +276,8 @@ function EligibilityCard({ eligibility }: { eligibility: RefundEligibilityRespon
         <YStack gap="$3">
           <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$3">
             <YStack gap="$1">
-              <Text color="$blue10" fontWeight="900">Refund eligibility</Text>
-              <Text fontSize="$6" fontWeight="900">{labelize(eligibility.eligibilityStatus)}</Text>
+              <Text color="$blue10" fontWeight="700">Refund eligibility</Text>
+              <Text fontSize="$6" fontWeight="700">{labelize(eligibility.eligibilityStatus)}</Text>
             </YStack>
             <StatusPill label={eligibility.eligible ? 'Request Allowed' : 'Not Eligible'} tone={eligibility.eligible ? 'success' : 'error'} />
           </XStack>
@@ -296,7 +298,7 @@ function DigitalAccessHistoryCard({ eligibility }: { eligibility: RefundEligibil
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Digital access history</Text>
+        <Text color="$blue10" fontWeight="700">Digital access history</Text>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={`Code revealed: ${history.codeRevealed ? 'Yes' : 'No'}`} tone={history.codeRevealed ? 'warning' : 'success'} />
           <StatusPill label={`File downloaded: ${history.fileDownloaded ? 'Yes' : 'No'}`} tone={history.fileDownloaded ? 'warning' : 'success'} />
@@ -316,7 +318,7 @@ function ElectronicsPolicyCard({ eligibility }: { eligibility: RefundEligibility
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Electronics return policy</Text>
+        <Text color="$blue10" fontWeight="700">Electronics return policy</Text>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={policy.returnWindowStatus} tone="info" />
           <StatusPill label={labelize(policy.deliveryStatus)} tone="info" />
@@ -352,7 +354,7 @@ const ReasonCard = memo(function ReasonCard({ index, reason, selected }: { index
               {selected ? 'Selected' : 'Select'}
             </Button>
             <YStack flex={1} gap="$1">
-              <Text fontWeight="900">{reason.label}</Text>
+              <Text fontWeight="700">{reason.label}</Text>
               <XStack flexWrap="wrap" gap="$2">
                 {reason.requiresEvidence ? <StatusPill label="Evidence required" tone="warning" /> : <StatusPill label="Evidence optional" tone="info" />}
                 {reason.requiresMessage ? <StatusPill label="Details required" tone="warning" /> : null}
@@ -393,7 +395,7 @@ const EvidenceCard = memo(function EvidenceCard({ evidence, index, onRemove }: {
             </YStack>
           )}
           <YStack flex={1}>
-            <Text fontWeight="900">{evidence.fileName}</Text>
+            <Text fontWeight="700">{evidence.fileName}</Text>
             <Text color="$gray10">{evidence.fileType} - {Math.round(evidence.fileSize / 1000)} KB</Text>
           </YStack>
           <Button size="$3" onPress={onRemove}>Remove</Button>
@@ -404,7 +406,7 @@ const EvidenceCard = memo(function EvidenceCard({ evidence, index, onRemove }: {
 });
 
 function SectionTitle({ title }: { title: string }) {
-  return <Text fontSize="$6" fontWeight="900">{title}</Text>;
+  return <Text fontSize="$6" fontWeight="700">{title}</Text>;
 }
 
 function CenteredState({ actionLabel, message, onAction }: { actionLabel?: string; message: string; onAction?: () => void }) {
@@ -413,8 +415,8 @@ function CenteredState({ actionLabel, message, onAction }: { actionLabel?: strin
       <YStack ai="center" f={1} jc="center" p="$5">
         <PremiumCard maxWidth={560} p="$6" width="100%">
           <YStack ai="center" gap="$4">
-            <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
-            {actionLabel && onAction ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}
+            <Text fontSize="$6" fontWeight="700" ta="center">{message}</Text>
+            {actionLabel && onAction ? <Button theme="blue" onPress={onAction}>{actionLabel}</Button> : null}
           </YStack>
         </PremiumCard>
       </YStack>

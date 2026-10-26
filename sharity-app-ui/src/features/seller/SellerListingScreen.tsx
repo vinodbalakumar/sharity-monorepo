@@ -1,3 +1,5 @@
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { systemFontFamily } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -141,6 +143,7 @@ const initialForm = {
 };
 
 export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
+  const { isDesktop } = useResponsiveLayout();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [providerAccounts, setProviderAccounts] = useState<ProviderAccount[]>([]);
   const [modules, setModules] = useState<ModuleItem[]>([]);
@@ -362,7 +365,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
   return (
     <InteriorShell activeLabel="Sell" onNavigate={onNavigate} scrollable={false} subtitle="Live seller account status and module access" title="Verification & Payout Eligibility">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.container}>
+        <View style={[styles.container, !isDesktop && { padding: 0 }]}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
               <Text style={styles.eyebrow}>Seller access</Text>
@@ -374,8 +377,8 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
           {error ? <MessageCard title={error} actionLabel="Reload" onAction={load} tone="error" /> : null}
           {message ? <MessageCard title={message} tone="success" /> : null}
 
-          <View style={styles.grid}>
-            <View style={styles.leftColumn}>
+          <View style={[styles.grid, !isDesktop && { flexDirection: 'column' }]}>
+            <View style={[styles.leftColumn, !isDesktop && { width: '100%' }]}>
               <Card style={styles.card}>
                 <SectionTitle title="Create or select provider account" />
                 <Input
@@ -386,7 +389,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
                   style={styles.disabledInput}
                 />
                 <Paragraph style={styles.helper}>Provider identity comes from your live account profile.</Paragraph>
-                <Button accessibilityLabel="Create provider account" onPress={createProvider} theme="purple" style={styles.actionButton}>
+                <Button accessibilityLabel="Create provider account" onPress={createProvider} theme="blue" style={styles.actionButton}>
                   Create account
                 </Button>
                 <View style={styles.accountList}>
@@ -552,7 +555,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
                     ))}
                   </View>
 
-                  <Button accessibilityLabel="Create listing draft" disabled={submitting} onPress={submitDraft} theme="purple" style={styles.submitButton}>
+                  <Button accessibilityLabel="Create listing draft" disabled={submitting} onPress={submitDraft} theme="blue" style={styles.submitButton}>
                     {submitting ? 'Creating draft...' : 'Create draft'}
                   </Button>
                   {createdDraft ? <View style={styles.summaryRows}>
@@ -710,6 +713,7 @@ const styles = StyleSheet.create({
   },
   centerText: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 15
   },
   content: {
@@ -733,16 +737,19 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: colors.primary,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '800'
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 30,
     fontWeight: '900'
   },
   subtitle: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 14,
     lineHeight: 20,
     maxWidth: 880
@@ -768,12 +775,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 18,
     fontWeight: '900',
     marginBottom: spacing.sm
   },
   sectionLabel: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 14,
     fontWeight: '800',
     marginTop: spacing.md,
@@ -781,11 +790,13 @@ const styles = StyleSheet.create({
   },
   helper: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 12,
     marginBottom: spacing.md
   },
   muted: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 13
   },
   disabledInput: {
@@ -823,11 +834,13 @@ const styles = StyleSheet.create({
   },
   accountTitle: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 15,
     fontWeight: '800'
   },
   accountText: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 12,
     marginTop: 2
   },
@@ -843,11 +856,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '800'
   },
   summaryValue: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '900'
   },
@@ -857,6 +872,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '800'
   },
@@ -891,6 +907,7 @@ const styles = StyleSheet.create({
   },
   chipTitle: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: '800'
   },
@@ -899,6 +916,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 12
   },
   chipTextActive: {
@@ -929,6 +947,7 @@ const styles = StyleSheet.create({
   },
   selectChipText: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 12,
     fontWeight: '800'
   },
@@ -951,6 +970,7 @@ const styles = StyleSheet.create({
   },
   policyText: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 13,
     flex: 1
   },
@@ -975,11 +995,13 @@ const styles = StyleSheet.create({
   },
   moduleTitle: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 15,
     fontWeight: '800'
   },
   moduleText: {
     color: colors.textSecondary,
+    fontFamily: systemFontFamily,
     fontSize: 12
   },
   moduleActions: {
@@ -990,6 +1012,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     borderRadius: 999,
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 11,
     fontWeight: '800',
     paddingHorizontal: 10,
@@ -1023,6 +1046,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 14,
     textAlign: 'center'
   }

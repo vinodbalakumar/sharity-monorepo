@@ -10,7 +10,7 @@ export type OrderDetails = {
   paymentStatus: PaymentStatus;
   refundDisputeStatus: RefundDisputeStatus;
   totalAmount: number;
-  currency: 'USD';
+  currency: string;
   orderDate: string;
   updatedAt: string;
 };

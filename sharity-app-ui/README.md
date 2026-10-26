@@ -453,3 +453,7 @@ the adapter when the supported Metro version accepts the new parser API.
 `npm run build:e2e` creates a separate `dist-e2e` production export using same-origin
 API defaults. It ignores workstation dotenv files so browser tests cannot depend
 on a developer's LAN address. API mocks exist only in Playwright, not in the export.
+
+## UI and catalog integrity review (2026-10-26)
+
+See `../docs/architecture/SHARITY_FUNCTIONAL_FLOWS.md` for navigation, image delivery, order-state correctness, verification scope and remaining preview features. Versioned guide: `../deployments/docs/sharity/architecture/SHARITY_FUNCTIONAL_FLOWS.md`.

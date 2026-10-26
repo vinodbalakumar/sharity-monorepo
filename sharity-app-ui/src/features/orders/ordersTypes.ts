@@ -62,7 +62,7 @@ export type OrderListItem = {
   shippingStatus?: ShippingStatus;
   refundDisputeStatus: RefundDisputeStatus;
   totalAmount: number;
-  currency: 'USD';
+  currency: string;
   receiptAvailable: boolean;
   trackingAvailable: boolean;
   availableActions: OrderAction[];

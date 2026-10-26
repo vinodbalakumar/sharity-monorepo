@@ -102,7 +102,7 @@ export function TrackingScreen({ onNavigate, onOpenRefundReturn, orderId }: Trac
               <RefundEligibilityCard tracking={tracking} />
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text fontSize="$6" fontWeight="900">Actions</Text>
+                  <Text fontSize="$6" fontWeight="700">Actions</Text>
                   <Button onPress={() => setMessage(tracking.sellerContactContext.message)}>Contact Seller</Button>
                   <Button onPress={submitDeliveryIssue}>Report Delivery Issue</Button>
                   <Button
@@ -158,7 +158,7 @@ function ShipmentHero({ tracking }: { tracking: TrackingDetailsResponse }) {
                   <Ionicons color={colors.info} name="cube-outline" size={26} />
                 </YStack>
                 <YStack>
-                  <Text fontSize="$7" fontWeight="900">{tracking.shipmentSummary.headline}</Text>
+                  <Text fontSize="$7" fontWeight="700">{tracking.shipmentSummary.headline}</Text>
                   <Paragraph color="$gray10">{tracking.shipmentSummary.message}</Paragraph>
                 </YStack>
               </XStack>
@@ -184,11 +184,11 @@ function ProductSummary({ tracking }: { tracking: TrackingDetailsResponse }) {
       <XStack $sm={{ flexDirection: 'column' }} ai="center" gap="$3">
         <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: order.productImageUrl }} style={{ borderRadius: 14, height: 86, width: 86 }} />
         <YStack flex={1} gap="$1">
-          <Text fontSize="$6" fontWeight="900">{order.productTitle}</Text>
+          <Text fontSize="$6" fontWeight="700">{order.productTitle}</Text>
           <Text color="$gray10">{order.productType} - Qty {order.quantity} - Seller: {order.sellerDisplayName}</Text>
           <Text color="$gray10">Ordered {formatDate(order.orderDate)}</Text>
         </YStack>
-        <Text fontSize="$6" fontWeight="900">{formatMoney(order.totalAmount)}</Text>
+        <Text fontSize="$6" fontWeight="700">{formatMoney(order.totalAmount)}</Text>
       </XStack>
     </PremiumCard>
   );
@@ -199,7 +199,7 @@ function CarrierCard({ tracking }: { tracking: TrackingDetailsResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Carrier details</Text>
+        <Text color="$blue10" fontWeight="700">Carrier details</Text>
         {carrier ? (
           <YStack gap="$2">
             <XStack flexWrap="wrap" gap="$2">
@@ -221,8 +221,8 @@ function MaskedAddressCard({ tracking }: { tracking: TrackingDetailsResponse }) 
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Delivery area</Text>
-        <Text fontSize="$6" fontWeight="900">{tracking.maskedAddress.displayText}</Text>
+        <Text color="$blue10" fontWeight="700">Delivery area</Text>
+        <Text fontSize="$6" fontWeight="700">{tracking.maskedAddress.displayText}</Text>
         <Paragraph color="$gray10">Only a masked delivery area is shown here. Full address details are not exposed on tracking.</Paragraph>
       </YStack>
     </PremiumCard>
@@ -234,7 +234,7 @@ function RefundEligibilityCard({ tracking }: { tracking: TrackingDetailsResponse
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Refund / return eligibility</Text>
+        <Text color="$blue10" fontWeight="700">Refund / return eligibility</Text>
         <StatusPill label={eligibility.canRequestRefundReturn ? 'Eligible' : 'Not available yet'} tone={eligibility.canRequestRefundReturn ? 'success' : 'warning'} />
         <Paragraph>{eligibility.reason}</Paragraph>
         {eligibility.deadline ? <Text color="$gray10">Review window until {formatDate(eligibility.deadline)}</Text> : null}
@@ -268,7 +268,7 @@ const TimelineEventCard = memo(function TimelineEventCard({ event, index }: { ev
           </YStack>
           <YStack flex={1} gap="$1">
             <XStack $sm={{ flexDirection: 'column' }} ai="flex-start" jc="space-between" gap="$2">
-              <Text fontWeight="900">{event.title}</Text>
+              <Text fontWeight="700">{event.title}</Text>
               <StatusPill label={labelize(event.status)} tone={tone} />
             </XStack>
             <Text>{event.description}</Text>
@@ -281,7 +281,7 @@ const TimelineEventCard = memo(function TimelineEventCard({ event, index }: { ev
 });
 
 function SectionTitle({ title }: { title: string }) {
-  return <Text fontSize="$6" fontWeight="900">{title}</Text>;
+  return <Text fontSize="$6" fontWeight="700">{title}</Text>;
 }
 
 function CenteredState({
@@ -302,9 +302,9 @@ function CenteredState({
       <YStack ai="center" f={1} jc="center" p="$5">
         <PremiumCard maxWidth={560} p="$6" width="100%">
           <YStack ai="center" gap="$4">
-            <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
+            <Text fontSize="$6" fontWeight="700" ta="center">{message}</Text>
             <XStack flexWrap="wrap" gap="$2" jc="center">
-              {actionLabel && onAction ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}
+              {actionLabel && onAction ? <Button theme="blue" onPress={onAction}>{actionLabel}</Button> : null}
               {secondaryActionLabel && onSecondaryAction ? <Button onPress={onSecondaryAction}>{secondaryActionLabel}</Button> : null}
             </XStack>
           </YStack>

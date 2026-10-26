@@ -9,6 +9,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { ActivityIndicator, Chip } from "react-native-paper";
+import { ListingCard } from "../../components/marketplace/ListingCard";
+import { formatListingPrice, compareListingPrice, listingLabel } from "../../utils/listingPresentation";
 import { ProductArtwork } from "../../components/marketplace/ProductArtwork";
 import { AppButton } from "../../components/ui";
 import {
@@ -35,20 +37,7 @@ const categories: {
   { title: "Jewellery", route: "jewelryMarketplace", icon: "diamond-outline" },
   { title: "Sharity AI", route: "chat", icon: "sparkles-outline" },
 ];
-export function listingPrice(item: MarketplaceListing) {
-  const currency = item.displayCurrencyCode || item.currencyCode;
-  const amount = item.displayPriceAmount ?? item.priceAmount;
-  if (!Number.isFinite(amount) || !/^[A-Z]{3}$/.test(currency))
-    return "Price unavailable";
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-    }).format(amount);
-  } catch {
-    return "Price unavailable";
-  }
-}
+export const listingPrice = formatListingPrice;
 export function StorefrontContent({
   onNavigate,
   onOpenProduct,
@@ -72,6 +61,7 @@ export function StorefrontContent({
   const [error, setError] = useState(false);
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -103,9 +93,9 @@ export function StorefrontContent({
         )
         .sort((a, b) =>
           sort === 1
-            ? a.priceAmount - b.priceAmount
+            ? compareListingPrice(a, b)
             : sort === 2
-              ? b.priceAmount - a.priceAmount
+              ? compareListingPrice(b, a)
               : 0,
         ),
     [items, query, category, sort],
@@ -123,7 +113,7 @@ export function StorefrontContent({
           </AppButton>
         </View>
       )}
-      <View style={styles.categoryStrip}>
+      <View style={[styles.categoryStrip, compact && { paddingVertical: 8 }]}>
         {categories.map((item) => (
           <Pressable
             key={item.route}
@@ -132,9 +122,9 @@ export function StorefrontContent({
               appState$.marketplace.searchQuery.set("");
               onNavigate(item.route);
             }}
-            style={styles.categoryItem}
+            style={[styles.categoryItem, compact && { minHeight: 68 }]}
           >
-            <View style={styles.categoryIcon}>
+            <View style={[styles.categoryIcon, compact && { width: 38, height: 38 }]}>
               <Ionicons name={item.icon} size={27} color={colors.primary} />
             </View>
             <Text style={styles.categoryText}>{item.title}</Text>
@@ -152,87 +142,78 @@ export function StorefrontContent({
               accessibilityRole="header"
               style={[
                 styles.heroTitle,
-                compact && { fontSize: 28, lineHeight: 35 },
+                compact && { fontSize: 26, lineHeight: 32 },
               ]}
             >
               Good finds. Simple choices.
             </Text>
-            <Text style={styles.heroBody}>
-              Browse digital goods, gift cards and jewellery. Compare listings
-              and find something that fits your day.
+            <Text style={[styles.heroBody, compact && { fontSize: 14, lineHeight: 22 }]}>
+              {compact ? 'Digital goods, gift cards and jewellery. Find your next favourite.' : 'Browse digital goods, gift cards and jewellery. Compare listings and find something that fits your day.'}
             </Text>
             <View style={styles.heroActions}>
-              <AppButton onPress={() => onNavigate("marketplaces")}>
+              <AppButton size={compact ? "small" : "medium"} onPress={() => onNavigate("marketplaces")}>
                 Shop all products
               </AppButton>
               {landing && (
-                <AppButton variant="outline" onPress={onCreateAccount}>
-                  Create an account
+                <AppButton size={compact ? "small" : "medium"} variant={compact ? "ghost" : "outline"} onPress={onCreateAccount}>
+                  {compact ? "Join Sharity" : "Create an account"}
                 </AppButton>
               )}
             </View>
-            <Text style={styles.note}>
+            {!compact && <Text style={styles.note}>
               Browse freely. Sign in when you need your account or saved items.
-            </Text>
+            </Text>}
           </View>
-          {!compact && (
-            <View
-              style={styles.heroArt}
-              accessibilityLabel="Gift card and jewellery illustration"
-            >
-              <View style={styles.artCard}>
-                <Ionicons
-                  name="gift-outline"
-                  size={58}
-                  color={colors.primary}
-                />
-                <Text style={styles.artTitle}>A little more possibility.</Text>
-                <View style={styles.artLine} />
-              </View>
-              <View style={styles.artBadge}>
-                <Ionicons
-                  name="diamond-outline"
-                  size={26}
-                  color={colors.primaryDark}
-                />
-                <Text style={styles.categoryText}>Something for you</Text>
-              </View>
+          {width >= 1100 && items.length > 0 && (
+            <View style={styles.heroArt} accessibilityLabel="A selection from the Sharity marketplace">
+              {items.filter(item => Boolean(item.imageUrl)).slice(0, 3).map((item, index) => (
+                <Pressable key={item.publicId} accessibilityRole="button" accessibilityLabel={`Explore ${item.title}`}
+                  onPress={() => onOpenProduct(item.publicId)} style={[styles.showcase, { transform: [{ rotate: `${(index - 1) * 7}deg` }], marginTop: index === 1 ? -18 : 18 }]}>
+                  <ProductArtwork item={item} style={{ aspectRatio: .85 }} />
+                  <Text numberOfLines={1} style={styles.showcaseTitle}>{item.title}</Text>
+                  <Text style={styles.showcasePrice}>{listingPrice(item)}</Text>
+                </Pressable>
+              ))}
             </View>
           )}
         </View>
       )}
       <View style={styles.products}>
-        <View style={[styles.sectionHeader,compact && {flexDirection:"column",alignItems:"flex-start"}]}>
+        <View style={[styles.sectionHeader,compact && {alignItems:"center"}]}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
+            <Text accessibilityRole="header" style={[styles.sectionTitle, compact && { fontSize: 20, lineHeight: 26 }]}>
               {query ? "Search results" : "Explore the marketplace"}
             </Text>
-            <Text style={styles.body}>
+            {(query || !compact) && <Text style={styles.body}>
               {query
                 ? `${visible.length} matching listings`
                 : "Current listings, clear prices and details before you decide."}
-            </Text>
+            </Text>}
           </View>
           <AppButton
+            size={compact ? "small" : "medium"}
             variant="outline"
             onPress={() => setSort((value) => (value + 1) % 3)}
           >
             {["Featured", "Price: low to high", "Price: high to low"][sort]}
           </AppButton>
         </View>
-        <View style={styles.filters}>
+        {items.some(item => item.demoSeed) && <Text style={styles.body}>{compact ? "Sample catalog ? Demo listings" : "Demo catalog: sample listings for browsing. Purchases depend on checkout availability."}</Text>}
+        <View testID="catalog-filters" style={styles.filters}>
           <Chip selected={!category} onPress={() => setCategory("")}>
             All categories
           </Chip>
-          {[...new Set(items.map((item) => item.categoryCode).filter(Boolean))]
-            .slice(0, 8)
+          {compact && <AppButton size="small" variant="outline" onPress={() => setShowFilters(value => !value)}>
+            {showFilters ? "Hide categories" : category ? listingLabel(category) : "Show categories"}
+          </AppButton>}
+          {(!compact || showFilters) && [...new Set(items.map((item) => item.categoryCode).filter(Boolean))]
             .map((code) => (
               <Chip
                 key={code}
                 selected={category === code}
                 onPress={() => setCategory(category === code ? "" : code)}
               >
-                {code.replace(/_/g, " ")}
+                {listingLabel(code)}
               </Chip>
             ))}
         </View>
@@ -255,35 +236,8 @@ export function StorefrontContent({
           <>
             <View style={styles.grid}>
               {visible.map((item) => (
-                <Pressable
-                  testID="product-card"
-                  key={item.publicId}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View ${item.title}`}
-                  onPress={() => onOpenProduct(item.publicId)}
-                  style={[
-                    styles.productCard,
-                    {
-                      width: compact ? "47%" : width < 1100 ? "31.5%" : "23.5%",
-                    },
-                  ]}
-                >
-                  <ProductArtwork item={item} />
-                  <View style={styles.productCopy}>
-                    <Text numberOfLines={2} style={styles.productTitle}>
-                      {item.title}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.seller}>
-                      {item.sellerDisplayName || "Marketplace seller"}
-                    </Text>
-                    <Text style={styles.price}>{listingPrice(item)}</Text>
-                    <Text style={styles.delivery}>
-                      {String(item.deliveryType || "See listing details")
-                        .replace(/_/g, " ")
-                        .toLowerCase()}
-                    </Text>
-                  </View>
-                </Pressable>
+                <ListingCard key={item.publicId} item={item} onPress={() => onOpenProduct(item.publicId)}
+                  style={{ width: compact ? "47%" : width < 1100 ? "31.5%" : "23.5%" }} />
               ))}
             </View>
             {!visible.length && (
@@ -367,7 +321,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   hero: {
-    backgroundColor: "#eaf0ff",
+    backgroundColor: "#edf3ff",
     borderRadius: 12,
     padding: 36,
     flexDirection: "row",
@@ -375,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 286,
   },
-  heroCompact: { padding: 22, minHeight: 0 },
+  heroCompact: { padding: 20, minHeight: 0 },
   heroCopy: { flex: 1, gap: 13, minWidth: 0 },
   kicker: {
     fontFamily: systemFontFamily,
@@ -412,11 +366,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   heroArt: {
-    width: 290,
-    height: 220,
+    width: 420,
+    height: 240,
+    flexDirection: "row",
+    gap: 12,
     alignItems: "center",
     justifyContent: "center",
   },
+  showcase: { flex: 1, minWidth: 0, backgroundColor: colors.surface, borderRadius: 10, overflow: "hidden", paddingBottom: 12, borderWidth: 1, borderColor: colors.border },
+  showcaseTitle: { fontFamily: systemFontFamily, fontSize: 12, fontWeight: "600", marginHorizontal: 10, marginTop: 8, color: colors.textPrimary },
+  showcasePrice: { fontFamily: systemFontFamily, fontSize: 13, fontWeight: "700", marginHorizontal: 10, marginTop: 4, color: colors.primary },
   artCard: {
     width: 236,
     height: 158,

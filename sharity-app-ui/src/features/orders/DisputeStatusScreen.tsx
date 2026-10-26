@@ -183,7 +183,7 @@ export function DisputeStatusScreen({ disputeId, onNavigate, orderId }: DisputeS
             <YStack gap="$4" width={420} $sm={{ width: '100%' }}>
               <PremiumCard p="$4">
                 <YStack gap="$3">
-                  <Text color="$blue10" fontWeight="900">Review timeline</Text>
+                  <Text color="$blue10" fontWeight="700">Review timeline</Text>
                   <TimelineFlashList
                     data={status.timeline}
                     estimatedItemSize={94}
@@ -196,22 +196,22 @@ export function DisputeStatusScreen({ disputeId, onNavigate, orderId }: DisputeS
               <PremiumCard p="$4">
                 <YStack gap="$3">
                   <XStack ai="center" jc="space-between" gap="$3">
-                    <Text fontSize="$6" fontWeight="900">Evidence</Text>
+                    <Text fontSize="$6" fontWeight="700">Evidence</Text>
                     {status.availableActions.canUploadEvidence ? <StatusPill label="Requested" tone="warning" /> : <StatusPill label="Locked" tone="info" />}
                   </XStack>
                   <Paragraph color="$gray10">
                     Upload more evidence only when Sharity asks for it. Evidence files are private and access-controlled.
                   </Paragraph>
                   {status.availableActions.canUploadEvidence ? (
-                    <Button theme="purple" onPress={() => appState$.disputeStatus.evidencePanelOpen.set(!evidencePanelOpen)}>
+                    <Button theme="blue" onPress={() => appState$.disputeStatus.evidencePanelOpen.set(!evidencePanelOpen)}>
                       Upload Requested Evidence
                     </Button>
                   ) : null}
                   {evidencePanelOpen ? (
                     <YStack bg="$blue4" br="$5" gap="$2" p="$3">
-                      <Text fontWeight="900">Requested evidence upload</Text>
+                      <Text fontWeight="700">Requested evidence upload</Text>
                       <Paragraph>Mock upload: screenshots, package photos, invalid code proof, PDFs, or error messages.</Paragraph>
-                      <Button disabled={busy} theme="purple" onPress={uploadEvidence}>{busy ? 'Uploading...' : 'Upload Mock Evidence'}</Button>
+                      <Button disabled={busy} theme="blue" onPress={uploadEvidence}>{busy ? 'Uploading...' : 'Upload Mock Evidence'}</Button>
                     </YStack>
                   ) : null}
                   {status.evidence.length > 0 ? (
@@ -241,7 +241,7 @@ export function DisputeStatusScreen({ disputeId, onNavigate, orderId }: DisputeS
         <YStack bottom={24} left={24} pos="absolute" right={24}>
           <PremiumCard p="$4">
             <YStack gap="$3">
-              <Text fontSize="$6" fontWeight="900">Are you sure you want to close this dispute?</Text>
+              <Text fontSize="$6" fontWeight="700">Are you sure you want to close this dispute?</Text>
               <Paragraph color="$gray10">Closing a dispute tells Sharity the review is no longer needed.</Paragraph>
               <XStack $sm={{ flexDirection: 'column' }} gap="$2">
                 <Button flex={1} onPress={() => appState$.disputeStatus.closeConfirmationOpen.set(false)}>Keep Dispute Open</Button>
@@ -279,14 +279,14 @@ function StatusSummaryCard({ status, tone }: { status: DisputeStatusResponse; to
             <Image cachePolicy="memory-disk" contentFit="cover" placeholder={blurhash} source={{ uri: status.dispute.productImageUrl }} style={{ borderRadius: 14, height: 92, width: 92 }} />
             <YStack flex={1} gap="$1">
               <Text color="$gray10">{status.dispute.marketplaceName} - {status.dispute.productType}</Text>
-              <Text fontSize="$7" fontWeight="900">{status.dispute.productTitle}</Text>
+              <Text fontSize="$7" fontWeight="700">{status.dispute.productTitle}</Text>
               <Text color="$gray10">Order {status.dispute.orderReference} - Dispute {status.dispute.disputeId}</Text>
               <Text color="$gray10">Seller: {status.dispute.sellerDisplayName}</Text>
             </YStack>
             <StatusPill label={status.statusSummary.statusLabel} tone={tone} />
           </XStack>
           <YStack bg="$blue4" br="$5" gap="$2" p="$3">
-            <Text fontWeight="900">Next step</Text>
+            <Text fontWeight="700">Next step</Text>
             <Paragraph>{status.statusSummary.nextStepMessage}</Paragraph>
           </YStack>
           <XStack flexWrap="wrap" gap="$2">
@@ -306,10 +306,10 @@ function OutcomeCard({ finalOutcome, outcomes }: { finalOutcome?: DisputeOutcome
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">{finalOutcome ? 'Final outcome' : 'Possible outcomes'}</Text>
+        <Text color="$blue10" fontWeight="700">{finalOutcome ? 'Final outcome' : 'Possible outcomes'}</Text>
         {finalOutcome ? (
           <YStack bg="$green4" br="$5" gap="$2" p="$3">
-            <Text color="$green11" fontWeight="900">{finalOutcome.label}</Text>
+            <Text color="$green11" fontWeight="700">{finalOutcome.label}</Text>
             <Paragraph>{finalOutcome.description}</Paragraph>
           </YStack>
         ) : (
@@ -333,8 +333,8 @@ function EstimatedRefundCard({ status }: { status: DisputeStatusResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$green11" fontWeight="900">Estimated refund amount</Text>
-        <Text fontSize="$8" fontWeight="900">{formatMoney(refund.amount)}</Text>
+        <Text color="$green11" fontWeight="700">Estimated refund amount</Text>
+        <Text fontSize="$8" fontWeight="700">{formatMoney(refund.amount)}</Text>
         <StatusPill label="Estimated until final decision" tone="warning" />
         <Paragraph color="$gray10">{refund.calculationSummary}</Paragraph>
         <XStack flexWrap="wrap" gap="$2">
@@ -355,7 +355,7 @@ function DigitalAccessCard({ status }: { status: DisputeStatusResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Digital access summary</Text>
+        <Text color="$blue10" fontWeight="700">Digital access summary</Text>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={`Code revealed: ${digital.codeRevealed ? 'Yes' : 'No'}`} tone={digital.codeRevealed ? 'warning' : 'success'} />
           <StatusPill label={`File downloaded: ${digital.fileDownloaded ? 'Yes' : 'No'}`} tone={digital.fileDownloaded ? 'warning' : 'success'} />
@@ -377,7 +377,7 @@ function ShippingReturnCard({ status }: { status: DisputeStatusResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Shipping and return summary</Text>
+        <Text color="$blue10" fontWeight="700">Shipping and return summary</Text>
         <XStack flexWrap="wrap" gap="$2">
           <StatusPill label={`Shipping: ${shipping.shippingStatus}`} tone="info" />
           <StatusPill label={`Delivery: ${shipping.deliveryStatus}`} tone="info" />
@@ -396,7 +396,7 @@ function SellerResponseCard({ status }: { status: DisputeStatusResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Seller response</Text>
+        <Text color="$blue10" fontWeight="700">Seller response</Text>
         {sellerResponse?.responseAvailable ? (
           <>
             <StatusPill label={sellerResponse.responseStatus ?? 'Response available'} tone="info" />
@@ -416,7 +416,7 @@ function AdminDecisionCard({ status }: { status: DisputeStatusResponse }) {
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text color="$blue10" fontWeight="900">Admin decision</Text>
+        <Text color="$blue10" fontWeight="700">Admin decision</Text>
         {adminDecision?.decisionAvailable ? (
           <>
             <StatusPill label={adminDecision.finalOutcome ?? adminDecision.decisionStatus ?? 'Decision made'} tone="success" />
@@ -443,7 +443,7 @@ function ActionsCard({ busy, isDigital, isElectronics, onClose, onNavigate, stat
   return (
     <PremiumCard p="$4">
       <YStack gap="$3">
-        <Text fontSize="$6" fontWeight="900">Actions</Text>
+        <Text fontSize="$6" fontWeight="700">Actions</Text>
         {actions.canViewReceipt ? <Button onPress={() => onNavigate('receipt')}>View Receipt</Button> : null}
         {actions.canViewRefundStatus ? <Button onPress={() => onNavigate('refundStatus')}>View Refund Status</Button> : null}
         {isDigital && actions.canGoToLibrary ? <Button onPress={() => onNavigate('library')}>Go to Library</Button> : null}
@@ -478,7 +478,7 @@ const TimelineCard = memo(function TimelineCard({ event, index }: { event: Dispu
             <Ionicons color={colors.info} name="checkmark-circle-outline" size={20} />
           </YStack>
           <YStack flex={1} gap="$1">
-            <Text fontWeight="900">{event.title}</Text>
+            <Text fontWeight="700">{event.title}</Text>
             <Paragraph color="$gray10">{event.description}</Paragraph>
             <Text color="$gray10" fontSize="$2">{formatDate(event.timestamp)}</Text>
           </YStack>
@@ -514,7 +514,7 @@ const EvidenceCard = memo(function EvidenceCard({ evidence, index }: { evidence:
             </YStack>
           )}
           <YStack flex={1}>
-            <Text fontWeight="900">{evidence.fileName}</Text>
+            <Text fontWeight="700">{evidence.fileName}</Text>
             <Text color="$gray10">{evidence.fileType} - {Math.round(evidence.fileSize / 1000)} KB</Text>
             <Text color="$gray10">{labelize(evidence.uploadStatus)}</Text>
           </YStack>
@@ -530,8 +530,8 @@ function CenteredState({ actionLabel, message, onAction }: { actionLabel?: strin
       <YStack ai="center" f={1} jc="center" p="$5">
         <PremiumCard maxWidth={560} p="$6" width="100%">
           <YStack ai="center" gap="$4">
-            <Text fontSize="$6" fontWeight="900" ta="center">{message}</Text>
-            {actionLabel && onAction ? <Button theme="purple" onPress={onAction}>{actionLabel}</Button> : null}
+            <Text fontSize="$6" fontWeight="700" ta="center">{message}</Text>
+            {actionLabel && onAction ? <Button theme="blue" onPress={onAction}>{actionLabel}</Button> : null}
           </YStack>
         </PremiumCard>
       </YStack>
