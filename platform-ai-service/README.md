@@ -1,3 +1,7 @@
+## Current deployment (2026-10-26)
+
+The active deployment uses Mac-hosted Ollama `qwen3:8b`. Provider tuning, environment profiles, Dockerfiles and Nginx files are owned by the sibling `deployments` repository. See [the current Mac operating guide](../deployments/docs/MAC_OLLAMA.md) and `deployments/config/ai/application.properties`. No Windows Ollama, GPU override or automatic model pull is required. Approved founder facts and current public product facts supply bounded retrieval context; private commerce data is excluded. Earlier CPU deployment notes below are historical.
+
 ## Sharity AI chat (2026-10-25)
 
 This existing service now owns public chat, approved founder knowledge, social JSON import/review,
@@ -6,7 +10,7 @@ The public UI route is `/chat`; routing and the AI container are deployed to the
 origin behind the existing public tunnel. Tesla remains disabled. See the workspace
 `outputs/local-deployment-report.md` for current verification and deployment limits.
 Read [the operating guide](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/SHARITY_AI.md) for setup, endpoint contracts, privacy and deployment gates.
-Use `application-chat-local.properties` for local inference; set the same private `CHAT_BFF_TOKEN`
+Use the external `deployments/config/ai/` profile for inference; set the same private `CHAT_BFF_TOKEN`
 in this service and the BFF. No real social posts were imported. Official social sync and SSE remain unimplemented.
 
 ## Operations and commerce follow-up (2026-10-25)
@@ -63,8 +67,8 @@ The seller must review the draft; the endpoint never publishes a listing.
 | `AI_SERVICE_PORT` | `8086` |
 | `AI_ENABLED` | `false`; use `true` only after model and security validation |
 | `AI_CHAT_PROVIDER` | `none`; set `ollama` to configure the chat model |
-| `OLLAMA_BASE_URL` | `http://localhost:11434`; reachable private model endpoint |
-| `OLLAMA_CHAT_MODEL` | `qwen3:4b`; provision the model outside application startup |
+| `OLLAMA_BASE_URL` | Mac endpoint from external deployment profile |
+| `OLLAMA_CHAT_MODEL` | `qwen3:8b` in the external profile; no automatic download |
 | `AI_JWK_SET_URI` | Authorization-server JWKS URL |
 | `JWT_ISSUER` | Must exactly match the issuer in Sharity access tokens |
 | `JWT_AUDIENCE` | `auth-clients`; match the intended API audience |
