@@ -52,6 +52,7 @@ services:
       dockerfile: C:/Users/HP/projects/deployments/dockerfiles/sharity-app.Dockerfile
       args:
         EXPO_PUBLIC_BFF_BASE_URL: ${EXPO_PUBLIC_BFF_BASE_URL:-https://vinodbalakumar.com/bff}
+        EXPO_PUBLIC_SITE_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-https://vinodbalakumar.com}
         EXPO_PUBLIC_MARKETPLACE_BASE_URL: /marketplace-service/api/v1/marketplace
         EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
     image: sharity-app:latest

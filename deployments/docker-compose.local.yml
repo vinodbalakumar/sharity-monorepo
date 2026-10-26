@@ -1,0 +1,28 @@
+# Uses the existing local database credentials without copying them into this file.
+# docker compose -p sharity-local --env-file .env --env-file .env.backend-local.properties -f docker-compose.yml -f docker-compose.local.yml up -d
+services:
+  authorization-server:
+    env_file: .env.backend-local.properties
+    environment:
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USERNAME:?Local database username is required}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD:?Local database password is required}
+  marketplace-service:
+    env_file: .env.backend-local.properties
+    environment:
+      SPRING_DATASOURCE_USERNAME: ${MARKETPLACE_DB_USERNAME:?Local database username is required}
+      SPRING_DATASOURCE_PASSWORD: ${MARKETPLACE_DB_PASSWORD:?Local database password is required}
+  payment-service:
+    env_file: .env.backend-local.properties
+    environment:
+      SPRING_DATASOURCE_USERNAME: ${PAYMENT_DB_USERNAME:?Local database username is required}
+      SPRING_DATASOURCE_PASSWORD: ${PAYMENT_DB_PASSWORD:?Local database password is required}
+  wallet-service:
+    env_file: .env.backend-local.properties
+    environment:
+      SPRING_DATASOURCE_USERNAME: ${WALLET_DB_USERNAME:?Local database username is required}
+      SPRING_DATASOURCE_PASSWORD: ${WALLET_DB_PASSWORD:?Local database password is required}
+  platform-web-bff:
+    env_file: .env.backend-local.properties
+    environment:
+      SPRING_DATASOURCE_USERNAME: ${BFF_DB_USERNAME:?Local database username is required}
+      SPRING_DATASOURCE_PASSWORD: ${BFF_DB_PASSWORD:?Local database password is required}

@@ -23,3 +23,14 @@ temp/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local shared-tool output and dependencies
+node_modules/
+outputs/
+.deployment-private/
+__pycache__/
+*.pyc
+
+# Optional diagnostic runtime settings remain private
+operations.local.env
+.operations.local.env
