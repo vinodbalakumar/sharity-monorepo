@@ -2,7 +2,7 @@
 
 The main deployment repository is `deployments` (locally `C:/Users/HP/projects/deployments`). It owns Docker Compose files, Dockerfiles, Nginx configuration, `scripts/sharity/` and these shared operational guides. The running local Compose project is `sharity-local`; the existing tunnel exposes that origin. Publishing Git branches does not redeploy it.
 
-Each application component is an independent Git repository with its own `.gitignore`, build file and CI. The new AI component is a private repository at https://github.com/vinodbalakumar/platform-ai-service. The local folder `tesla-dashboard-services` maps to the existing `employee-portal` GitHub repository; Tesla remains disabled in the local stack.
+Each application component is an independent Git repository with its own `.gitignore`, build file and CI. The new AI component is a private repository at https://github.com/vinodbalakumar/platform-ai-service. The `tesla-dashboard-services` repository is at https://github.com/vinodbalakumar/tesla-dashboard-services (GitHub redirects its former `employee-portal` URL). The local remote now uses the canonical URL. Tesla remains disabled in the local stack.
 
 Typical checkout layout:
 
