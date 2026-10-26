@@ -89,7 +89,10 @@ public class PaymentService {
      */
     @Transactional
     public PaymentDtos.PaymentOrderResponse checkout(PaymentDtos.CheckoutRequest request, Jwt jwt) {
-        return createPaymentOrder(request, userPublicId(jwt));
+        String customer = userPublicId(jwt);
+        if (request.customerUserPublicId() != null && !request.customerUserPublicId().isBlank()
+                && !customer.equals(request.customerUserPublicId())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Customer mismatch");
+        return createPaymentOrder(request, customer);
     }
 
     /**
@@ -114,12 +117,16 @@ public class PaymentService {
                     String providerCountryCode = firstNonBlank(request.providerCountryCode(), "US");
                     String selectedGatewayMode = paymentGatewayRegistry.resolveGatewayMode(providerCountryCode);
                     order.setPaymentProvider(selectedGatewayMode);
-                    order.setPaymentStatus("CAPTURED");
+                    order.setPaymentStatus("PENDING");
                     order.setPayoutEligibilityStatus("ON_HOLD");
                     order.setCreatedAt(now);
                     order.setUpdatedAt(now);
                     PaymentOrder saved = paymentOrderRepository.save(order);
                     saved.setProviderPaymentReference(paymentGatewayRegistry.capture(selectedGatewayMode, saved.getPublicId(), saved.getCustomerChargeAmount(), saved.getCurrencyCode()));
+                    if (saved.getProviderPaymentReference() == null || saved.getProviderPaymentReference().isBlank()) {
+                        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Payment confirmation unavailable");
+                    }
+                    saved.setPaymentStatus("CAPTURED");
                     createCaptureTransaction(saved, now);
                     createHeldPayout(saved, now);
                     publishWalletEvent("payment-captured", saved, saved.getCustomerUserPublicId(), saved.getCustomerChargeAmount());

@@ -23,6 +23,8 @@ import java.util.Map;
  */
 @Service
 public class PaymentGatewayRegistry {
+    @Value("${app.payment.demo-transactions-enabled:false}")
+    private boolean demoTransactionsEnabled;
     private final Map<String, PaymentGateway> gateways;
     private final PaymentGatewayPolicyRepository policyRepository;
     private final PaymentProviderMasterRepository paymentProviderMasterRepository;
@@ -92,10 +94,10 @@ public class PaymentGatewayRegistry {
 
     private PaymentGateway gateway(String gatewayMode) {
         String normalized = normalizeMode(gatewayMode);
-        PaymentGateway gateway = gateways.get(normalized);
-        if (gateway == null) {
-            gateway = gateways.get(defaultGatewayMode);
+        if (!demoTransactionsEnabled || !java.util.Set.of("mock", "sandbox", "paypal-mock", "stripe-test").contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Provider transactions require a verified checkout integration");
         }
+        PaymentGateway gateway = gateways.get(normalized);
         if (gateway == null) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No payment gateway adapter is configured");
         }

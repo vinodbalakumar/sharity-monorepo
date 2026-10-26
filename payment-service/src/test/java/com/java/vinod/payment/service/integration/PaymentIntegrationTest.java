@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for payment service end-to-end flows.
  * Tests: Order creation → Payment capture → Payout hold → Payout release
  */
-@SpringBootTest
+// This suite exercises simulated money movement; default-off enforcement has separate safety tests.
+@SpringBootTest(properties = "app.payment.demo-transactions-enabled=true")
 @ActiveProfiles("test")
 @DisplayName("Payment Service Integration Tests")
 public class PaymentIntegrationTest extends IntegrationTestSupport {
