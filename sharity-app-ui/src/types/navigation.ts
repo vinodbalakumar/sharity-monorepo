@@ -1,4 +1,7 @@
 export type AppRoute =
+  | 'signIn'
+  | 'chat'
+  | 'adminDiagnostics'
   | 'splash'
   | 'welcome'
   | 'register'

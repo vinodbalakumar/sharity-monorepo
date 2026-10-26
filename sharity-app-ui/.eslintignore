@@ -2,3 +2,9 @@ node_modules/
 dist/
 .expo/
 test-results/
+dist-e2e/
+dist-android/
+dist-ios/
+playwright-report/
+test-results/
+dist-e2e-final/

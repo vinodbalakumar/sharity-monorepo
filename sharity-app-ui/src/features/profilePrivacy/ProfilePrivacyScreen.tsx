@@ -15,6 +15,7 @@ import { getRegistrationOptions } from '../../services/authApi';
 import { getCurrentUser, getCurrentUserSessions, getCurrentUserSocialLinks, revokeAllCurrentUserSessions, revokeCurrentUserSession, startGoogleLink, updateCurrentUserProfile, uploadCurrentUserProfileImage, type CurrentUser, type SocialLink, type UserSession } from '../../services/userApi';
 
 type Props = {
+  onSignedOut?:()=>void;
   onNavigate: (route: AppRoute) => void;
 };
 
@@ -33,7 +34,7 @@ type GenderOption = {
 const privacyOptions = ['PRIVATE', 'VISIBLE_AFTER_ORDER', 'PUBLIC_WITHIN_SHARITY'] as const;
 const PROFILE_IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
-export function ProfilePrivacyScreen({ onNavigate }: Props) {
+export function ProfilePrivacyScreen({ onNavigate, onSignedOut }: Props) {
   const { isCompactPhone, isSingleColumn } = useResponsiveLayout();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [sessions, setSessions] = useState<UserSession[]>([]);
@@ -200,7 +201,7 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
   async function signOut() {
     try {
       await logoutBrowserSession();
-      onNavigate('welcome');
+      if(onSignedOut) onSignedOut(); else onNavigate('welcome');
     } catch {
       setError('Unable to sign out right now.');
     }
@@ -661,6 +662,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: 'flex-end'
   },
+  actionsFooterCompact: { flexDirection: 'column', alignItems: 'stretch' },
   actionsFooter: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -848,7 +850,6 @@ const styles = StyleSheet.create({
     minWidth: 0
   },
   webDateInput: {
-    appearance: 'none' as never,
     backgroundColor: 'transparent',
     borderWidth: 0,
     color: colors.textPrimary,

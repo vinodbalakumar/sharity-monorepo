@@ -2,39 +2,41 @@ import type { BrowserSessionSummary, SessionCheckResult } from '../types/session
 import { appStorage } from '../storage/storage';
 import { resolvePublicBaseUrl } from './publicUrl';
 
-const sessionTimeoutMs = 2500;
+const sessionTimeoutMs = 5000;
 const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const logoutOverrideKey = 'sharity_logout_override';
+async function sessionHeaders(): Promise<Record<string, string>> {
+  const token = await appStorage.getItem('access_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export async function checkSession(): Promise<SessionCheckResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, sessionTimeoutMs);
-
-  try {
-    const response = await fetch(`${bffBaseUrl}/session`, {
-      credentials: 'include',
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      return { status: 'anonymous' };
+  // Slow startup or a transient network failure is not an anonymous session.
+  // Retry once, then preserve local session artifacts and let the UI recover.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), sessionTimeoutMs);
+    try {
+      const response = await fetch(`${bffBaseUrl}/session`, { credentials: 'include', signal: controller.signal, headers: await sessionHeaders() });
+      if (response.status >= 500 || response.status === 429) continue;
+      if (!response.ok) return { status: 'anonymous' };
+      const body = (await response.json()) as { authenticated?: unknown };
+      return body.authenticated === true ? { status: 'authenticated' } : { status: 'anonymous' };
+    } catch {
+      // The second attempt can recover a cold connection without logging out.
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const body = (await response.json()) as { authenticated?: unknown };
-    return body.authenticated === true ? { status: 'authenticated' } : { status: 'anonymous' };
-  } catch {
-    return { status: 'anonymous' };
-  } finally {
-    clearTimeout(timeout);
   }
+  return { status: 'unavailable' };
 }
 
 export async function getBrowserSessionSummary(): Promise<BrowserSessionSummary | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), sessionTimeoutMs);
   try {
     const response = await fetch(`${bffBaseUrl}/session`, {
-      credentials: 'include'
+      credentials: 'include', signal: controller.signal, headers: await sessionHeaders()
     });
 
     if (!response.ok) {
@@ -44,7 +46,7 @@ export async function getBrowserSessionSummary(): Promise<BrowserSessionSummary 
     return (await response.json()) as BrowserSessionSummary;
   } catch {
     return null;
-  }
+  } finally { clearTimeout(timeout); }
 }
 
 export async function logoutBrowserSession(): Promise<void> {
@@ -105,16 +107,21 @@ async function clearAllAuthTokens(): Promise<void> {
 }
 
 export async function getBffCsrfToken(): Promise<{ csrfToken?: string }> {
+  return { csrfToken: (await getBrowserSessionSummary())?.csrfToken ?? undefined };
+}
+
+/** Typed session failure shared by authenticated feature APIs. */
+export class AuthenticationRequiredError extends Error {
+  constructor(message = 'Please sign in to continue.') { super(message); this.name = 'AuthenticationRequiredError'; }
+}
+
+export async function readApiErrorMessage(response: Response, fallback = 'Request failed'): Promise<string> {
   try {
-    const response = await fetch(`${bffBaseUrl}/session`, {
-      credentials: 'include'
-    });
-    if (!response.ok) {
-      return {};
+    const body: unknown = await response.json();
+    if (body && typeof body === 'object') {
+      const message = (body as { message?: unknown }).message;
+      if (typeof message === 'string' && message.length <= 500) return message;
     }
-    const body = (await response.json()) as { csrfToken?: string };
-    return { csrfToken: body.csrfToken };
-  } catch {
-    return {};
-  }
+  } catch { /* Non-JSON error responses use a safe fallback. */ }
+  return `${fallback} (${response.status})`;
 }

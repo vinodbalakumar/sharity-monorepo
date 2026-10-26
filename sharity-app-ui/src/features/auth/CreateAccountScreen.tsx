@@ -978,7 +978,6 @@ const styles = StyleSheet.create({
     minWidth: 0
   },
   webDateInput: {
-    appearance: 'none' as never,
     backgroundColor: 'transparent',
     borderWidth: 0,
     color: authPalette.text,

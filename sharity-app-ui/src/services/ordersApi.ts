@@ -162,7 +162,7 @@ function mapStatus(orderStatus: string, fulfillmentStatus: string, payoutStatus:
   if (normalizedOrder.includes('REFUND') || normalizedPayout.includes('REFUND')) {
     return 'refund_requested';
   }
-  if (normalizedFulfillment.includes('DELIVER') || normalizedOrder.includes('COMPLET')) {
+  if (['DELIVERED', 'DELIVERY_COMPLETE', 'COMPLETED'].includes(normalizedFulfillment) || normalizedOrder === 'COMPLETED') {
     return digital ? 'access_ready' : 'delivered';
   }
   if (normalizedFulfillment.includes('SHIP') || normalizedOrder.includes('SHIP')) {
@@ -174,12 +174,12 @@ function mapStatus(orderStatus: string, fulfillmentStatus: string, payoutStatus:
   if (normalizedOrder.includes('PENDING') || normalizedFulfillment.includes('PENDING') || normalizedPayout.includes('HOLD')) {
     return 'processing';
   }
-  return digital ? 'access_ready' : 'processing';
+  return 'processing';
 }
 
 function mapPayment(paymentStatus: string): BuyerOrderItem['payment'] {
   const normalized = paymentStatus.toUpperCase();
-  if (normalized.includes('PAID') || normalized.includes('CAPTURE') || normalized.includes('AUTHORIZED')) {
+  if (['PAID', 'CAPTURED', 'COMPLETED'].includes(normalized)) {
     return 'paid';
   }
   if (normalized.includes('DELIVER')) {

@@ -2,21 +2,22 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Text,
-  View,
-  Platform
+  View
 } from 'react-native';
 
 import { AppButton, AppLoadingIndicator } from '../../components/ui';
 import { InteriorShell } from '../../components/appShell';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-import { electronicsProducts, type ElectronicsProduct } from '../electronics/electronicsData';
+import { ProductArtwork } from '../../components/marketplace/ProductArtwork';
+import { getBrowserSessionSummary } from '../../services/sessionService';
 import { getMarketplaceListing, getMarketplaceListings } from '../../services/marketplaceApi';
 import { getCurrentUser } from '../../services/userApi';
+import { addStoredCartItem, selectPurchase } from '../../services/commerceApi';
+import { appStorage } from '../../storage/storage';
+import { systemFontFamily } from '../../theme/typography';
 import { colors, radii, spacing } from '../../theme';
 import type { MarketplaceListing, MarketplaceReview } from '../../types/marketplace';
 import type { AppRoute } from '../../types/navigation';
@@ -26,6 +27,7 @@ type ProductDetailsMode = 'digital' | 'electronics';
 type ProductAction = 'cart' | 'contact' | 'purchase' | 'report' | 'share' | 'wishlist';
 
 type ProductDetailsScreenProps = {
+  onOpenProduct?: (id:string)=>void;
   mode: ProductDetailsMode;
   onNavigate: (route: AppRoute) => void;
   productId: string | null;
@@ -43,6 +45,8 @@ type UnifiedReview = {
 
 type UnifiedProduct = {
   availability: string;
+  demoSeed?: boolean;
+  imageUrl?: string | null;
   brand?: string;
   category: string;
   condition?: string;
@@ -73,7 +77,7 @@ type LoadState = {
   related: UnifiedProduct[];
 };
 
-export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDetailsScreenProps) {
+export function ProductDetailsScreen({ mode, onNavigate, productId, onOpenProduct }: ProductDetailsScreenProps) {
   const { isDesktop } = useResponsiveLayout();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState<string | undefined>(undefined);
@@ -87,7 +91,10 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
 
   useEffect(() => {
     let disposed = false;
-    void getCurrentUser()
+    void getBrowserSessionSummary().then(session => {
+      if (!session?.authenticated) throw new Error('Guest session');
+      return getCurrentUser();
+    })
       .then((user) => {
         if (!disposed) {
           setCountryCode(user.profile.countryCode ?? undefined);
@@ -109,25 +116,11 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
     setState((current) => ({ ...current, error: false, loading: true }));
 
     try {
-      if (mode === 'electronics') {
-        const product = electronicsProducts.find((item) => item.id === productId) ?? electronicsProducts[0] ?? null;
-        setState({
-          error: !product,
-          loading: false,
-          product: product ? mapElectronicsProduct(product) : null,
-          related: electronicsProducts
-            .filter((item) => item.id !== product?.id)
-            .filter((item) => (product ? item.category === product.category || item.brand === product.brand : true))
-            .slice(0, 4)
-            .map(mapElectronicsProduct)
-        });
-        return;
-      }
-
-      const allListings = await getMarketplaceListings(countryCode);
-      const fallbackListing = allListings.find(isDigitalListing) ?? allListings[0] ?? null;
-      const selectedId = productId ?? fallbackListing?.publicId;
-      const listing = selectedId ? await getMarketplaceListing(selectedId, countryCode) : fallbackListing;
+      const [listingResponse, allListings] = await Promise.all([
+        productId ? getMarketplaceListing(productId, countryCode) : Promise.resolve(null),
+        getMarketplaceListings(countryCode).catch(() => [])
+      ]);
+      const listing = listingResponse ?? allListings.find(isDigitalListing) ?? allListings[0] ?? null;
 
       setState({
         error: !listing,
@@ -148,7 +141,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
         related: []
       });
     }
-  }, [mode, productId, countryCode]);
+  }, [productId, countryCode]);
 
   useEffect(() => {
     loadProduct();
@@ -183,15 +176,22 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
         return;
       }
 
-      const messages: Record<Exclude<ProductAction, 'share'>, string> = {
-        cart: 'Added to your cart.',
-        contact: 'Opening seller contact.',
-        purchase: 'Opening secure purchase flow.',
-        report: 'Opening report flow.',
-        wishlist: 'Added to your wishlist.'
-      };
-
-      setActionMessage(messages[action]);
+      if (!state.product) return;
+      try {
+        if (action === 'purchase') {
+          selectPurchase(state.product.id);
+          onNavigate('checkout');
+        } else if (action === 'cart') {
+          await addStoredCartItem(state.product.id);
+          onNavigate('cart');
+        } else if (action === 'wishlist') {
+          const saved: string[] = JSON.parse(appStorage.getString('savedListingIds') ?? '[]');
+          appStorage.setString('savedListingIds', JSON.stringify([...new Set([...saved, state.product.id])]));
+          setActionMessage('Saved on this device.');
+        } else {
+          onNavigate('support');
+        }
+      } catch (ex) { setActionMessage(ex instanceof Error ? ex.message : 'Unable to complete this action.'); }
     },
     [isAuthenticated, isDigitalProduct, onNavigate, state.product]
   );
@@ -246,7 +246,7 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
             </View>
 
             <ReviewsSection averageRating={averageRating} product={state.product} />
-            <RelatedProductsSection products={state.related} />
+            <RelatedProductsSection products={state.related} onOpenProduct={onOpenProduct} />
           {!isDesktop ? <ProductActionBar canAddToCart={canAddToCart} onAction={handleAction} /> : null}
         </>
       ) : null}
@@ -254,25 +254,12 @@ export function ProductDetailsScreen({ mode, onNavigate, productId }: ProductDet
   );
 }
 
-function ProductImageGallery({ isDesktop, product }: { isDesktop: boolean; product: UnifiedProduct }) {
-  const labels = product.isDigital ? ['Preview', 'Sample', 'Rules'] : ['Photo', 'Condition', 'Accessories', 'Warranty'];
-
+function ProductImageGallery({ product, isDesktop }: { isDesktop: boolean; product: UnifiedProduct }) {
   return (
-    <View style={styles.mediaPanel}>
-      <View style={styles.previewImage}>
-        <Ionicons color={colors.black} name={product.isDigital ? 'keypad-outline' : 'hardware-chip-outline'} size={44} />
-        <Text style={styles.previewText}>{isDesktop ? 'Main preview' : 'Image carousel'}</Text>
-        {!isDesktop ? <Text style={styles.smallText}>1 / {labels.length}</Text> : null}
+    <View testID="product-gallery" style={[styles.mediaPanel,isDesktop && {flex:1}]}>
+      <View style={[styles.previewImage,!isDesktop && {minHeight:240,padding:16}]}>
+        <ProductArtwork item={{title:product.title,imageUrl:product.imageUrl,demoSeed:product.demoSeed,categoryCode:product.category}} style={{width:'100%',minHeight:isDesktop?240:180}} />
       </View>
-      <ScrollView horizontal={!isDesktop} showsHorizontalScrollIndicator={false}>
-        <View style={styles.thumbnailRow}>
-          {labels.map((label) => (
-            <View key={label} style={styles.thumbnail}>
-              <Text style={styles.thumbnailText}>{label}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
       <Text style={styles.smallText}>
         {product.isDigital
           ? 'No actual code, license key, download URL, credentials, or access details are shown before payment.'
@@ -295,14 +282,15 @@ function ProductSummaryCard({
   onAction: (action: ProductAction) => void;
   product: UnifiedProduct;
 }) {
+  const {isDesktop}=useResponsiveLayout();
   const discount = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
 
   return (
-    <View style={styles.purchasePanel}>
+    <View testID="product-summary" style={[styles.purchasePanel,isDesktop && {flex:1}]}>
       <View style={styles.badgeRow}>
-        <Text style={styles.badge}>Buyer Protection</Text>
+        <Text style={styles.badge}>{product.demoSeed?'Demo listing':'Marketplace listing'}</Text>
         <Text style={styles.outlineBadge}>{product.verifiedSeller ? 'Verified Seller' : 'Seller Review Needed'}</Text>
         <Text style={styles.outlineBadge}>{product.availability}</Text>
       </View>
@@ -479,7 +467,7 @@ function ReviewsSection({ averageRating, product }: { averageRating: number | nu
   );
 }
 
-function RelatedProductsSection({ products }: { products: UnifiedProduct[] }) {
+function RelatedProductsSection({ products, onOpenProduct }: { products: UnifiedProduct[]; onOpenProduct?: (id:string)=>void }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Related Products</Text>
@@ -490,7 +478,7 @@ function RelatedProductsSection({ products }: { products: UnifiedProduct[] }) {
             <Text style={styles.badge}>{product.productType}</Text>
             <Text style={styles.cardTitle}>{product.title}</Text>
             <Text style={styles.cardText}>{formatMoney(product.price, product.currencyCode)}</Text>
-            <Text style={styles.linkText}>View Product</Text>
+            {onOpenProduct && <AppButton variant="outline" onPress={()=>onOpenProduct(product.id)}>View Product</AppButton>}
           </View>
         ))}
       </View>
@@ -537,15 +525,17 @@ function InfoCard({ children, icon, title }: { children: ReactNode; icon: Compon
 function mapDigitalListing(listing: MarketplaceListing): UnifiedProduct {
   return {
     availability: statusLabel(listing.listingStatus),
+    demoSeed: listing.demoSeed,
     category: listing.categoryCode,
     country: listing.providerCountryCode || 'Global',
     currencyCode: getListingDisplayCurrencyCode(listing),
     deliveryType: deliveryLabelFor(listing),
     description: listing.description || 'Digital access details and instructions after purchase.',
     id: listing.publicId,
-    isDigital: true,
+    imageUrl: listing.imageUrl,
+    isDigital: isDigitalListing(listing),
     licenseNote: listing.licenseNote,
-    marketplaceName: 'Digital Marketplace',
+    marketplaceName: listing.verticalCode === 'JEWELLERY' ? 'Jewellery marketplace' : isDigitalListing(listing) ? 'Digital marketplace' : 'Marketplace',
     originalPrice: getListingDisplayOriginalPriceAmount(listing),
     price: getListingDisplayPriceAmount(listing),
     productType: listing.productType,
@@ -554,42 +544,6 @@ function mapDigitalListing(listing: MarketplaceListing): UnifiedProduct {
     sellerRating: null,
     title: listing.title,
     verifiedSeller: listing.verifiedSeller
-  };
-}
-
-function mapElectronicsProduct(product: ElectronicsProduct): UnifiedProduct {
-  return {
-    availability: 'Available',
-    brand: product.brand,
-    category: product.category,
-    condition: product.condition,
-    country: product.location,
-    currencyCode: 'USD',
-    deliveryType: product.shippingAvailable ? 'Shipping Required' : 'Seller Shipping Unavailable',
-    description: `${product.title} from ${product.sellerName}. Review condition, warranty, shipping, return eligibility, and seller rating before purchase.`,
-    id: product.id,
-    isDigital: false,
-    marketplaceName: 'Electronics Marketplace',
-    originalPrice: product.originalPrice ?? null,
-    price: product.price,
-    productType: 'ELECTRONICS',
-    reviews: [
-      {
-        body: 'Condition and seller communication matched the listing preview.',
-        date: '2026-01-15T00:00:00',
-        id: `${product.id}-review`,
-        rating: product.sellerRating,
-        reviewer: 'Verified buyer',
-        title: 'Good marketplace experience',
-        verified: true
-      }
-    ],
-    sellerName: product.sellerName,
-    sellerRating: product.sellerRating,
-    shippingAvailable: product.shippingAvailable,
-    title: product.title,
-    verifiedSeller: product.sellerName.toLowerCase().includes('verified'),
-    warrantyAvailable: product.warrantyAvailable
   };
 }
 
@@ -651,13 +605,7 @@ function formatDate(value: string) {
 }
 
 function redirectToLogin(onNavigate: (route: AppRoute) => void) {
-  if (Platform.OS !== 'web') {
-    onNavigate('welcome');
-    return;
-  }
-
-  const base = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
-  window.location.assign(`${base}/login?force=true`);
+  onNavigate('signIn');
 }
 
 const styles = StyleSheet.create({
@@ -675,9 +623,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl
   },
   headerTitle: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 20,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   headerActions: {
     flexDirection: 'row',
@@ -702,13 +651,14 @@ const styles = StyleSheet.create({
     gap: spacing.xl
   },
   topLayoutMobile: {
+    gap:20,
     flexDirection: 'column'
   },
   mediaPanel: {
-    flex: 1,
     gap: spacing.md
   },
   previewImage: {
+    backgroundColor: colors.surface,
     alignItems: 'center',
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -718,9 +668,10 @@ const styles = StyleSheet.create({
     padding: spacing.xl
   },
   previewText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: spacing.md
   },
   thumbnailRow: {
@@ -735,15 +686,16 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   thumbnailText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '800'
   },
   purchasePanel: {
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    flex: 1,
     gap: spacing.md,
     padding: spacing.lg
   },
@@ -754,11 +706,11 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.black,
+    backgroundColor: colors.primary,
     borderRadius: radii.sm,
     color: colors.white,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     overflow: 'hidden',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
@@ -767,20 +719,23 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.sm,
     borderWidth: 1,
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     overflow: 'hidden',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
   productTitle: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 30,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   productMeta: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 14,
     lineHeight: 21
   },
@@ -791,19 +746,22 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   originalPrice: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 15,
     textDecorationLine: 'line-through'
   },
   price: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 28,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   discount: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 13,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   actionGrid: {
     flexDirection: 'row',
@@ -812,7 +770,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: colors.black,
+    backgroundColor: colors.primary,
     borderRadius: radii.md,
     justifyContent: 'center',
     minHeight: 44,
@@ -822,7 +780,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.white,
     fontSize: 14,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   secondaryButton: {
     alignItems: 'center',
@@ -835,15 +793,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm
   },
   secondaryButtonText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 14,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   noticeText: {
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 19,
@@ -869,17 +829,20 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   cardTitle: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 17,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   cardText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 14,
     lineHeight: 21
   },
   smallText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 12,
     lineHeight: 18
   },
@@ -890,13 +853,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm
   },
   detailLabel: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     textTransform: 'uppercase'
   },
   detailValue: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 14,
     lineHeight: 20
   },
@@ -906,18 +871,21 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   linkText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
     textDecorationLine: 'underline'
   },
   section: {
+    backgroundColor: colors.surface,
     gap: spacing.md
   },
   sectionTitle: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 24,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   breakdownList: {
     borderColor: colors.border,
@@ -980,12 +948,14 @@ const styles = StyleSheet.create({
     padding: spacing.xl
   },
   stateTitle: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 18,
-    fontWeight: '900'
+    fontWeight: '700'
   },
   stateText: {
-    color: colors.black,
+    fontFamily: systemFontFamily,
+    color: colors.textPrimary,
     fontSize: 14
   }
 });

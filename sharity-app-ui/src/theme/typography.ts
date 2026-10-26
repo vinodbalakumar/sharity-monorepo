@@ -1,3 +1,11 @@
+import { Platform } from 'react-native';
+
+export const systemFontFamily = Platform.select({
+  web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  ios: 'System',
+  default: 'sans-serif'
+});
+
 export const typography = {
   // Display: Hero/Billboard text (40px, bold)
   display: {

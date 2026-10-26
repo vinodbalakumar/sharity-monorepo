@@ -1,14 +1,14 @@
 export const colors = {
-  // Primary brand colors (blue)
-  primary: '#3f88c5',
-  primaryLight: '#5fa3d5',
-  primaryDark: '#2f78b5',
+  // One marketplace palette shared by navigation, forms and commerce.
+  primary: '#2459d3',
+  primaryLight: '#eaf0ff',
+  primaryDark: '#1945ad',
   primaryContrast: '#ffffff',
 
   // Secondary accent (blue-tinted)
-  secondary: '#3f88c5',
-  secondaryLight: '#5fa3d5',
-  secondaryDark: '#2f78b5',
+  secondary: '#2459d3',
+  secondaryLight: '#eaf0ff',
+  secondaryDark: '#1945ad',
   secondaryContrast: '#ffffff',
 
   // Tertiary (teal, for highlights)
@@ -56,24 +56,24 @@ export const colors = {
   gray950: '#030712',
 
   // Semantic colors
-  background: '#f6f7fb',
+  background: '#f3f5f8',
   surface: '#ffffff',
-  surfaceVariant: '#eef2ff',
+  surfaceVariant: '#edf2fc',
   surfaceHover: '#f8fafc',
   surfaceActive: '#e8f0ff',
   panel: '#ffffff',
   panelVariant: '#fbfcff',
-  border: '#d9e1ec',
+  border: '#dfe5ef',
   borderLight: '#edf2f7',
   borderDark: '#bcc8d6',
   divider: '#d9e1ec',
 
   // Text colors
-  textPrimary: '#152033',
+  textPrimary: '#172337',
   textSecondary: '#5f6f84',
-  textMuted: '#8f9eb1',
+  textMuted: '#637286',
   softText: '#5f6f84',
-  mutedText: '#8f9eb1',
+  mutedText: '#637286',
 
   // State colors
   disabled: '#94a3b8',
@@ -87,7 +87,7 @@ export const colors = {
   overlayDark: 'rgba(15,23,42,0.85)',
 
   // Semantic aliases
-  accent: '#38bdf8',
+  accent: '#ffcf40',
   electric: '#38bdf8',
   ink: '#ffffff',
   midnight: '#111827',
@@ -96,22 +96,22 @@ export const colors = {
 };
 
 export const marketingColors = {
-  accent: '#f29a4a',
-  accentSoft: '#fff0df',
-  blue: '#3f88c5',
+  accent: colors.primary,
+  accentSoft: colors.primaryLight,
+  blue: colors.primary,
   border: '#dbe4ef',
-  card: '#fffdf9',
+  card: colors.surface,
   cardAlt: '#ffffff',
   danger: '#ef4444',
-  header: '#f7fbff',
-  heroEnd: '#dcefff',
-  heroStart: '#fff3e4',
+  header: colors.surface,
+  heroEnd: colors.primaryLight,
+  heroStart: colors.primaryLight,
   input: '#ffffff',
-  page: '#f4f7fb',
-  purple: '#3f88c5',
-  purpleSoft: '#eef7ff',
+  page: colors.background,
+  purple: colors.primary,
+  purpleSoft: colors.primaryLight,
   success: '#246b45',
-  text: '#12263a',
+  text: colors.textPrimary,
   textMuted: '#64778c',
   white: colors.white
 } as const;

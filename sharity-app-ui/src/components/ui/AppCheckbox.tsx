@@ -3,23 +3,26 @@ import { Pressable, StyleSheet, View } from 'react-native';
 type AppCheckboxProps = {
   checked: boolean;
   onPress: () => void;
+  accessibilityLabel?: string;
 };
 
-export function AppCheckbox({ checked, onPress }: AppCheckboxProps) {
+export function AppCheckbox({ checked, onPress, accessibilityLabel }: AppCheckboxProps) {
   return (
     <Pressable
       accessibilityRole="checkbox"
+      aria-checked={checked}
       accessibilityState={{ checked }}
-      accessibilityLabel={checked ? 'Uncheck option' : 'Check option'}
+      accessibilityLabel={accessibilityLabel ?? (checked ? 'Uncheck option' : 'Check option')}
       onPress={onPress}
-      style={({ pressed }) => [styles.box, checked && styles.boxChecked, pressed && styles.boxPressed]}
+      style={({ pressed }) => [styles.target, pressed && styles.boxPressed]}
     >
-      {checked ? <View style={styles.checkMark} /> : null}
+      <View style={[styles.box, checked && styles.boxChecked]}>{checked ? <View style={styles.checkMark} /> : null}</View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  target: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   box: {
     width: 22,
     height: 22,

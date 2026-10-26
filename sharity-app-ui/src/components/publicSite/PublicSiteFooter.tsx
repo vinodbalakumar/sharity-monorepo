@@ -35,7 +35,7 @@ export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorCon
             const expanded = openGroup === group.title;
             return (
               <View key={group.title} style={styles.footerAccordionItem}>
-                <Pressable onPress={() => setOpenGroup(expanded ? null : group.title)} style={styles.footerAccordionHeader}>
+                <Pressable accessibilityRole="button" onPress={() => setOpenGroup(expanded ? null : group.title)} style={styles.footerAccordionHeader}>
                   <Text style={styles.footerAccordionTitle}>{group.title}</Text>
                   <Ionicons color={palette.textMuted} name={expanded ? 'chevron-up' : 'chevron-down'} size={18} />
                 </Pressable>
@@ -44,7 +44,7 @@ export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorCon
                   <View style={styles.footerAccordionBody}>
                     <Text style={styles.footerGroupText}>{groupDescription(group.title)}</Text>
                     {group.links.map((link) => (
-                      <Pressable key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerAccordionLinkWrap}>
+                      <Pressable accessibilityRole="button" key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerAccordionLinkWrap}>
                         <Text style={styles.footerLink}>{link.label}</Text>
                       </Pressable>
                     ))}
@@ -78,7 +78,7 @@ export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorCon
             <Text style={styles.footerTitle}>{group.title}</Text>
             <Text style={[styles.footerGroupText, (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGroupTextCompact]}>{groupDescription(group.title)}</Text>
             {group.links.map((link) => (
-              <Pressable key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerLinkWrap}>
+              <Pressable accessibilityRole="button" key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerLinkWrap}>
                 <Text style={styles.footerLink}>{link.label}</Text>
               </Pressable>
             ))}

@@ -23,17 +23,7 @@ export async function getCart(): Promise<CartResponse> {
     if (!response.ok) {
       // Return empty cart if it doesn't exist yet
       if (response.status === 404) {
-        return {
-          cartId: '',
-          buyerId: '',
-          items: [],
-          subtotal: 0,
-          fees: 0,
-          tax: 0,
-          total: 0,
-          currency: 'USD',
-          itemCount: 0
-        };
+        return normalizeCartResponse({});
       }
       throw new Error(`Failed to load cart: ${response.statusText}`);
     }

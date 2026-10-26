@@ -10,6 +10,7 @@ import type { AppRoute } from '../../types/navigation';
 import { getBffCsrfToken } from '../../services/sessionService';
 import { createProviderAccount, enrollProviderModule, getMyModules, getMyProviderAccounts, getMyCapabilities, type ProviderAccount } from '../../services/platformAuthorizationApi';
 import { getCurrentUser, type CurrentUser } from '../../services/userApi';
+import { apiRequest } from '../../services/apiClient';
 
 type SellerListingScreenProps = {
   onNavigate: (route: AppRoute) => void;
@@ -135,7 +136,7 @@ const initialForm = {
   categoryCode: '',
   deliveryType: '',
   productType: '',
-  fulfillmentScope: 'NATIONAL' as const,
+  fulfillmentScope: 'NATIONAL' as 'NATIONAL' | 'GLOBAL',
   stockQuantity: '1'
 };
 
@@ -148,6 +149,8 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [createdDraft, setCreatedDraft] = useState<SellerListingDraftResponse | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -307,6 +310,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
       }
 
       const created = (await response.json()) as SellerListingDraftResponse;
+      setCreatedDraft(created);
       setMessage(`Draft ${created.draftId} created successfully.`);
       setForm(initialForm);
       await load();
@@ -315,6 +319,33 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function generateDescription() {
+    if (!form.title.trim() || !(form.longDescription || form.shortDescription).trim()) {
+      setError('Enter a title and factual description before requesting writing assistance.'); return;
+    }
+    setGenerating(true); setError('');
+    try {
+      const response = await apiRequest<{ draft: string; reviewRequired: boolean }>('/api/platform-ai-service/api/v1/ai/listing-draft', {
+        method: 'POST', body: JSON.stringify({ title: form.title.trim(), details: (form.longDescription || form.shortDescription).slice(0, 2000) }),
+      });
+      setForm(current => ({ ...current, longDescription: response.draft }));
+      setMessage('AI draft added. Review every claim and edit the description before saving or submitting.');
+    } catch (ex) { setError(ex instanceof Error ? ex.message : 'Writing assistance is unavailable. You can continue writing manually.'); }
+    finally { setGenerating(false); }
+  }
+
+  async function submitForReview() {
+    if (!createdDraft || submitting) return;
+    setSubmitting(true); setError('');
+    try {
+      const result = await apiRequest<{ success: boolean; status: string }>(`/api/marketplace-service/api/seller/listings/drafts/${encodeURIComponent(createdDraft.draftId)}/publish`, { method: 'POST', body: '{}' });
+      if (!result.success) throw new Error('The listing could not be submitted. Please review its details.');
+      setCreatedDraft(current => current ? { ...current, status: result.status } : null);
+      setMessage('Listing submitted for moderation. It becomes available after approval.');
+    } catch (ex) { setError(ex instanceof Error ? ex.message : 'Unable to submit this listing.'); }
+    finally { setSubmitting(false); }
   }
 
   if (loading) {
@@ -351,7 +382,7 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
                   placeholder={currentUser?.username ?? 'Display name'}
                   value={currentUser ? `${currentUser.profile.firstName ?? ''} ${currentUser.profile.lastName ?? ''}`.trim() : ''}
                   onChangeText={() => undefined}
-                  editable={false}
+                  disabled
                   style={styles.disabledInput}
                 />
                 <Paragraph style={styles.helper}>Provider identity comes from your live account profile.</Paragraph>
@@ -451,6 +482,8 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
                   <Field label="Title *" value={form.title} onChangeText={(value) => setForm((current) => ({ ...current, title: value }))} />
                   <Field label="Short description" value={form.shortDescription} onChangeText={(value) => setForm((current) => ({ ...current, shortDescription: value }))} />
                   <Field label="Full description" value={form.longDescription} onChangeText={(value) => setForm((current) => ({ ...current, longDescription: value }))} multiline numberOfLines={4} />
+                  <Button disabled={generating || submitting || !form.title.trim()} onPress={generateDescription}>{generating ? 'Preparing draft…' : 'Improve description with AI'}</Button>
+                  <Paragraph style={styles.muted}>Optional writing assistance. Review the result before submitting; you can always write the description yourself.</Paragraph>
                   <XStack gap="$3" flexWrap="wrap">
                     <View style={styles.halfField}>
                       <Field label="Price *" value={form.price} onChangeText={(value) => setNumericField('price', value)} keyboardType="decimal-pad" />
@@ -522,6 +555,11 @@ export function SellerListingScreen({ onNavigate }: SellerListingScreenProps) {
                   <Button accessibilityLabel="Create listing draft" disabled={submitting} onPress={submitDraft} theme="purple" style={styles.submitButton}>
                     {submitting ? 'Creating draft...' : 'Create draft'}
                   </Button>
+                  {createdDraft ? <View style={styles.summaryRows}>
+                    <SummaryRow label="Saved listing" value={createdDraft.title} />
+                    <SummaryRow label="Status" value={createdDraft.status} />
+                    {createdDraft.status === 'DRAFT' ? <Button disabled={submitting} onPress={submitForReview}>Submit saved draft for review</Button> : null}
+                  </View> : null}
                 </View>
               </Card>
 

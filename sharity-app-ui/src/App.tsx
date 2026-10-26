@@ -1,28 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { PaperProvider } from 'react-native-paper';
+import { paperTheme } from './theme/paperTheme';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TamaguiProvider } from 'tamagui';
 
 import { AccountSwitcherScreen } from './features/accountSwitcher/AccountSwitcherScreen';
+import { DiagnosticsScreen } from './features/admin/DiagnosticsScreen';
+import { SharityAiScreen } from './features/chat/SharityAiScreen';
 import { AppSettingsScreen } from './features/appSettings/AppSettingsScreen';
 import { CompleteSocialRegistrationScreen } from './features/auth/CompleteSocialRegistrationScreen';
 import { CreateAccountScreen } from './features/auth/CreateAccountScreen';
 import { ForgotPasswordScreen, ResetPasswordScreen } from './features/auth/PasswordRecoveryScreen';
 import { VerifyEmailScreen } from './features/auth/VerifyEmailScreen';
-import { CartScreen } from './features/cart/CartScreen';
-import { CheckoutScreen } from './features/checkout/CheckoutScreen';
+import { CartScreen } from './features/cart/CommerceCartScreen';
+import { CheckoutScreen } from './features/checkout/CommerceCheckoutScreen';
 import { DigitalProductDetailsScreen } from './features/digital/DigitalProductDetailsScreen';
 import { SplashScreen } from './features/splash/SplashScreen';
-import { DigitalMarketplaceListingsScreen } from './features/marketplace/DigitalMarketplaceListingsScreen';
-import { ElectronicsMarketplaceHomeScreen } from './features/electronics/ElectronicsMarketplaceHomeScreen';
+import { DigitalMarketplaceListingsScreen, ElectronicsMarketplaceHomeScreen, JewelryMarketplaceListingsScreen } from './features/marketplace/CommerceCatalogScreen';
 import { HomeScreen } from './features/home/HomeScreen';
 import { BuyerLibraryScreen } from './features/library/BuyerLibraryScreen';
 import { LoginSecurityScreen } from './features/loginSecurity/LoginSecurityScreen';
 import { CodeRevealScreen, SecureDownloadScreen } from './features/library/SecureAccessScreens';
 import { MarketplaceSwitcherScreen } from './features/marketplace/MarketplaceSwitcherScreen';
 import { MarketplaceConfigScreen } from './features/marketplaceConfig/MarketplaceConfigScreen';
-import { JewelryMarketplaceListingsScreen } from './features/marketplace/JewelryMarketplaceListingsScreen';
 import { NotificationCenterScreen } from './features/notifications/NotificationCenterScreen';
 import { DisputeStatusScreen } from './features/orders/DisputeStatusScreen';
 import { OpenDisputeScreen } from './features/orders/OpenDisputeScreen';
@@ -35,7 +37,7 @@ import { RewardsScreen } from './features/rewards/RewardsScreen';
 import { TrackingScreen } from './features/orders/TrackingScreen';
 import { PaymentFailedScreen } from './features/payment/PaymentFailedScreen';
 import { PaymentAuthorizationScreen } from './features/paymentAuthorization/PaymentAuthorizationScreen';
-import { PaymentSuccessScreen } from './features/payment/PaymentSuccessScreen';
+import { CheckoutScreen as PaymentSuccessScreen } from './features/checkout/CommerceCheckoutScreen';
 import { PoliciesScreen } from './features/policies/PoliciesScreen';
 import { PricingPromotionsScreen } from './features/pricingPromotions/PricingPromotionsScreen';
 import { ProfilePrivacyScreen } from './features/profilePrivacy/ProfilePrivacyScreen';
@@ -52,8 +54,8 @@ import { appState$ } from './state/appState';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
-const minimumSplashMs = 900;
-const bootstrapTimeoutMs = 10000;
+const minimumSplashMs = 250;
+const bootstrapTimeoutMs = 15000;
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 
 type RouteSnapshot = {
@@ -145,8 +147,14 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
   const path = pathname.replace(/\/+$/, '');
   const query = new URLSearchParams(search);
   const fromHistory = historyState?.route ? historyState : null;
+  const product = path.match(/^\/app\/products\/([a-zA-Z0-9_-]{1,100})$/);
+  if (product) return { route: 'digitalProduct', digitalProductId: product[1] };
+  const electronics = path.match(/^\/app\/electronics\/([a-zA-Z0-9_-]{1,100})$/);
+  if (electronics) return { route: 'electronicsProduct', electronicsProductId: electronics[1] };
 
   switch (path) {
+    case '/chat':
+      return { route: 'chat' };
     case '/app/home':
       return { route: 'home' };
     case '/app/marketplaces':
@@ -187,6 +195,8 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
       return { route: 'verifyEmail', authToken: query.get('token') };
     case '/app/notifications':
       return { route: 'notifications' };
+    case '/app/admin/diagnostics':
+      return { route: 'adminDiagnostics' };
     case '/app/app-settings':
       return { route: 'appSettings' };
     case '/app/login-security':
@@ -233,6 +243,12 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
 
 function snapshotToPath(snapshot: RouteSnapshot): string {
   switch (snapshot.route) {
+    case 'digitalProduct':
+      return snapshot.digitalProductId ? `/app/products/${encodeURIComponent(snapshot.digitalProductId)}` : '/app/marketplaces';
+    case 'electronicsProduct':
+      return snapshot.electronicsProductId ? `/app/electronics/${encodeURIComponent(snapshot.electronicsProductId)}` : '/app/electronics';
+    case 'chat':
+      return '/chat';
     case 'home':
       return '/app/home';
     case 'marketplaces':
@@ -267,6 +283,8 @@ function snapshotToPath(snapshot: RouteSnapshot): string {
       return `/app/orders/dispute-status${snapshot.orderId || snapshot.disputeId ? `?${new URLSearchParams({ ...(snapshot.orderId ? { orderId: snapshot.orderId } : {}), ...(snapshot.disputeId ? { disputeId: snapshot.disputeId } : {}) }).toString()}` : ''}`;
     case 'notifications':
       return '/app/notifications';
+    case 'adminDiagnostics':
+      return '/app/admin/diagnostics';
     case 'appSettings':
       return '/app/app-settings';
     case 'loginSecurity':
@@ -321,7 +339,9 @@ function publicSectionFromSlug(slug: string): 'legal' | 'support' | 'company' {
 }
 
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>('splash');
+  const [route, setRouteState] = useState<AppRoute>('splash');
+  const verifiedAuth = useRef(false);
+  const [guestNotice, setGuestNotice] = useState('');
   const [digitalProductId, setDigitalProductId] = useState<string | null>(null);
   const [electronicsProductId, setElectronicsProductId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -390,14 +410,44 @@ export default function App() {
     }
   }, [authToken, digitalProductId, disputeId, electronicsProductId, orderId, publicContentSlug, receiptId, refundRequestId, route, secureAccessId]);
 
-  function startBrowserLogin() {
-    void clearLogoutOverride();
+  function rememberLoginReturn(snapshot: RouteSnapshot) {
+    if (Platform.OS !== 'web') return;
+    try { window.sessionStorage.setItem('sharity_login_return', JSON.stringify({ savedAt: Date.now(), snapshot: { ...snapshot, authToken: undefined } })); } catch { /* Storage is optional. */ }
+  }
+  function pendingLoginReturn(): RouteSnapshot | null {
+    if (Platform.OS !== 'web') return null;
+    try {
+      const stored=JSON.parse(window.sessionStorage.getItem('sharity_login_return') ?? 'null');
+      if (!stored?.snapshot || !Number.isFinite(stored.savedAt) || stored.savedAt > Date.now() || Date.now()-stored.savedAt > 15*60*1000) return null;
+      const target=new URL(snapshotToPath(stored.snapshot),window.location.origin);
+      const restored=routeSnapshotFromLocation(target.pathname,target.search,null);
+      return restored?.route === stored.snapshot.route ? restored : null;
+    } catch { return null; }
+  }
+  function clearLoginReturn() {
+    if (Platform.OS === 'web') try { window.sessionStorage.removeItem('sharity_login_return'); } catch { /* Storage is optional. */ }
+  }
+  function setRoute(next: AppRoute) {
+    if (next === 'signIn') { void startBrowserLogin(); return; }
+    if (next !== 'splash' && !isPublicRoute(next) && !verifiedAuth.current) {
+      rememberLoginReturn({ route: next, ...snapshotStateForRoute(next) });
+      setGuestNotice(next === 'home' ? '' : 'Sign in to access your account, orders and saved items. You can keep browsing without an account.');
+      setRouteState('welcome');
+      return;
+    }
+    setGuestNotice('');
+    setRouteState(next);
+  }
+  async function startBrowserLogin() {
+    if (!pendingLoginReturn()) rememberLoginReturn({ route: route === 'welcome' ? 'home' : route, ...snapshotStateForRoute(route) });
+    await clearLogoutOverride();
     if (Platform.OS === 'web') {
       window.location.assign(`${bffBaseUrl}/login?force=true`);
       return;
     }
 
-    setRoute('home');
+    setGuestNotice('Please use the web sign-in to access your account. You can continue browsing here.');
+    setRouteState('welcome');
   }
 
   useEffect(() => {
@@ -416,7 +466,6 @@ export default function App() {
       }
       console.warn('[bootstrap] hard timeout reached; falling back to welcome');
       resolved = true;
-      void clearBrowserSessionArtifacts();
       setRoute('welcome');
       if (Platform.OS === 'web') {
         window.history.replaceState({ route: 'welcome' }, '', '/app/');
@@ -452,9 +501,17 @@ export default function App() {
 
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(minimumSplashMs - elapsed, 0);
-      const nextRoute = !logoutOverride && (loginSuccessReturn || session.status === 'authenticated')
-        ? (locationSnapshot?.route ?? 'home')
-        : (locationSnapshot?.route && isPublicRoute(locationSnapshot.route) ? locationSnapshot.route : 'welcome');
+      verifiedAuth.current = !logoutOverride && session.status === 'authenticated';
+      const returnSnapshot=verifiedAuth.current && loginSuccessReturn ? pendingLoginReturn() : null;
+      const targetSnapshot=verifiedAuth.current
+        ? (returnSnapshot ?? locationSnapshot ?? { route: 'home' as const })
+        : (locationSnapshot && isPublicRoute(locationSnapshot.route) ? locationSnapshot : { route: 'welcome' as const });
+      const nextRoute=targetSnapshot.route;
+      if (!verifiedAuth.current && locationSnapshot && !isPublicRoute(locationSnapshot.route)) {
+        rememberLoginReturn(locationSnapshot);
+        if (locationSnapshot.route !== 'home') setGuestNotice('Sign in to access your account, orders and saved items. You can keep browsing without an account.');
+      }
+      if (verifiedAuth.current && loginSuccessReturn) clearLoginReturn();
 
       console.log('[bootstrap] navigation target selected', nextRoute);
 
@@ -471,26 +528,22 @@ export default function App() {
           setAuthToken(locationSnapshot.authToken ?? null);
         }
 
-        if (nextRoute === 'home') {
-          applyRouteSnapshot(locationSnapshot ?? { route: 'home' });
-        } else if (locationSnapshot?.route && isPublicRoute(locationSnapshot.route)) {
-          applyRouteSnapshot(locationSnapshot);
-        }
+        applyRouteSnapshot(targetSnapshot);
 
         if (logoutOverride && (loginSuccessReturn || session.status === 'authenticated')) {
           void clearLogoutOverride();
         }
 
-        setRoute(nextRoute);
+        setRouteState(nextRoute);
 
         if (Platform.OS === 'web') {
-          const nextPath = locationSnapshot ? snapshotToPath(locationSnapshot) : '/app/';
+          const nextPath = snapshotToPath(targetSnapshot);
           if (nextRoute === 'welcome') {
             window.history.replaceState({ route: 'welcome' }, '', '/app/');
-          } else if (loginSuccessReturn && locationSnapshot) {
+          } else if (loginSuccessReturn || verifiedAuth.current) {
             window.history.replaceState({
               route: nextRoute,
-              ...snapshotStateForRoute(nextRoute, locationSnapshot)
+              ...snapshotStateForRoute(nextRoute, targetSnapshot)
             }, '', nextPath);
           } else if (locationSnapshot?.route && isPublicRoute(locationSnapshot.route)) {
             window.history.replaceState({
@@ -548,13 +601,23 @@ export default function App() {
         return;
       }
       if (!(await hasLogoutOverride()) && session.status === 'authenticated') {
-        setRoute((current) => (current === 'welcome' || current === 'register' || current === 'completeSocialRegistration' ? 'home' : current));
+        verifiedAuth.current=true;
+      } else if (session.status === 'anonymous') {
+        verifiedAuth.current=false;
+        const current=routeSnapshotFromLocation(window.location.pathname,window.location.search,window.history.state);
+        if (current && !isPublicRoute(current.route)) setRoute('welcome');
       }
     };
 
     function handlePopState() {
       const snapshot = routeSnapshotFromLocation(window.location.pathname, window.location.search, window.history.state as RouteSnapshot | null);
       if (snapshot) {
+        if (!verifiedAuth.current && !isPublicRoute(snapshot.route)) {
+          rememberLoginReturn(snapshot);
+          setRouteState('welcome');
+          window.history.replaceState({route:'welcome'},'', '/app/');
+          return;
+        }
         applyRouteSnapshot(snapshot);
         setRoute(snapshot.route);
         return;
@@ -620,7 +683,8 @@ export default function App() {
   }
 
   function isPublicRoute(routeValue: AppRoute) {
-    return routeValue === 'welcome'
+    return routeValue === 'chat' || routeValue === 'welcome'
+      || ['marketplaces','digitalMarketplace','jewelryMarketplace','electronics','digitalProduct','electronicsProduct'].includes(routeValue)
       || routeValue === 'register'
       || routeValue === 'forgotPassword'
       || routeValue === 'resetPassword'
@@ -631,11 +695,16 @@ export default function App() {
 
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
+      <PaperProvider theme={paperTheme}>
       <SafeAreaProvider>
           <StatusBar style="dark" />
           {route === 'splash' ? <SplashScreen isTakingLonger={isTakingLonger} /> : null}
+          {route === 'chat' ? <SharityAiScreen onNavigate={setRoute} /> : null}
           {route === 'welcome' ? (
             <WelcomeScreen
+              notice={guestNotice}
+              onNavigate={setRoute}
+              onOpenProduct={(id) => {setDigitalProductId(id);setRoute('digitalProduct');}}
               onBrowse={() => setRoute('marketplaces')}
               onGetStarted={() => {
                 updatePublicPath('register');
@@ -736,10 +805,10 @@ export default function App() {
             />
           ) : null}
           {route === 'digitalProduct' ? (
-            <DigitalProductDetailsScreen listingPublicId={digitalProductId} onNavigate={setRoute} />
+            <DigitalProductDetailsScreen listingPublicId={digitalProductId} onNavigate={setRoute} onOpenProduct={id => setDigitalProductId(id)} />
           ) : null}
           {route === 'electronicsProduct' ? (
-            <ProductDetailsScreen mode="electronics" onNavigate={setRoute} productId={electronicsProductId} />
+            <ProductDetailsScreen mode="electronics" onNavigate={setRoute} productId={electronicsProductId} onOpenProduct={id => setElectronicsProductId(id)} />
           ) : null}
           {route === 'cart' ? <CartScreen onNavigate={setRoute} /> : null}
           {route === 'checkout' ? <CheckoutScreen onNavigate={setRoute} /> : null}
@@ -850,9 +919,10 @@ export default function App() {
           {route === 'paymentFailed' ? <PaymentFailedScreen onNavigate={setRoute} status="PAYMENT_FAILED" /> : null}
           {route === 'paymentCancelled' ? <PaymentFailedScreen onNavigate={setRoute} status="PAYMENT_CANCELLED" /> : null}
           {route === 'notifications' ? <NotificationCenterScreen onNavigate={setRoute} /> : null}
+          {route === 'adminDiagnostics' ? <DiagnosticsScreen onNavigate={setRoute} /> : null}
           {route === 'appSettings' ? <AppSettingsScreen onNavigate={setRoute} /> : null}
           {route === 'loginSecurity' ? <LoginSecurityScreen onNavigate={setRoute} /> : null}
-          {route === 'profilePrivacy' ? <ProfilePrivacyScreen onNavigate={setRoute} /> : null}
+          {route === 'profilePrivacy' ? <ProfilePrivacyScreen onNavigate={setRoute} onSignedOut={()=>{verifiedAuth.current=false;clearLoginReturn();setGuestNotice('');setRouteState('welcome');}} /> : null}
           {route === 'accountSwitcher' ? <AccountSwitcherScreen onNavigate={setRoute} /> : null}
           {route === 'paymentAuthorization' ? <PaymentAuthorizationScreen onNavigate={setRoute} /> : null}
           {route === 'pricingPromotions' ? <PricingPromotionsScreen onNavigate={setRoute} /> : null}
@@ -872,6 +942,7 @@ export default function App() {
           ) : null}
           {route === 'support' ? <SupportScreen onNavigate={setRoute} /> : null}
         </SafeAreaProvider>
+      </PaperProvider>
     </TamaguiProvider>
   );
 }

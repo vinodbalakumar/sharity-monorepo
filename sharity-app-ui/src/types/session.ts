@@ -1,5 +1,5 @@
 export type SessionCheckResult = {
-  status: 'authenticated' | 'anonymous';
+  status: 'authenticated' | 'anonymous' | 'unavailable';
 };
 
 export type BrowserSessionSummary = {

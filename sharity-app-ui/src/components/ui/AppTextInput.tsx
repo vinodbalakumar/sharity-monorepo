@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
-import { TextInput as RNTextInput, View } from 'react-native';
+import { TextInput as RNTextInput, View, type KeyboardTypeOptions } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { radius } from '../../theme/radius';
+import { systemFontFamily } from '../../theme/typography';
 import { AppText } from './AppText';
 
 type AppTextInputSize = 'small' | 'medium' | 'large';
 type AppTextInputStatus = 'default' | 'error' | 'success' | 'warning';
 
 type AppTextInputProps = {
+  keyboardType?: KeyboardTypeOptions;
   label?: string;
   placeholder?: string;
   value: string;
@@ -29,14 +31,14 @@ const sizeStyles = {
   small: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    fontSize: 12,
-    minHeight: 32
+    fontSize: 16,
+    minHeight: 44
   },
   medium: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    fontSize: 14,
-    minHeight: 40
+    fontSize: 16,
+    minHeight: 44
   },
   large: {
     paddingVertical: spacing.lg,
@@ -66,6 +68,7 @@ const statusStyles = {
 };
 
 export function AppTextInput({
+  keyboardType,
   label,
   placeholder,
   value,
@@ -116,10 +119,13 @@ export function AppTextInput({
           style={[
             {
               flex: 1,
+              fontFamily: systemFontFamily,
               color: disabled ? colors.disabled : colors.textPrimary,
               ...sizeStyle
             }
           ]}
+          accessibilityLabel={label ?? placeholder}
+          keyboardType={keyboardType}
           placeholder={placeholder}
           placeholderTextColor={colors.mutedText}
           value={value}

@@ -1,4 +1,4 @@
-import { getBffCsrfToken } from './sessionService';
+import { getBffCsrfToken, readApiErrorMessage } from './sessionService';
 import { resolvePublicBaseUrl } from './publicUrl';
 
 const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
@@ -150,6 +150,8 @@ async function mutate<T>(path: string, method: 'DELETE' | 'PUT', body?: unknown)
   if (!response.ok) {
     throw new Error(await readErrorMessage(response));
   }
+  if (response.status === 204) return undefined as T;
+  return readJsonResponse<T>(response, 'Unable to read account update');
 }
 
 export function getCurrentUser(): Promise<CurrentUser> {

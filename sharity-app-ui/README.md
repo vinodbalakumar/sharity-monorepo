@@ -1,4 +1,91 @@
+Source-reference badges and source update dates are no longer displayed below chat answers (October 26 follow-up). Message info, response timing and token totals remain available.
+
+## Storefront refresh (2026-10-26)
+
+The landing page, customer home and all-products catalog share `StorefrontContent`; category catalogs and product details use the same shell, colors and system fonts. React Native Paper is already installed and now provides the root theme, shared buttons, search and filter chips. No runtime UI dependency was added.
+
+Guests can browse `/app/`, `/app/marketplaces`, category catalogs and `/app/products/:id` without being sent to sign-in. Account routes require a verified BFF session. Only explicit sign-in opens OAuth. A validated, same-origin route intent is kept in session storage for at most 15 minutes; a `login=success` query alone never authenticates anyone. Back and refresh preserve public product routes. Native sign-in still requires a proper device OAuth flow; web login must not be simulated as native authentication.
+
+Missing/failed images use category artwork; demo listings are labelled and never reuse their misleading seed photo. Catalog failures expose Retry and empty results do not invent products. Live payments remain disabled.
+
+Run `npm run typecheck`, `npm run lint`, `npm run build:e2e`, then `npx playwright test`. The browser suite covers guest routing, real route IDs, sign-in/Back contracts, responsive fonts and layout, commerce errors, access control and chat metrics in Chromium, Firefox and WebKit. Mocked browser contracts are separate from `node tests/deployed-storefront-smoke.cjs`, which checks the actual public deployment without signing in or purchasing. See [the release record](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/production/STOREFRONT_REFRESH.md).
+
+## Sharity AI chat (2026-10-25)
+
+`/chat` is a public route in this Expo / React Native Web application, with responsive
+light/dark chat, history, code copying, message details and secured founder-content review.
+It uses `/bff/ai/*`; never configure a browser/mobile client to call Ollama directly.
+New replies display device-measured response time. Each answer has a **Message info** button
+for device send/receive times, persisted server timing, and provider-reported input/output/total
+tokens. **Chat info** shows totals for the current conversation, including repeated history
+sent to the model. Approved factual answers use zero model tokens. Missing/older usage is
+marked unavailable. Device times remain local to the current page session; stored server timing
+and token counts survive reopening a chat.
+Read [the workspace operating guide](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/SHARITY_AI.md) for local configuration and production limits.
+Run `npx playwright test tests/e2e/chat.spec.ts` after `npm run build:e2e`.
+
+The verified Expo web export is deployed to the local Docker origin behind the existing
+public tunnel. Native Android/iOS exports are build artifacts, not installed-device releases.
+Run `node tests/deployed-chat-smoke.cjs https://vinodbalakumar.com` for a real deployed-service
+smoke check. See workspace `outputs/local-deployment-report.md` for results and remaining gates.
+Run `node tests/deployed-chat-concurrency.cjs https://vinodbalakumar.com` to check two independent
+real-model browser sessions, factual answers during inference, conversation isolation and deletion.
+
+## Operations and commerce follow-up (2026-10-25)
+
+The active storefront/catalog/cart/checkout routes now use the classic marketplace design and backend-owned records. Administrator diagnostics are at `/app/admin/diagnostics`; AI writing assistance is optional in the seller form. Purchase review never treats a redirect as payment success. Live checkout is not certified; development simulation is explicitly labelled and requires the backend demo switch. Run `npm run typecheck`, `npm run lint`, `npm run build:e2e`, and `npm run test:e2e`; native exports still require installed-device QA.
+
+See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+
 # Sharity App
+
+
+## October 25 responsive storefront update
+
+Branch: `feature/sharity-production-responsive`.
+
+TypeScript is the only application source. Metro resolves TS/TSX before JS and
+`tsc` uses `noEmit`; do not generate JavaScript files beside source files.
+The shared shell uses horizontal desktop navigation and labeled phone tabs.
+Session restoration retries one transient failure and distinguishes unavailable services from anonymous sessions. Home has a stacked phone/tablet hero, system fonts, responsive catalog cards,
+local catalog search and explicit load/retry behavior. Missing product images
+use meaningful offer content rather than blank panels.
+
+```powershell
+npm ci
+npm run typecheck
+npm run lint
+npm run check:expo
+npm run build:web
+npm run build:e2e
+npx playwright install chromium firefox webkit
+npm run test:e2e
+npm run export:android
+npm run export:ios
+npm audit --audit-level=moderate
+```
+
+Build web completely before Playwright; do not rebuild its `dist` directory while
+tests run. The suite tests the production export at 11 widths from 320 to 1440px,
+portrait/landscape, live resizing, typography/line height/font loading, overflow,
+hero geometry, search, retry and empty catalog behavior. API contracts are mocked;
+live OAuth, checkout and provider integration require separate staging tests.
+Reports and screenshots are in `playwright-report/` and `test-results/`.
+
+Native exports prove bundling, not installed-app production readiness. Configure
+an absolute device-reachable `EXPO_PUBLIC_BFF_BASE_URL`; relative `/bff` URLs only
+work on web. Use HTTPS for production. MMKV requires a compatible development
+client; its fallback storage is temporary in Expo Go. Native login/deep links,
+release builds, screen readers, safe areas, keyboards and payment journeys must
+be verified on actual Android/iOS devices before release. Do not place secrets
+in any `EXPO_PUBLIC_*` variable.
+
+Spring AI remains in an isolated optional backend service; it is not wired into
+the UI. See `../platform-ai-service/README.md` for its disabled-by-default API.
+Dependency audit failures remain release blockers and are not suppressed by CI.
+See the workspace verification report and shared dated readiness review for the
+final evidence; older phase-completion claims below are historical.
+
 
 Clean story-by-story Expo React Native TypeScript rebuild.
 
@@ -353,3 +440,16 @@ Notification Center backend/security usage:
 - Main APIs: notification dashboard, list, detail, search, mark read/unread/all read, archive, action validation/open, counts, preferences summary, admin broadcasts/templates placeholder
 - DTOs: `NotificationCenterDashboardResponse`, `NotificationUnreadCounts`, `NotificationItem`, `NotificationRelatedEntity`, `NotificationAction`, `NotificationDeliveryChannelStatus`, `NotificationFilterOption`, `NotificationTimeGroup`, `NotificationActionResponse`, `NotificationPreferenceSummary`, `AdminBroadcastSummary`
 - Security notes: user-scoped notifications, seller ownership checks, related entity access validation, archive does not delete audit history, critical alerts mandatory, no provider payloads/digital codes/raw URLs/security raw payloads/internal risk/admin notes
+
+### Patched image parser compatibility
+
+Expo SDK 54's Metro passes local filenames to `image-size`, while patched
+`image-size` 2.0.4 accepts byte arrays. The local compatibility package reads a
+local file before delegating to the patched parser. It preserves the function,
+named and default exports used by Metro without modifying `node_modules`.
+Run `npm run test:assets` when changing this adapter or upgrading Expo; remove
+the adapter when the supported Metro version accepts the new parser API.
+
+`npm run build:e2e` creates a separate `dist-e2e` production export using same-origin
+API defaults. It ignores workstation dotenv files so browser tests cannot depend
+on a developer's LAN address. API mocks exist only in Playwright, not in the export.

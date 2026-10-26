@@ -1,126 +1,34 @@
-import { Ionicons } from '@expo/vector-icons';
-import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from "@expo/vector-icons";
+import { useSelector } from "@legendapp/state/react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Searchbar } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { getBrowserSessionSummary } from "../../services/sessionService";
+import { appState$ } from "../../state/appState";
+import { colors } from "../../theme";
+import { systemFontFamily } from "../../theme/typography";
+import type { AppRoute } from "../../types/navigation";
 
-import { mobileTabItems, sidebarItems } from '../../features/home/dashboardConfig';
-import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-import { colors, spacing } from '../../theme';
-import type { AppRoute } from '../../types/navigation';
-
-export function InteriorShell({ activeLabel, children, onNavigate, scrollable = true, subtitle, title }: Props) {
-  const { isCompactPhone, isSingleColumn, showSidebar, showTabLabels, width } = useResponsiveLayout();
-
-  return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.shell}>
-        {showSidebar ? <Sidebar activeLabel={activeLabel} onNavigate={onNavigate} /> : null}
-        <View style={styles.main}>
-          <Header onNavigate={onNavigate} subtitle={subtitle} title={title} />
-          {scrollable ? (
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-              {children}
-            </ScrollView>
-          ) : (
-            <View style={[styles.content, styles.contentNonScroll]}>{children}</View>
-          )}
-        </View>
-      </View>
-      {!showSidebar ? <BottomTabs activeLabel={activeLabel} compact={isCompactPhone} onNavigate={onNavigate} showLabels={showTabLabels} /> : null}
-    </SafeAreaView>
-  );
-}
-
-function Sidebar({ activeLabel, onNavigate }: { activeLabel?: string; onNavigate: (route: AppRoute) => void }) {
-  return (
-    <View style={styles.sidebar}>
-      <Pressable onPress={() => onNavigate('home')} style={styles.sidebarBrand}>
-        <View style={styles.brandMark}>
-          <Text style={styles.brandLetter}>S</Text>
-        </View>
-        <View>
-          <Text style={styles.sidebarTitle}>Sharity</Text>
-          <Text style={styles.sidebarSubcopy}>United States</Text>
-        </View>
-      </Pressable>
-      <View style={styles.sidebarList}>
-        {sidebarItems.map((item) => (
-          <Pressable
-            key={item.label}
-            onPress={() => onNavigate(routeForLabel(item.label))}
-            style={[styles.sidebarItem, activeLabel === item.label && styles.sidebarItemActive]}
-          >
-            <Ionicons color={activeLabel === item.label ? colors.white : colors.textPrimary} name={item.icon} size={19} />
-            <Text style={[styles.sidebarItemText, activeLabel === item.label && styles.sidebarItemTextActive]}>{item.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function Header({ onNavigate, subtitle, title }: { onNavigate: (route: AppRoute) => void; subtitle?: string; title: string }) {
-  return (
-    <View style={styles.header}>
-      <Pressable onPress={() => onNavigate('home')} style={styles.headerBrand}>
-        <View style={styles.brandMarkSmall}>
-          <Text style={styles.brandLetterSmall}>S</Text>
-        </View>
-        <View>
-          <Text style={styles.headerTitle}>Sharity</Text>
-          <Text style={styles.headerSubtitle}>{subtitle ?? title}</Text>
-        </View>
-      </Pressable>
-      <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Cart" onPress={() => onNavigate('cart')} style={styles.iconButton}>
-          <Ionicons color={colors.textPrimary} name="cart-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Notifications" onPress={() => onNavigate('notifications')} style={styles.iconButton}>
-          <Ionicons color={colors.textPrimary} name="notifications-outline" size={20} />
-        </Pressable>
-        <Pressable accessibilityLabel="Profile" onPress={() => onNavigate('profilePrivacy')} style={styles.iconButton}>
-          <Ionicons color={colors.textPrimary} name="person-outline" size={20} />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function BottomTabs({ activeLabel, compact, onNavigate, showLabels }: { activeLabel?: string; compact: boolean; onNavigate: (route: AppRoute) => void; showLabels: boolean }) {
-  return (
-    <View style={[styles.bottomTabs, compact && styles.bottomTabsCompact]}>
-      {mobileTabItems.map((item) => (
-        <Pressable key={item.label} onPress={() => onNavigate(routeForLabel(item.label))} style={[styles.bottomTab, compact && styles.bottomTabCompact]}>
-          <Ionicons color={activeLabel === item.label ? colors.primary : colors.textSecondary} name={item.icon} size={19} />
-          {showLabels ? <Text style={[styles.bottomTabText, activeLabel === item.label && styles.bottomTabTextActive]}>{item.label}</Text> : null}
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-function routeForLabel(label: string): AppRoute {
-  switch (label) {
-    case 'Marketplace':
-      return 'marketplaces';
-    case 'Orders':
-    case 'My Orders':
-      return 'orders';
-    case 'Rewards':
-      return 'rewards';
-    case 'Cart':
-      return 'cart';
-    case 'Sell':
-      return 'sellerVerification';
-    case 'Wallet':
-      return 'wallet';
-    case 'Profile':
-      return 'profilePrivacy';
-    default:
-      return 'home';
-  }
-}
-
+type Destination = {
+  label: string;
+  route: AppRoute;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+};
+const memberDestinations: Destination[] = [
+  { label: "Home", route: "home", icon: "home-outline" },
+  { label: "Marketplace", route: "marketplaces", icon: "grid-outline" },
+  { label: "Orders", route: "orders", icon: "receipt-outline" },
+  { label: "Wallet", route: "wallet", icon: "wallet-outline" },
+  { label: "Sell", route: "sellerVerification", icon: "add-circle-outline" },
+];
+const guestDestinations: Destination[] = [
+  { label: "Home", route: "welcome", icon: "home-outline" },
+  { label: "Marketplace", route: "marketplaces", icon: "grid-outline" },
+  { label: "Sharity AI", route: "chat", icon: "sparkles-outline" },
+  { label: "Sign in", route: "signIn", icon: "person-outline" },
+];
 type Props = {
   activeLabel?: string;
   children: ReactNode;
@@ -128,198 +36,342 @@ type Props = {
   subtitle?: string;
   title: string;
   scrollable?: boolean;
+  publicMode?: boolean;
 };
-
+export function InteriorShell({
+  activeLabel,
+  children,
+  onNavigate,
+  scrollable = true,
+  subtitle,
+  title,
+}: Props) {
+  const { isMobile } = useResponsiveLayout();
+  const [authenticated, setAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const query = useSelector(appState$.marketplace.searchQuery);
+  useEffect(() => {
+    let active = true;
+    void getBrowserSessionSummary().then((session) => {
+      if (active) {
+        setAuthenticated(Boolean(session?.authenticated));
+        setIsAdmin(
+          Boolean(
+            session?.authenticated &&
+              session.roles?.some((role) =>
+                [
+                  "ADMIN",
+                  "SUPER_ADMIN",
+                  "ROLE_ADMIN",
+                  "ROLE_SUPER_ADMIN",
+                ].includes(role),
+              ),
+          ),
+        );
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  const destinations = authenticated ? memberDestinations : guestDestinations;
+  const search = (
+    <Searchbar
+      accessibilityLabel="Search marketplace"
+      placeholder="Search products, categories and more"
+      value={query}
+      onChangeText={(value) => appState$.marketplace.searchQuery.set(value)}
+      onSubmitEditing={() => onNavigate("marketplaces")}
+      style={styles.search}
+      inputStyle={styles.searchInput}
+      elevation={0}
+    />
+  );
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.header} testID="app-header">
+        <View style={[styles.headerInner, isMobile && styles.headerMobile]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Sharity home"
+            onPress={() => onNavigate(authenticated ? "home" : "welcome")}
+            style={styles.brand}
+          >
+            <View style={styles.brandMark}>
+              <Text style={styles.brandLetter}>S</Text>
+            </View>
+            <Text style={styles.brandName}>Sharity</Text>
+          </Pressable>
+          {!isMobile && <View style={styles.searchWrap}>{search}</View>}
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={authenticated ? "Profile" : "Sign in"}
+              onPress={() =>
+                onNavigate(authenticated ? "profilePrivacy" : "signIn")
+              }
+              style={styles.account}
+            >
+              <Ionicons
+                name="person-outline"
+                size={21}
+                color={colors.primary}
+              />
+              <Text style={styles.actionText}>
+                {authenticated ? "Account" : "Sign in"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cart"
+              onPress={() => onNavigate("cart")}
+              style={styles.iconButton}
+            >
+              <Ionicons
+                name="cart-outline"
+                size={24}
+                color={colors.textPrimary}
+              />
+              {!isMobile && <Text style={styles.actionText}>Cart</Text>}
+            </Pressable>
+            {isAdmin && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Service operations"
+                onPress={() => onNavigate("adminDiagnostics")}
+                style={styles.iconButton}
+              >
+                <Ionicons
+                  name="pulse-outline"
+                  size={22}
+                  color={colors.primary}
+                />
+              </Pressable>
+            )}
+          </View>
+          {isMobile && <View style={styles.mobileSearch}>{search}</View>}
+        </View>
+        {!isMobile && (
+          <View style={styles.desktopNav} testID="desktop-navigation">
+            {destinations.map((item) => (
+              <Pressable
+                key={item.route}
+                accessibilityRole="button"
+                accessibilityState={{ selected: activeLabel === item.label }}
+                onPress={() => onNavigate(item.route)}
+                style={[
+                  styles.navItem,
+                  activeLabel === item.label && styles.navActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.navText,
+                    activeLabel === item.label && { color: colors.primary },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+            {authenticated && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => onNavigate("chat")}
+                style={styles.navItem}
+              >
+                <Text style={styles.navText}>Sharity AI</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
+      <View style={styles.main}>
+        {scrollable ? (
+          <ScrollView
+            testID="page-scroll"
+            contentContainerStyle={[
+              styles.content,
+              isMobile && styles.contentMobile,
+            ]}
+          >
+            <View style={styles.page} accessibilityLabel={subtitle ?? title}>
+              {children}
+            </View>
+          </ScrollView>
+        ) : (
+          <View
+            style={[
+              styles.content,
+              styles.nonScroll,
+              isMobile && styles.contentMobile,
+            ]}
+          >
+            <View style={[styles.page, styles.nonScroll]}>{children}</View>
+          </View>
+        )}
+      </View>
+      {isMobile && (
+        <View style={styles.bottomNav} testID="mobile-navigation">
+          {destinations.map((item) => (
+            <Pressable
+              key={item.route}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: activeLabel === item.label }}
+              onPress={() => onNavigate(item.route)}
+              style={styles.bottomItem}
+            >
+              <Ionicons
+                name={item.icon}
+                size={21}
+                color={
+                  activeLabel === item.label
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+              />
+              <Text
+                style={[
+                  styles.bottomText,
+                  activeLabel === item.label && { color: colors.primary },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.background,
-    flex: 1
-  },
-  shell: {
-    backgroundColor: colors.background,
-    flex: 1,
-    flexDirection: 'row'
-  },
-  sidebar: {
+  screen: { flex: 1, minWidth: 0, backgroundColor: colors.background },
+  header: {
     backgroundColor: colors.surface,
-    borderRightColor: colors.border,
-    borderRightWidth: 1,
-    padding: spacing.lg,
-    width: 260
+    borderBottomWidth: 1,
+    borderColor: colors.border,
   },
-  sidebarBrand: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.xs
+  headerInner: {
+    width: "100%",
+    maxWidth: 1328,
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    minHeight: 80,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 28,
   },
+  headerMobile: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 10,
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  brand: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44 },
   brandMark: {
-    alignItems: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 9,
     backgroundColor: colors.primary,
-    borderRadius: 14,
-    height: 48,
-    justifyContent: 'center',
-    width: 48
-  },
-  brandMarkSmall: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    height: 40,
-    justifyContent: 'center',
-    width: 40
+    alignItems: "center",
+    justifyContent: "center",
   },
   brandLetter: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: '900'
-  },
-  brandLetterSmall: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '900'
-  },
-  sidebarTitle: {
-    color: colors.textPrimary,
+    fontFamily: systemFontFamily,
     fontSize: 21,
-    fontWeight: '900'
+    fontWeight: "700",
+    color: colors.white,
   },
-  sidebarSubcopy: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 2
+  brandName: {
+    fontFamily: systemFontFamily,
+    fontSize: 25,
+    fontWeight: "700",
+    letterSpacing: -0.6,
+    color: colors.primary,
   },
-  sidebarList: {
-    gap: spacing.sm
+  searchWrap: { flex: 1, minWidth: 150 },
+  mobileSearch: { width: "100%" },
+  search: { backgroundColor: colors.primaryLight, borderRadius: 8, height: 46 },
+  searchInput: { fontFamily: systemFontFamily, fontSize: 14, minHeight: 46 },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginLeft: "auto",
   },
-  sidebarItem: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14
+  account: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 8,
   },
-  sidebarItemActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
-  },
-  sidebarItemText: {
+  actionText: {
+    fontFamily: systemFontFamily,
+    fontSize: 14,
+    fontWeight: "600",
     color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800'
-  },
-  sidebarItemTextActive: {
-    color: colors.white
-  },
-  main: {
-    flex: 1
-  },
-  header: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 70,
-    paddingHorizontal: spacing.xl
-  },
-  headerInnerCompact: {
-    gap: spacing.sm
-  },
-  headerBrand: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minWidth: 0
-  },
-  headerBrandCompact: {
-    gap: spacing.xs
-  },
-  headerCopy: {
-    flexShrink: 1,
-    minWidth: 0
-  },
-  headerTitle: {
-    color: colors.textPrimary,
-    fontSize: 22,
-    fontWeight: '900'
-  },
-  headerTitleCompact: {
-    fontSize: 18
-  },
-  headerSubtitle: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    marginTop: 2
-  },
-  headerSubtitleCompact: {
-    fontSize: 11
-  },
-  headerActions: {
-    flexDirection: 'row',
-    flexShrink: 0,
-    gap: spacing.sm
-  },
-  headerActionsCompact: {
-    gap: spacing.xs
   },
   iconButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44
+    minHeight: 44,
+    minWidth: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
-  iconButtonCompact: {
-    borderRadius: 12,
-    height: 40,
-    width: 40
+  desktopNav: {
+    flexDirection: "row",
+    maxWidth: 1280,
+    width: "100%",
+    alignSelf: "center",
+    gap: 16,
   },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.xl,
-    paddingBottom: spacing.lg * 3
+  navItem: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    justifyContent: "center",
+    borderBottomWidth: 2,
+    borderColor: "transparent",
   },
-  contentNonScroll: {
-    flex: 1,
-    minHeight: 0
-  },
-  bottomTabs: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: spacing.sm
-  },
-  bottomTabsCompact: {
-    paddingVertical: spacing.xs
-  },
-  bottomTab: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    minWidth: 58
-  },
-  bottomTabCompact: {
-    minWidth: 48
-  },
-  bottomTabText: {
+  navActive: { borderColor: colors.primary },
+  navText: {
+    fontFamily: systemFontFamily,
+    fontSize: 14,
     color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700'
+    fontWeight: "600",
   },
-  bottomTabTextActive: {
-    color: colors.primary,
-    fontWeight: '900'
-  }
+  main: { flex: 1, minHeight: 0, minWidth: 0 },
+  content: {
+    padding: 24,
+    paddingBottom: 40,
+    alignItems: "center",
+    flexGrow: 1,
+  },
+  contentMobile: { padding: 12, paddingBottom: 24 },
+  page: { width: "100%", maxWidth: 1280, minWidth: 0 },
+  nonScroll: { flex: 1, minHeight: 0 },
+  bottomNav: {
+    flexDirection: "row",
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 5,
+  },
+  bottomItem: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  bottomText: {
+    fontFamily: systemFontFamily,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
 });

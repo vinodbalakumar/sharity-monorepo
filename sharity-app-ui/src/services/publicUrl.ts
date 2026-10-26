@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 const UNSAFE_HOST_PATTERNS = [
   '://localhost',
   '://127.0.0.1',
@@ -52,6 +54,15 @@ export function resolvePublicBaseUrl(rawValue: string | undefined, fallbackValue
   }
 
   const normalized = value.replace(/\/+$/, '');
+
+  // Native fetch cannot use browser-relative proxy URLs. Development devices
+  // need an explicit reachable host (not the desktop browser's localhost).
+  if (Platform.OS !== 'web') {
+    if (normalized.startsWith('https://') || (typeof __DEV__ !== 'undefined' && __DEV__)) {
+      return normalized;
+    }
+    return fallbackValue;
+  }
 
   if (isLocalBrowserHost()) {
     return isUnsafePublicHost(normalized) ? normalized : fallbackValue;

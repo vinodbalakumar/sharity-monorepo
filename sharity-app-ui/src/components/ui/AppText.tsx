@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Text as RNText } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, systemFontFamily } from '../../theme/typography';
 
 type AppTextVariant = keyof typeof typography;
 type AppTextColor = 'primary' | 'secondary' | 'muted' | 'error' | 'success' | 'warning' | 'info' | 'inherit';
@@ -54,6 +54,7 @@ export function AppText({
       selectable={selectable}
       style={[
         {
+          fontFamily: systemFontFamily,
           fontSize: typographyStyle.fontSize,
           fontWeight: weight ? weightMap[weight] : typographyStyle.fontWeight,
           lineHeight: typographyStyle.lineHeight,

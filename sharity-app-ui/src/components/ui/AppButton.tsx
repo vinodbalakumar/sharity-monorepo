@@ -1,13 +1,18 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable } from 'react-native';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { radius } from '../../theme/radius';
-import { typography } from '../../theme/typography';
-import { AppText } from './AppText';
+import type { ReactNode } from "react";
+import { Button } from "react-native-paper";
+import { systemFontFamily } from "../../theme/typography";
+import { colors } from "../../theme/colors";
+import { typography } from "../../theme/typography";
 
-type AppButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'danger' | 'success' | 'ghost' | 'outline';
-type AppButtonSize = 'small' | 'medium' | 'large' | 'fullWidth';
+type AppButtonVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "danger"
+  | "success"
+  | "ghost"
+  | "outline";
+type AppButtonSize = "small" | "medium" | "large" | "fullWidth";
 
 type AppButtonProps = {
   children: ReactNode;
@@ -16,7 +21,7 @@ type AppButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   icon?: ReactNode;
-  iconPosition?: 'left' | 'right';
+  iconPosition?: "left" | "right";
   onPress?: () => void;
   style?: any;
 };
@@ -28,7 +33,7 @@ const variantStyles: Record<AppButtonVariant, any> = {
     bgPress: colors.primaryDark,
     bgDisabled: colors.disabledBg,
     text: colors.white,
-    textDisabled: colors.disabled
+    textDisabled: colors.disabled,
   },
   secondary: {
     bg: colors.secondary,
@@ -36,7 +41,7 @@ const variantStyles: Record<AppButtonVariant, any> = {
     bgPress: colors.secondaryDark,
     bgDisabled: colors.disabledBg,
     text: colors.white,
-    textDisabled: colors.disabled
+    textDisabled: colors.disabled,
   },
   tertiary: {
     bg: colors.tertiary,
@@ -44,7 +49,7 @@ const variantStyles: Record<AppButtonVariant, any> = {
     bgPress: colors.tertiaryDark,
     bgDisabled: colors.disabledBg,
     text: colors.white,
-    textDisabled: colors.disabled
+    textDisabled: colors.disabled,
   },
   danger: {
     bg: colors.error,
@@ -52,7 +57,7 @@ const variantStyles: Record<AppButtonVariant, any> = {
     bgPress: colors.errorDark,
     bgDisabled: colors.disabledBg,
     text: colors.white,
-    textDisabled: colors.disabled
+    textDisabled: colors.disabled,
   },
   success: {
     bg: colors.success,
@@ -60,15 +65,15 @@ const variantStyles: Record<AppButtonVariant, any> = {
     bgPress: colors.successDark,
     bgDisabled: colors.disabledBg,
     text: colors.white,
-    textDisabled: colors.disabled
+    textDisabled: colors.disabled,
   },
   ghost: {
-    bg: 'transparent',
+    bg: "transparent",
     bgHover: colors.gray100,
     bgPress: colors.gray200,
-    bgDisabled: 'transparent',
+    bgDisabled: "transparent",
     text: colors.textPrimary,
-    textDisabled: colors.disabled
+    textDisabled: colors.disabled,
   },
   outline: {
     bg: colors.white,
@@ -77,79 +82,61 @@ const variantStyles: Record<AppButtonVariant, any> = {
     bgDisabled: colors.disabledBg,
     text: colors.textPrimary,
     textDisabled: colors.disabled,
-    border: colors.border
-  }
+    border: colors.border,
+  },
 };
 
 const sizeStyles = {
-  small: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    minHeight: 32
-  },
-  medium: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 40
-  },
-  large: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    minHeight: 48
-  },
-  fullWidth: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    width: '100%'
-  }
+  small: {paddingHorizontal:8,minHeight:44},
+  medium: {paddingHorizontal:12,minHeight:48},
+  large: {paddingHorizontal:16,minHeight:52},
+  fullWidth: {paddingHorizontal:12,minHeight:48,width:'100%'}
 };
 
 export function AppButton({
   children,
-  variant = 'primary',
-  size = 'medium',
+  variant = "primary",
+  size = "medium",
   disabled = false,
   loading = false,
   icon,
-  iconPosition = 'left',
+  iconPosition = "left",
   onPress,
-  style
+  style,
 }: AppButtonProps) {
   const styles = variantStyles[variant];
-  const sizeStyle = sizeStyles[size === 'fullWidth' ? size : size];
+  const sizeStyle = sizeStyles[size];
 
   return (
-    <Pressable
+    <Button
+      mode={
+        variant === "outline"
+          ? "outlined"
+          : variant === "ghost"
+            ? "text"
+            : "contained"
+      }
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
-        {
-          backgroundColor: disabled ? styles.bgDisabled : pressed ? styles.bgPress : styles.bgHover ?? styles.bg,
-          borderRadius: radius.lg,
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: spacing.sm,
-          ...sizeStyle,
-          ...(variant === 'outline' && { borderWidth: 1, borderColor: styles.border ?? colors.border })
-        },
-        style
+      loading={loading}
+      buttonColor={styles.bg}
+      textColor={styles.text}
+      icon={icon ? () => <>{icon}</> : undefined}
+      style={[
+        { borderRadius: 8, borderColor: styles.border ?? colors.border },
+        style,
       ]}
+      contentStyle={[
+        sizeStyle,
+        { flexDirection: iconPosition === "right" ? "row-reverse" : "row" },
+      ]}
+      labelStyle={{
+        fontFamily: systemFontFamily,
+        fontSize: typography.button.fontSize,
+        fontWeight: "600",
+      }}
     >
-      {loading && <ActivityIndicator color={disabled ? styles.textDisabled : styles.text} size="small" />}
-      {!loading && icon && iconPosition === 'left' && icon}
-      <AppText
-        color="inherit"
-        style={{
-          color: disabled ? styles.textDisabled : styles.text,
-          fontWeight: '600',
-          fontSize: typography.button.fontSize
-        }}
-      >
-        {children}
-      </AppText>
-      {!loading && icon && iconPosition === 'right' && icon}
-    </Pressable>
+      {children}
+    </Button>
   );
 }
