@@ -1,3 +1,5 @@
+Profile cancellation and catalog copy: [release notes](docs/releases/2026-10-26-profile-cancel-catalog.md).
+
 # Sharity deployment repository
 
 Docker Compose, Dockerfiles and Nginx configuration live here. The running local project is `sharity-local`; its origin is exposed by the existing tunnel at https://vinodbalakumar.com. Pushing a feature branch does not deploy it.
