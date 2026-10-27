@@ -1,0 +1,45 @@
+-- Ensures the public home page has rollback offers and clearance items in QA/local DBs.
+-- This keeps the welcome screen sections populated without any frontend fallback data.
+
+UPDATE listing
+SET rollback_offer_expires_at = DATE_ADD(NOW(6), INTERVAL 45 DAY),
+    created_at = DATE_SUB(NOW(6), INTERVAL 120 DAY),
+    original_price_amount = ROUND(price_amount * 2, 2),
+    updated_at = NOW(6)
+WHERE public_id IN (
+    '9f1f89eb-88b8-4b1b-b7a0-100000000001',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000002',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000003',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000004',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000005',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000006',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000007',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000008',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000009',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000010',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000011',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000012',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000013',
+    '9f1f89eb-88b8-4b1b-b7a0-100000000014',
+    'sold-rings-001',
+    'sold-rings-002',
+    'sold-rings-003',
+    'sold-rings-004',
+    'sold-rings-005',
+    'sold-rings-006',
+    'sold-rings-007',
+    'sold-rings-008',
+    'sold-rings-009',
+    'sold-rings-010',
+    'sold-earrings-001',
+    'sold-earrings-002',
+    'sold-earrings-003',
+    'sold-earrings-004',
+    'sold-earrings-005',
+    'sold-earrings-006',
+    'sold-earrings-007',
+    'sold-earrings-008',
+    'sold-giftcard-001',
+    'sold-giftcard-002',
+    'sold-gaming-001'
+);
