@@ -21,9 +21,11 @@ type Item = {
 export function ProductArtwork({
   item,
   style,
+  compact = false,
 }: {
   item: Item;
   style?: StyleProp<ViewStyle>;
+  compact?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [item.imageUrl]);
@@ -52,7 +54,7 @@ export function ProductArtwork({
           style={styles.artwork}
           accessibilityLabel={`${category} illustration`}
         >
-          <View style={styles.symbol}>
+          <View style={[styles.symbol, compact && { width: 44, height: 44, borderRadius: 10 }]}>
             <Ionicons
               name={
                 jewellery
@@ -63,16 +65,16 @@ export function ProductArtwork({
                       ? "basket-outline"
                       : "gift-outline"
               }
-              size={44}
+              size={compact ? 28 : 44}
               color={colors.primary}
             />
           </View>
-          <Text numberOfLines={2} style={styles.category}>
+          {!compact && <Text numberOfLines={2} style={styles.category}>
             {category}
-          </Text>
-          <Text style={styles.caption}>
+          </Text>}
+          {!compact && <Text style={styles.caption}>
             Image unavailable
-          </Text>
+          </Text>}
         </View>
       )}
     </View>

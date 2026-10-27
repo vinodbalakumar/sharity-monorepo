@@ -1,5 +1,12 @@
 import type { MarketplaceHomeResponse, MarketplaceListing } from '../types/marketplace';
 import { resolvePublicBaseUrl } from './publicUrl';
+import type { StorefrontSection } from './storefrontDiscovery';
+
+export async function getStorefrontSections(): Promise<StorefrontSection[]> {
+  const value = await getJson<StorefrontSection[]>('/home-sections');
+  if (!Array.isArray(value) || value.some(s => typeof s.code !== 'string' || typeof s.enabled !== 'boolean' || !Array.isArray(s.listingIds))) throw new Error('Invalid storefront settings');
+  return value.sort((a, b) => a.position - b.position);
+}
 
 const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const bffPublicBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_PUBLIC_BASE_URL, '');

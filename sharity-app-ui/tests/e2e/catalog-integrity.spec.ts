@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 const base = { publicId: 'quality-product', title: 'Steam gift card', description: 'Listing details', productType: 'DIGITAL', deliveryType: 'CODE', currencyCode: 'USD', priceAmount: 20, originalPriceAmount: null, imageUrl: '/marketplace-service/api/v1/marketplace/listings/quality-product/image', sellerDisplayName: 'Sample store', verifiedSeller: false, categoryCode: 'GIFT_CARDS', verticalCode: 'MARKETPLACE', listingStatus: 'ACTIVE', publicReviews: [], stockQuantity: 1, demoSeed: true, createdAt: '2026-10-26T12:00:00Z' };
-async function fixture(page: Page, options: { brokenImage?: boolean; sold?: boolean; orders?: boolean } = {}) {
- const listing = { ...base, stockQuantity: options.sold ? 0 : 1 };
+async function fixture(page: Page, options: { brokenImage?: boolean; sold?: boolean; reserved?: boolean; orders?: boolean } = {}) {
+ const listing = { ...base, listingStatus: options.reserved ? 'RESERVED' : base.listingStatus, productType: options.reserved ? 'PHYSICAL' : base.productType, deliveryType: options.reserved ? 'SHIPPING' : base.deliveryType, stockQuantity: options.sold ? 0 : 1 };
  await page.route('**/*', route => {
   const path = new URL(route.request().url()).pathname;
   if (!path.includes('/bff/') && !path.includes('/api/')) return route.continue();
@@ -52,4 +52,16 @@ test('orders preserve currency and do not claim pending digital access is ready'
  await expect(page.getByText('Payment has not been confirmed. Access and delivery remain pending.')).toBeVisible();
  await page.goto('/app/orders');await expect(page.getByText(/1,500/).first()).toBeVisible();
  await expect(page.getByText('$1,500.00',{exact:true})).toHaveCount(0);
+});
+
+
+test('reserved product links show details but cannot start another purchase', async ({ page }) => {
+  await fixture(page, { reserved: true });
+  await page.goto('/app/products/quality-product');
+  await expect(page.getByTestId('product-summary')).toBeVisible();
+  await expect(page.getByTestId('product-summary').getByText('RESERVED', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('product-summary').getByRole('button', { name: 'Buy Now', exact: true })).toBeDisabled();
+  await expect(page.getByTestId('product-summary').getByRole('button', { name: 'Add to Cart', exact: true })).toBeDisabled();
+  for (const button of await page.getByRole('button', { name: 'Buy Now', exact: true }).all()) await expect(button).toBeDisabled();
+  for (const button of await page.getByRole('button', { name: 'Add to Cart', exact: true }).all()) await expect(button).toBeDisabled();
 });

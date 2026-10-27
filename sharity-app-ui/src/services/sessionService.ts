@@ -1,5 +1,6 @@
 import type { BrowserSessionSummary, SessionCheckResult } from '../types/session';
 import { appStorage } from '../storage/storage';
+import { resetCartBadge } from '../state/cartBadge';
 import { resolvePublicBaseUrl } from './publicUrl';
 
 const sessionTimeoutMs = 5000;
@@ -91,6 +92,7 @@ export async function hasLogoutOverride(): Promise<boolean> {
 }
 
 async function clearAllAuthTokens(): Promise<void> {
+  resetCartBadge();
   await Promise.all([
     appStorage.removeItem('access_token'),
     appStorage.removeItem('refresh_token'),

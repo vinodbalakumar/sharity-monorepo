@@ -13,6 +13,7 @@ import { InteriorShell } from '../../components/appShell';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { ProductArtwork } from '../../components/marketplace/ProductArtwork';
 import { getBrowserSessionSummary } from '../../services/sessionService';
+import { rememberProduct } from '../../services/storefrontDiscovery';
 import { getMarketplaceListing, getMarketplaceListings } from '../../services/marketplaceApi';
 import { getCurrentUser } from '../../services/userApi';
 import { addStoredCartItem, selectPurchase } from '../../services/commerceApi';
@@ -122,6 +123,9 @@ export function ProductDetailsScreen({ mode, onNavigate, productId, onOpenProduc
         getMarketplaceListings(countryCode).catch(() => [])
       ]);
       const listing = listingResponse ?? allListings.find(isDigitalListing) ?? allListings[0] ?? null;
+      if (listing) void getBrowserSessionSummary().then(session => {
+        if (session && (!session.authenticated || session.publicId)) rememberProduct(listing.publicId, session.authenticated ? session.publicId! : 'guest');
+      });
 
       setState({
         error: !listing,

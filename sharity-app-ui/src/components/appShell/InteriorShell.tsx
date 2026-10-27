@@ -9,6 +9,8 @@ import { Searchbar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getBrowserSessionSummary } from "../../services/sessionService";
+import { refreshCartCount } from '../../services/commerceApi';
+import { setCartOwner } from '../../state/cartBadge';
 import { appState$ } from "../../state/appState";
 import { colors } from "../../theme";
 import { systemFontFamily } from "../../theme/typography";
@@ -54,11 +56,14 @@ export function InteriorShell({
   const [sessionAuthenticated, setAuthenticated] = useState(false);
   const authenticated = member?.authenticated ?? sessionAuthenticated;
   const [isAdmin, setIsAdmin] = useState(false);
+  const cartCount = useSelector(appState$.cart.count);
   const query = useSelector(appState$.marketplace.searchQuery);
   useEffect(() => {
     let active = true;
-    void getBrowserSessionSummary().then((session) => {
+    const refresh = () => { void getBrowserSessionSummary().then((session) => {
       if (active) {
+        setCartOwner(session?.authenticated && member?.authenticated !== false ? session.publicId || null : null);
+        if (session?.authenticated && member?.authenticated !== false) void refreshCartCount();
         setAuthenticated(Boolean(session?.authenticated));
         setIsAdmin(
           Boolean(
@@ -74,11 +79,14 @@ export function InteriorShell({
           ),
         );
       }
-    });
+    }); };
+    refresh();
+    if (typeof window !== 'undefined') window.addEventListener('focus', refresh);
     return () => {
+      if (typeof window !== 'undefined') window.removeEventListener('focus', refresh);
       active = false;
     };
-  }, []);
+  }, [member?.authenticated]);
   const destinations = authenticated ? memberDestinations : guestDestinations;
   const search = (
     <Searchbar
@@ -140,15 +148,14 @@ export function InteriorShell({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cart"
+              accessibilityLabel={authenticated && cartCount != null && cartCount > 0 ? `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}` : 'Cart'}
               onPress={() => onNavigate("cart")}
               style={styles.iconButton}
             >
-              <Ionicons
-                name="cart-outline"
-                size={24}
-                color={colors.textPrimary}
-              />
+              <View style={styles.cartIcon}>
+                <Ionicons name="cart-outline" size={24} color={colors.textPrimary} />
+                {authenticated && cartCount != null && cartCount > 0 && <View style={styles.cartBadge} testID="cart-count-badge"><Text style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : cartCount}</Text></View>}
+              </View>
               {!isMobile && <Text style={styles.actionText}>Cart</Text>}
             </Pressable>
             {isAdmin && (
@@ -331,6 +338,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.textPrimary,
   },
+  cartIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  cartBadge: { position: 'absolute', top: -7, right: -9, minWidth: 20, height: 20, paddingHorizontal: 4, borderRadius: 10, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  cartBadgeText: { fontFamily: systemFontFamily, fontSize: 10, lineHeight: 14, fontWeight: '700', color: '#fff' },
   iconButton: {
     minHeight: 44,
     minWidth: 44,

@@ -288,7 +288,7 @@ function snapshotToPath(snapshot: RouteSnapshot): string {
     case 'paymentCancelled':
       return '/app/payment/cancelled';
     case 'orders':
-      return `/app/orders${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
+      return '/app/orders';
     case 'orderDetails':
       return `/app/orders/details${snapshot.orderId ? `?orderId=${encodeURIComponent(snapshot.orderId)}` : ''}`;
     case 'receipt':
@@ -849,7 +849,7 @@ export default function App() {
             <ProductDetailsScreen mode="electronics" onNavigate={setRoute} productId={electronicsProductId} onOpenProduct={id => setElectronicsProductId(id)} />
           ) : null}
           {route === 'cart' ? <CartScreen onNavigate={setRoute} /> : null}
-          {route === 'checkout' ? <CheckoutScreen onNavigate={setRoute} /> : null}
+          {route === 'checkout' ? <CheckoutScreen onNavigate={setRoute} onOpenOrder={(id) => { setOrderId(id); setRoute('orderDetails'); }} /> : null}
           {route === 'library' ? (
             <BuyerLibraryScreen
               onNavigate={setRoute}
@@ -906,10 +906,13 @@ export default function App() {
               orderId={orderId}
             />
           ) : null}
-          {route === 'receipt' ? <OrderReceiptScreen onNavigate={setRoute} orderId={orderId} receiptId={receiptId} /> : null}
+          {route === 'receipt' ? <OrderReceiptScreen onNavigate={setRoute} orderId={orderId} receiptId={receiptId}
+            onOpenOrder={(id) => { setOrderId(id); setRoute('orderDetails'); }}
+            onOpenIssue={(id) => { setOrderId(id); setRoute('refundRequest'); }} /> : null}
           {route === 'tracking' ? (
             <TrackingScreen
               onNavigate={setRoute}
+              onOpenOrder={(id) => { setOrderId(id); setRoute('orderDetails'); }}
               onOpenRefundReturn={(nextOrderId) => {
                 setOrderId(nextOrderId);
                 setRoute('refundRequest');
@@ -943,7 +946,7 @@ export default function App() {
             />
           ) : null}
           {route === 'disputeStatus' ? <DisputeStatusScreen disputeId={disputeId} onNavigate={setRoute} orderId={orderId} /> : null}
-          {route === 'paymentSuccess' ? <PaymentSuccessScreen onNavigate={setRoute} /> : null}
+          {route === 'paymentSuccess' ? <PaymentSuccessScreen onNavigate={setRoute} onOpenOrder={(id) => { setOrderId(id); setRoute('orderDetails'); }} /> : null}
           {route === 'paymentFailed' ? <PaymentFailedScreen onNavigate={setRoute} status="PAYMENT_FAILED" /> : null}
           {route === 'paymentCancelled' ? <PaymentFailedScreen onNavigate={setRoute} status="PAYMENT_CANCELLED" /> : null}
           {route === 'notifications' ? <NotificationCenterScreen onNavigate={setRoute} /> : null}

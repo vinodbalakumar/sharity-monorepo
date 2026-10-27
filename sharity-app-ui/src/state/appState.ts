@@ -2,7 +2,7 @@ import { observable } from '@legendapp/state';
 
 export const appState$ = observable({
   cart: {
-    count: 4
+    count: null as number | null
   },
   checkout: {
     selectedPaymentMethod: 'PAYPAL'

@@ -14,6 +14,8 @@ import { formatListingPrice, compareListingPrice, listingLabel } from "../../uti
 import { StorefrontHero } from "./StorefrontHero";
 import { AppButton } from "../../components/ui";
 import {
+  getStorefrontSections,
+  getMarketplaceListing,
   getMarketplaceHome,
   getMarketplaceListings,
 } from "../../services/marketplaceApi";
@@ -23,6 +25,13 @@ import { systemFontFamily } from "../../theme/typography";
 import type { MarketplaceListing } from "../../types/marketplace";
 import type { AppRoute } from "../../types/navigation";
 
+import { getBrowserSessionSummary } from '../../services/sessionService';
+import { clearRecentViews, recentViews, sectionProducts, type StorefrontSection } from '../../services/storefrontDiscovery';
+const descriptions: Record<string, string> = {
+  BEST_SELLING: 'Popular picks from confirmed orders.', TRENDING: 'What shoppers have been choosing this week.',
+  RECENTLY_VIEWED: 'Pick up where you left off. Saved on this device for 30 days.',
+  RECOMMENDED_DEALS: 'Offers based on your recently viewed categories.', FLASH_DEALS: 'Limited-time offers on selected products.',
+};
 const categories: {
   title: string;
   route: AppRoute;
@@ -56,6 +65,32 @@ export function StorefrontContent({
   const { width } = useWindowDimensions();
   const compact = width < 768;
   const query = useSelector(appState$.marketplace.searchQuery);
+  const [sections, setSections] = useState<StorefrontSection[] | null>(null);
+  const [scope, setScope] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const [, setHistoryVersion] = useState(0);
+  useEffect(() => {
+    const refresh = () => {
+      void getStorefrontSections().then(setSections).catch(() => setSections(previous => previous ?? []));
+      void getBrowserSessionSummary().then(session => setScope(session ? session.authenticated ? session.publicId || null : 'guest' : null));
+      setNow(Date.now());
+    };
+    refresh();
+    if (typeof window !== 'undefined') window.addEventListener('focus', refresh);
+    return () => { if (typeof window !== 'undefined') window.removeEventListener('focus', refresh); };
+  }, []);
+  useEffect(() => {
+    const boundaries = (sections || []).filter(s => s.enabled && s.code === 'FLASH_DEALS')
+      .flatMap(s => [s.startsAt, s.endsAt]).filter((date): date is string => !!date)
+      .map(Date.parse).filter(time => Number.isFinite(time) && time > now);
+    if (!boundaries.length) return;
+    const timer = setTimeout(() => {
+      setNow(Date.now());
+      void getStorefrontSections().then(setSections).catch(() => {});
+    }, Math.min(Math.max(1, Math.min(...boundaries) - Date.now() + 25), 2147483647));
+    return () => clearTimeout(timer);
+  }, [sections, now]);
+  const [discoveryItems, setDiscoveryItems] = useState<MarketplaceListing[]>([]);
   const [items, setItems] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -82,6 +117,25 @@ export function StorefrontContent({
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    if (loading || error || !sections) return;
+    let active = true;
+    const ids = new Set(sections.filter(s => s.enabled).flatMap(s => s.listingIds.slice(0, 8)));
+    if (scope && sections.some(s => s.enabled && ['RECENTLY_VIEWED', 'RECOMMENDED_DEALS'].includes(s.code))) {
+      recentViews(scope).slice(0, 8).forEach(view => ids.add(view.id));
+    }
+    const missing = [...ids].filter(id => !items.some(item => item.publicId === id)).slice(0, 32);
+    setDiscoveryItems([]);
+    void (async () => {
+      const found: MarketplaceListing[] = [];
+      for (let offset = 0; offset < missing.length && active; offset += 4) {
+        const batch = await Promise.all(missing.slice(offset, offset + 4).map(id => getMarketplaceListing(id).catch(() => null)));
+        found.push(...batch.filter((item): item is MarketplaceListing => !!item));
+        if (active) setDiscoveryItems([...found]);
+      }
+    })();
+    return () => { active = false; };
+  }, [sections, items, scope, loading, error]);
   const visible = useMemo(
     () =>
       items
@@ -101,6 +155,11 @@ export function StorefrontContent({
         ),
     [items, query, category, sort],
   );
+  const collections = query.trim() || category || loading || error ? [] : (sections || [])
+    .filter(s => s.code !== 'ALL_PRODUCTS')
+    .map(section => ({ section, products: sectionProducts(section, [...items, ...discoveryItems], scope || '__unavailable__', now) }))
+    .filter(collection => collection.products.length > 0);
+  const catalogEnabled = sections !== null && (sections.find(s => s.code === 'ALL_PRODUCTS')?.enabled ?? true);
   return (
     <View
       style={styles.stack}
@@ -134,7 +193,18 @@ export function StorefrontContent({
         ))}
       </View>
       {showHero && !error && <StorefrontHero items={items} onNavigate={onNavigate} onOpenProduct={onOpenProduct} landing={landing} onCreateAccount={onCreateAccount}/>}
-      <View style={styles.products}>
+      {collections.map(({ section, products }) => <View key={section.code} testID={`storefront-${section.code.toLowerCase()}`} style={styles.products}>
+        <View style={styles.sectionHeader}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.body}>{descriptions[section.code]}</Text>
+            {section.code === 'FLASH_DEALS' && section.endsAt && <Text style={styles.body}>Ends {new Date(section.endsAt).toLocaleString()}</Text>}
+          </View>
+          {section.code === 'RECENTLY_VIEWED' && <AppButton variant="outline" size="small" onPress={() => { if (scope) clearRecentViews(scope); setHistoryVersion(v => v + 1); }}>Clear history</AppButton>}
+        </View>
+        <View style={styles.grid}>{products.map(item => <ListingCard key={item.publicId} item={item} testID="discovery-product" onPress={() => onOpenProduct(item.publicId)} style={{ width: compact ? '47%' : width < 1100 ? '31.5%' : '23.5%' }} />)}</View>
+      </View>)}
+      {catalogEnabled && (loading || error || visible.length > 0 || !!query || !!category) && <View style={styles.products}>
         <View style={[styles.sectionHeader,compact && {alignItems:"center"}]}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text accessibilityRole="header" style={[styles.sectionTitle, compact && { fontSize: 20, lineHeight: 26 }]}>
@@ -171,7 +241,7 @@ export function StorefrontContent({
         {loading ? (
           <View style={styles.empty}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.body}>Loading products…</Text>
+            <Text style={styles.body}>Loading productsÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦</Text>
           </View>
         ) : error ? (
           <View style={styles.empty}>
@@ -222,6 +292,7 @@ export function StorefrontContent({
           </>
         )}
       </View>
+      }
       <View style={styles.help}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.sectionTitle}>A question before you choose?</Text>
@@ -303,7 +374,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     gap: 14,
   },
   productCard: {

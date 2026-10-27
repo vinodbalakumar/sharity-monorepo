@@ -27,7 +27,7 @@ test('malformed rewards data shows a recoverable state instead of a blank screen
   expect(errors).toEqual([]);
 });
 
-for (const route of ['app-settings', 'login-security', 'rewards', 'notifications', 'marketplace-config', 'pricing-promotions', 'support']) {
+for (const route of ['app-settings', 'login-security', 'rewards', 'notifications', 'marketplace-config', 'pricing-promotions']) {
   test(`sample-data boundary remains visible after ${route} finishes loading`, async ({ page }) => {
     await accountFixture(page);
     await page.setViewportSize({ width: 320, height: 900 });

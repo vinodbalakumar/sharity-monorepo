@@ -1,133 +1,56 @@
-import { FeaturePreviewNotice } from '../../components/ui/FeaturePreviewNotice';
-import { useSelector } from '@legendapp/state/react';
-import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { memo, useCallback, useEffect, useState, type ComponentProps, type ReactElement, type ReactNode } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
-import * as DropdownMenu from 'zeego/dropdown-menu';
-import { Button, Card, H2, Input, Paragraph, Text, XStack, YStack } from 'tamagui';
-
+import { Ionicons } from '@expo/vector-icons';
+import { useContext, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { InteriorShell } from '../../components/appShell';
-import { appState$ } from '../../state/appState';
-import { appStorage } from '../../storage/storage';
+import { commerceStyles as s } from '../../components/commerce/CommerceLayout';
+import { SiteNavigationContext } from '../../components/publicSite/SiteNavigationContext';
+import { AppButton } from '../../components/ui';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { colors } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
-import { closeSupportTicket, createSupportTicket, escalateSupportTicket, getSupportScreenData, reopenSupportTicket, replyToSupportTicket, uploadSupportAttachment } from './supportMockApi';
-import type { AdminSupportQueueItem, HelpSearchResultItem, SelfServiceSuggestionItem, SupportAttachmentItem, SupportCategoryItem, SupportRelatedEntity, SupportScreenData, SupportTicketMessage, SupportTicketSummary, SupportTicketTimelineEvent } from './supportTypes';
 
-type Props = { onNavigate: (route: AppRoute) => void };
-type ListComponent<T> = (props: { data: T[]; estimatedItemSize: number; keyExtractor: (item: T) => string; renderItem: (info: { item: T; index: number }) => ReactElement }) => ReactElement;
-const CategoryList = FlashList as unknown as ListComponent<SupportCategoryItem>;
-const SearchList = FlashList as unknown as ListComponent<HelpSearchResultItem>;
-const SuggestionList = FlashList as unknown as ListComponent<SelfServiceSuggestionItem>;
-const TicketList = FlashList as unknown as ListComponent<SupportTicketSummary>;
-const MessageList = FlashList as unknown as ListComponent<SupportTicketMessage>;
-const AttachmentList = FlashList as unknown as ListComponent<SupportAttachmentItem>;
-const TimelineList = FlashList as unknown as ListComponent<SupportTicketTimelineEvent>;
-const RelatedList = FlashList as unknown as ListComponent<SupportRelatedEntity>;
-const AdminQueueList = FlashList as unknown as ListComponent<AdminSupportQueueItem>;
-const tabs = ['Dashboard', 'Create Ticket', 'Ticket Detail', 'Timeline', 'Admin Queue'] as const;
-const filters = ['All tickets', 'Open', 'Resolved', 'Closed', 'Order-related', 'Refund-related', 'Payout-related', 'Verification-related', 'Safety reports', 'Unread', 'Action required'];
-
-export function SupportScreen({ onNavigate }: Props) {
-  const selectedTab = useSelector(appState$.support.selectedTab) as typeof tabs[number];
-  const searchQuery = useSelector(appState$.support.searchQuery);
-  const selectedFilter = useSelector(appState$.support.selectedFilter);
-  const [data, setData] = useState<SupportScreenData | null>(null);
-  const [attachments, setAttachments] = useState<SupportAttachmentItem[]>([]);
-  const [message, setMessage] = useState('');
-
-  const load = useCallback(async () => {
-    setData(await getSupportScreenData());
-    const stored = appStorage.getString('supportLastTab') as typeof tabs[number] | null;
-    if (stored && tabs.includes(stored)) appState$.support.selectedTab.set(stored);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function runAction(kind: 'create' | 'attach' | 'reply' | 'escalate' | 'close' | 'reopen') {
-    if (kind === 'create') appState$.support.createLoading.set(true);
-    const result = kind === 'create'
-      ? await createSupportTicket()
-      : kind === 'attach'
-        ? await uploadSupportAttachment()
-        : kind === 'reply'
-          ? await replyToSupportTicket()
-          : kind === 'escalate'
-            ? await escalateSupportTicket()
-            : kind === 'close'
-              ? await closeSupportTicket()
-              : await reopenSupportTicket();
-    if (kind === 'create') appState$.support.createLoading.set(false);
-    if (kind === 'attach' && 'attachmentId' in result) {
-      setAttachments((current) => [result, ...current]);
-      setMessage('Attachment uploaded and scanned. Raw storage keys are not exposed.');
-      return;
-    }
-    setMessage('message' in result ? result.message : 'Support action completed.');
-  }
-
-  if (!data) return <YStack bg="$background" f={1} p="$5"><Centered title="Loading Help & Support..." /></YStack>;
-
-  const selectedFilterKey = selectedFilter.toUpperCase().split('-')[0] ?? selectedFilter.toUpperCase();
-  const filteredTickets = data.dashboard.recentTickets.filter((ticket) => selectedFilter === 'All tickets' || (selectedFilter === 'Unread' ? ticket.unreadCount > 0 : selectedFilter === 'Action required' ? ticket.actionRequired : ticket.status.includes(selectedFilterKey)));
-
-  return (
-    <InteriorShell onNavigate={onNavigate} title="Help & Support" subtitle="Get help with your account" scrollable={true}>
-      <FeaturePreviewNotice />
-      <YStack gap="$5" maxWidth={1240} mx="auto" width="100%">
-        <PremiumCard p="$4">
-            <YStack gap="$3">
-              <Input bg="$background" borderColor="$borderColor" placeholder={data.dashboard.searchPlaceholder} value={searchQuery} onChangeText={(value) => appState$.support.searchQuery.set(value)} />
-              <Paragraph color="$gray10">For safety, do not share passwords, card details, digital codes, private contact info, raw provider payloads, bank details, or identity/tax/KYC documents in support messages.</Paragraph>
-            </YStack>
-          </PremiumCard>
-
-          <XStack flexWrap="wrap" gap="$2">{tabs.map((tab) => <Button key={tab} theme={selectedTab === tab ? 'purple' : undefined} onPress={() => { appState$.support.selectedTab.set(tab); appStorage.setString('supportLastTab', tab); }}>{tab}</Button>)}</XStack>
-
-          <XStack $md={{ flexDirection: 'column' }} alignItems="flex-start" gap="$5">
-            <YStack flex={1} gap="$4" minWidth={0}>
-              {selectedTab === 'Dashboard' ? <Dashboard data={data} tickets={filteredTickets} /> : null}
-              {selectedTab === 'Create Ticket' ? <CreateTicket data={data} attachments={attachments} onAction={runAction} /> : null}
-              {selectedTab === 'Ticket Detail' ? <TicketDetail data={data} attachments={attachments} onAction={runAction} /> : null}
-              {selectedTab === 'Timeline' ? <Panel title="Ticket Timeline"><TimelineList data={data.selectedTicket.timeline} estimatedItemSize={112} keyExtractor={(item) => item.eventId} renderItem={({ item, index }) => <TimelineRow item={item} index={index} />} /></Panel> : null}
-              {selectedTab === 'Admin Queue' ? <Panel title="Admin / Support Queue Placeholder"><AdminQueueList data={data.adminQueue} estimatedItemSize={126} keyExtractor={(item) => item.ticketId} renderItem={({ item, index }) => <AdminQueueRow item={item} index={index} />} /></Panel> : null}
-            </YStack>
-            <YStack gap="$4" width={360} $md={{ width: '100%' }}>
-              <Panel title="Ticket Filters"><XStack flexWrap="wrap" gap="$2">{filters.map((filter) => <Button key={filter} size="$3" theme={filter === selectedFilter ? 'purple' : undefined} onPress={() => appState$.support.selectedFilter.set(filter)}>{filter}</Button>)}</XStack></Panel>
-              <Panel title="Support Counts"><Badge label={`${data.dashboard.openTicketCount} open`} tone="info" /><Badge label={`${data.dashboard.actionRequiredCount} action required`} tone="warning" /><Badge label={`${data.dashboard.unreadCount} unread`} tone="critical" /></Panel>
-              {message ? <PremiumCard p="$4"><Paragraph color="$blue10">{message}</Paragraph></PremiumCard> : null}
-            </YStack>
-          </XStack>
-        </YStack>
-    </InteriorShell>
-  );
+const articles = [
+  { id: 'payment', title: 'Why is my payment still pending?', category: 'Payments', answer: 'Open your order and select Refresh status. We check the payment service and update your order when payment is confirmed. Do not place another order while confirmation is pending. Demo checkout simulates payment and does not charge real money.', action: 'Find my order', route: 'orders' as AppRoute },
+  { id: 'delivery', title: 'Where can I find my delivery updates?', category: 'Orders & delivery', answer: 'Open My orders, choose your purchase and select View delivery status. For physical items, carrier tracking appears only when the seller provides it. Digital items do not have parcel tracking.', action: 'Track an order', route: 'orders' as AppRoute },
+  { id: 'digital', title: 'How do I access a digital purchase?', category: 'Digital purchases', answer: 'Digital codes and downloads are available in My library after payment and fulfilment are confirmed. If access is missing or a code does not work, report the issue from the relevant order. Keep the actual code out of your message.', action: 'Open my library', route: 'library' as AppRoute },
+  { id: 'issue', title: 'How do I report an item or request a review?', category: 'Orders & delivery', answer: 'Choose the order from My orders and select Report an order issue. Pick the issue, describe what happened and submit the report. This sends the order for review; a refund decision and completion time are confirmed separately.', action: 'Get help with an order', route: 'orders' as AppRoute },
+  { id: 'receipt', title: 'Where is my payment summary?', category: 'Payments', answer: 'Open your order and select View payment summary. It shows the recorded amount, currency and payment status. If payment is pending, refresh the order first. A demo payment summary is not a tax invoice.', action: 'View my orders', route: 'orders' as AppRoute },
+  { id: 'account', title: 'How do I manage my account or sign-in details?', category: 'Account', answer: 'Use your account settings to review your profile and login security. If you cannot sign in, use the password recovery link on the sign-in page.', action: 'Login & security', route: 'loginSecurity' as AppRoute },
+];
+const categories = ['All topics', 'Orders & delivery', 'Payments', 'Digital purchases', 'Account'];
+export function SupportScreen({ onNavigate }: { onNavigate: (route: AppRoute) => void }) {
+  const { width } = useResponsiveLayout();
+  const compact = width < 960;
+  const navigation = useContext(SiteNavigationContext);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All topics');
+  const [expanded, setExpanded] = useState<string | null>('payment');
+  const filtered = useMemo(() => articles.filter(item => (category === 'All topics' || item.category === category) && `${item.title} ${item.answer}`.toLowerCase().includes(query.trim().toLowerCase())), [category, query]);
+  return <InteriorShell title="Help center" onNavigate={onNavigate}><View style={s.page} testID="support-center">
+    <View style={styles.hero}><Text style={styles.eyebrow}>SHARITY HELP CENTER</Text><Text accessibilityRole="header" style={s.title}>How can we help?</Text><Text style={s.body}>Find an answer, check an order, or get help with a purchase.</Text><View style={styles.search}><Ionicons name="search-outline" size={22} color={colors.primary} /><TextInput accessibilityLabel="Search help articles" placeholder="Search payments, delivery, digital items…" value={query} onChangeText={setQuery} style={styles.searchInput} /></View></View>
+    <View style={[styles.quickActions, compact && { flexDirection: 'column' }]}>{[
+      { title: 'Track an order', detail: 'Check payment and delivery updates', icon: 'cube-outline' as const, route: 'orders' as AppRoute },
+      { title: 'Help with a purchase', detail: 'Report an item or payment issue', icon: 'chatbubble-ellipses-outline' as const, route: 'orders' as AppRoute },
+      { title: 'My digital purchases', detail: 'Find your codes and downloads', icon: 'download-outline' as const, route: 'library' as AppRoute },
+    ].map(item => <Pressable key={item.title} accessibilityRole="button" accessibilityLabel={item.title} onPress={() => onNavigate(item.route)} style={[s.card, styles.quickCard]}><Ionicons name={item.icon} size={26} color={colors.primary} /><View style={{ flex: 1, minWidth: 0, gap: 5 }}><Text style={s.value}>{item.title}</Text><Text style={s.small}>{item.detail}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.primary} /></Pressable>)}</View>
+    <View style={[s.layout, compact && s.mobileLayout]}>
+      <View style={[s.main, compact && s.mobileMain]}><Text style={s.heading}>Frequently asked questions</Text><View style={styles.categories}>{categories.map(item => <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: category === item }} onPress={() => setCategory(item)} style={[styles.category, category === item && styles.selected]}><Text style={[s.small, category === item && { color: colors.white }]}>{item}</Text></Pressable>)}</View>
+        {filtered.map(item => <View key={item.id} style={[s.card, width < 600 && s.mobileCard]}><Pressable accessibilityRole="button" accessibilityLabel={item.title} accessibilityState={{ expanded: expanded === item.id }} onPress={() => setExpanded(expanded === item.id ? null : item.id)} style={styles.question}><Text style={[s.value, { flex: 1 }]}>{item.title}</Text><Ionicons name={expanded === item.id ? 'remove' : 'add'} size={20} color={colors.primary} /></Pressable>{expanded === item.id && <View style={{ gap: 12 }}><Text style={s.body}>{item.answer}</Text><AppButton variant="outline" onPress={() => onNavigate(item.route)}>{item.action}</AppButton></View>}</View>)}
+        {!filtered.length && <View style={[s.card, s.empty]}><Text style={s.heading}>No matching help articles</Text><Text style={s.body}>Try a different search or browse all topics.</Text><AppButton variant="outline" onPress={() => { setQuery(''); setCategory('All topics'); }}>Clear search</AppButton></View>}
+      </View>
+      <View style={[s.sidebar, compact && s.mobileSidebar]}><View style={s.card}><Ionicons name="help-buoy-outline" size={30} color={colors.primary} /><Text style={s.heading}>Need help with an order?</Text><Text style={s.body}>Choose your purchase, then select Report an order issue. Your order reference is included so the right purchase can be reviewed.</Text><AppButton onPress={() => onNavigate('orders')}>Choose an order</AppButton></View><View style={s.card}><Text style={s.heading}>More ways to get help</Text><Text style={s.body}>See our contact information or review the marketplace policies.</Text><AppButton variant="outline" onPress={() => navigation?.openPublicContent('contact-us')}>Contact information</AppButton><AppButton variant="ghost" onPress={() => onNavigate('policies')}>Marketplace policies</AppButton><Text style={s.small}>Please do not include passwords, card details or digital codes in an issue report.</Text></View></View>
+    </View>
+  </View></InteriorShell>;
 }
-
-function Dashboard({ data, tickets }: { data: SupportScreenData; tickets: SupportTicketSummary[] }) {
-  return <YStack gap="$4"><Panel title="Help Search Results"><SearchList data={data.searchResults} estimatedItemSize={108} keyExtractor={(item) => item.resultId} renderItem={({ item, index }) => <SearchRow item={item} index={index} />} /></Panel><Panel title="Guided Troubleshooting"><Row title={data.guidedHelp.title} meta={data.guidedHelp.steps.map((step) => step.question).join(' / ')} badge={data.guidedHelp.createTicketRecommended ? 'Ticket ready' : 'Self-service'} tone="info" /></Panel><Panel title="Support Categories"><CategoryList data={data.dashboard.supportCategories} estimatedItemSize={118} keyExtractor={(item) => item.categoryCode} renderItem={({ item, index }) => <CategoryRow item={item} index={index} />} /></Panel><Panel title="Tickets"><TicketList data={tickets} estimatedItemSize={124} keyExtractor={(item) => item.ticketId} renderItem={({ item, index }) => <TicketRow item={item} index={index} />} /></Panel></YStack>;
-}
-
-function CreateTicket({ data, attachments, onAction }: { data: SupportScreenData; attachments: SupportAttachmentItem[]; onAction: (kind: 'create' | 'attach' | 'reply' | 'escalate' | 'close' | 'reopen') => void }) {
-  return <YStack gap="$4"><Panel title="Category & Related Entity"><RelatedList data={data.relatedEntities} estimatedItemSize={112} keyExtractor={(item) => item.relatedEntityId} renderItem={({ item, index }) => <RelatedRow item={item} index={index} />} /></Panel><Panel title="Self-Service Suggestions"><SuggestionList data={data.selfServiceSuggestions} estimatedItemSize={112} keyExtractor={(item) => item.suggestionId} renderItem={({ item, index }) => <SuggestionRow item={item} index={index} />} /></Panel><Panel title="Create Support Ticket"><YStack gap="$3"><Input bg="$background" borderColor="$borderColor" value="Digital code says already used" /><Input bg="$background" borderColor="$borderColor" value="I attached a screenshot and did not include the actual code." /><Button onPress={() => onAction('attach')}>Attach Evidence</Button><Button theme="blue" onPress={() => onAction('create')}>Submit Ticket</Button></YStack></Panel><Panel title="Attachments"><AttachmentList data={attachments} estimatedItemSize={96} keyExtractor={(item) => item.attachmentId} renderItem={({ item, index }) => <AttachmentRow item={item} index={index} />} /></Panel></YStack>;
-}
-
-function TicketDetail({ data, attachments, onAction }: { data: SupportScreenData; attachments: SupportAttachmentItem[]; onAction: (kind: 'create' | 'attach' | 'reply' | 'escalate' | 'close' | 'reopen') => void }) {
-  const ticket = data.selectedTicket;
-  return <YStack gap="$4"><Panel title={`${ticket.ticketReference}: ${ticket.subject}`}><Badge label={ticket.status} tone="warning" /><Paragraph color="$gray10">{ticket.description}</Paragraph><Paragraph color="$gray10">Related: {ticket.relatedEntity.relatedEntityReference} / {ticket.relatedEntity.summary}</Paragraph></Panel><Panel title="Ticket Thread"><MessageList data={ticket.messages} estimatedItemSize={128} keyExtractor={(item) => item.messageId} renderItem={({ item, index }) => <MessageRow item={item} index={index} />} /></Panel><Panel title="Reply & Actions"><YStack gap="$3"><Input bg="$background" borderColor="$borderColor" value="Thanks, please review the screenshot." /><Button onPress={() => onAction('reply')}>Reply to Ticket</Button><Button onPress={() => onAction('attach')}>Attach Evidence</Button><Button theme="blue" onPress={() => onAction('escalate')}>Escalate Ticket</Button></YStack></Panel><Panel title="All Attachments"><AttachmentList data={[...attachments, ...ticket.attachments]} estimatedItemSize={96} keyExtractor={(item) => item.attachmentId} renderItem={({ item, index }) => <AttachmentRow item={item} index={index} />} /></Panel></YStack>;
-}
-
-const CategoryRow = memo(function CategoryRow({ item, index }: { item: SupportCategoryItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.label} meta={`${item.description} Evidence: ${item.evidenceRecommendations.join(', ')}`} badge={item.defaultPriorityHint} tone={item.defaultPriorityHint.includes('CRITICAL') ? 'critical' : item.defaultPriorityHint === 'HIGH' ? 'warning' : 'info'} action={() => appState$.support.selectedCategory.set(item.categoryCode)} /></Animated.View>; });
-function SearchRow({ item, index }: { item: HelpSearchResultItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.title} meta={item.summary} badge={item.resultType} tone="info" /></Animated.View>; }
-function SuggestionRow({ item, index }: { item: SelfServiceSuggestionItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.title} meta={item.description} badge={item.actionLabel} tone="success" /></Animated.View>; }
-function TicketRow({ item, index }: { item: SupportTicketSummary; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={`${item.ticketReference}: ${item.subject}`} meta={`${item.categoryCode} / ${item.relatedEntityReference} / unread ${item.unreadCount}`} badge={item.status} tone={item.actionRequired ? 'warning' : item.escalated ? 'critical' : 'info'} action={() => { appState$.support.selectedTicketId.set(item.ticketId); appState$.support.selectedTab.set('Ticket Detail'); }} /></Animated.View>; }
-function RelatedRow({ item, index }: { item: SupportRelatedEntity; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.relatedEntityReference} meta={`${item.relatedEntityType} / ${item.summary}`} badge={item.accessAllowed ? 'Access ok' : 'Denied'} tone={item.accessAllowed ? 'success' : 'critical'} /></Animated.View>; }
-function MessageRow({ item, index }: { item: SupportTicketMessage; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={`${item.senderDisplayName} (${item.senderType})`} meta={item.body} badge={item.moderationStatus} tone={item.systemMessage ? 'info' : 'success'} /></Animated.View>; }
-function AttachmentRow({ item, index }: { item: SupportAttachmentItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><XStack ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><Image source={item.previewUrl} style={{ width: 44, height: 44, borderRadius: 10 }} /><YStack flex={1}><Text fontWeight="700">{item.fileName}</Text><Paragraph color="$gray10">{item.uploadStatus} / {item.scanStatus} / {item.visibilityPolicy}</Paragraph></YStack><Badge label="Evidence" tone="success" /></XStack></Animated.View>; }
-function TimelineRow({ item, index }: { item: SupportTicketTimelineEvent; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={item.title} meta={`${item.actorType} / ${item.message}`} badge={item.status} tone={item.status === 'PENDING' ? 'warning' : 'info'} /></Animated.View>; }
-function AdminQueueRow({ item, index }: { item: AdminSupportQueueItem; index: number }) { const style = useEntrance(index); return <Animated.View style={style}><Row title={`${item.ticketReference} / ${item.categoryCode}`} meta={`${item.assignedTo} / ${item.relatedEntityType} / ${item.escalationStatus}`} badge={item.status} tone={item.escalationStatus === 'ESCALATED' ? 'critical' : 'info'} /></Animated.View>; }
-function Panel({ title, children }: { title: string; children: ReactNode }) { return <PremiumCard p="$5"><YStack gap="$4"><H2>{title}</H2>{children}</YStack></PremiumCard>; }
-function Row({ title, meta, badge, tone, action }: { title: string; meta: string; badge: string; tone: 'info' | 'warning' | 'critical' | 'success'; action?: () => void }) { return <XStack $sm={{ flexDirection: 'column' }} ai="center" borderColor="$borderColor" borderTopWidth={1} gap="$3" py="$3"><YStack flex={1}><Text fontWeight="700">{title}</Text><Paragraph color="$gray10">{meta}</Paragraph></YStack><Badge label={badge} tone={tone} />{action ? <Button onPress={action}>Open</Button> : null}</XStack>; }
-function Centered({ title }: { title: string }) { return <PremiumCard p="$6"><H2 ta="center">{title}</H2></PremiumCard>; }
-function Badge({ label, tone }: { label: string; tone: 'info' | 'warning' | 'critical' | 'success' }) { const bg = tone === 'critical' ? '$red3' : tone === 'warning' ? '$orange3' : tone === 'success' ? '$green3' : '$blue3'; const color = tone === 'critical' ? '$red10' : tone === 'warning' ? '$orange10' : tone === 'success' ? '$green10' : '$blue10'; return <Text bg={bg} br="$6" color={color} fontSize="$2" fontWeight="700" px="$2" py="$1">{label}</Text>; }
-function PremiumCard(props: ComponentProps<typeof Card>) { return <Card bg="$backgroundHover" borderColor="$borderColor" borderWidth={1} br="$6" {...props} />; }
-function useEntrance(index: number) { const opacity = useSharedValue(0); const translateY = useSharedValue(10); useEffect(() => { opacity.value = withDelay(index * 35, withTiming(1, { duration: 220 })); translateY.value = withDelay(index * 35, withSpring(0, { damping: 18, stiffness: 150 })); }, [index, opacity, translateY]); return useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] })); }
+const styles = StyleSheet.create({
+  hero: { ...s.card, gap: 12, paddingVertical: 32, backgroundColor: '#f7f9ff' },
+  eyebrow: { ...s.small, color: colors.primary, letterSpacing: 1.3, fontWeight: '700' },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, marginTop: 8 },
+  searchInput: { ...s.body, flex: 1, minWidth: 0, minHeight: 52, fontSize: 16 },
+  quickActions: { flexDirection: 'row', gap: 16 },
+  quickCard: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 20, gap: 12 },
+  categories: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  category: { paddingHorizontal: 12, minHeight: 44, borderRadius: 22, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' },
+  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  question: { flexDirection: 'row', gap: 12, alignItems: 'center', minHeight: 44 },
+});

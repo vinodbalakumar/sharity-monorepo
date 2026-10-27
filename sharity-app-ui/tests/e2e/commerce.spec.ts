@@ -2,9 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 
 const listing = { publicId: 'listing-real-1', title: 'Steam gift card', description: 'Unused digital gift card.', productType: 'DIGITAL', deliveryType: 'CODE', currencyCode: 'USD', priceAmount: 20, imageUrl: null, sellerDisplayName: 'Seller store', verifiedSeller: false, categoryCode: 'GIFT_CARDS', verticalCode: 'MARKETPLACE', providerCountryCode: 'USA', listingStatus: 'ACTIVE', publicReviews: [], createdAt: '2026-10-25T12:00:00Z' };
 const pending = { publicId: 'order-real-1', listingPublicId: listing.publicId, orderStatus: 'PAYMENT_PENDING', paymentStatus: 'PENDING', fulfillmentStatus: 'PENDING_DELIVERY', payoutStatus: 'PAYMENT_PENDING', customerTotalAmount: 20, currencyCode: 'USD', createdAt: '2026-10-25T12:00:00Z' };
-async function fixture(page: Page, options: { admin?: boolean; enabled?: boolean; failPurchase?: boolean } = {}) {
+async function fixture(page: Page, options: { admin?: boolean; enabled?: boolean; failPurchase?: boolean; failConfigOnce?: boolean; emptyCart?: boolean } = {}) {
   let quantity = 1;
-  let removed = false;
+  let removed = options.emptyCart ?? false;
+  let configRequests = 0;
   const purchaseKeys: string[] = [];
   const calls: string[] = [];
   await page.route('**/*', async route => {
@@ -19,7 +20,10 @@ async function fixture(page: Page, options: { admin?: boolean; enabled?: boolean
     if (path.endsWith('/home')) return send({ verticals: [], categories: [], featuredListings: [listing] });
     if (path.endsWith('/listings')) return send([listing]);
     if (path.endsWith(`/listings/${listing.publicId}`)) return send(listing);
-    if (path.endsWith('/commerce/config')) return send({ enabled: options.enabled !== false, mode: options.enabled === false ? 'UNAVAILABLE' : 'DEMO' });
+    if (path.endsWith('/commerce/config')) {
+      if (options.failConfigOnce && configRequests++ === 0) return send({}, 503);
+      return send({ enabled: options.enabled !== false, mode: options.enabled === false ? 'UNAVAILABLE' : 'DEMO' });
+    }
     if (path.endsWith('/marketplace/orders') && route.request().method() === 'POST') {
       expect(route.request().headers()['x-csrf-token']).toBe('test-csrf');
       expect(route.request().postDataJSON()).toEqual({ listingPublicId: listing.publicId, expectedAmount: 20, expectedCurrency: 'USD' });
@@ -52,10 +56,10 @@ test('listing to review to recorded pending order survives refresh without claim
   await expect(submit).toBeDisabled();
   await page.getByRole('checkbox', { name: 'Accept marketplace policies' }).check();
   await submit.click();
-  await expect(page.getByText('Payment status: PENDING', { exact: true })).toBeVisible();
+  await expect(page.getByText('Payment status: Awaiting confirmation', { exact: true })).toBeVisible();
   await expect(page.getByText('Your payment was successful', { exact: false })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByText('Payment status: PENDING', { exact: true })).toBeVisible();
+  await expect(page.getByText('Payment status: Awaiting confirmation', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Check payment status' }).click();
   expect(purchaseKeys).toHaveLength(1);
   expect(purchaseKeys[0]).toMatch(/^[A-Za-z0-9_-]{16,64}$/);
@@ -77,8 +81,59 @@ test('disabled payment integration cannot create purchases', async ({ page }) =>
   await openPurchase(page);
   await expect(page.getByText('Purchases are currently disabled. You have not been charged.')).toBeVisible();
   await page.getByRole('checkbox', { name: 'Accept marketplace policies' }).check();
-  await expect(page.getByRole('button', { name: 'Confirm purchase' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Confirm purchase' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Check availability again' }).click();
+  await expect(page.getByTestId('checkout-unavailable')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Contact support', exact: true })).toBeEnabled();
   expect(purchaseKeys).toHaveLength(0);
+});
+
+test('availability failure retains listing details and recovers with consent intact', async ({ page }) => {
+  const { purchaseKeys } = await fixture(page, { failConfigOnce: true });
+  await openPurchase(page);
+  await expect(page.getByText('Steam gift card', { exact: true })).toBeVisible();
+  await expect(page.getByText('Unable to check checkout availability', { exact: true })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Accept marketplace policies' }).check();
+  await page.getByRole('button', { name: 'Check availability again' }).click();
+  await expect(page.getByRole('button', { name: 'Create demo order' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Create demo order' }).click();
+  await expect(page.getByText('Payment status: Awaiting confirmation', { exact: true })).toBeVisible();
+  expect(purchaseKeys).toHaveLength(1);
+});
+
+test('cart review opens checkout and the agreement label enables confirmation', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/app/cart');
+  await page.getByRole('button', { name: 'Review purchase' }).click();
+  await expect(page.getByTestId('checkout-summary')).toBeVisible();
+  const submit = page.getByRole('button', { name: 'Create demo order' });
+  await expect(submit).toBeDisabled();
+  await expect(page.getByText('Accept the marketplace policies to enable your order.')).toBeVisible();
+  await page.getByRole('button', { name: 'Toggle marketplace policy agreement' }).click();
+  await expect(submit).toBeEnabled();
+  await page.getByRole('button', { name: 'Toggle marketplace policy agreement' }).click();
+  await expect(submit).toBeDisabled();
+});
+
+test('direct checkout without selection offers cart and marketplace recovery', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/app/checkout');
+  await expect(page.getByText('Choose an item to get started')).toBeVisible();
+  await page.getByRole('button', { name: 'View your cart' }).click();
+  await expect(page.getByTestId('commerce-cart')).toBeVisible();
+});
+
+for (const width of [320, 390, 768, 1440]) test(`commerce layouts fit at ${width}px`, async ({ page }, info) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await fixture(page);
+  await page.goto('/app/cart');
+  await expect(page.getByTestId('cart-summary')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.screenshot({ path: info.outputPath(`cart-${width}.png`), fullPage: true });
+  await page.getByRole('button', { name: 'Review purchase' }).click();
+  await expect(page.getByTestId('checkout-summary')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.screenshot({ path: info.outputPath(`checkout-${width}.png`), fullPage: true });
 });
 test('cart quantity and removal reflect API state', async ({ page }) => {
   await fixture(page);
