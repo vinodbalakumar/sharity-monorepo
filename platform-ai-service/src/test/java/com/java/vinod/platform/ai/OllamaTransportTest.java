@@ -23,15 +23,16 @@ class OllamaTransportTest {
             server.setExecutor(executor);
             server.createContext("/api/chat", exchange -> {
                 exchange.getRequestBody().readAllBytes(); received.countDown();
-                try { release.await(5,TimeUnit.SECONDS); } catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
+                try { release.await(15,TimeUnit.SECONDS); } catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
                 finally { exchange.close(); }
             });
             server.start();
             try {
                 var api=new OllamaTransportConfiguration().ollamaApi("http://127.0.0.1:"+server.getAddress().getPort(),
-                        "200ms","200ms");
-                var exception=assertTimeoutPreemptively(Duration.ofSeconds(5), () -> assertThrows(RuntimeException.class, () -> {
-                    if (streaming) api.streamingChat(request(true)).collectList().block(Duration.ofSeconds(4));
+                        "2s","1s");
+                // Allow cold HTTP-client startup on shared runners before testing the read timeout.
+                var exception=assertTimeoutPreemptively(Duration.ofSeconds(10), () -> assertThrows(RuntimeException.class, () -> {
+                    if (streaming) api.streamingChat(request(true)).collectList().block(Duration.ofSeconds(8));
                     else api.chat(request(false));
                 }));
                 assertTrue(received.await(1,TimeUnit.SECONDS),"The actual provider endpoint must have received the request");

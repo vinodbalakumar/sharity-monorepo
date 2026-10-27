@@ -13,22 +13,14 @@ component_list() {
 }
 
 component_repo() {
-  case "$1" in
-    authorization-server) echo "vinodbalakumar/authorization-server" ;;
-    marketplace-service) echo "vinodbalakumar/marketplace-service" ;;
-    payment-service) echo "vinodbalakumar/payment-service" ;;
-    wallet-service) echo "vinodbalakumar/wallet-service" ;;
-    platform-web-bff) echo "vinodbalakumar/platform-web-bff" ;;
-    sharity-app-ui) echo "vinodbalakumar/sharity-app-ui" ;;
-    nginx) echo "vinodbalakumar/deployments" ;;
-    *) return 1 ;;
-  esac
+  component_is_supported "$1" || return 1
+  echo "vinodbalakumar/sharity-monorepo"
 }
 
 component_default_branch() {
   case "$1" in
     authorization-server|marketplace-service|payment-service|wallet-service|platform-web-bff|sharity-app-ui)
-      echo "claude_cop_patch"
+      echo "main"
       ;;
     nginx)
       echo "main"
@@ -96,9 +88,9 @@ component_image_name() {
 component_health_endpoint() {
   case "$1" in
     authorization-server) echo "/authorization-server/api/actuator/health" ;;
-    marketplace-service) echo "/marketplace-service/internal/health" ;;
+    marketplace-service) echo "/marketplace-service/actuator/health" ;;
     payment-service) echo "/payment-service/actuator/health" ;;
-    wallet-service) echo "/wallet-service/internal/health" ;;
+    wallet-service) echo "/wallet-service/actuator/health" ;;
     platform-web-bff) echo "/actuator/health" ;;
     sharity-app-ui) echo "/" ;;
     nginx) echo "nginx-config" ;;

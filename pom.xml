@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.sharity</groupId>
+  <artifactId>sharity-monorepo</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Sharity independent service builds</name>
+  <modules>
+    <module>authorization-server</module>
+    <module>payment-service</module>
+    <module>wallet-service</module>
+    <module>marketplace-service</module>
+    <module>platform-ai-service</module>
+    <module>platform-web-bff</module>
+  </modules>
+  <profiles>
+    <profile><id>tesla</id><modules><module>tesla-dashboard-services</module></modules></profile>
+  </profiles>
+</project>

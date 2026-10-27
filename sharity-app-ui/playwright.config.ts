@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const previewPort = Number(process.env.SHARITY_PLAYWRIGHT_PORT || 8097);
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -10,7 +12,7 @@ export default defineConfig({
   timeout: 120000,
   expect: { timeout: 30000 },
   reporter: [['list'], ['html', { open: 'never' }]],
-  use: { baseURL: 'http://127.0.0.1:8097', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  use: { baseURL: `http://127.0.0.1:${previewPort}`, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', testIgnore: '**/screen-audit.spec.ts', use: { ...devices['Desktop Firefox'] } },
@@ -18,7 +20,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'node tests/serve-export.cjs',
-    url: 'http://127.0.0.1:8097/app/',
+    url: `http://127.0.0.1:${previewPort}/app/`,
     reuseExistingServer: !process.env.CI
   }
 });

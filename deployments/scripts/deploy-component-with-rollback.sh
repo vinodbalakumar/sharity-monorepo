@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/component-map.sh"
 
-workflow_from="claude_cop_patch"
+workflow_from="main"
 component="all"
 deploy_environment="qa"
 qa_target="mac"
@@ -12,7 +12,8 @@ traffic_mode="deploy_only"
 rollback_enabled="true"
 retry_count="3"
 mode="${DEPLOY_MODE:-plan}"
-source_root="${SOURCE_ROOT:-${SHARITY_SOURCE_ROOT:-$ROOT_DIR/sources}}"
+MONOREPO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
+source_root="${SOURCE_ROOT:-${SHARITY_SOURCE_ROOT:-$MONOREPO_ROOT}}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -99,31 +100,26 @@ resolve_targets() {
 
 sync_repo() {
   local repo_dir="$1"
-  local repo_slug="$2"
   local ref="$3"
-  local remote_url="https://github.com/${repo_slug}.git"
-
-  if [[ ! -d "$repo_dir/.git" ]]; then
-    rm -rf "$repo_dir"
-    git clone --depth 1 --branch "$ref" "$remote_url" "$repo_dir" >/dev/null 2>&1 || true
+  if [[ ! -f "$MONOREPO_ROOT/workspace.json" || ! -d "$repo_dir" ]]; then
+    echo "A complete monorepo checkout is required; no repositories will be cloned or deleted." >&2
+    return 1
   fi
-
-  if [[ ! -d "$repo_dir/.git" ]]; then
-    git init "$repo_dir" >/dev/null
-    git -C "$repo_dir" remote add origin "$remote_url" || true
+  case "$repo_dir" in
+    "$MONOREPO_ROOT"/*) ;;
+    *) echo "Component sources must belong to this monorepo checkout." >&2; return 1 ;;
+  esac
+  local expected actual
+  expected="$(git -C "$MONOREPO_ROOT" rev-parse --verify "${ref}^{commit}")" || return 1
+  actual="$(git -C "$MONOREPO_ROOT" rev-parse HEAD)"
+  if [[ "$expected" != "$actual" ]]; then
+    echo "Check out the requested ref at the monorepo root before deployment. Component folders are never reset." >&2
+    return 1
   fi
-
-  git -C "$repo_dir" fetch --prune --tags origin "$ref" >/dev/null 2>&1 || git -C "$repo_dir" fetch --prune --tags origin >/dev/null 2>&1
-  if git -C "$repo_dir" rev-parse --verify "origin/$ref" >/dev/null 2>&1; then
-    git -C "$repo_dir" checkout -f "origin/$ref" >/dev/null
-  elif git -C "$repo_dir" rev-parse --verify "$ref" >/dev/null 2>&1; then
-    git -C "$repo_dir" checkout -f "$ref" >/dev/null
-  else
-    git -C "$repo_dir" checkout -f FETCH_HEAD >/dev/null 2>&1 || true
+  if [[ -n "$(git -C "$MONOREPO_ROOT" status --porcelain)" ]]; then
+    echo "Commit or stash monorepo changes before deployment." >&2
+    return 1
   fi
-
-  git -C "$repo_dir" reset --hard >/dev/null 2>&1 || true
-  git -C "$repo_dir" clean -fdx >/dev/null 2>&1 || true
 }
 
 build_image() {

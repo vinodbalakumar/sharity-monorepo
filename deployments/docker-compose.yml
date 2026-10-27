@@ -36,7 +36,7 @@ services:
         SHARITY_VITE_TESLA_APP_URL: /tesla/
         SHARITY_VITE_COMPANY_NAME: ${SHARITY_COMPANY_NAME:-Sharity}
         SHARITY_VITE_COMPANY_TAGLINE: ${SHARITY_COMPANY_TAGLINE:-Smart business. shared rewards}
-    image: sharity-admin-portal:latest
+    image: ${SHARITY_ADMIN_PORTAL_IMAGE:-sharity-admin-portal:latest}
     expose:
       - "8080"
     restart: unless-stopped
@@ -55,7 +55,7 @@ services:
         EXPO_PUBLIC_SITE_BASE_URL: ${SHARITY_BFF_PUBLIC_BASE_URL:-https://vinodbalakumar.com}
         EXPO_PUBLIC_MARKETPLACE_BASE_URL: /marketplace-service/api/v1/marketplace
         EXPO_PUBLIC_ASSET_PUBLIC_BASE_URL: ${ASSET_STORAGE_PUBLIC_BASE_URL:-https://pub-c431ffbb16cd4884aa6a22a5f177f00b.r2.dev}
-    image: sharity-app:latest
+    image: ${SHARITY_APP_IMAGE:-sharity-app:latest}
     expose:
       - "80"
     restart: unless-stopped
@@ -87,7 +87,7 @@ services:
     build:
       context: ../authorization-server
       dockerfile: ../deployments/dockerfiles/authorization-server.Dockerfile
-    image: authorization-server:latest
+    image: ${AUTHORIZATION_SERVER_IMAGE:-authorization-server:latest}
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: qa
@@ -146,7 +146,7 @@ services:
     build:
       context: ../platform-web-bff
       dockerfile: ../deployments/dockerfiles/platform-web-bff.Dockerfile
-    image: platform-web-bff:latest
+    image: ${PLATFORM_WEB_BFF_IMAGE:-platform-web-bff:latest}
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: qa
@@ -183,7 +183,7 @@ services:
     build:
       context: ../marketplace-service
       dockerfile: ../deployments/dockerfiles/marketplace-service.Dockerfile
-    image: marketplace-service:latest
+    image: ${MARKETPLACE_SERVICE_IMAGE:-marketplace-service:latest}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -227,7 +227,7 @@ services:
     build:
       context: ../payment-service
       dockerfile: ../deployments/dockerfiles/payment-service.Dockerfile
-    image: payment-service:latest
+    image: ${PAYMENT_SERVICE_IMAGE:-payment-service:latest}
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: qa
@@ -261,7 +261,7 @@ services:
     build:
       context: ../wallet-service
       dockerfile: ../deployments/dockerfiles/wallet-service.Dockerfile
-    image: wallet-service:latest
+    image: ${WALLET_SERVICE_IMAGE:-wallet-service:latest}
     environment:
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: qa
@@ -294,7 +294,7 @@ services:
     build:
       context: ../tesla-dashboard-services
       dockerfile: ../deployments/dockerfiles/tesla-dashboard-services.Dockerfile
-    image: tesla-dashboard-services:latest
+    image: ${TESLA_DASHBOARD_SERVICES_IMAGE:-tesla-dashboard-services:latest}
     environment:
       SERVER_PORT: 8080
       DB_HOST: host.docker.internal

@@ -16,4 +16,4 @@ http.createServer((req, res) => {
   const stream = fs.createReadStream(file);
   stream.on('error', () => { if (!res.headersSent) res.writeHead(503); res.end('Export is unavailable. Finish the build before running tests.'); });
   stream.pipe(res);
-}).listen(8097, '127.0.0.1');
+}).listen(Number(process.env.SHARITY_PLAYWRIGHT_PORT || 8097), '127.0.0.1');

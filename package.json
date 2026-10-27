@@ -1,0 +1,16 @@
+{
+  "name": "sharity-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=22", "npm": ">=10" },
+  "scripts": {
+    "components": "node tools/workspace.mjs list",
+    "install:apps": "node tools/workspace.mjs install apps",
+    "verify": "node tools/workspace.mjs verify",
+    "build": "node tools/workspace.mjs build",
+    "affected": "node tools/affected.mjs",
+    "check:workspace": "node tools/check-workspace.mjs",
+    "test:tools": "node --test tools/tests/*.test.mjs",
+    "deploy:plan": "node tools/deployment-plan.mjs"
+  }
+}

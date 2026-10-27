@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/component-map.sh"
 
-workflow_from="claude_cop_patch"
+workflow_from="main"
 component="all"
 deploy_environment="qa"
 qa_target="mac"

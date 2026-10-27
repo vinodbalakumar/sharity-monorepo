@@ -1,0 +1,126 @@
+{
+  "repository": "vinodbalakumar/sharity-monorepo",
+  "components": [
+    {
+      "name": "authorization-server",
+      "path": "authorization-server",
+      "kind": "java",
+      "dependsOn": [],
+      "composeService": "authorization-server",
+      "health": "/authorization-server/api/actuator/health",
+      "imageVariable": "AUTHORIZATION_SERVER_IMAGE"
+    },
+    {
+      "name": "payment-service",
+      "path": "payment-service",
+      "kind": "java",
+      "dependsOn": [
+        "authorization-server"
+      ],
+      "composeService": "payment-service",
+      "health": "/payment-service/actuator/health",
+      "imageVariable": "PAYMENT_SERVICE_IMAGE"
+    },
+    {
+      "name": "wallet-service",
+      "path": "wallet-service",
+      "kind": "java",
+      "dependsOn": [
+        "authorization-server",
+        "payment-service"
+      ],
+      "composeService": "wallet-service",
+      "health": "/wallet-service/actuator/health",
+      "imageVariable": "WALLET_SERVICE_IMAGE"
+    },
+    {
+      "name": "marketplace-service",
+      "path": "marketplace-service",
+      "kind": "java",
+      "dependsOn": [
+        "authorization-server",
+        "payment-service"
+      ],
+      "composeService": "marketplace-service",
+      "health": "/marketplace-service/actuator/health",
+      "imageVariable": "MARKETPLACE_SERVICE_IMAGE"
+    },
+    {
+      "name": "platform-ai-service",
+      "path": "platform-ai-service",
+      "kind": "java",
+      "dependsOn": [
+        "authorization-server",
+        "marketplace-service"
+      ],
+      "composeService": "platform-ai-service",
+      "health": "/actuator/health",
+      "imageVariable": "PLATFORM_AI_SERVICE_IMAGE"
+    },
+    {
+      "name": "platform-web-bff",
+      "path": "platform-web-bff",
+      "kind": "java",
+      "dependsOn": [
+        "authorization-server",
+        "marketplace-service",
+        "payment-service",
+        "wallet-service",
+        "platform-ai-service"
+      ],
+      "composeService": "platform-web-bff",
+      "health": "/actuator/health",
+      "imageVariable": "PLATFORM_WEB_BFF_IMAGE"
+    },
+    {
+      "name": "sharity-app-ui",
+      "path": "sharity-app-ui",
+      "kind": "storefront",
+      "dependsOn": [
+        "platform-web-bff",
+        "marketplace-service",
+        "payment-service",
+        "wallet-service",
+        "platform-ai-service"
+      ],
+      "composeService": "sharity-app",
+      "health": "/app/",
+      "imageVariable": "SHARITY_APP_IMAGE"
+    },
+    {
+      "name": "sharity-admin-portal",
+      "path": "sharity-admin-portal",
+      "kind": "admin",
+      "dependsOn": [
+        "authorization-server",
+        "marketplace-service",
+        "payment-service",
+        "wallet-service"
+      ],
+      "composeService": "sharity-admin-portal",
+      "health": "/sharity-admin/",
+      "imageVariable": "SHARITY_ADMIN_PORTAL_IMAGE"
+    },
+    {
+      "name": "tesla-dashboard-services",
+      "path": "tesla-dashboard-services",
+      "kind": "java",
+      "optional": true,
+      "dependsOn": [
+        "authorization-server"
+      ],
+      "composeService": "tesla-dashboard-services",
+      "health": "/tesla-dashboard-services/api/actuator/health",
+      "imageVariable": "TESLA_DASHBOARD_SERVICES_IMAGE"
+    },
+    {
+      "name": "deployments",
+      "path": "deployments",
+      "kind": "infrastructure",
+      "dependsOn": [],
+      "composeService": "nginx",
+      "health": "/",
+      "imageVariable": "DEPLOYMENTS_IMAGE"
+    }
+  ]
+}

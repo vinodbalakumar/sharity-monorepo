@@ -1,0 +1,138 @@
+{
+  "repository": "vinodbalakumar/sharity-monorepo",
+  "sourceWorkspacePreserved": true,
+  "sources": [
+    {
+      "name": "authorization-server",
+      "path": "authorization-server",
+      "sourceRepository": "https://github.com/vinodbalakumar/authorization-server.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "7ff636a7afd31fdd3286cfdfc5f12a3ac7938f79",
+      "importedCommit": "7d8a9b43876d361f62df8a01271df24732c1b78a",
+      "originalCommitCount": 29,
+      "importedCommitCount": 29,
+      "credentialValuesRedacted": 1,
+      "historyMapping": "docs/migration/commit-maps/authorization-server.tsv"
+    },
+    {
+      "name": "marketplace-service",
+      "path": "marketplace-service",
+      "sourceRepository": "https://github.com/vinodbalakumar/marketplace-service.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "80603d34a31473332f6560a5af38880fe569eace",
+      "importedCommit": "fe675e945803089dfac27b5d3f75d2387a5cf7b8",
+      "originalCommitCount": 31,
+      "importedCommitCount": 31,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/marketplace-service.tsv"
+    },
+    {
+      "name": "payment-service",
+      "path": "payment-service",
+      "sourceRepository": "https://github.com/vinodbalakumar/payment-service.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "94e6a7a3002bf0a21ed744146686564d0e636da3",
+      "importedCommit": "45ebf985920c8d81e58cfa030f215ac650d6120d",
+      "originalCommitCount": 11,
+      "importedCommitCount": 11,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/payment-service.tsv"
+    },
+    {
+      "name": "wallet-service",
+      "path": "wallet-service",
+      "sourceRepository": "https://github.com/vinodbalakumar/wallet-service.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "3788bc727f00bd05fecb903cb9dbd2fe5f3a02c9",
+      "importedCommit": "1d9c8daff7eb0d8fee1e6f5ab45cfde51b1f51c7",
+      "originalCommitCount": 11,
+      "importedCommitCount": 11,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/wallet-service.tsv"
+    },
+    {
+      "name": "platform-web-bff",
+      "path": "platform-web-bff",
+      "sourceRepository": "https://github.com/vinodbalakumar/platform-web-bff.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "b4dacdfe7dcf5df74718d7e0968a769c7a83ba0f",
+      "importedCommit": "38388fa9663c19a548cdff5b795f0b722f35ab42",
+      "originalCommitCount": 15,
+      "importedCommitCount": 15,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/platform-web-bff.tsv"
+    },
+    {
+      "name": "platform-ai-service",
+      "path": "platform-ai-service",
+      "sourceRepository": "https://github.com/vinodbalakumar/platform-ai-service.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "ff91af51c6d58a578a9d26e1fc77612b2679b06a",
+      "importedCommit": "25ee658a5e4a2c04c5af887182af36b4e8db8c9d",
+      "originalCommitCount": 2,
+      "importedCommitCount": 2,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/platform-ai-service.tsv"
+    },
+    {
+      "name": "tesla-dashboard-services",
+      "path": "tesla-dashboard-services",
+      "sourceRepository": "https://github.com/vinodbalakumar/tesla-dashboard-services.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "7eaaec4faa88e140c45fec576d05f72e3922367d",
+      "importedCommit": "9038f6b57972b91237af9135683144f21c2b17a2",
+      "originalCommitCount": 78,
+      "importedCommitCount": 78,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/tesla-dashboard-services.tsv"
+    },
+    {
+      "name": "sharity-app-ui",
+      "path": "sharity-app-ui",
+      "sourceRepository": "https://github.com/vinodbalakumar/sharity-app-ui.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "6baad25c6205f7018ef3686784407b705bff4618",
+      "importedCommit": "ad79d3a3e428970c65ca590fd6421888ae7b3b7d",
+      "originalCommitCount": 69,
+      "importedCommitCount": 69,
+      "credentialValuesRedacted": 1,
+      "historyMapping": "docs/migration/commit-maps/sharity-app-ui.tsv"
+    },
+    {
+      "name": "sharity-admin-portal",
+      "path": "sharity-admin-portal",
+      "sourceRepository": "https://github.com/vinodbalakumar/sharity-admin-portal.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "bde0a3ea8c2c9619619a5ccfaf0e5f4c04761a55",
+      "importedCommit": "b75bf9f0cb908a0c73c1f7f3e3b401f8305a6bc5",
+      "originalCommitCount": 6,
+      "importedCommitCount": 6,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/sharity-admin-portal.tsv"
+    },
+    {
+      "name": "deployments",
+      "path": "deployments",
+      "sourceRepository": "https://github.com/vinodbalakumar/deployments.git",
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "44af619e189ca8078be8cff8fa19ac6504bfd7f6",
+      "importedCommit": "ba348fe973ad30967df820e2c922cc40fd6604dd",
+      "originalCommitCount": 46,
+      "importedCommitCount": 46,
+      "credentialValuesRedacted": 2,
+      "historyMapping": "docs/migration/commit-maps/deployments.tsv"
+    },
+    {
+      "name": "workspace-documents",
+      "path": "docs/workspace",
+      "sourceRepository": null,
+      "sourceBranch": "feature/sharity-production-responsive",
+      "sourceCommit": "1b588c736287a9d5bf011303cfc9a56c22f66082",
+      "importedCommit": "24d51f1618a32b90199681e6c076bba844d580e6",
+      "originalCommitCount": 2,
+      "importedCommitCount": 2,
+      "credentialValuesRedacted": 0,
+      "historyMapping": "docs/migration/commit-maps/workspace-documents.tsv"
+    }
+  ]
+}
