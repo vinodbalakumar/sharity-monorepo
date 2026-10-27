@@ -49,6 +49,19 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 @WebAppConfiguration
 @ContextConfiguration(classes = MarketplaceControllerSecurityTest.TestConfig.class)
 class MarketplaceControllerSecurityTest {
+    @Test
+    void storefrontSettingsRequireAdmin() throws Exception {
+        mockMvc.perform(get("/api/v1/marketplace/home-sections")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/marketplace/admin/home-sections")).andExpect(status().isUnauthorized());
+        for (String role : List.of("CUSTOMER", "SUPPORT_AGENT", "MODULE_ADMIN")) {
+            mockMvc.perform(get("/api/v1/marketplace/admin/home-sections").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_" + role)))).andExpect(status().isForbidden());
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/marketplace/admin/home-sections/ALL_PRODUCTS").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_" + role))).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}")).andExpect(status().isForbidden());
+        }
+        for (String role : List.of("ADMIN", "SUPER_ADMIN")) {
+            mockMvc.perform(get("/api/v1/marketplace/admin/home-sections").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_" + role)))).andExpect(status().isOk());
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/marketplace/admin/home-sections/ALL_PRODUCTS").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_" + role))).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}")).andExpect(status().isOk());
+        }
+    }
     private static final Path PUBLIC_KEY_PATH = createPublicKeyFile();
 
     @Configuration
@@ -56,6 +69,9 @@ class MarketplaceControllerSecurityTest {
     @EnableWebMvc
     @Import(SecurityConfig.class)
     static class TestConfig {
+        @Bean com.java.vinod.marketplace.service.service.StorefrontSectionService storefrontSections() { return mock(com.java.vinod.marketplace.service.service.StorefrontSectionService.class); }
+        @Bean StorefrontSectionController storefrontController(com.java.vinod.marketplace.service.service.StorefrontSectionService service) { return new StorefrontSectionController(service); }
+
         @Bean
         MarketplaceService marketplaceService() {
             return mock(MarketplaceService.class);

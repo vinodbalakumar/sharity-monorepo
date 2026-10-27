@@ -28,6 +28,18 @@ import org.springframework.data.domain.PageRequest;
 
 class MarketplaceServiceCatalogTest {
     @Test
+    void reservedListingsRemainReadableThroughPublicProductLinks() {
+        var repository = mock(ListingRepository.class);
+        var reserved = listing("reserved-public", "Reserved product", "MARKETPLACE");
+        reserved.setListingStatus("RESERVED");
+        reserved.setStockQuantity(0);
+        when(repository.findByPublicId("reserved-public")).thenReturn(java.util.Optional.of(reserved));
+        var service = newService(repository, mock(MarketplaceCategoryRepository.class), mock(MarketplaceVerticalRepository.class));
+        assertThat(service.listing("reserved-public").listingStatus()).isEqualTo("RESERVED");
+        assertThat(service.listing("reserved-public", "USA").stockQuantity()).isZero();
+    }
+
+    @Test
     void anonymousListingDetailsDoNotExposeUnpublishedDrafts() {
         var listingRepository = mock(ListingRepository.class);
         var draft = listing("draft-private", "Unpublished listing", "MARKETPLACE");

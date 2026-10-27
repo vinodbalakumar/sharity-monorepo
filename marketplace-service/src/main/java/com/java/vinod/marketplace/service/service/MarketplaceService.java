@@ -828,7 +828,7 @@ public class MarketplaceService {
 
     private Listing findPublicListing(String listingPublicId) {
         Listing listing = findListing(listingPublicId);
-        if (!Set.of("ACTIVE", "PUBLISHED", "SOLD").contains(listing.getListingStatus())) {
+        if (!Set.of("ACTIVE", "PUBLISHED", "RESERVED", "SOLD").contains(listing.getListingStatus())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing not found");
         }
         return listing;

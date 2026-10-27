@@ -29,7 +29,7 @@ class PurchaseIntegrityTest {
                 mock(AssetStorageProviderRepository.class), outbox, mock(MarketplaceCurrencyService.class), "https://identity.example", "https://payments.example", "test-token");
         ReflectionTestUtils.setField(service, "demoPurchasesEnabled", true);
         listing = new Listing(); listing.setPublicId("listing-1"); listing.setCreatedByUserPublicId("seller");
-        listing.setProviderAccountPublicId("store-1"); listing.setCurrencyCode("USD"); listing.setPriceAmount(new BigDecimal("20.00")); listing.setListingStatus("ACTIVE");
+        listing.setProviderAccountPublicId("store-1"); listing.setCurrencyCode("USD"); listing.setPriceAmount(new BigDecimal("20.00")); listing.setListingStatus("ACTIVE"); listing.setStockQuantity(1);
         when(listings.findForPurchase("listing-1")).thenReturn(Optional.of(listing));
         var active = new ListingStatusMaster(); active.setActive(true); active.setCustomerVisible(true);
         when(statuses.findByStatusCodeIgnoreCase("ACTIVE")).thenReturn(Optional.of(active));
@@ -57,6 +57,14 @@ class PurchaseIntegrityTest {
         assertThatThrownBy(() -> service.createOrder(new MarketplaceDtos.OrderRequest("listing-1"), buyer, "purchase-request-123456"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
         verifyNoInteractions(outbox);
+    }
+    @Test void reservedListingsCannotCreateAnotherOrder() {
+        listing.setListingStatus("RESERVED");
+        listing.setStockQuantity(5);
+        assertThatThrownBy(() -> service.createOrder(new MarketplaceDtos.OrderRequest("listing-1"), buyer, "purchase-request-123456"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verifyNoInteractions(outbox);
+        verify(orders, never()).save(any());
     }
     @Test void requestKeysCannotBeReusedForDifferentListings() {
         var another = new Listing(); another.setPublicId("different-listing");

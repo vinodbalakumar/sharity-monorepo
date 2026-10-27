@@ -54,6 +54,9 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/marketplace/admin/home-sections", "/api/v1/marketplace/admin/home-sections/**",
+                                "/marketplace-service/api/v1/marketplace/admin/home-sections", "/marketplace-service/api/v1/marketplace/admin/home-sections/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/marketplace/home-sections", "/marketplace-service/api/v1/marketplace/home-sections").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/marketplace/verticals",
