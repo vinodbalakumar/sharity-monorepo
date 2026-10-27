@@ -23,6 +23,7 @@ import { appConfig } from '../shared/config/appConfig.js';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/services', label: 'Services', icon: PanelsTopLeft, afterUserManagement: true },
+  { to: '/storefront', label: 'Storefront', icon: PanelsTopLeft, roles: ['ADMIN', 'SUPER_ADMIN'], afterUserManagement: true },
   { to: '/commerce', label: 'Commerce', icon: ShoppingBag, afterUserManagement: true },
   { to: '/applications', label: 'Applications', icon: AppWindow, roles: ['SUPER_ADMIN'], afterUserManagement: true },
   { to: '/audit-logs', label: 'Audit logs', icon: Activity, roles: ['SUPER_ADMIN'] },

@@ -14,6 +14,7 @@ import { ApplicationsPage } from '../features/applications/ApplicationsPage.jsx'
 import { AuditLogsPage } from '../features/auditLogs/AuditLogsPage.jsx';
 import { ProfilePage } from '../features/profile/ProfilePage.jsx';
 import { SessionsPage } from '../features/sessions/SessionsPage.jsx';
+import { StorefrontPage } from '../features/storefront/StorefrontPage.jsx';
 import { SettingsPage } from '../features/settings/SettingsPage.jsx';
 import { LoadingState } from '../shared/components/Ui.jsx';
 
@@ -26,6 +27,11 @@ function Protected({ children }) {
 function SuperAdminOnly({ children }) {
   const { hasRole } = useAuth();
   return hasRole('SUPER_ADMIN') ? children : <Navigate to="/" replace />;
+}
+
+function StorefrontAdminOnly() {
+  const { hasRole } = useAuth();
+  return hasRole('ADMIN', 'SUPER_ADMIN') ? <StorefrontPage /> : <Navigate to="/" replace />;
 }
 
 export function AppRoutes() {
@@ -41,6 +47,7 @@ export function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="services" element={<ServiceModulesPage />} />
+        <Route path="storefront" element={<StorefrontAdminOnly />} />
         <Route path="commerce" element={<CommercePage />} />
         <Route path="users" element={<SuperAdminOnly><UserManagementShell /></SuperAdminOnly>}>
           <Route index element={<UsersPage />} />

@@ -1,6 +1,9 @@
 import { httpClient } from './httpClient.js';
 
 export const adminService = {
+  storefrontSections: async () => (await httpClient.get('/marketplace-service/api/v1/marketplace/admin/home-sections')).data,
+  storefrontProducts: async () => (await httpClient.get('/marketplace-service/api/v1/marketplace/listings')).data,
+  updateStorefrontSection: async (code, payload) => (await httpClient.put(`/marketplace-service/api/v1/marketplace/admin/home-sections/${code}`, payload)).data,
   users: async (params = {}) => (await httpClient.get('/authorization-server/api/v1/admin/users', { params })).data,
   createUser: async (payload) => (await httpClient.post('/authorization-server/api/v1/admin/users', payload)).data,
   user: async (publicId) => (await httpClient.get(`/authorization-server/api/v1/admin/users/${publicId}`)).data,
