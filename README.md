@@ -41,10 +41,10 @@ For storefront browser checks:
 npm --prefix sharity-app-ui run build:e2e
 cd sharity-app-ui
 npx playwright install chromium webkit
-npx playwright test cart-badge.spec.ts catalog-integrity.spec.ts --project=chromium --project=webkit
+npx playwright test cart-badge.spec.ts catalog-integrity.spec.ts storefront-sections.spec.ts purchase-lifecycle.spec.ts --project=chromium --project=webkit
 ```
 
-The admin browser fixtures require its Vite preview server on port 8098. Existing component lint and audit commands remain available; their pre-existing debt is not represented as a passing migration gate.
+Set `SHARITY_PLAYWRIGHT_PORT` to an unused port when another checkout already serves the default port 8097. The admin browser fixtures require its Vite preview server on port 8098. Existing component lint and audit commands remain available; their pre-existing debt is not represented as a passing migration gate. See [migration validation](docs/migration/VALIDATION.md) for the recorded checks.
 
 ## Changes and CI
 
