@@ -138,13 +138,9 @@ export function StorefrontContent({
         <View style={[styles.sectionHeader,compact && {alignItems:"center"}]}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text accessibilityRole="header" style={[styles.sectionTitle, compact && { fontSize: 20, lineHeight: 26 }]}>
-              {query ? "Search results" : "Explore the marketplace"}
+              {query ? "Search results" : "All products"}
             </Text>
-            {(query || !compact) && <Text style={styles.body}>
-              {query
-                ? `${visible.length} matching listings`
-                : "Current listings, clear prices and details before you decide."}
-            </Text>}
+            {query && <Text style={styles.body}>{visible.length} matching listings</Text>}
           </View>
           <AppButton
             size={compact ? "small" : "medium"}
@@ -154,7 +150,6 @@ export function StorefrontContent({
             {["Featured", "Price: low to high", "Price: high to low"][sort]}
           </AppButton>
         </View>
-        {items.some(item => item.demoSeed) && <Text style={styles.body}>{compact ? "Sample catalog · Demo listings" : "Demo catalog: sample listings for browsing. Purchases depend on checkout availability."}</Text>}
         <View testID="catalog-filters" style={styles.filters}>
           <Chip selected={!category} onPress={() => setCategory("")}>
             All categories

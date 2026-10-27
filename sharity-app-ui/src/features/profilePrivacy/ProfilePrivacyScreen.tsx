@@ -694,20 +694,19 @@ export function ProfilePrivacyScreen({ onNavigate }: Props) {
       {user && !loading && (
         <View style={[styles.saveBar, isMobile && styles.saveBarMobile]}>
           <Text style={styles.saveHint}>
-            {dirty ? "You have unsaved changes" : "Your account details are up to date"}
+            {dirty ? "Unsaved changes" : ""}
           </Text>
           <View style={styles.saveActions}>
-            {dirty && (
               <Action
-                label="Discard changes"
-                disabled={saving}
+                label="Cancel"
+                disabled={saving || uploadingImage}
                 onPress={() => {
                   if (savedForm) setForm({ ...savedForm });
                   setError("");
                   setMessage("");
+                  onNavigate("home");
                 }}
               />
-            )}
             <Action
               label={saving ? "Saving…" : "Save changes"}
               primary

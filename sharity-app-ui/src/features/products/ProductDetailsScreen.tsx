@@ -295,7 +295,7 @@ function ProductSummaryCard({
   return (
     <View testID="product-summary" style={[styles.purchasePanel,isDesktop && {flex:1}]}>
       <View style={styles.badgeRow}>
-        <Text style={styles.badge}>{product.demoSeed?'Demo listing':'Marketplace listing'}</Text>
+        <Text style={styles.badge}>{product.demoSeed?'Sample item':'Marketplace listing'}</Text>
         <Text style={styles.outlineBadge}>{product.verifiedSeller ? 'Verified Seller' : 'Seller Review Needed'}</Text>
         <Text style={styles.outlineBadge}>{product.availability}</Text>
       </View>

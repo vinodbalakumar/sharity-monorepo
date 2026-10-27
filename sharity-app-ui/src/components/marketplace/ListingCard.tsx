@@ -16,7 +16,6 @@ export function ListingCard({ item, onPress, style, testID = 'product-card' }: {
   return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={`View ${item.title}`} onPress={onPress}
     style={({ pressed }) => [styles.card, style, pressed && { opacity: .85 }]}>
     <View style={styles.visual}><ProductArtwork item={item} />
-      {item.demoSeed && <View style={styles.badge}><Text style={styles.badgeText}>Demo</Text></View>}
     </View>
     <View style={styles.copy}>
       <Text numberOfLines={1} style={styles.category}>{listingLabel(item.categoryCode)}</Text>
@@ -33,8 +32,7 @@ export function ListingCard({ item, onPress, style, testID = 'product-card' }: {
 const styles = StyleSheet.create({
   card: { minWidth: 0, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   hover: { borderColor: '#a8bfee', boxShadow: '0px 4px 16px rgba(23,35,55,0.08)' },
-  visual: { position: 'relative' }, badge: { position: 'absolute', top: 10, left: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 5, backgroundColor: '#ffffffed' },
-  badgeText: { fontFamily: systemFontFamily, fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+  visual: { position: 'relative' },
   copy: { padding: 14, gap: 7 }, category: { fontFamily: systemFontFamily, fontSize: 11, lineHeight: 16, color: colors.textSecondary },
   title: { fontFamily: systemFontFamily, fontSize: 15, lineHeight: 21, fontWeight: '600', color: colors.textPrimary, minHeight: 42 },
   prices: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 7 },

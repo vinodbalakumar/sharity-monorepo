@@ -102,6 +102,7 @@ for (const width of [320, 390, 768, 1440]) {
     expect(font.family).not.toMatch(/^(?:"Times New Roman"|serif)$/i);
     expect(font.size).toBe('16px');
     await page.screenshot({path:`../outputs/member-profile-${test.info().project.name}-${width}.png`,fullPage:true});
+    await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport({ratio:1});
     await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
     await page.getByLabel("First name", { exact: true }).fill("Morgan updated");
     await page.getByLabel("Date of birth", { exact: true }).fill("1998-07-11");
@@ -114,7 +115,10 @@ for (const width of [320, 390, 768, 1440]) {
       privacySetting: "LIMITED",
     });
     await page.getByLabel("First name", { exact: true }).fill("Discard me");
-    await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page).toHaveURL(/\/app\/home$/);
+    expect(writes).toHaveLength(1);
+    await page.goto("/app/profile");
     await expect(page.getByLabel("First name", { exact: true })).toHaveValue("Morgan updated");
     await page.getByRole("tab", { name: "Privacy", exact: true }).click();
     await expect(page.getByRole("radio", { name: "Visible after an order", exact: true })).toBeChecked();
@@ -212,3 +216,11 @@ test('a verified new login clears the previous local logout marker', async ({pag
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>localStorage.getItem('sharity_logout_override'))).toBeNull();
 });
+
+ test('Cancel is available without edits and leaves the profile without a write', async ({page}) => {
+   const writes = await memberFixture(page);
+   await page.goto('/app/profile');
+   await page.getByRole('button', {name:'Cancel',exact:true}).click();
+   await expect(page).toHaveURL(/\/app\/home$/);
+   expect(writes).toHaveLength(0);
+ });

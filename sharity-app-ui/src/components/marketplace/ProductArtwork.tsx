@@ -71,9 +71,7 @@ export function ProductArtwork({
             {category}
           </Text>
           <Text style={styles.caption}>
-            {item.demoSeed
-              ? "Demo listing - image unavailable"
-              : "Image unavailable"}
+            Image unavailable
           </Text>
         </View>
       )}

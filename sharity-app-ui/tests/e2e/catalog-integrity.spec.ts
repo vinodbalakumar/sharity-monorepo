@@ -20,7 +20,11 @@ async function fixture(page: Page, options: { brokenImage?: boolean; sold?: bool
 test('demo listings display their real image instead of forcing an illustration', async({page})=>{
  await fixture(page);await page.goto('/app/marketplaces');
  await expect(page.getByTestId('product-card').getByTestId('listing-image')).toBeVisible();
- await expect(page.getByTestId('product-card').getByText('Demo',{exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'All products',exact:true})).toBeVisible();
+ await expect(page.getByText(/Demo catalog:|Current listings, clear prices/)).toHaveCount(0);
+ await expect(page.getByTestId('product-card').getByText('Demo',{exact:true})).toHaveCount(0);
+ await page.getByTestId('product-card').click();
+ await expect(page.getByTestId('product-summary').getByText('Sample item',{exact:true})).toBeVisible();
  await expect(page.getByTestId('product-card').getByText('Image unavailable',{exact:true})).toHaveCount(0);
 });
 test('a missing image has an explicit fallback without breaking product navigation',async({page})=>{
