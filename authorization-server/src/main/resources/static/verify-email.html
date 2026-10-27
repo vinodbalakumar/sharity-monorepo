@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Email Verification</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f6f7f9;
+            color: #18202a;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+        }
+
+        main {
+            width: min(92vw, 440px);
+            background: #ffffff;
+            border: 1px solid #d9dee7;
+            border-radius: 8px;
+            padding: 28px;
+            box-shadow: 0 12px 34px rgba(24, 32, 42, 0.08);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 24px;
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 0;
+            color: #526070;
+            line-height: 1.5;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        .loading {
+            background: #edf2ff;
+            color: #2952cc;
+        }
+
+        .success {
+            background: #e8f7ef;
+            color: #137a3d;
+        }
+
+        .error {
+            background: #fdecec;
+            color: #bd2727;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div id="statusIcon" class="status loading">...</div>
+    <h1 id="title">Verifying email</h1>
+    <p id="message">Please wait while your account is activated.</p>
+</main>
+
+<script>
+    const title = document.getElementById("title");
+    const message = document.getElementById("message");
+    const statusIcon = document.getElementById("statusIcon");
+    const token = new URLSearchParams(window.location.search).get("token");
+
+    function render(state, heading, text, icon) {
+        statusIcon.className = `status ${state}`;
+        statusIcon.textContent = icon;
+        title.textContent = heading;
+        message.textContent = text;
+    }
+
+    async function verify() {
+        if (!token) {
+            render("error", "Verification link is invalid", "The email verification token is missing.", "!");
+            return;
+        }
+
+        try {
+            const response = await fetch("v1/auth/verify-email", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({token})
+            });
+
+            if (response.ok) {
+                render("success", "Email verified", "Your account is active. You can now sign in.", "OK");
+                return;
+            }
+
+            const body = await response.json().catch(() => ({}));
+            render("error", "Verification failed", body.detail || "This verification link is invalid or expired.", "!");
+        } catch (error) {
+            render("error", "Verification failed", "Unable to reach the server. Please try again.", "!");
+        }
+    }
+
+    verify();
+</script>
+</body>
+</html>
