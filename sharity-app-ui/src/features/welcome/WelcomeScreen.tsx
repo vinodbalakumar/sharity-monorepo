@@ -1,9 +1,7 @@
 import { InteriorShell } from "../../components/appShell";
-import { PublicSiteFooter } from "../../components/publicSite/PublicSiteFooter";
 import type { VisitorContextResponse } from "../../services/publicContentApi";
 import type { AppRoute } from "../../types/navigation";
 import { StorefrontContent } from "../marketplace/StorefrontContent";
-import { footerGroups } from "./welcomeContent";
 type Props = {
   onBrowse: () => void;
   onGetStarted: () => void;
@@ -32,12 +30,6 @@ export function WelcomeScreen(props: Props) {
         onNavigate={props.onNavigate}
         onOpenProduct={props.onOpenProduct}
         onCreateAccount={props.onGetStarted}
-      />
-      <PublicSiteFooter
-        groups={footerGroups}
-        onLinkPress={props.onOpenPublicContent}
-        onBrandPress={() => props.onNavigate("welcome")}
-        visitorContext={props.visitorContext}
       />
     </InteriorShell>
   );

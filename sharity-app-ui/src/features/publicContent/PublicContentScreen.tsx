@@ -27,6 +27,7 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
   const sectionOffsets = useRef<SectionOffsetMap>({});
 
   useEffect(() => {
+    scrollRef.current?.scrollTo({y:0,animated:false});
     let mounted = true;
 
     async function loadPage() {
@@ -83,10 +84,10 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
     <SafeAreaView style={styles.screen}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scrollContent, isCompactPhone && styles.scrollContentCompact]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.shell}>
+        <View style={[styles.shell, isCompactPhone && {paddingHorizontal:12}]}>
           <View style={[styles.header, isSingleColumn && styles.headerCompact]}>
             <Pressable accessibilityRole="button" onPress={onBack} style={styles.brandBlock}>
               <View style={styles.brandMark}>
@@ -200,14 +201,14 @@ export function PublicContentScreen({ context, onBack, onOpenPublicContent, slug
               </View>
             ) : null}
 
+          </View>
+        </View>
             <PublicSiteFooter
               groups={footerGroups}
               onBrandPress={onBack}
               onLinkPress={onOpenPublicContent}
               visitorContext={context}
             />
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -225,9 +226,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     backgroundColor: palette.page,
-    paddingBottom: 72,
-    paddingHorizontal: 20,
-    paddingTop: 20
+    paddingBottom: 0
   },
   scrollContentCompact: {
     paddingHorizontal: 12,
@@ -235,7 +234,10 @@ const styles = StyleSheet.create({
   },
   shell: {
     alignSelf: 'center',
-    maxWidth: 1120,
+    maxWidth: 1160,
+    paddingHorizontal:20,
+    paddingTop:20,
+    marginBottom:28,
     width: '100%'
   },
   header: {

@@ -1,5 +1,11 @@
 Source-reference badges and source update dates are no longer displayed below chat answers (October 26 follow-up). Message info, response timing and token totals remain available.
 
+## Shopping navigation and footer (2026-10-26)
+
+The shared shopping shell has a full-width dark footer with visible Shop, About, Help and Policies groups. Mobile links remain expanded. Footer routes preserve browser history; shopping links clear old search/category filters. `SiteNavigationContext` shares the existing guarded route manager with shopping and public-information screens. The homepage uses a compact mobile banner, desktop collection panels, real catalog imagery and a highlighted search field. No runtime UI dependency was added.
+
+After exporting the web build, run `npx playwright test tests/e2e/storefront-footer.spec.ts` for footer layout, destinations, Back and filter-reset checks in Chromium, Firefox and WebKit. Deployment and live verification are in the [storefront footer release](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/releases/2026-10-26-storefront-navigation-footer.md).
+
 ## Signed-in navigation and account settings (2026-10-26)
 
 Signed-in screens expose a labeled **Sign out** button in the shared header, including AI chat. The header uses the same verified session state as navigation. Successful logout clears that state and returns to the guest landing page; a failed server response preserves the session and offers retry.

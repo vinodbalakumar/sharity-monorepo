@@ -1,329 +1,165 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-import { marketingColors, spacing } from '../../theme';
-import type { VisitorContextResponse } from '../../services/publicContentApi';
-
-export type PublicSiteFooterLinkGroup = {
-  links: {
-    label: string;
-    slug: string;
-  }[];
-  title: string;
-};
-
-type PublicSiteFooterProps = {
-  groups: PublicSiteFooterLinkGroup[];
+import { Ionicons } from "@expo/vector-icons";
+import { useContext } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { systemFontFamily } from "../../theme/typography";
+import type { VisitorContextResponse } from "../../services/publicContentApi";
+import {
+  footerGroups,
+  footerLinkPath,
+  type FooterLink,
+  type PublicSiteFooterLinkGroup,
+} from "./footerContent";
+import { SiteNavigationContext } from "./SiteNavigationContext";
+import { appState$ } from '../../state/appState';
+export type { PublicSiteFooterLinkGroup } from "./footerContent";
+type Props = {
+  groups?: PublicSiteFooterLinkGroup[];
   onBrandPress?: () => void;
-  onLinkPress: (slug: string) => void;
+  onLinkPress?: (slug: string) => void;
   visitorContext?: VisitorContextResponse | null;
 };
-
-export function PublicSiteFooter({ groups, onBrandPress, onLinkPress, visitorContext }: PublicSiteFooterProps) {
-  const { isCompactPhone, isSingleColumn, width } = useResponsiveLayout();
-  const shouldUseSingleColumnFooter = width <= 768;
-  const useTwoColumnFooter = width > 768 && width < 1180;
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
-
+export function PublicSiteFooter({ groups = footerGroups, onLinkPress, visitorContext }: Props) {
+  const navigation = useContext(SiteNavigationContext);
+  const { width } = useResponsiveLayout();
+  const mobile = width < 600;
+  const wide = width >= 1100;
+  function follow(link: FooterLink) {
+    if (link.slug) (onLinkPress || navigation?.openPublicContent)?.(link.slug);
+    else if (link.route) {
+      if (['marketplaces','digitalMarketplace','jewelryMarketplace'].includes(link.route)) {
+        appState$.marketplace.searchQuery.set('');
+        appState$.marketplace.filters.categoryCode.set('');
+      }
+      navigation?.navigate(link.route);
+    }
+  }
+  const link = (item: FooterLink, icon?: React.ComponentProps<typeof Ionicons>["name"]) => (
+    <Pressable
+      key={item.slug || item.route}
+      accessibilityRole="link"
+      accessibilityLabel={item.label}
+      {...(Platform.OS === "web" ? { href: footerLinkPath(item) } : {})}
+      onPress={(event) => {
+        event.preventDefault();
+        follow(item);
+      }}
+      style={({ pressed }) => [styles.link, pressed && styles.pressed]}
+    >
+      {icon && <Ionicons name={icon} size={19} color="#f7cc56" />}
+      <Text style={styles.linkText}>{item.label}</Text>
+    </Pressable>
+  );
   return (
-    <View style={[styles.footer, isCompactPhone && styles.footerCompact]}>
-      {shouldUseSingleColumnFooter ? (
-        <View style={styles.footerAccordion}>
-          {groups.map((group) => {
-            const expanded = openGroup === group.title;
-            return (
-              <View key={group.title} style={styles.footerAccordionItem}>
-                <Pressable accessibilityRole="button" onPress={() => setOpenGroup(expanded ? null : group.title)} style={styles.footerAccordionHeader}>
-                  <Text style={styles.footerAccordionTitle}>{group.title}</Text>
-                  <Ionicons color={palette.textMuted} name={expanded ? 'chevron-up' : 'chevron-down'} size={18} />
-                </Pressable>
-
-                {expanded ? (
-                  <View style={styles.footerAccordionBody}>
-                    <Text style={styles.footerGroupText}>{groupDescription(group.title)}</Text>
-                    {group.links.map((link) => (
-                      <Pressable accessibilityRole="button" key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerAccordionLinkWrap}>
-                        <Text style={styles.footerLink}>{link.label}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
-
-      {!shouldUseSingleColumnFooter ? (
-      <View
-        style={[
-          styles.footerGrid,
-          (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGridCompact,
-          shouldUseSingleColumnFooter && styles.footerGridStacked,
-          useTwoColumnFooter && styles.footerGridTwoColumn
-        ]}
-      >
-        {groups.map((group) => (
-          <View
-            key={group.title}
-            style={[
-              styles.footerGroup,
-              (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGroupCompact,
-              shouldUseSingleColumnFooter && styles.footerGroupStacked,
-              useTwoColumnFooter && styles.footerGroupTwoColumn
-            ]}
-          >
-            <Text style={styles.footerTitle}>{group.title}</Text>
-            <Text style={[styles.footerGroupText, (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerGroupTextCompact]}>{groupDescription(group.title)}</Text>
-            {group.links.map((link) => (
-              <Pressable accessibilityRole="button" key={link.slug} onPress={() => onLinkPress(link.slug)} style={styles.footerLinkWrap}>
-                <Text style={styles.footerLink}>{link.label}</Text>
-              </Pressable>
-            ))}
+    <View testID="site-footer" accessibilityLabel="Sharity site footer" style={styles.footer}>
+      <View style={[styles.inner, mobile && styles.innerMobile]}>
+        <View style={styles.grid}>
+          {groups.map((group) => (
+            <View key={group.title} style={[styles.group, { width: mobile ? "47%" : wide ? "14%" : "22%" }]}>
+              <Text accessibilityRole="header" style={styles.heading}>
+                {group.title.toUpperCase()}
+              </Text>
+              {group.links.map((item) => link(item))}
+            </View>
+          ))}
+          <View style={[styles.contact, wide ? styles.contactWide : styles.contactStacked]}>
+            <Text style={styles.brand}>
+              Sharity<Text style={styles.brandDot}>.</Text>
+            </Text>
+            <Text style={styles.description}>
+              Digital goods, gift cards and jewellery. One place to explore.
+            </Text>
+            <Text style={styles.contactTitle}>Need a hand?</Text>
+            <Text style={styles.description}>Find help with buying, selling and your account.</Text>
+            {link({ label: "Visit the Help Center", slug: "help-center" }, "help-circle-outline")}
+            {!!visitorContext?.countryName && (
+              <Text style={styles.region}>Public information for {visitorContext.countryName}</Text>
+            )}
           </View>
-        ))}
-      </View>
-      ) : null}
-
-      {visitorContext ? (
-        <View style={[styles.footerNotice, (isSingleColumn || shouldUseSingleColumnFooter) && styles.footerNoticeCompact]}>
-          <Ionicons color={palette.blue} name="information-circle-outline" size={18} />
-          <Text style={styles.footerNoticeText}>
-            Showing public terms and guidelines for {visitorContext.countryName} ({visitorContext.countryCode}).
-          </Text>
         </View>
-      ) : null}
-
-      <Text style={styles.copyright}>{'\u00A9'} 2026 Sharity. All rights reserved.</Text>
+        <View style={styles.bottom}>
+          <View style={styles.quickLinks}>
+            {link({ label: "Become a seller", route: "sellerVerification" }, "storefront-outline")}
+            {link({ label: "Ask Sharity AI", route: "chat" }, "sparkles-outline")}
+            {link({ label: "Shop all products", route: "marketplaces" }, "bag-handle-outline")}
+          </View>
+          <Text style={styles.copyright}>© {new Date().getFullYear()} Sharity. All rights reserved.</Text>
+        </View>
+      </View>
     </View>
   );
 }
-
-function groupDescription(title: string) {
-  if (title === 'Company') {
-    return 'Learn who we are, how we build, and how we communicate publicly.';
-  }
-  if (title === 'Support') {
-    return 'Find help resources, safety guidance, and public support contact paths.';
-  }
-  if (title === 'Legal') {
-    return 'Review privacy, terms, and community rules for your region.';
-  }
-  return '';
-}
-
-const palette = marketingColors;
-
 const styles = StyleSheet.create({
-  footer: {
-    borderTopColor: palette.border,
-    borderTopWidth: 1,
-    backgroundColor: palette.page,
-    marginTop: 28,
-    padding: 32
+  footer: { width: "100%", backgroundColor: "#172337", marginTop: 20 },
+  inner: {
+    width: "100%",
+    maxWidth: 1328,
+    alignSelf: "center",
+    paddingHorizontal: 32,
+    paddingTop: 42,
+    paddingBottom: 20,
   },
-  footerCompact: {
-    padding: 18
-  },
-  footerAccordion: {
-    borderBottomColor: palette.border,
-    borderBottomWidth: 1,
-    marginTop: 8,
-    width: '100%'
-  },
-  footerAccordionItem: {
-    borderTopColor: palette.border,
-    borderTopWidth: 1,
-    width: '100%'
-  },
-  footerAccordionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 48,
-    paddingVertical: 12
-  },
-  footerAccordionTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '800'
-  },
-  footerAccordionBody: {
-    gap: 10,
-    paddingBottom: 14,
-    paddingLeft: 2
-  },
-  footerAccordionLinkWrap: {
-    paddingVertical: 2
-  },
-  supportCard: {
-    backgroundColor: '#FFFFFF',
-    borderColor: palette.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    flex: 1,
-    maxWidth: 520,
-    minWidth: 280,
-    padding: 20
-  },
-  supportCardCompact: {
-    maxWidth: '100%',
-    minWidth: 0,
-    width: '100%'
-  },
-  supportEyebrow: {
-    color: palette.blue,
+  innerMobile: { paddingHorizontal: 20, paddingTop: 28 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "space-between" },
+  group: { minWidth: 0, gap: 2 },
+  heading: {
+    fontFamily: systemFontFamily,
     fontSize: 12,
-    fontWeight: '900',
-    textTransform: 'uppercase'
+    fontWeight: "500",
+    letterSpacing: 1.1,
+    lineHeight: 20,
+    color: "#aebbd0",
+    marginBottom: 10,
   },
-  supportTitle: {
-    color: palette.text,
-    fontSize: 20,
-    fontWeight: '900',
-    lineHeight: 28,
-    marginTop: 8
+  link: {
+    minHeight: 44,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    maxWidth: "100%",
+    borderRadius: 4,
   },
-  supportText: {
-    color: palette.textMuted,
+  pressed: { backgroundColor: "#23344f" },
+  linkText: {
+    fontFamily: systemFontFamily,
     fontSize: 14,
-    lineHeight: 21,
-    marginTop: 8
+    fontWeight: "600",
+    lineHeight: 22,
+    color: "#ffffff",
+    flexShrink: 1,
   },
-  supportActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: 16
+  contact: { gap: 8, minWidth: 0 },
+  contactWide: { width: "29%", borderLeftWidth: 1, borderColor: "#3a465a", paddingLeft: 28 },
+  contactStacked: { width: "100%", borderTopWidth: 1, borderColor: "#3a465a", paddingTop: 24, marginTop: 8 },
+  brand: {
+    fontFamily: systemFontFamily,
+    fontSize: 27,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: -0.5,
   },
-  supportActionsCompact: {
-    flexDirection: 'column'
-  },
-  supportActionButton: {
-    alignItems: 'center',
-    backgroundColor: palette.blue,
-    borderRadius: 999,
-    justifyContent: 'center',
-    minHeight: 42,
-    paddingHorizontal: 16,
-    paddingVertical: 10
-  },
-  supportActionButtonCompact: {
-    width: '100%'
-  },
-  supportActionButtonSecondary: {
-    backgroundColor: '#E8F0FF'
-  },
-  supportActionText: {
-    color: palette.white,
-    fontSize: 13,
-    fontWeight: '900'
-  },
-  supportActionTextSecondary: {
-    color: palette.blue
-  },
-  footerGrid: {
-    alignItems: 'stretch',
-    borderBottomColor: palette.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xl,
-    justifyContent: 'flex-start',
-    marginTop: 24,
-    paddingBottom: 24,
-    width: '100%'
-  },
-  footerGridCompact: {
-    gap: 24,
-    width: '100%'
-  },
-  footerGridStacked: {
-    flexDirection: 'column',
-    gap: 28,
-    width: '100%'
-  },
-  footerGridTwoColumn: {
-    justifyContent: 'flex-start'
-  },
-  footerGroup: {
-    alignSelf: 'stretch',
-    flexBasis: 0,
-    flexGrow: 1,
-    gap: spacing.sm,
-    minWidth: 220
-  },
-  footerGroupCompact: {
-    minWidth: 0,
-    width: '100%'
-  },
-  footerGroupStacked: {
-    alignSelf: 'stretch',
-    flexBasis: 'auto',
-    minWidth: 0,
-    width: '100%'
-  },
-  footerGroupTwoColumn: {
-    width: '47%'
-  },
-  footerTitle: {
-    color: palette.text,
+  brandDot: { color: "#f7cc56" },
+  description: { fontFamily: systemFontFamily, fontSize: 13, lineHeight: 22, color: "#d3dceb" },
+  contactTitle: {
+    fontFamily: systemFontFamily,
     fontSize: 15,
-    fontWeight: '900'
+    fontWeight: "600",
+    color: "#ffffff",
+    marginTop: 8,
   },
-  footerGroupText: {
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    maxWidth: 260
-  },
-  footerGroupTextCompact: {
-    maxWidth: '100%',
-    width: '100%'
-  },
-  footerLinkWrap: {
-    paddingVertical: 2
-  },
-  footerLink: {
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '800',
-    lineHeight: 21,
-    flexShrink: 1
-  },
-  footerNotice: {
-    alignItems: 'center',
-    backgroundColor: '#f8fbff',
-    borderColor: palette.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: 28,
-    padding: spacing.md
-  },
-  footerNoticeCompact: {
-    alignItems: 'flex-start',
-    flexDirection: 'column',
-    width: '100%'
-  },
-  footerNoticeText: {
-    color: palette.textMuted,
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    width: '100%'
-  },
-  copyright: {
-    borderTopColor: palette.border,
+  region: { fontFamily: systemFontFamily, fontSize: 12, lineHeight: 20, color: "#aebbd0" },
+  bottom: {
     borderTopWidth: 1,
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 28,
-    paddingTop: 20,
-    textAlign: 'center'
-  }
+    borderColor: "#3a465a",
+    paddingTop: 18,
+    marginTop: 32,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  quickLinks: { flexDirection: "row", flexWrap: "wrap", gap: 24, maxWidth:'100%', minWidth:0 },
+  copyright: { fontFamily: systemFontFamily, fontSize: 12, lineHeight: 20, color: "#d3dceb" },
 });

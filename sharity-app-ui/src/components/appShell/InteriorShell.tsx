@@ -3,6 +3,7 @@ import { useSelector } from "@legendapp/state/react";
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { MemberSessionContext } from "./MemberSessionContext";
 import { SignOutButton } from "./SignOutButton";
+import { PublicSiteFooter } from '../publicSite/PublicSiteFooter';
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Searchbar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -207,14 +208,12 @@ export function InteriorShell({
         {scrollable ? (
           <ScrollView
             testID="page-scroll"
-            contentContainerStyle={[
-              styles.content,
-              isMobile && styles.contentMobile,
-            ]}
+            contentContainerStyle={styles.scrollContent}
           >
-            <View style={styles.page} accessibilityLabel={subtitle ?? title}>
+            <View style={[styles.page, styles.pagePadding, isMobile && styles.pagePaddingMobile]} accessibilityLabel={subtitle ?? title}>
               {children}
             </View>
+            <PublicSiteFooter />
           </ScrollView>
         ) : (
           <View
@@ -287,7 +286,7 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: "wrap",
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44 },
+  brand: { flexDirection: "row", alignItems: "center", gap: 9, minHeight: 44, minWidth:44 },
   brandMark: {
     width: 32,
     height: 32,
@@ -311,8 +310,8 @@ const styles = StyleSheet.create({
   },
   searchWrap: { flex: 1, minWidth: 150 },
   mobileSearch: { width: "100%" },
-  search: { backgroundColor: colors.primaryLight, borderRadius: 8, height: 46 },
-  searchInput: { fontFamily: systemFontFamily, fontSize: 16, minHeight: 46 },
+  search: { backgroundColor: '#f7f9ff', borderColor:'#8caaf2', borderWidth:1, borderRadius: 9, height: 50 },
+  searchInput: { fontFamily: systemFontFamily, fontSize: 16, minHeight: 48 },
   actions: {
     flexDirection: "row",
     alignItems: "center",
@@ -369,6 +368,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   contentMobile: { padding: 12, paddingBottom: 24 },
+  scrollContent:{alignItems:'center',flexGrow:1},
+  pagePadding:{maxWidth:1328,padding:24},
+  pagePaddingMobile:{padding:12},
   page: { width: "100%", maxWidth: 1280, minWidth: 0 },
   nonScroll: { flex: 1, minHeight: 0 },
   bottomNav: {

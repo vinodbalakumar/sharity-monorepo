@@ -11,7 +11,7 @@ import {
 import { ActivityIndicator, Chip } from "react-native-paper";
 import { ListingCard } from "../../components/marketplace/ListingCard";
 import { formatListingPrice, compareListingPrice, listingLabel } from "../../utils/listingPresentation";
-import { ProductArtwork } from "../../components/marketplace/ProductArtwork";
+import { StorefrontHero } from "./StorefrontHero";
 import { AppButton } from "../../components/ui";
 import {
   getMarketplaceHome,
@@ -59,7 +59,8 @@ export function StorefrontContent({
   const [items, setItems] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [category, setCategory] = useState("");
+  const category = useSelector(appState$.marketplace.filters.categoryCode);
+  const setCategory = (value: string) => appState$.marketplace.filters.categoryCode.set(value);
   const [sort, setSort] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const load = useCallback(async () => {
@@ -120,6 +121,7 @@ export function StorefrontContent({
             accessibilityRole="button"
             onPress={() => {
               appState$.marketplace.searchQuery.set("");
+              appState$.marketplace.filters.categoryCode.set("");
               onNavigate(item.route);
             }}
             style={[styles.categoryItem, compact && { minHeight: 68 }]}
@@ -131,53 +133,7 @@ export function StorefrontContent({
           </Pressable>
         ))}
       </View>
-      {showHero && !error && (
-        <View style={[styles.hero, compact && styles.heroCompact]}>
-          <View style={styles.heroCopy}>
-            <Text style={styles.kicker}>
-              {landing ? "WELCOME TO SHARITY" : "YOUR MARKETPLACE"}
-            </Text>
-            <Text
-              testID="home-hero-title"
-              accessibilityRole="header"
-              style={[
-                styles.heroTitle,
-                compact && { fontSize: 26, lineHeight: 32 },
-              ]}
-            >
-              Good finds. Simple choices.
-            </Text>
-            <Text style={[styles.heroBody, compact && { fontSize: 14, lineHeight: 22 }]}>
-              {compact ? 'Digital goods, gift cards and jewellery. Find your next favourite.' : 'Browse digital goods, gift cards and jewellery. Compare listings and find something that fits your day.'}
-            </Text>
-            <View style={styles.heroActions}>
-              <AppButton size={compact ? "small" : "medium"} onPress={() => onNavigate("marketplaces")}>
-                Shop all products
-              </AppButton>
-              {landing && (
-                <AppButton size={compact ? "small" : "medium"} variant={compact ? "ghost" : "outline"} onPress={onCreateAccount}>
-                  {compact ? "Join Sharity" : "Create an account"}
-                </AppButton>
-              )}
-            </View>
-            {!compact && <Text style={styles.note}>
-              Browse freely. Sign in when you need your account or saved items.
-            </Text>}
-          </View>
-          {width >= 1100 && items.length > 0 && (
-            <View style={styles.heroArt} accessibilityLabel="A selection from the Sharity marketplace">
-              {items.filter(item => Boolean(item.imageUrl)).slice(0, 3).map((item, index) => (
-                <Pressable key={item.publicId} accessibilityRole="button" accessibilityLabel={`Explore ${item.title}`}
-                  onPress={() => onOpenProduct(item.publicId)} style={[styles.showcase, { transform: [{ rotate: `${(index - 1) * 7}deg` }], marginTop: index === 1 ? -18 : 18 }]}>
-                  <ProductArtwork item={item} style={{ aspectRatio: .85 }} />
-                  <Text numberOfLines={1} style={styles.showcaseTitle}>{item.title}</Text>
-                  <Text style={styles.showcasePrice}>{listingPrice(item)}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </View>
-      )}
+      {showHero && !error && <StorefrontHero items={items} onNavigate={onNavigate} onOpenProduct={onOpenProduct} landing={landing} onCreateAccount={onCreateAccount}/>}
       <View style={styles.products}>
         <View style={[styles.sectionHeader,compact && {alignItems:"center"}]}>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -198,7 +154,7 @@ export function StorefrontContent({
             {["Featured", "Price: low to high", "Price: high to low"][sort]}
           </AppButton>
         </View>
-        {items.some(item => item.demoSeed) && <Text style={styles.body}>{compact ? "Sample catalog ? Demo listings" : "Demo catalog: sample listings for browsing. Purchases depend on checkout availability."}</Text>}
+        {items.some(item => item.demoSeed) && <Text style={styles.body}>{compact ? "Sample catalog · Demo listings" : "Demo catalog: sample listings for browsing. Purchases depend on checkout availability."}</Text>}
         <View testID="catalog-filters" style={styles.filters}>
           <Chip selected={!category} onPress={() => setCategory("")}>
             All categories
@@ -291,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 8,
     flexDirection: "row",
     paddingVertical: 14,
     paddingHorizontal: 4,
@@ -314,101 +270,12 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontFamily: systemFontFamily,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
     color: colors.textPrimary,
     textAlign: "center",
-  },
-  hero: {
-    backgroundColor: "#edf3ff",
-    borderRadius: 12,
-    padding: 36,
-    flexDirection: "row",
-    gap: 24,
-    alignItems: "center",
-    minHeight: 286,
-  },
-  heroCompact: { padding: 20, minHeight: 0 },
-  heroCopy: { flex: 1, gap: 13, minWidth: 0 },
-  kicker: {
-    fontFamily: systemFontFamily,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: "700",
-    color: colors.primary,
-  },
-  heroTitle: {
-    fontFamily: systemFontFamily,
-    fontSize: 38,
-    lineHeight: 46,
-    fontWeight: "700",
-    color: colors.textPrimary,
-    letterSpacing: -1,
-  },
-  heroBody: {
-    fontFamily: systemFontFamily,
-    fontSize: 16,
-    lineHeight: 25,
-    color: colors.textSecondary,
-    maxWidth: 600,
-  },
-  heroActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 3,
-  },
-  note: {
-    fontFamily: systemFontFamily,
-    fontSize: 12,
-    lineHeight: 19,
-    color: colors.textSecondary,
-  },
-  heroArt: {
-    width: 420,
-    height: 240,
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  showcase: { flex: 1, minWidth: 0, backgroundColor: colors.surface, borderRadius: 10, overflow: "hidden", paddingBottom: 12, borderWidth: 1, borderColor: colors.border },
-  showcaseTitle: { fontFamily: systemFontFamily, fontSize: 12, fontWeight: "600", marginHorizontal: 10, marginTop: 8, color: colors.textPrimary },
-  showcasePrice: { fontFamily: systemFontFamily, fontSize: 13, fontWeight: "700", marginHorizontal: 10, marginTop: 4, color: colors.primary },
-  artCard: {
-    width: 236,
-    height: 158,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    padding: 22,
-    gap: 10,
-    transform: [{ rotate: "-6deg" }],
-    borderWidth: 1,
-    borderColor: "#d1def9",
-  },
-  artTitle: {
-    fontFamily: systemFontFamily,
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  artLine: {
-    width: 74,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.accent,
-  },
-  artBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#fff8dc",
-    borderRadius: 12,
-    padding: 14,
-    gap: 8,
-    flexDirection: "row",
-    alignItems: "center",
+    width: "100%",
   },
   products: {
     backgroundColor: colors.surface,

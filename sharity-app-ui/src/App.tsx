@@ -52,6 +52,7 @@ import { getVisitorContext, type VisitorContextResponse } from './services/publi
 import { checkSession, clearBrowserSessionArtifacts, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
 import { appState$ } from './state/appState';
 import { MemberSessionContext } from './components/appShell/MemberSessionContext';
+import { SiteNavigationContext } from './components/publicSite/SiteNavigationContext';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
 
@@ -733,6 +734,7 @@ export default function App() {
       <PaperProvider theme={paperTheme}>
       <SafeAreaProvider>
         <MemberSessionContext.Provider value={{authenticated, onSignedOut}}>
+        <SiteNavigationContext.Provider value={{navigate:setRoute, openPublicContent}}>
           <StatusBar style="dark" />
           {route === 'splash' ? <SplashScreen isTakingLonger={isTakingLonger} /> : null}
           {route === 'chat' ? <SharityAiScreen onNavigate={setRoute} /> : null}
@@ -967,6 +969,7 @@ export default function App() {
             />
           ) : null}
           {route === 'support' ? <SupportScreen onNavigate={setRoute} /> : null}
+        </SiteNavigationContext.Provider>
         </MemberSessionContext.Provider>
         </SafeAreaProvider>
       </PaperProvider>
