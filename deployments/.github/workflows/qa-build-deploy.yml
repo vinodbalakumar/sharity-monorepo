@@ -1,0 +1,146 @@
+
+name: QA Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_from:
+        description: Branch to deploy from app/service repos
+        required: true
+        default: claude_cop_patch
+        type: string
+      component:
+        description: Component to deploy
+        required: true
+        default: all
+        type: choice
+        options:
+          - authorization-server
+          - marketplace-service
+          - nginx
+          - payment-service
+          - platform-web-bff
+          - sharity-app-ui
+          - wallet-service
+          - all
+      qa_target:
+        description: QA target
+        required: false
+        default: mac
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
+
+jobs:
+  deploy:
+    runs-on: ${{ fromJSON(inputs.qa_target == 'windows' && '["self-hosted","Windows","sharity-qa"]' || inputs.qa_target == 'linux' && '["self-hosted","Linux","sharity-qa"]' || '["self-hosted","macOS","ARM64","sharity-qa"]') }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEPLOYMENTS_DIR: ${{ github.workspace }}/deployments
+      SHARITY_SOURCE_ROOT: ${{ github.workspace }}/sources
+      DOCKER_BUILDKIT: "0"
+      COMPOSE_DOCKER_CLI_BUILD: "0"
+      CERTS_DIR: ${{ vars.CERTS_DIR }}
+      DB_HOST: ${{ vars.DB_HOST }}
+      DB_PORT: ${{ vars.DB_PORT }}
+      DB_NAME: ${{ vars.DB_NAME }}
+      DB_USERNAME: ${{ vars.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      PC_MYSQL_HOST: ${{ vars.DB_HOST }}
+      PC_MYSQL_PORT: ${{ vars.DB_PORT }}
+      PC_MYSQL_USERNAME: ${{ vars.DB_USERNAME }}
+      PC_MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
+    steps:
+      - name: Checkout deployments
+        uses: actions/checkout@v4
+        with:
+          path: deployments
+
+      - name: Prepare sources directory
+        run: mkdir -p "${SHARITY_SOURCE_ROOT}"
+
+      - name: Checkout authorization-server
+        if: ${{ inputs.component == 'authorization-server' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/authorization-server
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
+          ref: ${{ inputs.workflow_from }}
+          path: sources/authorization-server
+
+      - name: Checkout marketplace-service
+        if: ${{ inputs.component == 'marketplace-service' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/marketplace-service
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
+          ref: ${{ inputs.workflow_from }}
+          path: sources/marketplace-service
+
+      - name: Checkout payment-service
+        if: ${{ inputs.component == 'payment-service' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/payment-service
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
+          ref: ${{ inputs.workflow_from }}
+          path: sources/payment-service
+
+      - name: Checkout platform-web-bff
+        if: ${{ inputs.component == 'platform-web-bff' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/platform-web-bff
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
+          ref: ${{ inputs.workflow_from }}
+          path: sources/platform-web-bff
+
+      - name: Checkout sharity-app-ui
+        if: ${{ inputs.component == 'sharity-app-ui' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/sharity-app-ui
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
+          ref: ${{ inputs.workflow_from }}
+          path: sources/sharity-app-ui
+
+      - name: Checkout wallet-service
+        if: ${{ inputs.component == 'wallet-service' || inputs.component == 'all' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vinodbalakumar/wallet-service
+          token: ${{ secrets.SOURCE_REPO_READ_TOKEN }}
+          ref: ${{ inputs.workflow_from }}
+          path: sources/wallet-service
+
+      - name: Prepare Docker config for service runner
+        run: |
+          docker_config="${RUNNER_TEMP}/docker-config"
+          mkdir -p "${docker_config}"
+          printf '{"auths":{}}\n' > "${docker_config}/config.json"
+          mkdir -p "${docker_config}/cli-plugins"
+          for plugin in docker-compose docker-buildx; do
+            for plugin_dir in "${HOME}/.docker/cli-plugins" "/Applications/Docker.app/Contents/Resources/cli-plugins"; do
+              if [[ -x "${plugin_dir}/${plugin}" ]]; then
+                ln -sf "${plugin_dir}/${plugin}" "${docker_config}/cli-plugins/${plugin}"
+                break
+              fi
+            done
+          done
+          echo "DOCKER_CONFIG=${docker_config}" >> "${GITHUB_ENV}"
+          DOCKER_CONFIG="${docker_config}" docker version
+
+      - name: Deploy selected component to QA Docker Compose
+        working-directory: deployments
+        run: |
+          ./scripts/deploy-component.sh \
+            --workflow-from "${{ inputs.workflow_from }}" \
+            --component "${{ inputs.component }}" \
+            --deploy-environment qa \
+            --qa-target "${{ inputs.qa_target }}" \
+            --mode apply

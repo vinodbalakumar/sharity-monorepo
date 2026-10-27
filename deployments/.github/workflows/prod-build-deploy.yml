@@ -1,0 +1,78 @@
+name: Prod Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_from:
+        description: Git ref, branch, or commit to inspect
+        required: true
+        default: claude_cop_patch
+        type: string
+      component:
+        description: Component to inspect
+        required: true
+        default: all
+        type: choice
+        options:
+          - authorization-server
+          - marketplace-service
+          - nginx
+          - payment-service
+          - wallet-service
+          - platform-web-bff
+          - sharity-app-ui
+          - all
+      qa_target:
+        description: QA target (metadata only)
+        required: false
+        default: mac
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
+      deploy_environment:
+        description: Deployment environment
+        required: false
+        default: prod
+        type: choice
+        options:
+          - prod
+      traffic_mode:
+        description: Production traffic mode label
+        required: false
+        default: deploy_only
+        type: choice
+        options:
+          - deploy_only
+          - make_active
+      rollback_enabled:
+        description: Keep rollback path ready
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      retry_count:
+        description: Retry attempts before rollback
+        required: false
+        default: "3"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+
+jobs:
+  plan:
+    uses: ./.github/workflows/component-build-deploy.yml
+    with:
+      workflow_from: ${{ inputs.workflow_from }}
+      component: ${{ inputs.component }}
+      qa_target: ${{ inputs.qa_target }}
+      deploy_environment: ${{ inputs.deploy_environment }}
+      traffic_mode: ${{ inputs.traffic_mode }}
+      rollback_enabled: ${{ inputs.rollback_enabled }}
+      retry_count: ${{ inputs.retry_count }}
+    secrets: inherit

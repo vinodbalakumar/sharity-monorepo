@@ -1,0 +1,4 @@
+**
+!nginx/
+!nginx/storefront.conf
+!nginx/admin.conf

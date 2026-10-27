@@ -1,0 +1,221 @@
+{
+  "generatedAt": "2026-10-26T18:53:25.063891Z",
+  "sources": [
+    {
+      "id": "product-a1f1f6f0-0ec3-43b4-93fd-ee3c62e47ad2",
+      "title": "Elden Ring",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"a1f1f6f0-0ec3-43b4-93fd-ee3c62e47ad2\", \"title\": \"Elden Ring\", \"categoryCode\": \"GAMES\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 35.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-c4c28f01-00c8-46fa-8fd3-98649a7543c6",
+      "title": "Baldur's Gate 3",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"c4c28f01-00c8-46fa-8fd3-98649a7543c6\", \"title\": \"Baldur's Gate 3\", \"categoryCode\": \"GAMES\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 45.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-19d02d66-49a4-4e3b-9a4c-57b262236bfb",
+      "title": "iTunes $100",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"19d02d66-49a4-4e3b-9a4c-57b262236bfb\", \"title\": \"iTunes $100\", \"categoryCode\": \"GIFTCARDS\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 82.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-0c74fa36-6dd8-4ac8-a3f6-d85c4dafb726",
+      "title": "PSN $100",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"0c74fa36-6dd8-4ac8-a3f6-d85c4dafb726\", \"title\": \"PSN $100\", \"categoryCode\": \"GIFTCARDS\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 75.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-81087db1-4f08-4986-a7d5-f43ef6289f4c",
+      "title": "Xbox $50",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"81087db1-4f08-4986-a7d5-f43ef6289f4c\", \"title\": \"Xbox $50\", \"categoryCode\": \"GIFTCARDS\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 37.5, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-5bfa94e9-2cc7-4861-9c62-0544356e1fde",
+      "title": "Google Play $100",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"5bfa94e9-2cc7-4861-9c62-0544356e1fde\", \"title\": \"Google Play $100\", \"categoryCode\": \"GIFTCARDS\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 78.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-bb492667-9f9d-456f-87e0-5133aa201190",
+      "title": "Steam $100",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"bb492667-9f9d-456f-87e0-5133aa201190\", \"title\": \"Steam $100\", \"categoryCode\": \"GIFTCARDS\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 78.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-64a1912b-195c-4e97-939b-3bc0a9f877c0",
+      "title": "Windows 11 Pro",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"64a1912b-195c-4e97-939b-3bc0a9f877c0\", \"title\": \"Windows 11 Pro\", \"categoryCode\": \"SOFTWARE\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 120.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-92bd23d0-6f39-4327-a9d5-6bb458f88b25",
+      "title": "Starfield",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"92bd23d0-6f39-4327-a9d5-6bb458f88b25\", \"title\": \"Starfield\", \"categoryCode\": \"GAMES\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 48.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-939932bf-b3a3-4a4e-8853-496d8561f17b",
+      "title": "Cyberpunk 2077",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"939932bf-b3a3-4a4e-8853-496d8561f17b\", \"title\": \"Cyberpunk 2077\", \"categoryCode\": \"GAMES\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 25.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-68137319-65e6-486a-b2e5-1214a40f0168",
+      "title": "Microsoft 365",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"68137319-65e6-486a-b2e5-1214a40f0168\", \"title\": \"Microsoft 365\", \"categoryCode\": \"SOFTWARE\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 45.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-cd88cd3e-c561-425b-9ef9-3afa5f0f55f5",
+      "title": "Adobe Creative Cloud",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"cd88cd3e-c561-425b-9ef9-3afa5f0f55f5\", \"title\": \"Adobe Creative Cloud\", \"categoryCode\": \"SOFTWARE\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 240.0, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-8b59242e-1082-4872-ba12-fa7b4e11d6a7",
+      "title": "Web Development Bootcamp",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"8b59242e-1082-4872-ba12-fa7b4e11d6a7\", \"title\": \"Web Development Bootcamp\", \"categoryCode\": \"COURSES\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 9.99, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-f20a735b-454a-48b2-8f12-58f9d288bab0",
+      "title": "Python for Data Science",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"f20a735b-454a-48b2-8f12-58f9d288bab0\", \"title\": \"Python for Data Science\", \"categoryCode\": \"COURSES\", \"verticalCode\": \"DIGITAL\", \"priceAmount\": 12.99, \"currencyCode\": \"USD\", \"productType\": \"DIGITAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-c1ae8e5e-c8ca-43d3-aae2-69525c6b6f61",
+      "title": "Gold Necklace",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"c1ae8e5e-c8ca-43d3-aae2-69525c6b6f61\", \"title\": \"Gold Necklace\", \"categoryCode\": \"NECKLACES\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 24.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-4334261a-61b4-450a-aad9-1b3aae459bfb",
+      "title": "Crystal Pendant",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"4334261a-61b4-450a-aad9-1b3aae459bfb\", \"title\": \"Crystal Pendant\", \"categoryCode\": \"NECKLACES\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 18.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-5b093f6d-8d06-46ad-83da-945eee256f71",
+      "title": "Silver Studs",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"5b093f6d-8d06-46ad-83da-945eee256f71\", \"title\": \"Silver Studs\", \"categoryCode\": \"EARRINGS\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 12.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-186ea416-8510-493c-b1eb-8369f4545629",
+      "title": "Gold Hoops",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"186ea416-8510-493c-b1eb-8369f4545629\", \"title\": \"Gold Hoops\", \"categoryCode\": \"EARRINGS\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 14.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-cf4a60ca-d474-4898-b96d-d85494d7a24d",
+      "title": "Diamond Ring",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"cf4a60ca-d474-4898-b96d-d85494d7a24d\", \"title\": \"Diamond Ring\", \"categoryCode\": \"RINGS\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 19.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-8aa476c6-f719-496f-bc5d-c0277a34a027",
+      "title": "Gold Band",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"8aa476c6-f719-496f-bc5d-c0277a34a027\", \"title\": \"Gold Band\", \"categoryCode\": \"RINGS\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 21.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-dfbdd8e3-86ea-4603-9dcd-5ef0ea1bf1ac",
+      "title": "Bangle Set",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"dfbdd8e3-86ea-4603-9dcd-5ef0ea1bf1ac\", \"title\": \"Bangle Set\", \"categoryCode\": \"BANGLES\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 16.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-aada51ce-ebfa-4bc0-9d75-09e45c09c4be",
+      "title": "Chain Bracelet",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"aada51ce-ebfa-4bc0-9d75-09e45c09c4be\", \"title\": \"Chain Bracelet\", \"categoryCode\": \"BANGLES\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 13.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-7fb0f2fe-da7d-427d-bce4-12d533adcbb9",
+      "title": "Bridal Set",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"7fb0f2fe-da7d-427d-bce4-12d533adcbb9\", \"title\": \"Bridal Set\", \"categoryCode\": \"COMBOS\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 74.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    },
+    {
+      "id": "product-a9d32cf7-0ae3-45f1-ae34-1a5640f0756e",
+      "title": "Party Combo",
+      "url": "https://vinodbalakumar.com/app/",
+      "updatedAt": "2026-10-26T18:53:25.063891Z",
+      "visibility": "PUBLIC",
+      "approved": true,
+      "content": "Public listing snapshot: {\"publicId\": \"a9d32cf7-0ae3-45f1-ae34-1a5640f0756e\", \"title\": \"Party Combo\", \"categoryCode\": \"COMBOS\", \"verticalCode\": \"JEWELLERY\", \"priceAmount\": 39.99, \"currencyCode\": \"USD\", \"productType\": \"PHYSICAL\", \"deliveryType\": \"INSTANT\", \"listingStatus\": \"ACTIVE\", \"demoSeed\": true}. Sample/demo listings are not verified purchasable inventory. Recheck the listing for current price, stock and terms. No license validity, region, warranty, certification, material authenticity or fulfillment promise is verified."
+    }
+  ]
+}

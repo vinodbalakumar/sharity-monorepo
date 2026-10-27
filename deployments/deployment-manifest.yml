@@ -1,0 +1,138 @@
+version: 2
+project: sharity
+repo_model: central-deployment-repo
+default_branch: claude_cop_patch
+deployment_branch: claude_cop_patch
+
+qa_targets:
+  - windows
+  - mac
+  - linux
+
+routing:
+  qa_public_domain: qa.vinodbalakumar.com
+  app_public_domain: vinodbalakumar.com
+  api_public_domain: api.vinodbalakumar.com
+  single_active_qa_target: true
+
+repositories:
+  authorization-server:
+    repo_name: authorization-server
+    repo_url: https://github.com/vinodbalakumar/authorization-server
+    default_branch: claude_cop_patch
+    deployment_branch: claude_cop_patch
+    dockerfile_path: deployments/dockerfiles/authorization-server.Dockerfile
+    build_command: cd authorization-server && mvn clean package -DskipTests
+    image_name: sharity/authorization-server
+    health_endpoint: /authorization-server/api/actuator/health
+    compose_service_name: authorization-server
+
+  marketplace-service:
+    repo_name: marketplace-service
+    repo_url: https://github.com/vinodbalakumar/marketplace-service
+    default_branch: claude_cop_patch
+    deployment_branch: claude_cop_patch
+    dockerfile_path: deployments/dockerfiles/marketplace-service.Dockerfile
+    build_command: cd marketplace-service && mvn clean package -DskipTests
+    image_name: sharity/marketplace-service
+    health_endpoint: /marketplace-service/internal/health
+    compose_service_name: marketplace-service
+
+  payment-service:
+    repo_name: payment-service
+    repo_url: https://github.com/vinodbalakumar/payment-service
+    default_branch: claude_cop_patch
+    deployment_branch: claude_cop_patch
+    dockerfile_path: deployments/dockerfiles/payment-service.Dockerfile
+    build_command: cd payment-service && mvn clean package -DskipTests
+    image_name: sharity/payment-service
+    health_endpoint: /payment-service/actuator/health
+    compose_service_name: payment-service
+
+  wallet-service:
+    repo_name: wallet-service
+    repo_url: https://github.com/vinodbalakumar/wallet-service
+    default_branch: claude_cop_patch
+    deployment_branch: claude_cop_patch
+    dockerfile_path: deployments/dockerfiles/wallet-service.Dockerfile
+    build_command: cd wallet-service && mvn clean package -DskipTests
+    image_name: sharity/wallet-service
+    health_endpoint: /wallet-service/internal/health
+    compose_service_name: wallet-service
+
+  platform-web-bff:
+    repo_name: platform-web-bff
+    repo_url: https://github.com/vinodbalakumar/platform-web-bff
+    default_branch: claude_cop_patch
+    deployment_branch: claude_cop_patch
+    dockerfile_path: deployments/dockerfiles/platform-web-bff.Dockerfile
+    build_command: cd platform-web-bff && mvn clean package -DskipTests
+    image_name: sharity/platform-web-bff
+    health_endpoint: /actuator/health
+    compose_service_name: platform-web-bff
+
+  sharity-app-ui:
+    repo_name: sharity-app-ui
+    repo_url: https://github.com/vinodbalakumar/sharity-app-ui
+    default_branch: claude_cop_patch
+    deployment_branch: claude_cop_patch
+    dockerfile_path: deployments/dockerfiles/sharity-app.Dockerfile
+    build_command: cd sharity-app-ui && npm run build:web
+    image_name: sharity/sharity-app-ui
+    health_endpoint: /
+    compose_service_name: sharity-app
+
+workflow_inputs:
+  workflow_from:
+    type: string
+    required: true
+    description: Git ref, branch, or commit to inspect for the deployment plan.
+  component:
+    type: choice
+    required: true
+    values:
+      - authorization-server
+      - marketplace-service
+      - payment-service
+      - wallet-service
+      - platform-web-bff
+      - sharity-app-ui
+      - all
+    description: Choose a single component or all components.
+  qa_target:
+    type: choice
+    required: false
+    values:
+      - windows
+      - mac
+      - linux
+    description: Select the QA node target for the plan.
+  deploy_environment:
+    type: choice
+    required: true
+    values:
+      - qa
+      - prod
+    description: Select the deployment environment.
+  traffic_mode:
+    type: choice
+    required: false
+    values:
+      - deploy_only
+      - make_active
+    description: Control whether the QA route should be switched active.
+  rollback_enabled:
+    type: choice
+    required: false
+    values:
+      - "true"
+      - "false"
+    description: Whether the workflow should keep a rollback path ready.
+  retry_count:
+    type: choice
+    required: false
+    values:
+      - "1"
+      - "2"
+      - "3"
+    description: Number of retry attempts before rollback.
