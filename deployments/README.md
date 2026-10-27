@@ -1,3 +1,5 @@
+Physical delivery and cart correction: [release notes](docs/releases/2026-10-26-physical-delivery-cart.md).
+
 Profile cancellation and catalog copy: [release notes](docs/releases/2026-10-26-profile-cancel-catalog.md).
 
 # Sharity deployment repository
