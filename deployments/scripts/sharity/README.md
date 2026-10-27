@@ -2,6 +2,8 @@
 
 This is the versioned home of cross-component tooling. Application dependencies and application source stay in their component repositories. No npm dependencies are required for these shared tools; the OSV script uses built-in Node APIs.
 
+For storefront-only releases, `deploy-verified-storefront.ps1 -VerificationReport outputs/storefront-shell-verified.json -MinimumPassingScenarios 90` validates the passing Playwright report, tested bundle hash and source freshness, preserves rollback and updates the storefront. `verify-storefront-shell.cjs` checks the live footer, public links, catalog images and responsive layouts. See the [highlighted footer release](../../docs/releases/2026-10-26-storefront-navigation-footer.md).
+
 Set `SHARITY_WORKSPACE_ROOT` to the directory containing `authorization-server`, `marketplace-service`, `payment-service`, `wallet-service`, `platform-web-bff`, `platform-ai-service`, `tesla-dashboard-services` and `sharity-app-ui`. The default is the workspace containing this `deployments` checkout. Shared documentation defaults to the workspace `docs/` folder. `outputs/` and `.deployment-private/` stay inside that workspace and must not be committed.
 
 ```powershell

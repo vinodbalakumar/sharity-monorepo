@@ -5,6 +5,7 @@ Docker Compose, Dockerfiles and Nginx configuration live here. The running local
 - [2026-10-26 coordinated release and component commits](docs/releases/2026-10-26-core-ai-ui.md)
 - [2026-10-26 login redirect and session repair](docs/releases/2026-10-26-login-repair.md)
 - [Signed-in navigation and redesigned account settings](docs/releases/2026-10-26-member-account.md)
+- [Storefront navigation and highlighted shopping footer](docs/releases/2026-10-26-storefront-navigation-footer.md)
 - [Current Mac Ollama provider and centralized configuration](docs/MAC_OLLAMA.md)
 - [Repository ownership, output folders and package files](docs/sharity/WORKSPACE_LAYOUT.md)
 - [Local core/AI deployment](docs/local-ai-deployment.md)

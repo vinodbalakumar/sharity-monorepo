@@ -25,8 +25,7 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
   }, {pathname, csrfToken});
   const signOutInUi = async () => {
     await page.getByRole('button', {name:'Sign out', exact:true}).click();
-    await expect(page.getByRole('button', {name:'Sign in', exact:true}).first()).toBeVisible();
-    await page.waitForLoadState('networkidle', {timeout:45000});
+    await expect(page.getByRole('button', {name:'Sign in', exact:true}).first()).toBeVisible({timeout:20000});
   };
   page.setDefaultTimeout(20000);
   const report = { checkedAt: new Date().toISOString(), engine, width, redirects: [], browserSessions: [], browserErrors: [], authenticated: false };
@@ -53,7 +52,6 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     expect(opaqueApi.headers()['access-control-allow-origin']).toBeUndefined();
     report.apiCorsRestrictionVerified = true;
     await page.goto(`${origin}/app/`, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle', { timeout: 45000 });
     await expect(page.getByRole('button', { name: 'Sign in', exact: true }).first()).toBeVisible({ timeout: 45000 });
     await page.getByRole('button', { name: 'Sign in', exact: true }).first().click();
     await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 45000 });
@@ -64,7 +62,7 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     await page.locator('input[name="password"]').fill(password);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(url => url.origin === origin && url.pathname.startsWith('/app'), { timeout: 60000 });
-    await page.waitForLoadState('networkidle', { timeout: 45000 });
+    await expect(page.getByRole('button', {name:'Sign out',exact:true})).toBeVisible({timeout:45000});
     const session = (await browserApi('/bff/session')).body;
     report.authenticated = session.authenticated === true;
     expect(report.authenticated).toBe(true);
@@ -75,7 +73,7 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     expect(profileResponse.ok).toBe(true);
     expect(profileResponse.body.email?.toLowerCase() === email.toLowerCase()).toBe(true);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle', { timeout: 45000 });
+    await expect(page.getByRole('button', {name:'Sign out',exact:true})).toBeVisible({timeout:45000});
     const refreshed = (await browserApi('/bff/session')).body;
     report.authenticatedAfterReload = refreshed.authenticated === true;
     expect(report.authenticatedAfterReload).toBe(true);
@@ -83,8 +81,7 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
       report.signedInScreens = [];
       for (const pathname of ['/app/home','/app/marketplaces','/app/orders','/app/wallet','/app/profile','/chat']) {
         await page.goto(`${origin}${pathname}`, {waitUntil:'domcontentloaded'});
-        await page.waitForLoadState('networkidle', {timeout:45000});
-        await expect(page.getByRole('button', {name:'Sign out',exact:true})).toBeInViewport();
+            await expect(page.getByRole('button', {name:'Sign out',exact:true})).toBeInViewport({ratio:1,timeout:45000});
         if (pathname === '/app/profile') {
           await expect(page.getByRole('heading', {name:'Account settings',exact:true})).toBeVisible();
           await expect(page.getByLabel('First name', {exact:true})).toBeVisible();
@@ -122,7 +119,7 @@ const safeUrl = value => { const u = new URL(value); return u.origin + u.pathnam
     await page.locator('input[name="password"]').fill(password);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(url => url.origin === origin && url.pathname.startsWith('/app'), { timeout: 60000 });
-    await page.waitForLoadState('networkidle', { timeout: 45000 });
+    await expect(page.getByRole('button', {name:'Sign out',exact:true})).toBeVisible({timeout:45000});
     const recovered = (await browserApi('/bff/session')).body;
     report.recoveryLoginVerified = recovered.authenticated === true;
     expect(report.recoveryLoginVerified).toBe(true);
