@@ -53,6 +53,21 @@ class MarketplaceServiceVerticalTest {
         assertThat(listing.getVerticalCode()).isEqualTo("MARKETPLACE");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"INSTANT", "MANUAL", "DOWNLOAD", "DIGITAL"})
+    void physicalListingRejectsDigitalDelivery(String deliveryType) throws Exception {
+        MarketplaceDtos.ListingRequest request = new MarketplaceDtos.ListingRequest(
+                "Necklace", "Physical jewellery", "JEWELLERY", "PHYSICAL", deliveryType,
+                "NATIONAL", "USD", BigDecimal.TEN, "provider", "USA", null, "ACTIVE", "MARKETPLACE", 1);
+        java.lang.reflect.InvocationTargetException error = org.junit.jupiter.api.Assertions.assertThrows(
+                java.lang.reflect.InvocationTargetException.class, () -> invoke(newService(), "applyListingRequest",
+                        new Class<?>[] {Listing.class, MarketplaceDtos.ListingRequest.class}, new Listing(), request));
+        assertThat(error.getCause()).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+        var response = (org.springframework.web.server.ResponseStatusException) error.getCause();
+        assertThat(response.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST);
+        assertThat(response.getReason()).isEqualTo("Physical items require shipping or local pickup delivery.");
+    }
+
     @Test
     void responseMappingIncludesVerticalCode() throws Exception {
         MarketplaceService service = newService();
@@ -142,7 +157,9 @@ class MarketplaceServiceVerticalTest {
         when(productTypeRepository.existsByProductTypeCodeIgnoreCaseAndActiveTrue("DIGITAL")).thenReturn(true);
         DeliveryTypeMasterRepository deliveryTypeRepository = mock(DeliveryTypeMasterRepository.class);
         when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue("SHIPPING")).thenReturn(true);
-        when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue("DIGITAL")).thenReturn(true);
+        for (String code : List.of("DIGITAL", "INSTANT", "MANUAL", "DOWNLOAD")) {
+            when(deliveryTypeRepository.existsByDeliveryTypeCodeIgnoreCaseAndActiveTrue(code)).thenReturn(true);
+        }
         var storageRepository = mock(com.java.vinod.marketplace.service.repository.AssetStorageProviderRepository.class);
         var storage = new com.java.vinod.marketplace.service.entity.AssetStorageProvider();
         storage.setPublicBaseUrl("https://pub.example");

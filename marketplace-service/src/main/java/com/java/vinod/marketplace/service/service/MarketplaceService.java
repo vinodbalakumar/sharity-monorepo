@@ -803,7 +803,13 @@ public class MarketplaceService {
         listing.setCategoryCode(request.categoryCode());
         listing.setVerticalCode(normalizeVerticalCode(request.verticalCode()));
         listing.setProductType(normalizeProductType(request.productType()));
-        listing.setDeliveryType(normalizeDeliveryType(request.deliveryType()));
+        String deliveryType = normalizeDeliveryType(request.deliveryType());
+        if ("PHYSICAL".equals(listing.getProductType())
+                && !Set.of("SHIPPING", "SHIPPING_REQUIRED", "LOCAL_PICKUP").contains(deliveryType)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Physical items require shipping or local pickup delivery.");
+        }
+        listing.setDeliveryType(deliveryType);
         listing.setFulfillmentScope(normalizeFulfillmentScope(request.fulfillmentScope()));
         listing.setProviderCountryCode(request.providerCountryCode());
         listing.setCurrencyCode(request.currencyCode());

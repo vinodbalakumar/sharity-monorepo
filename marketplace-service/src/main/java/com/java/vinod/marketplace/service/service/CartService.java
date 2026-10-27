@@ -64,7 +64,6 @@ public class CartService {
     }
 
     @Transactional
-    @Retryable("database-retry")
     public CartDtos.CartItemResponse addToCart(String cartId, CartDtos.AddToCartRequest request) {
         Cart cart = cartRepository.findByCartId(cartId)
             .orElseThrow(() -> new RuntimeException("Cart not found: " + cartId));
@@ -94,7 +93,8 @@ public class CartService {
             .listingId(listing.getPublicId())
             .listingTitle(listing.getTitle())
             .providerId(listing.getProviderAccountPublicId())
-            .providerName(listing.getSellerDisplayName())
+            .providerName(listing.getSellerDisplayName() == null || listing.getSellerDisplayName().isBlank()
+                ? "Marketplace seller" : listing.getSellerDisplayName())
             .quantity(request.getQuantity())
             .unitPrice(listing.getPriceAmount())
             .lineTotal(listing.getPriceAmount().multiply(BigDecimal.valueOf(request.getQuantity())))

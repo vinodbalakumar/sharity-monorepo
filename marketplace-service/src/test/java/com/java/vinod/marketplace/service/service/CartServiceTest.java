@@ -76,10 +76,13 @@ class CartServiceTest {
         org.mockito.Mockito.verifyNoInteractions(cartItemRepository);
     }
 
-    @Test
-    void addToCartAllowsPhysicalListings() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullAndEmptySource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"Seller One", " "})
+    void addToCartAllowsPhysicalListings(String sellerName) {
         Cart cart = cart("cart-1");
-        Listing listing = listing("listing-physical", "PHYSICAL", "SHIPPING_REQUIRED");
+        Listing listing = listing("listing-physical", "PHYSICAL", "SHIPPING");
+        listing.setSellerDisplayName(sellerName);
         CartItem savedItem = cartItem(cart, listing, 2);
 
         when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart));
@@ -96,7 +99,11 @@ class CartServiceTest {
 
         assertEquals("listing-physical", response.getListingId());
         assertEquals(2, response.getQuantity());
-        assertEquals("SHIPPING_REQUIRED", response.getDeliveryType());
+        assertEquals("SHIPPING", response.getDeliveryType());
+        var inserted = org.mockito.ArgumentCaptor.forClass(CartItem.class);
+        org.mockito.Mockito.verify(cartItemRepository).save(inserted.capture());
+        assertEquals(sellerName == null || sellerName.isBlank() ? "Marketplace seller" : sellerName,
+                inserted.getValue().getProviderName());
     }
 
     private static Cart cart(String cartId) {

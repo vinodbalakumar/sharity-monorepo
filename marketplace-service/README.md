@@ -1,3 +1,11 @@
+## Physical delivery correction (2026-10-26)
+
+Flyway V55 corrects physical inventory with digital delivery methods to `SHIPPING` and repairs affected open-cart delivery snapshots. Existing shipping and local pickup remain unchanged; digital listings and order history are untouched. Both MySQL and PostgreSQL migrations run after existing seeds, so new databases receive the same correction without editing applied migration checksums. Listing create/update rejects physical items using digital delivery; choose shipping or local pickup.
+
+Cart snapshots use `Marketplace seller` if an imported listing has no seller display name. Cart adds are not retried within a failed persistence transaction.
+
+Deploy and live-cart verification helpers are maintained in `../deployments/scripts/sharity/`. The live check uses environment-supplied credentials and removes only its newly added cart item. Checkout remains a separate per-listing flow.
+
 Deployment environment profiles are maintained in `../deployments/config/marketplace-service/`; use `SPRING_CONFIG_ADDITIONAL_LOCATION` when starting outside Compose. Dockerfiles and server configuration are maintained in `../deployments`.
 
 ## Operations and commerce follow-up (2026-10-25)
