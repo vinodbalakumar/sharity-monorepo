@@ -1,0 +1,25 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "*.ts",
+    "*.tsx",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "dist-e2e",
+    "dist-e2e-final",
+    "dist-android",
+    "dist-ios",
+    "node_modules",
+    "playwright-report",
+    "test-results"
+  ]
+}

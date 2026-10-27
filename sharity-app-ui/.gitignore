@@ -1,0 +1,35 @@
+node_modules/
+dist/
+.expo/
+npm-debug.log*
+expo-*.log
+test-results/
+
+playwright-report/
+dist-android/
+dist-ios/
+dist-e2e/
+dist-e2e-final/
+test-results-storefront-logout/
+
+# Local secrets and workstation settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Other generated verification/runtime files
+outputs/
+test-results-*/
+*.log
+
+# Public-only environment presets remain versioned; workstation overrides do not.
+!.env.prod
+!.env.qa
