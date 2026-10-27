@@ -1,0 +1,38 @@
+[
+  {
+    "id": "founder",
+    "title": "Approved founder profile",
+    "url": "https://vinodbalakumar.com",
+    "updatedAt": "2026-10-26",
+    "visibility": "PUBLIC",
+    "approved": true,
+    "content": "Sharity was founded by Vinod Balakumar. His full professional name is Vinod Balakumar Panchaparvala. His professional role is Principal Full Stack Engineer. Approved links: https://vinodbalakumar.com ; LinkedIn https://www.linkedin.com/in/vinod-balakumar-panchaparvala-39332986 ; Instagram https://www.instagram.com/vinod_balakumar/ (username vinod_balakumar). Contact through these public profiles. No public email is approved. Employment history, education, certifications and career dates are not approved knowledge."
+  },
+  {
+    "id": "overview",
+    "title": "Sharity project overview",
+    "url": "https://vinodbalakumar.com",
+    "updatedAt": "2026-10-26",
+    "visibility": "PUBLIC",
+    "approved": true,
+    "content": "Sharity is a marketplace project for buyers and sellers. Locally implemented flows include listing discovery, seller listing drafts and moderation submission, cart, single-listing purchase review and order status. These are local development capabilities, not verified live production features. Payments are gated demo transactions by default; real payment processing is not verified. Multi-item checkout, shipping fulfillment, digital delivery and full disputes/refunds remain incomplete or require end-to-end validation."
+  },
+  {
+    "id": "technology",
+    "title": "Approved public technology summary",
+    "url": "https://vinodbalakumar.com",
+    "updatedAt": "2026-10-26",
+    "visibility": "PUBLIC",
+    "approved": true,
+    "content": "The Sharity source uses Java 21, Spring Boot, Spring Security OAuth2/OIDC, REST microservices, SQL persistence, an Expo React Native Web frontend and GitHub Actions. Service responsibilities include authorization, browser BFF, marketplace, payment, wallet and AI. Sharity AI uses Spring AI with a privately hosted Ollama Qwen3 model through Spring AI. Authentication uses OAuth2/OIDC through the browser BFF. These statements describe the inspected project, not a verified employment or personal skills history. Internal service addresses, deployment configuration, credentials and account data are not public knowledge."
+  },
+  {
+    "id": "feed",
+    "title": "Founder social content availability",
+    "url": "https://vinodbalakumar.com",
+    "updatedAt": "2026-10-26",
+    "visibility": "PUBLIC",
+    "approved": true,
+    "content": "No LinkedIn or Instagram posts have been imported or approved yet. Recent posts cannot be verified. The founder can provide authorized JSON exports for administrator review. Social captions and opinions are attributed source statements, not independently verified facts."
+  }
+]
