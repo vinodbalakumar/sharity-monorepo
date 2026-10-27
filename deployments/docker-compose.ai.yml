@@ -42,7 +42,7 @@ services:
     environment:
       <<: *diagnostics
       SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
-      COMMERCE_DEMO_PURCHASES_ENABLED: "false"
+      COMMERCE_DEMO_PURCHASES_ENABLED: "${COMMERCE_DEMO_PURCHASES_ENABLED:-false}"
       APP_MARKETPLACE_QUERY_SLOW_LOGGING_ENABLED: "false"
     healthcheck:
       test: [CMD-SHELL, "wget -qO- http://127.0.0.1:8080/marketplace-service/actuator/health >/dev/null || exit 1"]
@@ -59,7 +59,7 @@ services:
     environment:
       <<: *diagnostics
       SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/run/sharity/config/
-      COMMERCE_DEMO_PURCHASES_ENABLED: "false"
+      COMMERCE_DEMO_PURCHASES_ENABLED: "${COMMERCE_DEMO_PURCHASES_ENABLED:-false}"
     healthcheck:
       test: [CMD-SHELL, "wget -qO- http://127.0.0.1:8080/payment-service/actuator/health >/dev/null || exit 1"]
       start_period: 120s
