@@ -36,7 +36,6 @@ export const adminService = {
   supportedCountries: async () => (await httpClient.get('/authorization-server/api/v1/admin/supported-countries')).data,
   marketplaceOrders: async () => (await httpClient.get('/marketplace-service/api/v1/marketplace/admin/orders')).data,
   marketplaceDisputes: async () => (await httpClient.get('/marketplace-service/api/v1/marketplace/admin/disputes')).data,
-  marketplaceDispute: async (publicId) => (await httpClient.get(`/marketplace-service/api/v1/marketplace/admin/disputes/${publicId}`)).data,
   marketplaceDisputeDecision: async (publicId) =>
     (await httpClient.put(`/marketplace-service/api/v1/marketplace/admin/disputes/${publicId}/decision`)).data,
   paymentTransactions: async () => (await httpClient.get('/payment-service/api/v1/payments/admin/transactions')).data,
@@ -44,8 +43,6 @@ export const adminService = {
   blockedPayouts: async () => (await httpClient.get('/payment-service/api/v1/payments/admin/payouts/blocked')).data,
   paymentGatewayCatalog: async () => (await httpClient.get('/payment-service/api/v1/payments/admin/gateways/catalog')).data,
   paymentGatewayPolicies: async () => (await httpClient.get('/payment-service/api/v1/payments/admin/gateways/policies')).data,
-  paymentGatewayPolicy: async (countryCode) =>
-    (await httpClient.get(`/payment-service/api/v1/payments/admin/gateways/policies/${countryCode}`)).data,
   paymentGatewayRecommendation: async (countryCode) =>
     (await httpClient.get('/payment-service/api/v1/payments/admin/gateways/recommendation', { params: { countryCode } })).data,
   upsertPaymentGatewayPolicy: async (countryCode, payload) =>

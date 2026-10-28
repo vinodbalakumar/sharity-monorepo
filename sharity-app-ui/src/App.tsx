@@ -52,6 +52,7 @@ import { getVisitorContext, type VisitorContextResponse } from './services/publi
 import { checkSession, clearBrowserSessionArtifacts, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
 import { appState$ } from './state/appState';
 import { MemberSessionContext } from './components/appShell/MemberSessionContext';
+import { IconFontGate } from './components/IconFontGate';
 import { SiteNavigationContext } from './components/publicSite/SiteNavigationContext';
 import type { AppRoute } from './types/navigation';
 import tamaguiConfig from '../tamagui.config';
@@ -74,48 +75,11 @@ type RouteSnapshot = {
   secureAccessId?: string | null;
 };
 
-function publicRouteFromLocation(): AppRoute | null {
-  if (Platform.OS !== 'web') {
-    return null;
-  }
-  const path = window.location.pathname.replace(/\/+$/, '');
-  if (path === '/app/register') {
-    return 'register';
-  }
-  if (path === '/app/forgot-password') {
-    return 'forgotPassword';
-  }
-  if (path === '/app/reset-password') {
-    return 'resetPassword';
-  }
-  if (path === '/app/verify-email') {
-    return 'verifyEmail';
-  }
-  if (path === '/app/complete-registration') {
-    return 'completeSocialRegistration';
-  }
-  if (path.startsWith('/app/legal/') || path.startsWith('/app/company/') || path.startsWith('/app/support/')) {
-    return 'publicContent';
-  }
-  if (path === '/app') {
-    return null;
-  }
-  return null;
-}
-
 function isLoginSuccessReturn(): boolean {
   if (Platform.OS !== 'web') {
     return false;
   }
   return new URLSearchParams(window.location.search).get('login') === 'success';
-}
-
-function publicContentSlugFromLocation(): string | null {
-  if (Platform.OS !== 'web') {
-    return null;
-  }
-  const segments = window.location.pathname.split('/').filter(Boolean);
-  return segments.length >= 3 && segments[0] === 'app' ? segments[2] ?? null : null;
 }
 
 function updatePublicPath(route: AppRoute) {
@@ -361,6 +325,10 @@ function publicSectionFromSlug(slug: string): 'legal' | 'support' | 'company' {
 }
 
 export default function App() {
+  return <IconFontGate><ReadyApp /></IconFontGate>;
+}
+
+function ReadyApp() {
   const [route, setRouteState] = useState<AppRoute>('splash');
   const verifiedAuth = useRef(false);
   const [authenticated, setAuthenticatedState] = useState(false);

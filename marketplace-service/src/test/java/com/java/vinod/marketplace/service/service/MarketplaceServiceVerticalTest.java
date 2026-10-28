@@ -80,7 +80,7 @@ class MarketplaceServiceVerticalTest {
         listing.setCurrencyCode("USD");
         listing.setPriceAmount(BigDecimal.valueOf(49.99));
         listing.setOriginalPriceAmount(BigDecimal.valueOf(59.99));
-        listing.setImageKey("marketplace/headset.png");
+        listing.setImageKey("listings/headset.png");
         listing.setSellerDisplayName("Nova Store");
         listing.setVerifiedSeller(true);
         listing.setCategoryCode("ELECTRONICS");
@@ -92,7 +92,7 @@ class MarketplaceServiceVerticalTest {
                 "toListingResponse", new Class<?>[] { Listing.class }, listing);
 
         assertThat(response.verticalCode()).isEqualTo("MARKETPLACE");
-        assertThat(response.imageUrl()).isEqualTo("https://pub.example/marketplace/headset.png");
+        assertThat(response.imageUrl()).isEqualTo("https://pub.example/listings/headset.png");
     }
 
     @Test

@@ -78,6 +78,19 @@ docker compose up -d --build
 - Audit logs
 - Service launcher for Tesla dashboard
 
+## Storefront configuration and API compatibility
+
+Recently viewed remains configurable, but the storefront renders it as the final
+content child after All products, the help CTA and other curated product sections,
+before the site footer, regardless of its configured position. Other curated
+sections keep their ordering. Enablement,
+filtering, privacy preferences and Clear history behavior remain unchanged.
+
+The unused `adminService.marketplaceDispute` and
+`adminService.paymentGatewayPolicy` wrappers were removed. Their backend APIs
+are intentionally retained because external consumers are unknown; this cleanup
+does not deprecate those APIs. Backup archives are retained.
+
 ## Project Structure
 
 ```text

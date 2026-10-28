@@ -137,6 +137,34 @@ override them.
 properties. Avoid conflicting values between these and `AUTH_DB_*`.
 `DB_HOST`, `DB_PORT`, and `DB_NAME` alone do not configure the shared datasource.
 
+### Local browser origins and BFF sign-in
+
+The bundled local-profile `app.web.allowed-origin` defaults to
+`http://localhost:9173,http://localhost:9174`, configurable with
+`SHARITY_WEB_ALLOWED_ORIGIN`. This supports standalone local startup without
+the external deployment profile. Origins contain no `/app/` path. Keep these
+loopback defaults local-only: `application.properties` activates the default in
+a `local` profile document. The shared property and Java fallback are empty,
+with no wildcard. Production must explicitly configure its trusted origins.
+
+The local browser flow uses this service at
+`http://localhost:9093/authorization-server/api`, the BFF callback at
+`http://localhost:9090/login/oauth2/code/sharity-web-bff`, and the frontend at
+`http://localhost:9174/app/`. See the [BFF local-run guide](../platform-web-bff/README.md#local-run)
+for redirect settings and fresh sign-in (`force=true` / `prompt=login`).
+
+If registration-options returns 403 with no `Access-Control-Allow-Origin`,
+check the active profile and effective allowed origins. Standalone startup
+without external local configuration previously used the old Java CORS fallback
+`http://localhost:3000`. Restart the authorization process after applying the
+local-profile correction or changing its origin override; a BFF restart alone
+cannot reload authorization-server configuration.
+
+After the user restarted authorization, live credentialed registration-options
+requests from the configured UI origin returned HTTP 200; an untrusted origin
+returned 403. An actual Chromium fetch also returned 200. This is local CORS
+verification, not production deployment or end-to-end account registration.
+
 ### Start with PostgreSQL or MySQL
 
 In PowerShell, set the URL and username for your database. For PostgreSQL:

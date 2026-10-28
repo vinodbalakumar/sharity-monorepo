@@ -33,3 +33,4 @@ test-results-*/
 # Public-only environment presets remain versioned; workstation overrides do not.
 !.env.prod
 !.env.qa
+!.env.development

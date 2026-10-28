@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 1.35,
     minHeight: 0,
-    backgroundColor: "#f7f8fa",
+    backgroundColor: colors.surfaceHover,
     overflow: "hidden",
   },
   image: { position: "absolute", top: 12, left: 12, right: 12, bottom: 12 },

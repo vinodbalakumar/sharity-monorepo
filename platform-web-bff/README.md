@@ -74,6 +74,44 @@ The Sharity browser app must not store production access tokens or refresh token
 
 ## Local Run
 
+The default `local` profile now includes standalone settings without requiring
+the external deployment profile directory:
+
+| Setting | Local default |
+| --- | --- |
+| HTTP address | `http://localhost:9090` |
+| PostgreSQL URL | `jdbc:postgresql://localhost:5432/bff` |
+| Database username | `postgres` |
+| Flyway scripts | `classpath:db/migration-postgresql` |
+| Authorization server | `http://localhost:9093/authorization-server/api` |
+| Browser redirect | `http://localhost:9174/app/` |
+| Secure session cookie | `false` for local HTTP only |
+
+Create the `bff` database first and supply `BFF_DB_PASSWORD` securely. Override
+the connection with `BFF_DB_URL` and `BFF_DB_USERNAME`, or Spring's
+`SPRING_DATASOURCE_*` variables. The BFF uses its own database by default rather
+than the authorization server's `sauth` database.
+
+The local-only OAuth client secret fallback is `change-me-local-only`, matching
+the authorization server's shared local default. When overriding
+`SHARITY_WEB_BFF_CLIENT_SECRET`, supply the same value to both services.
+Never use this local fallback in a deployed environment.
+
+For standalone local sign-in, keep the three browser-facing URLs distinct:
+the UI is on port `9174`, authorization is on `9093`, and the OAuth callback
+is `http://localhost:9090/login/oauth2/code/sharity-web-bff`. The BFF preserves
+these configured local endpoints instead of rewriting them onto the UI origin.
+`GET /bff/login?force=true` requests a fresh credential prompt through OAuth
+`prompt=login`. Public deployments continue to use their configured public domain;
+browser `Origin` headers do not select OAuth destinations.
+
+The external local profile optionally imports a private properties file selected
+by `BACKEND_LOCAL_CONFIG` (default `./.env.backend-local.properties`, relative to
+the process working directory). It no longer requires a machine-specific file.
+QA and production profile files are unchanged; local datasource and secret
+fallbacks apply only when the `local` profile is active. Do not combine `local`
+with QA or production profiles.
+
 From the repository root:
 
 ```powershell

@@ -118,7 +118,7 @@ public class SecurityConfig {
                     errorCode,
                     rootCause.getClass().getSimpleName(),
                     correlationId(request));
-            response.sendRedirect(browserAuthorizationServerBaseUrl(null, properties) + "/login?error=oauth");
+            response.sendRedirect(browserAuthorizationServerBaseUrl(properties) + "/login?error=oauth");
         };
     }
 
@@ -141,9 +141,9 @@ public class SecurityConfig {
                 .clientSecret(properties.oauth2().clientSecret())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri(browserRedirectUri(null, properties))
+                .redirectUri(browserRedirectUri(properties))
                 .scope("openid", "profile")
-                .authorizationUri(browserAuthorizationServerBaseUrl(null, properties) + "/oauth2/authorize")
+                .authorizationUri(browserAuthorizationServerBaseUrl(properties) + "/oauth2/authorize")
                 .tokenUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/token")
                 .userInfoUri(properties.oauth2().authorizationServerBaseUrl() + "/userinfo")
                 .jwkSetUri(properties.oauth2().authorizationServerBaseUrl() + "/oauth2/jwks")
@@ -185,32 +185,26 @@ public class SecurityConfig {
             return null;
         }
         OAuth2AuthorizationRequest.Builder builder = OAuth2AuthorizationRequest.from(authorizationRequest)
-                .authorizationUri(browserAuthorizationServerBaseUrl(request, properties) + "/oauth2/authorize")
-                .redirectUri(browserRedirectUri(request, properties));
-        if (hasForceReauthenticationCookie(request)) {
+                .authorizationUri(browserAuthorizationServerBaseUrl(properties) + "/oauth2/authorize")
+                .redirectUri(browserRedirectUri(properties));
+        if ("true".equals(request.getParameter("force")) || hasForceReauthenticationCookie(request)) {
             builder.additionalParameters(parameters -> parameters.put("prompt", "login"));
         }
         return builder.build();
     }
 
-    private String browserAuthorizationServerBaseUrl(jakarta.servlet.http.HttpServletRequest request, BffProperties properties) {
+    private String browserAuthorizationServerBaseUrl(BffProperties properties) {
         String configured = trimTrailingSlash(properties.oauth2().authorizationServerPublicBaseUrl());
-        if (isLoopbackUrl(configured)) {
+        if (isLoopbackUrl(configured) && !isLoopbackUrl(canonicalBrowserOrigin(properties))) {
             return canonicalBrowserOrigin(properties) + "/authorization-server/api";
-        }
-        if (isLocalBrowserRequest(request)) {
-            return "http://localhost:8080/authorization-server/api";
         }
         return configured;
     }
 
-    private String browserRedirectUri(jakarta.servlet.http.HttpServletRequest request, BffProperties properties) {
+    private String browserRedirectUri(BffProperties properties) {
         String configured = properties.oauth2().redirectUri();
-        if (isLoopbackUrl(configured)) {
+        if (isLoopbackUrl(configured) && !isLoopbackUrl(canonicalBrowserOrigin(properties))) {
             return canonicalBrowserOrigin(properties) + "/login/oauth2/code/" + REGISTRATION_ID;
-        }
-        if (isLocalBrowserRequest(request)) {
-            return canonicalBrowserOriginFromRequest(request) + "/login/oauth2/code/" + REGISTRATION_ID;
         }
         return configured;
     }
@@ -221,29 +215,6 @@ public class SecurityConfig {
             return "";
         }
         return trimTrailingSlash(allowedOrigin.split(",")[0].trim());
-    }
-
-    private String canonicalBrowserOriginFromRequest(jakarta.servlet.http.HttpServletRequest request) {
-        String origin = request.getHeader("Origin");
-        if (origin == null || origin.isBlank()) {
-            return "http://localhost:8081";
-        }
-        return trimTrailingSlash(origin.trim());
-    }
-
-    private boolean isLocalBrowserRequest(jakarta.servlet.http.HttpServletRequest request) {
-        if (request == null) {
-            return false;
-        }
-        String origin = request.getHeader("Origin");
-        if (origin == null || origin.isBlank()) {
-            return false;
-        }
-        String lower = origin.toLowerCase();
-        return lower.startsWith("http://localhost")
-                || lower.startsWith("https://localhost")
-                || lower.startsWith("http://127.0.0.1")
-                || lower.startsWith("https://127.0.0.1");
     }
 
     private String successRedirectUrl(String redirectUri) {

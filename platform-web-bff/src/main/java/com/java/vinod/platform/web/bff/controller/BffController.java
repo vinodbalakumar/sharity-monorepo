@@ -54,9 +54,10 @@ public class BffController {
      * Starts the public browser sign-in flow by redirecting to the OAuth client registration.
      */
     @GetMapping("/bff/login")
-    public ResponseEntity<Void> login() {
+    public ResponseEntity<Void> login(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean force) {
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, "/oauth2/authorization/" + REGISTRATION_ID)
+                .header(HttpHeaders.LOCATION, "/oauth2/authorization/" + REGISTRATION_ID + (force ? "?force=true" : ""))
                 .build();
     }
 

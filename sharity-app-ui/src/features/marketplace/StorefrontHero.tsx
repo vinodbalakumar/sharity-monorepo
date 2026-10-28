@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ProductArtwork } from "../../components/marketplace/ProductArtwork";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { systemFontFamily } from "../../theme/typography";
+import { colors } from "../../theme";
 import type { MarketplaceListing } from "../../types/marketplace";
 import type { AppRoute } from "../../types/navigation";
 
@@ -42,7 +43,7 @@ export function StorefrontHero({
               style={({ pressed }) => [styles.primaryAction, pressed && { opacity: 0.85 }]}
             >
               <Text style={styles.primaryActionText}>Shop all products</Text>
-              <Ionicons name="arrow-forward" size={18} color="#172337" />
+              <Ionicons name="arrow-forward" size={18} color={colors.textPrimary} />
             </Pressable>
           {landing && !isMobile && (
               <Pressable
@@ -76,7 +77,7 @@ export function StorefrontHero({
             accessibilityRole="button"
             accessibilityLabel="Explore digital goods"
             onPress={() => onNavigate("digitalMarketplace")}
-            style={[styles.collection, { backgroundColor: "#fff3d9" }]}
+            style={[styles.collection, { backgroundColor: colors.surfaceVariant }]}
           >
             <View style={styles.collectionCopy}>
               <Text style={styles.collectionEyebrow}>FOR EVERYDAY & EVERY OCCASION</Text>
@@ -85,13 +86,13 @@ export function StorefrontHero({
                 Explore digital <Ionicons name="arrow-forward" size={15} />
               </Text>
             </View>
-            <Ionicons name="gift-outline" size={44} color="#835a0e" />
+            <Ionicons name="gift-outline" size={44} color={colors.primaryDark} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Explore jewellery"
             onPress={() => onNavigate("jewelryMarketplace")}
-            style={[styles.collection, { backgroundColor: "#e9f0ff" }]}
+            style={[styles.collection, { backgroundColor: colors.primaryLight }]}
           >
             <View style={styles.collectionCopy}>
               <Text style={styles.collectionEyebrow}>A LITTLE SOMETHING SPECIAL</Text>
@@ -100,7 +101,7 @@ export function StorefrontHero({
                 Shop jewellery <Ionicons name="arrow-forward" size={15} />
               </Text>
             </View>
-            <Ionicons name="diamond-outline" size={44} color="#2459d3" />
+            <Ionicons name="diamond-outline" size={44} color={colors.primary} />
           </Pressable>
         </View>
       )}
@@ -110,7 +111,7 @@ export function StorefrontHero({
 const styles = StyleSheet.create({
   banners: { flexDirection: "row", gap: 16, minWidth: 0 },
   primary: {
-    backgroundColor: "#173d86",
+    backgroundColor: colors.primaryDark,
     borderRadius: 12,
     padding: 28,
     flex: 2,
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 1.2,
     lineHeight: 17,
-    color: "#e0eaff",
+    color: colors.primaryLight,
   },
   title: {
     fontFamily: systemFontFamily,
@@ -137,37 +138,37 @@ const styles = StyleSheet.create({
     lineHeight: 42,
     fontWeight: "700",
     letterSpacing: -0.7,
-    color: "#ffffff",
+    color: colors.primaryContrast,
   },
   titleMobile: { fontSize: 26, lineHeight: 32 },
-  body: { fontFamily: systemFontFamily, fontSize: 14, lineHeight: 22, color: "#e0eaff", maxWidth: 380 },
+  body: { fontFamily: systemFontFamily, fontSize: 14, lineHeight: 22, color: colors.primaryLight, maxWidth: 380 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 4 },
   primaryAction: {
     minHeight: 44,
     paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 7,
-    backgroundColor: "#ffdc62",
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  primaryActionText: { fontFamily: systemFontFamily, fontSize: 13, fontWeight: "700", color: "#172337" },
+  primaryActionText: { fontFamily: systemFontFamily, fontSize: 13, fontWeight: "700", color: colors.textPrimary },
   secondaryAction: { minHeight: 44, paddingHorizontal: 12, justifyContent: "center" },
   secondaryActionText: {
     fontFamily: systemFontFamily,
     fontSize: 13,
     fontWeight: "600",
-    color: "#ffffff",
+    color: colors.primaryContrast,
     textDecorationLine: "underline",
   },
-  featured: { width: 170, borderRadius: 12, backgroundColor: "#ffffff", padding: 8, overflow: "hidden" },
+  featured: { width: 170, borderRadius: 12, backgroundColor: colors.surface, padding: 8, overflow: "hidden" },
   featuredLabel: {
     fontFamily: systemFontFamily,
     fontSize: 12,
     lineHeight: 18,
     fontWeight: "600",
-    color: "#172337",
+    color: colors.textPrimary,
     padding: 4,
   },
   collections: { flex: 1, minWidth: 0, gap: 16 },
@@ -179,20 +180,20 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     fontWeight: "600",
     letterSpacing: 0.7,
-    color: "#536174",
+    color: colors.textSecondary,
   },
   collectionTitle: {
     fontFamily: systemFontFamily,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: "600",
-    color: "#172337",
+    color: colors.textPrimary,
   },
   collectionCta: {
     fontFamily: systemFontFamily,
     fontSize: 13,
     lineHeight: 20,
     fontWeight: "600",
-    color: "#2459d3",
+    color: colors.primary,
   },
 });

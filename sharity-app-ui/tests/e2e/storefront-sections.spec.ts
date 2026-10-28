@@ -44,9 +44,52 @@ test('product views create recent history and category deals; clearing removes b
   const recommended = page.getByTestId('storefront-recommended_deals');
   await expect(recommended.getByTestId('discovery-product')).toHaveCount(2);
   await expect(recommended).not.toContainText('Discovery product 0');
+  const recent = page.getByTestId('storefront-recently_viewed');
+  expect(await recommended.evaluate((element, recentElement) =>
+    !!(element.compareDocumentPosition(recentElement as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+  await recent.elementHandle())).toBe(true);
+  expect(await page.getByTestId('product-card').last().evaluate((element, recentElement) =>
+    !!(element.compareDocumentPosition(recentElement as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+  await recent.elementHandle())).toBe(true);
+  expect(await recent.evaluate(element => element.previousElementSibling?.getAttribute('data-testid'))).toBe('storefront-all_products');
+  expect(await recent.evaluate(element => element.nextElementSibling?.getAttribute('data-testid'))).toBe('storefront-help');
   await page.getByRole('button', { name: 'Clear history', exact: true }).click();
   await expect(page.getByTestId('storefront-recently_viewed')).toHaveCount(0);
   await expect(recommended).toHaveCount(0);
+});
+test('collection carousels scroll in both directions without overflowing the page', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const sections = defaults();
+  for (const section of sections.slice(0, 2)) section.listingIds = items.map(item => item.publicId);
+  await mock(page, sections);
+  await page.goto('/app/');
+  for (const code of ['best_selling', 'trending']) {
+    const collection = page.getByTestId(`storefront-${code}`);
+    const left = collection.getByRole('button', { name: 'Scroll products left', exact: true });
+    const right = collection.getByRole('button', { name: 'Scroll products right', exact: true });
+    await expect(left).toBeDisabled();
+    await expect(right).toBeEnabled();
+    await right.click();
+    await expect(left).toBeEnabled();
+    await right.click();
+    await expect(right).toBeDisabled();
+    await left.click();
+    await left.click();
+    await expect(left).toBeDisabled();
+    await expect(right).toBeEnabled();
+    await expect(collection.getByTestId('discovery-product').first()).toContainText('33% off');
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+});
+test('carousel controls are hidden when all collection products fit', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const sections = defaults();
+  sections[0]!.listingIds = [items[0]!.publicId];
+  await mock(page, sections);
+  await page.goto('/app/');
+  const collection = page.getByTestId('storefront-best_selling');
+  await expect(collection.getByTestId('discovery-product')).toHaveCount(1);
+  await expect(collection.getByRole('button', { name: /Scroll products/ })).toHaveCount(0);
 });
 test('expired and other-account history never appears', async ({ page }) => {
   await page.addInitScript(() => {

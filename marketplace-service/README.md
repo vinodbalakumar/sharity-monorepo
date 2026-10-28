@@ -43,6 +43,18 @@ V3 marketplace backend foundation.
 - Docker deployment is managed from the repository's sibling `../deployments/`
 directory; see the current [deployment runbook](../deployments/docs/deployment.md).
 
+## Catalog image delivery and compatibility
+
+Listing responses emit a direct public storage/CDN `imageUrl` using the existing
+image-key resolver. The storefront consumes that URL directly rather than
+requesting every image through the BFF/service. Ensure the configured public
+storage/CDN origin is reachable by browsers; do not expose storage credentials.
+The existing listing-image endpoint remains available for compatible callers.
+
+Removal of unused admin UI `marketplaceDispute` and `paymentGatewayPolicy`
+wrappers is not a backend API removal. Existing backend APIs are deliberately
+retained because external consumers have not been ruled out.
+
 ## V3 Flow Notes
 
 - Home catalog, category drill-down, search, detail, checkout, and seller-management screens are all backed by backend data.
@@ -56,8 +68,20 @@ Broad business-flow automated tests are the next implementation step.
 ## Local URL
 
 ```text
-http://localhost:8084/marketplace-service/swagger-ui/index.html
+http://localhost:9094/marketplace-service/swagger-ui/index.html
 ```
+
+## JWT public key configuration
+
+Set `APP_JWT_PUBLIC_KEY_BASE64` (or `app.jwt.public-key-base64`) to the Base64
+encoding of the authorization server's complete RSA `PUBLIC KEY` PEM text,
+including its header and footer. This matches the authorization server's
+Base64-encoded PEM format; do not supply a certificate or private key.
+When Base64 is blank, `app.jwt.public-key-path` remains supported (locally via
+`JWT_PUBLIC_KEY_PATH`). There is no default local key file. Nonblank Base64
+takes priority over the path, and invalid Base64/key material fails startup
+without falling back. Configure the matching issuer and `MARKETPLACE_API`
+audience as before.
 
 ## Database
 
@@ -79,6 +103,32 @@ they are not loaded automatically by a standalone Spring Boot launch. Set the
 datasource variables for a disposable database before starting the service.
 Review the selected Flyway migrations before connecting to an existing
 database; some historical migrations reset or seed demo marketplace data.
+
+### Local Best selling and Trending demo data
+
+For the disposable PostgreSQL `test1` database on localhost only, run the
+explicit seed from the repository root (use `psql` on PATH or its installed
+absolute path):
+
+```powershell
+psql -h localhost -U postgres -d test1 -W -v confirm_local_demo=true -f .\marketplace-service\scripts\seed-local-storefront-sales.sql
+```
+
+The script selects eight existing, visible, in-stock `demo_seed` listings,
+preferring already-ranked products and then category variety. It adds one
+synthetic completed/captured order per selected product so the normal sales
+ranking populates both sections; the UI displays up to eight products.
+These are demo accounting records, not real payments or purchases.
+They use the reserved buyer `00000000-0000-4000-8000-00000000d008` and
+`local-storefront-demo:` purchase request keys. Inventory, existing real orders,
+payment services, and outbox events are untouched.
+
+This is not a Flyway migration and never runs at startup. It requires explicit
+confirmation and rejects non-loopback connections or databases other than
+`test1`. Re-running refreshes only the matching seed orders' timestamps without
+duplicating them; Trending naturally ages out after seven days unless refreshed.
+Refresh the storefront after running it; no application rebuild is needed.
+Never use this seed against production data.
 
 ## Slow Query Diagnostics
 

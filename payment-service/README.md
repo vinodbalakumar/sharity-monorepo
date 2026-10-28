@@ -23,6 +23,18 @@ V3 payment backend foundation.
 
 ## Current Scope
 
+Standalone `local` defaults: HTTP port `9095`, PostgreSQL
+`jdbc:postgresql://localhost:5432/payment_db`, username `postgres`, and
+`db/migration-postgresql` migrations. Create the database and supply
+`PAYMENT_DB_PASSWORD`; override the connection using `PAYMENT_DB_URL` and
+`PAYMENT_DB_USERNAME`.
+
+Set `APP_JWT_PUBLIC_KEY_BASE64` to Base64 of the authorization server's public
+key PEM, never its private key. Base64 takes priority over the optional
+`JWT_PUBLIC_KEY_PATH` file fallback. Issuer and audience validation remain enabled.
+These local defaults do not require external deployment profiles; explicitly
+loading an external profile can override them.
+
 - JWT resource-server security using the authorization-server public key.
 - MySQL/Flyway schema for payment orders, transactions, provider payouts, refunds, webhooks, and outbox.
 - Persisted mock checkout, payment transaction, payout hold, payout release, and refund records.

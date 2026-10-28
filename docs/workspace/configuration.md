@@ -25,6 +25,24 @@ effective service configuration before changing production or QA settings;
 the authorization database runbook explains the datasource precedence for that
 service.
 
+### Standalone local browser authentication
+
+The local topology is frontend `http://localhost:9174/app/`, authorization
+`http://localhost:9093/authorization-server/api`, and BFF callback
+`http://localhost:9090/login/oauth2/code/sharity-web-bff`. These are distinct
+endpoints, not paths to rewrite onto the UI origin. See the
+[BFF README](../../platform-web-bff/README.md#local-run) for its routing settings.
+Production OAuth destinations come from the configured public domain, not the
+request `Origin`.
+
+Authorization's bundled local profile sets `app.web.allowed-origin` to
+`http://localhost:9173,http://localhost:9174`, overridden with
+`SHARITY_WEB_ALLOWED_ORIGIN`. Use origins without paths. The bundled
+`application.properties` uses a `local` profile document for that default; the
+shared property and Java fallback are empty. This must not broaden
+shared/production CORS, and no wildcard is allowed. Restart the authorization process after changing these
+settings; external deployment profiles are still opt-in for standalone runs.
+
 ## Database selection and migrations
 
 Each service owns its schema and migration history. Shared database hosts are

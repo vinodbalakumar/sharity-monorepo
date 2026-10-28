@@ -4,6 +4,7 @@ import com.java.vinod.wallet.service.config.InternalServiceTokenFilter;
 import com.java.vinod.wallet.service.config.SecurityConfig;
 import com.java.vinod.wallet.service.service.WalletService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,8 @@ import java.util.Base64;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
@@ -72,6 +75,7 @@ class WalletControllerSecurityTest {
         registry.add("app.jwt.issuer", () -> "https://vinodbalakumar.com/authorization-server/api");
         registry.add("app.jwt.audience", () -> "WALLET_API");
         registry.add("app.internal.service-token", () -> "test-token");
+        registry.add("app.web.allowed-origin", () -> "http://localhost:9173, http://localhost:9174");
     }
 
     @BeforeEach
@@ -94,6 +98,32 @@ class WalletControllerSecurityTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void allowsLocalFrontendPreflight() throws Exception {
+        for (String origin : new String[]{"http://localhost:9173", "http://localhost:9174"}) {
+            mockMvc.perform(options("/api/v1/wallet/admin/accounts")
+                            .header("Origin", origin)
+                            .header("Access-Control-Request-Method", "GET")
+                            .header("Access-Control-Request-Headers", "Authorization"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Access-Control-Allow-Origin", origin));
+        }
+    }
+
+    @Test
+    void rejectsUnconfiguredFrontendPreflight() throws Exception {
+        mockMvc.perform(options("/api/v1/wallet/admin/accounts")
+                        .header("Origin", "https://untrusted.example.test")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @AfterAll
+    static void removePublicKeyFixture() throws Exception {
+        Files.deleteIfExists(PUBLIC_KEY_PATH);
+    }
+
     private static Path createPublicKeyFile() {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -103,9 +133,10 @@ class WalletControllerSecurityTest {
             String pem = "-----BEGIN PUBLIC KEY-----\n"
                     + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8)).encodeToString(publicKey.getEncoded())
                     + "\n-----END PUBLIC KEY-----\n";
-            Path path = Files.createTempFile("wallet-jwt-public", ".pem");
+            Path directory = Path.of("target");
+            Files.createDirectories(directory);
+            Path path = directory.resolve("wallet-controller-jwt-public.pem");
             Files.writeString(path, pem, StandardCharsets.UTF_8);
-            path.toFile().deleteOnExit();
             return path;
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to create test public key", exception);

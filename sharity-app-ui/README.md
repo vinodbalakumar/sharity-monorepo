@@ -18,6 +18,14 @@ Run `npx playwright test tests/e2e/member-account.spec.ts` after exporting the w
 
 The landing page, customer home and all-products catalog share `StorefrontContent`; category catalogs and product details use the same shell, colors and system fonts. React Native Paper is already installed and now provides the root theme, shared buttons, search and filter chips. No runtime UI dependency was added.
 
+`IconFontGate` loads Ionicons and MaterialCommunityIcons before mounting the app. A font-load failure shows an explicit error and Retry; on web, Retry reloads the page rather than swallowing the failure.
+
+Listing API `imageUrl` values are direct public storage/CDN URLs, resolved from existing image keys by the backend. The UI uses those URLs directly; the legacy listing-image endpoint remains available for compatibility.
+
+Recently viewed is the final storefront content child: after All products, the help CTA and every other curated product section, before the site footer, regardless of its administrator-configured position. Other curated sections keep their ordering. Existing enablement, filtering, privacy preferences and Clear history behavior still apply.
+
+Active checkout and catalog routes use `CommerceCheckoutScreen` and `CommerceCatalogScreen`. The unused legacy `src/features/checkout/CheckoutScreen.tsx`, `src/features/payment/PaymentSuccessScreen.tsx` and `src/features/electronics/ElectronicsMarketplaceHomeScreen.tsx` were removed; a payment-status route still does not imply payment success. Backup archives are retained.
+
 Guests can browse `/app/`, `/app/marketplaces`, category catalogs and `/app/products/:id` without being sent to sign-in. Account routes require a verified BFF session. Only explicit sign-in opens OAuth. A validated, same-origin route intent is kept in session storage for at most 15 minutes; a `login=success` query alone never authenticates anyone. Back and refresh preserve public product routes. Native sign-in still requires a proper device OAuth flow; web login must not be simulated as native authentication.
 
 Missing/failed images use a clear fallback. Product cards show the listing image without demo badges; seeded inventory is identified as Sample item on the product details page. The catalog uses All products without a promotional subtitle or demo banner. Catalog failures expose Retry and empty results do not invent products. Live payments remain disabled.
@@ -116,7 +124,24 @@ docker compose up -d --build sharity-app
 Pop-Location
 ```
 
-Run the app only through Docker. Do not start a separate Expo dev server for local review.
+For local Spring services, run `npm start` (or `npm run web` to open the browser).
+Expo serves the UI on `http://localhost:9174/app/` and automatically loads
+`.env.development`: session/login and protected APIs use the BFF on port `9090`,
+registration and password recovery use the authorization server on port `9093`,
+and the public catalog uses the BFF marketplace proxy (forwarded to port `9094`).
+Start those backend services separately with their local profiles. The BFF's
+default OAuth callback and UI redirect already match these ports.
+For cross-origin registration requests, configure the authorization server with
+`SHARITY_WEB_ALLOWED_ORIGIN=http://localhost:9174` before starting it, or use
+the bundled local-profile defaults for ports 9173 and 9174. Restart the
+authorization server after changing the allowed origins.
+
+Use the ignored `.env.development.local` for workstation overrides, then restart
+Expo after URL changes. Physical devices need reachable LAN hosts instead of
+`localhost`, with corresponding backend CORS and OAuth redirect configuration.
+These development defaults are not loaded by production exports. For the Docker
+gateway instead, override all public URLs to its origin (normally
+`http://localhost:8080`), retaining the endpoint paths above.
 
 ## Current Story
 

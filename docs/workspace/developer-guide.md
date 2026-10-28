@@ -44,6 +44,12 @@ mvn -B -ntp -pl marketplace-service verify
 Tesla can be included explicitly with `mvn -B -ntp -Ptesla verify`. It is not
 part of default reactor builds or the default Compose deployment.
 
+If this workstation's Maven global settings point to an unreachable Nexus,
+use the existing module `.mvn-central-settings.xml` with Java 21. From the
+workspace root, for example:
+`mvn -s authorization-server\.mvn-central-settings.xml -f authorization-server\pom.xml -B -ntp test`.
+This is repository-resolution configuration, not a dependency-version change.
+
 ## Frontend tasks
 
 Each frontend has an independent `package-lock.json`; do not install or hoist
@@ -85,6 +91,13 @@ under `deployments/config/` are not automatically loaded by a standalone
 process. The authorization service's PostgreSQL/MySQL setup, Flyway selection
 and migration safeguards are documented in its
 [database operations runbook](../../authorization-server/docs/database-operations.md).
+
+For the standalone browser sign-in topology, use the
+[BFF local-run settings](../../platform-web-bff/README.md#local-run) and
+[local browser-origin configuration](configuration.md#standalone-local-browser-authentication).
+Authorization's bundled local profile allows frontend origins on ports 9173
+and 9174 without loading external deployment files. Restart authorization after
+changing `SHARITY_WEB_ALLOWED_ORIGIN`; restarting only the BFF is insufficient.
 
 For Docker, use the [deployment guide](operations.md) and the deployment-specific
 runbook. Do not use the unqualified Compose defaults as a portable development

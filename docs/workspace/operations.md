@@ -65,6 +65,34 @@ stack. Avoid commands that replace all images or volumes when diagnosing an
 individual component; prefer a reviewed component-specific rollout and preserve
 a rollback image as described in the deployment scripts.
 
+## Local storefront troubleshooting
+
+- **Sign-in routing:** the local BFF was restarted and the actual Sign in form
+  opened using authorization on `localhost:9093`, BFF callback on `localhost:9090`
+  and frontend on `localhost:9174/app/`. This verifies local routing, not a
+  completed authenticated session or a production rollout. `/bff/login?force=true`
+  propagates as OAuth `prompt=login`; configured public destinations, not a
+  browser-supplied `Origin`, control production routing. See the
+  [BFF local-run guide](../../platform-web-bff/README.md#local-run).
+- **Registration-options 403 without ACAO:** standalone authorization previously
+  fell back to the old Java CORS origin `http://localhost:3000` when external
+  local configuration was absent. Its bundled local-profile default now allows
+  `http://localhost:9173,http://localhost:9174` through `app.web.allowed-origin`
+  (`SHARITY_WEB_ALLOWED_ORIGIN` overrides it). Restart authorization to load the
+  correction. Do not solve this by opening shared/production CORS or adding a
+  wildcard; see [configuration](configuration.md#standalone-local-browser-authentication).
+  After the user restarted authorization, live credentialed registration-options
+  requests from the configured UI origin returned 200, an untrusted origin
+  returned 403, and an actual Chromium fetch returned 200. These are local
+  checks, not a production rollout or completed registration.
+- **Missing catalog images:** listing `imageUrl` points directly to public
+  storage/CDN. Check that public URL's reachability before investigating the
+  retained legacy listing-image endpoint; the UI no longer uses that endpoint
+  for ordinary catalog image delivery.
+- **Icons fail to load:** `IconFontGate` blocks app mounting until Ionicons and
+  MaterialCommunityIcons load. The visible error offers Retry, which reloads
+  the page on web; do not hide the failure.
+
 ## Release and data safeguards
 
 - Provider adapters or API routes do not by themselves establish production
