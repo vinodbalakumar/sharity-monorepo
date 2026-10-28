@@ -1,3 +1,9 @@
+> Current workspace guidance: [architecture](../docs/workspace/architecture.md),
+> [developer setup](../docs/workspace/developer-guide.md), and
+> [configuration and data safety](../docs/workspace/configuration.md). The
+> deployment details in this file are historical and do not establish which
+> provider or model is running in any environment.
+
 ## Current deployment (2026-10-26)
 
 The active deployment uses Mac-hosted Ollama `qwen3:8b`. Provider tuning, environment profiles, Dockerfiles and Nginx files are owned by the sibling `deployments` repository. See [the current Mac operating guide](../deployments/docs/MAC_OLLAMA.md) and `deployments/config/ai/application.properties`. No Windows Ollama, GPU override or automatic model pull is required. Approved founder facts and current public product facts supply bounded retrieval context; private commerce data is excluded. Earlier CPU deployment notes below are historical.
@@ -7,9 +13,10 @@ The active deployment uses Mac-hosted Ollama `qwen3:8b`. Provider tuning, enviro
 This existing service now owns public chat, approved founder knowledge, social JSON import/review,
 and SQL conversation history. Local Qwen3 1.7B is installed and real Spring AI HTTP answers were tested.
 The public UI route is `/chat`; routing and the AI container are deployed to the local Docker
-origin behind the existing public tunnel. Tesla remains disabled. See the workspace
-`outputs/local-deployment-report.md` for current verification and deployment limits.
-Read [the operating guide](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/SHARITY_AI.md) for setup, endpoint contracts, privacy and deployment gates.
+origin behind the existing public tunnel. Tesla remains disabled. Local deployment
+evidence is environment-specific and is not included in this repository. Read
+[the operating guide](../deployments/docs/sharity/SHARITY_AI.md) for setup,
+endpoint contracts, privacy and deployment gates.
 Use the external `deployments/config/ai/` profile for inference; set the same private `CHAT_BFF_TOKEN`
 in this service and the BFF. No real social posts were imported. Official social sync and SSE remain unimplemented.
 
@@ -37,7 +44,7 @@ provider usage stays null, approved structured answers use zero tokens, and old 
 null metadata. The migration script backs up the AI database before creating the table. The
 existing runtime account retains data-only privileges; schema application uses the admin account.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Platform AI Service
 
@@ -56,9 +63,10 @@ The seller must review the draft; the endpoint never publishes a listing.
 - AI is disabled by default; authorized calls receive 503 until enabled/configured.
 - Two concurrent generations per instance; excess calls receive 429.
 - Provider failures and empty/oversized output become a sanitized 503.
-- No tools, database connections, payment operations or conversation persistence.
+- No payment or wallet operations; chat history is persisted by the chat feature.
 - Only health endpoints are public. All other unmatched endpoints are denied.
-- This prototype is not yet connected to the Sharity BFF or seller UI.
+- Chat is exposed through the BFF's allowlisted `/bff/ai/*` routes when the
+  optional AI deployment configuration and private shared token are provided.
 
 ## Configuration
 

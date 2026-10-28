@@ -5,6 +5,10 @@ and startup recovery. See the [service README](../README.md) for application API
 and the [deployment documentation](../../deployments/docs/deployment.md) for
 Compose and QA/production conventions.
 
+This runbook describes checked-in source and configuration; it does not certify
+a particular database or deployment. For workspace-wide safeguards, see
+[configuration and data safety](../../docs/workspace/configuration.md).
+
 ## Configuration and precedence
 
 The shared configuration is `src\main\resources\application.properties`.

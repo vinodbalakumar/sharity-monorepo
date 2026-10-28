@@ -21,7 +21,7 @@ The Tesla dashboard receives the Sharity JWT session through browser `postMessag
 ## Local Development
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
@@ -50,20 +50,20 @@ http://localhost:8080/sharity-admin/
 Do not deploy from this folder. Deployment files live in:
 
 ```text
-C:\Users\HP\projects\springbootrestdemo\deployments
+../deployments
 ```
 
 Deploy only this UI:
 
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\deployments
+cd ..\deployments
 docker compose up -d --build sharity-admin-portal
 ```
 
 Deploy all services:
 
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\deployments
+cd ..\deployments
 docker compose up -d --build
 ```
 

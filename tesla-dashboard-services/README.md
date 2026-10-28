@@ -2,16 +2,17 @@
 
 This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Tesla Dashboard Services
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
 > Run `mvn -B -ntp verify`; CI also reviews dependency changes.
-> A passing build does not establish production readiness. See the workspace
-> `outputs/production-verification.md` and shared docs
-> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+> A passing build does not establish production readiness. See the current
+> [developer guide](../docs/workspace/developer-guide.md),
+> [operations guide](../docs/workspace/operations.md), and dated
+> [migration validation record](../docs/migration/VALIDATION.md).
 >
 > Vehicle commands remain subject to existing access checks. No model is allowed to issue commands. Validate Fleet credentials, ownership and command confirmation on staging.
 
@@ -49,17 +50,9 @@ jwt-public.pem
 
 ## Local Run
 
-Default local values:
-
-```text
-Database: tesla
-MySQL host: localhost
-MySQL port: 3306
-Username: root
-Password: root
-JWT public key: C:/Users/HP/projects/certs/jwt-public.pem
-Audience: auth-clients
-```
+This module is optional and its datasource/JWT settings must be supplied
+through a private environment or a reviewed deployment profile. Do not rely on
+workstation credentials or commit key files.
 
 Run:
 
@@ -75,42 +68,37 @@ http://localhost:8081/tesla-dashboard-services/api
 
 ## Docker Deployment
 
-Deployment files are centralized in:
+Deployment files are maintained in the sibling directory:
 
 ```text
-C:\Users\HP\projects\deployments
+../deployments
 ```
 
-Deploy this service only:
+Tesla is disabled in Compose by default and is not included in the active Nginx
+routes. To opt in, review the profile, key mounts, database, Tesla Fleet
+credentials and network access before using the profile explicitly:
 
 ```powershell
-cd C:\Users\HP\projects\deployments
-docker compose up -d --build tesla-dashboard-services
+Push-Location ..\deployments
+docker compose --profile disabled-tesla up -d --build tesla-dashboard-services
+Pop-Location
 ```
 
-Deploy all services:
-
-```powershell
-cd C:\Users\HP\projects\deployments
-docker compose up -d --build
-```
-
-The container runs on internal port `8080`. Nginx exposes it publicly.
-
-Public route:
+The container uses internal port `8080` and context path
+`/tesla-dashboard-services/api`. A public route is not configured in the
+current root Nginx file.
 
 ```text
-https://vinodbalakumar.com/tesla-dashboard-services/api
 http://localhost:8080/tesla-dashboard-services/api
 ```
 
 ## JWT Public Key
 
-Docker Compose mounts the PC cert folder:
+Configure the public verification key through a protected read-only mount:
 
 ```yaml
 volumes:
-  - C:/Users/HP/projects/certs:/keys:ro
+  - <private-key-directory>:/keys:ro
 ```
 
 This service receives:

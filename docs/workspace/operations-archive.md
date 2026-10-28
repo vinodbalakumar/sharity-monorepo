@@ -1,6 +1,12 @@
 > Storefront deployment: see [the October 26 UI release](outputs/storefront-deployment.md) for the web rollback image, verified public behavior and unchanged backend image IDs.
 
-# Sharity operations and commerce development
+# Archived operations and commerce notes
+
+These are historical implementation notes from an earlier workspace snapshot.
+They include links to generated local reports that are not committed here.
+Use the current [operations guide](operations.md) and
+[documentation index](../README.md) for executable instructions and current
+repository structure.
 
 Sharity AI chat is documented separately in [SHARITY_AI.md](SHARITY_AI.md).
 The existing AI service now provides the `/chat` UI's approved public knowledge, SQL history

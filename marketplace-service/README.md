@@ -14,16 +14,17 @@ This service now emits structured request metadata with validated `X-Correlation
 
 Apply Flyway V54 on MySQL/PostgreSQL before the new idempotent purchase path. Carts enforce user ownership. New orders start pending; payment refresh checks downstream state. `COMMERCE_DEMO_PURCHASES_ENABLED` is false by default and must never stand in for live payment approval.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Marketplace Service
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
 > Run `mvn -B -ntp verify`; CI also reviews dependency changes.
-> A passing build does not establish production readiness. See the workspace
-> `outputs/production-verification.md` and shared docs
-> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+> A passing build does not establish production readiness. See the current
+> [developer guide](../docs/workspace/developer-guide.md),
+> [operations guide](../docs/workspace/operations.md), and dated
+> [migration validation record](../docs/migration/VALIDATION.md).
 >
 > JWT resource-server validation is enabled. Anonymous access is limited to explicit public routes; unmatched routes require authentication. Rate-limit exhaustion returns JSON 429. Catalog image tests configure the storage-provider fixture explicitly.
 
@@ -39,7 +40,8 @@ V3 marketplace backend foundation.
 - Customer acceptance requests payout eligibility from Payment Service.
 - Provider listing, sales, and delivery actions validate MARKETPLACE provider eligibility with authorization-server.
 - Internal service calls use `X-Internal-Service-Token`.
-- Docker deployment through the central `C:\Users\HP\projects\deployments` stack.
+- Docker deployment is managed from the repository's sibling `../deployments/`
+directory; see the current [deployment runbook](../deployments/docs/deployment.md).
 
 ## V3 Flow Notes
 
@@ -54,7 +56,7 @@ Broad business-flow automated tests are the next implementation step.
 ## Local URL
 
 ```text
-http://localhost:8080/marketplace-service/swagger-ui/index.html
+http://localhost:8084/marketplace-service/swagger-ui/index.html
 ```
 
 ## Database
@@ -69,19 +71,14 @@ Datasource env vars:
 - `MARKETPLACE_DB_USERNAME`
 - `MARKETPLACE_DB_PASSWORD`
 
-Local database selection is still profile-based for migration scripts:
-
-- `local,mysql` uses [src/main/resources/application-mysql.yml](c:/data/apps/marketplace-service/src/main/resources/application-mysql.yml)
-- `local,postgresql` uses [src/main/resources/application-postgresql.yml](c:/data/apps/marketplace-service/src/main/resources/application-postgresql.yml)
-
-Examples:
-
-```text
-mvn spring-boot:run -Dspring-boot.run.profiles=local,mysql
-mvn spring-boot:run -Dspring-boot.run.profiles=local,postgresql
-```
-
-The shared settings stay in [src/main/resources/application.yml](c:/data/apps/marketplace-service/src/main/resources/application.yml).
+The shared datasource configuration is in
+[`src/main/resources/application.properties`](src/main/resources/application.properties).
+Environment-specific profiles are maintained under
+[`../deployments/config/marketplace-service/`](../deployments/config/marketplace-service/);
+they are not loaded automatically by a standalone Spring Boot launch. Set the
+datasource variables for a disposable database before starting the service.
+Review the selected Flyway migrations before connecting to an existing
+database; some historical migrations reset or seed demo marketplace data.
 
 ## Slow Query Diagnostics
 
