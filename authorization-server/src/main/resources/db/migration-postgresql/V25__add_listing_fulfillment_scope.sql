@@ -1,2 +1,2 @@
-ALTER TABLE listing
-    ADD COLUMN fulfillment_scope VARCHAR(20);
+-- Listing fulfillment belongs to the marketplace schema, not auth.
+SELECT 1;

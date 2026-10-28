@@ -15,7 +15,7 @@ BEGIN
     END IF;
 
     SELECT id INTO seller_role_id
-    FROM role
+    FROM app_role
     WHERE role_name = 'SELLER'
     LIMIT 1;
 

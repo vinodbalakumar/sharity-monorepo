@@ -46,6 +46,7 @@ This repository centralizes Sharity deployment metadata, compose layouts, helper
 - Rollback and retry behavior are described in helper scripts and workflow inputs.
 - These files prepare the deployment flow; they do not change application code.
 - QA app containers must use the Windows MySQL primary or an approved DB endpoint. Do not add independent local MySQL services to Mac/Linux QA compose files.
+- The authorization server also supports PostgreSQL for standalone or explicitly configured deployments. Its `FlywayConfig` selects migrations from the connected database vendor, overriding profile-provided Flyway locations; selecting a profile alone does not switch the datasource. See the [authorization database operations runbook](../../authorization-server/docs/database-operations.md) for configuration precedence, migration safety, and startup recovery. This capability does not change the QA MySQL topology above.
 - If QA data must exist on Mac/Linux too, configure MySQL replication from the Windows primary. See `docs/mysql-replication-runbook.md`.
 - marketplace-service and wallet-service do not ship Spring Actuator in this repo state, so QA health checks use the shared `/internal/health` endpoint exposed by each service.
 - The same compose health model is used on QA, Mac, Linux, Windows, and prod so the workflow behaves the same across runner targets.
