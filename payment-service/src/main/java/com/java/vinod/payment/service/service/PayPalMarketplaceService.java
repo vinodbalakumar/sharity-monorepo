@@ -659,6 +659,7 @@ public class PayPalMarketplaceService {
         LinkedHashSet<String> sellerIds = new LinkedHashSet<>();
         paymentOrderRepository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(this::isPayPalOrder)
+                .filter(order -> !order.isConsolidatedCheckout())
                 .map(PaymentOrder::getProviderAccountPublicId)
                 .filter(value -> !isBlank(value))
                 .forEach(sellerIds::add);
@@ -695,6 +696,7 @@ public class PayPalMarketplaceService {
         String resolvedSellerId = resolveSellerAccountId(sellerId);
         PaymentOrder latestOrder = paymentOrderRepository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(this::isPayPalOrder)
+                .filter(order -> !order.isConsolidatedCheckout())
                 .filter(order -> resolvedSellerId.equals(order.getProviderAccountPublicId()))
                 .findFirst()
                 .orElse(null);

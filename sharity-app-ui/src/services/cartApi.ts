@@ -2,6 +2,7 @@
 // The screen consumes the buyer-commerce cart contract returned by marketplace-service.
 
 import type { CartResponse, CartSellerGroup, CartItem, CartValidationIssue, CheckoutPreviewResponse } from '../features/cart/cartCheckoutTypes';
+import { sessionFetch as fetch } from './sessionFetch';
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const marketplaceCommerceBaseUrl = `${bffBaseUrl}/api/marketplace-service`;

@@ -212,6 +212,8 @@ public class AssetStorageService {
                 || key.contains("..") || key.contains("\\") || key.contains("%")) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
         }
+
+
         long limit = Math.min(maxFileSizeBytes, 5 * 1024 * 1024);
         try {
             HttpResponse<InputStream> response = HTTP.send(HttpRequest.newBuilder(URI.create(base + "/" + encodePath(key)))
@@ -242,6 +244,24 @@ public class AssetStorageService {
         }
     }
 
+    public String publicListingImageUrl(String imageKey) {
+        String key = imageKey == null ? "" : imageKey.trim();
+        if (key.isBlank()) return null;
+        if (key.startsWith("https://") || key.startsWith("http://")) return key;
+        String base;
+        try {
+            base = readPublicBaseUrl();
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) return null;
+            throw exception;
+        }
+        if (key.startsWith(base + "/")) key = key.substring(base.length() + 1);
+        if (!(key.startsWith("listings/") || key.matches("sellers/[^/]+/listings/[^/]+/.+"))
+                || key.contains("..") || key.contains("\\") || key.contains("%")) {
+            return null;
+        }
+        return base + "/" + encodePath(key);
+    }
     // Prefer the active provider row in the DB; fall back to app.assets.public-base-url.
     private String readPublicBaseUrl() {
         String base = assetStorageProviderRepository.findByProviderCodeAndActiveTrue(providerCode)

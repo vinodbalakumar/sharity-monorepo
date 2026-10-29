@@ -9,6 +9,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -38,11 +40,18 @@ public class PaymentEventOutbox {
     @Column(name = "aggregate_public_id", nullable = false, length = 36)
     private String aggregatePublicId;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload_json", nullable = false, columnDefinition = "JSON")
     private String payloadJson;
 
     @Column(name = "processing_status", nullable = false, length = 30)
     private String processingStatus;
+
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount = 0;
+
+    @Column(name = "next_attempt_at")
+    private LocalDateTime nextAttemptAt;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

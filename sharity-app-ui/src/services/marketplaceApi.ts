@@ -1,4 +1,5 @@
 import type { MarketplaceHomeResponse, MarketplaceListing } from '../types/marketplace';
+import { sessionFetch as fetch } from './sessionFetch';
 import { resolvePublicBaseUrl } from './publicUrl';
 import type { StorefrontSection } from './storefrontDiscovery';
 

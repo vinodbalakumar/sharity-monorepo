@@ -1,4 +1,5 @@
 import { getBffCsrfToken } from './sessionService';
+import { sessionFetch as fetch } from './sessionFetch';
 import { resolvePublicBaseUrl } from './publicUrl';
 
 const platformAuthBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_AUTH_USER_BASE_URL, '/bff/api/authorization-server/api/v1');

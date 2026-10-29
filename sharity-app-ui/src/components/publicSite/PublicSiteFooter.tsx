@@ -29,7 +29,7 @@ export function PublicSiteFooter({ groups = footerGroups, onLinkPress, visitorCo
     else if (link.route) {
       if (['marketplaces','digitalMarketplace','jewelryMarketplace'].includes(link.route)) {
         appState$.marketplace.searchQuery.set('');
-        appState$.marketplace.filters.categoryCode.set('');
+        appState$.marketplace.filters.categoryCodes.set([]);
       }
       navigation?.navigate(link.route);
     }

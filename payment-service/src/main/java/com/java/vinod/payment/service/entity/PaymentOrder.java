@@ -19,6 +19,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payment_order")
 public class PaymentOrder {
+    public static final String ORDER_KIND_SINGLE_LISTING = "SINGLE_LISTING";
+    public static final String ORDER_KIND_CONSOLIDATED_CHECKOUT = "CONSOLIDATED_CHECKOUT";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,8 +49,17 @@ public class PaymentOrder {
     private String paymentStatus;
     @Column(name = "payout_eligibility_status", nullable = false, length = 40)
     private String payoutEligibilityStatus;
+    @Column(name = "order_kind", nullable = false, length = 40)
+    private String orderKind = ORDER_KIND_SINGLE_LISTING;
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    /**
+     * Returns true when this order is the parent charge of a consolidated multi-seller checkout.
+     */
+    public boolean isConsolidatedCheckout() {
+        return ORDER_KIND_CONSOLIDATED_CHECKOUT.equals(orderKind);
+    }
 }

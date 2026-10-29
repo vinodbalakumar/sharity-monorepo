@@ -1,4 +1,5 @@
 import { getMarketplaceListing } from './marketplaceApi';
+import { sessionFetch as fetch } from './sessionFetch';
 import { getBffCsrfToken } from './sessionService';
 import { resolvePublicBaseUrl } from './publicUrl';
 import { placeholderImageUrl, resolveMockImageUrl } from '../utils/mockImages';
@@ -203,5 +204,4 @@ function formatDateLabel(isoDate: string) {
     ? isoDate
     : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
-
 

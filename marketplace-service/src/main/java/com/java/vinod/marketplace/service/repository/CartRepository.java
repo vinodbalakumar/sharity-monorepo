@@ -10,6 +10,10 @@ import java.util.Optional;
 public interface CartRepository extends JpaRepository<Cart, Long> {
     Optional<Cart> findByCartId(String cartId);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Cart c WHERE c.cartId = :cartId")
+    Optional<Cart> findByCartIdForUpdate(@Param("cartId") String cartId);
+
     Optional<Cart> findByCustomerIdAndCartStatus(String customerId, String cartStatus);
 
     @Query("SELECT c FROM Cart c WHERE c.customerId = :customerId AND c.cartStatus = 'ACTIVE' ORDER BY c.lastModifiedAt DESC LIMIT 1")

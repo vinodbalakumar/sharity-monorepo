@@ -1,4 +1,5 @@
 import { resolvePublicBaseUrl } from './publicUrl';
+import { sessionFetch as fetch } from './sessionFetch';
 
 const authBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_AUTH_BASE_URL, '/authorization-server/api/v1/auth');
 

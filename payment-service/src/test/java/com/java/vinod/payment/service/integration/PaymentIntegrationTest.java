@@ -6,6 +6,7 @@ import com.java.vinod.payment.service.entity.PaymentOrder;
 import com.java.vinod.payment.service.repository.PaymentEventOutboxRepository;
 import com.java.vinod.payment.service.repository.PaymentOrderRepository;
 import com.java.vinod.payment.service.service.PaymentService;
+import com.java.vinod.payment.service.service.PaymentEventOutboxService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ public class PaymentIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private PaymentEventOutboxRepository paymentEventOutboxRepository;
+
+    @Autowired
+    private PaymentEventOutboxService outboxService;
 
     @Test
     @DisplayName("Should create payment order and capture payment successfully")
@@ -236,6 +240,7 @@ public class PaymentIntegrationTest extends IntegrationTestSupport {
     }
 
     private void assertProcessedOutboxEvents(String paymentOrderPublicId, String... eventTypes) {
+        outboxService.dispatchPendingEvents();
         List<PaymentEventOutbox> events = paymentEventOutboxRepository.findAll().stream()
             .filter(event -> paymentOrderPublicId.equals(event.getAggregatePublicId()))
             .toList();

@@ -2,9 +2,11 @@ package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.BuyerCommerceFlowDtos;
 import com.java.vinod.marketplace.service.dto.MarketplaceDtos;
+import com.java.vinod.marketplace.service.service.MarketplaceCheckoutService;
 import com.java.vinod.marketplace.service.service.MarketplaceMasterService;
 import com.java.vinod.marketplace.service.service.MarketplaceService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,11 +33,18 @@ import java.util.Map;
 public class BuyerCommerceFlowController {
     private final MarketplaceService marketplaceService;
     private final MarketplaceMasterService marketplaceMasterService;
+    private final MarketplaceCheckoutService marketplaceCheckoutService;
 
     public BuyerCommerceFlowController(MarketplaceService marketplaceService,
-                                       MarketplaceMasterService marketplaceMasterService) {
+                                       MarketplaceMasterService marketplaceMasterService,
+                                       MarketplaceCheckoutService marketplaceCheckoutService) {
         this.marketplaceService = marketplaceService;
         this.marketplaceMasterService = marketplaceMasterService;
+        this.marketplaceCheckoutService = marketplaceCheckoutService;
+    }
+
+    private void rejectConsolidated(String... ids) {
+        marketplaceCheckoutService.rejectConsolidatedRefundOrCancel(ids);
     }
 
     @GetMapping("/api/profile/completion")
@@ -630,6 +640,7 @@ public class BuyerCommerceFlowController {
     public BuyerCommerceFlowDtos.RefundRequestResponse submitOrderRefund(
             @PathVariable String orderId,
             @RequestBody(required = false) BuyerCommerceFlowDtos.SubmitRefundRequest request) {
+        rejectConsolidated(orderId, request == null ? null : request.scopeId());
         return BuyerCommerceFlowDtos.refundRequestAction("REFUND_REQUEST_SUBMITTED",
                 "Refund request submitted for review.", "/refunds/refund-067");
     }
@@ -644,6 +655,7 @@ public class BuyerCommerceFlowController {
     public BuyerCommerceFlowDtos.RefundRequestResponse submitSellerGroupRefund(
             @PathVariable String orderId, @PathVariable String sellerOrderId,
             @RequestBody(required = false) BuyerCommerceFlowDtos.SubmitRefundRequest request) {
+        rejectConsolidated(orderId, sellerOrderId, request == null ? null : request.scopeId());
         return BuyerCommerceFlowDtos.refundRequestAction("REFUND_REQUEST_SUBMITTED",
                 "Seller group refund request submitted.", "/refunds/refund-067");
     }
@@ -658,6 +670,7 @@ public class BuyerCommerceFlowController {
     public BuyerCommerceFlowDtos.RefundRequestResponse submitItemRefund(
             @PathVariable String orderId, @PathVariable String orderItemId,
             @RequestBody(required = false) BuyerCommerceFlowDtos.SubmitRefundRequest request) {
+        rejectConsolidated(orderId, orderItemId, request == null ? null : request.scopeId());
         return BuyerCommerceFlowDtos.refundRequestAction("REFUND_REQUEST_SUBMITTED",
                 "Item refund request submitted.", "/refunds/refund-067");
     }
@@ -937,6 +950,7 @@ public class BuyerCommerceFlowController {
 
     @PostMapping("/api/seller/orders/{sellerOrderId}/cancel")
     public BuyerCommerceFlowDtos.SellerFulfillmentActionResponse cancelSellerOrder(@PathVariable String sellerOrderId) {
+        rejectConsolidated(sellerOrderId);
         return BuyerCommerceFlowDtos.sellerFulfillmentAction("SELLER_ORDER_CANCEL_REQUESTED",
                 "Seller order cancellation requested.", "/seller/orders/" + sellerOrderId);
     }
@@ -1086,6 +1100,7 @@ public class BuyerCommerceFlowController {
 
     @PostMapping("/api/buyer/orders/{orderId}/cancel")
     public BuyerCommerceFlowDtos.BuyerOrderDetailActionResponse cancelBuyerOrder(@PathVariable String orderId) {
+        rejectConsolidated(orderId);
         return BuyerCommerceFlowDtos.buyerOrderDetailAction("BUYER_ORDER_CANCEL_REQUESTED",
                 "Order cancellation requested.", "/orders/" + orderId);
     }
@@ -1093,6 +1108,7 @@ public class BuyerCommerceFlowController {
     @PostMapping("/api/buyer/orders/{orderId}/seller-groups/{sellerOrderId}/cancel")
     public BuyerCommerceFlowDtos.BuyerOrderDetailActionResponse cancelBuyerSellerGroup(
             @PathVariable String orderId, @PathVariable String sellerOrderId) {
+        rejectConsolidated(orderId, sellerOrderId);
         return BuyerCommerceFlowDtos.buyerOrderDetailAction("BUYER_SELLER_GROUP_CANCEL_REQUESTED",
                 "Seller group cancellation requested.", "/orders/" + orderId + "/seller-groups/" + sellerOrderId);
     }
@@ -1158,7 +1174,8 @@ public class BuyerCommerceFlowController {
     @PostMapping("/api/checkout/from-cart")
     public BuyerCommerceFlowDtos.CheckoutReviewResponse createCheckoutFromCart(
             @RequestBody(required = false) BuyerCommerceFlowDtos.CreateCheckoutFromCartRequest request) {
-        return BuyerCommerceFlowDtos.mockCheckout("checkout-058");
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Consolidated multi-seller checkout is not enabled. No order or payment was created.");
     }
 
     @GetMapping("/api/checkout/{checkoutId}")
@@ -1237,6 +1254,7 @@ public class BuyerCommerceFlowController {
 
     @PostMapping("/api/checkout/{checkoutId}/cancel")
     public BuyerCommerceFlowDtos.CheckoutActionResponse cancelCheckout(@PathVariable String checkoutId) {
+        rejectConsolidated(checkoutId);
         return BuyerCommerceFlowDtos.checkoutAction(checkoutId, "CHECKOUT_CANCELLED",
                 "Checkout cancelled and buyer can return to cart.");
     }
@@ -1374,6 +1392,7 @@ public class BuyerCommerceFlowController {
 
     @PostMapping("/api/orders/{orderId}/cancel")
     public BuyerCommerceFlowDtos.OrderResultActionResponse cancelOrder(@PathVariable String orderId) {
+        rejectConsolidated(orderId);
         return BuyerCommerceFlowDtos.orderAction("ORDER_CANCEL_REQUESTED",
                 "Order cancellation requested.", "/orders/" + orderId + "/status");
     }
@@ -1381,6 +1400,7 @@ public class BuyerCommerceFlowController {
     @PostMapping("/api/orders/{orderId}/seller-groups/{sellerOrderId}/cancel")
     public BuyerCommerceFlowDtos.OrderResultActionResponse cancelSellerGroup(
             @PathVariable String orderId, @PathVariable String sellerOrderId) {
+        rejectConsolidated(orderId, sellerOrderId);
         return BuyerCommerceFlowDtos.orderAction("SELLER_GROUP_CANCEL_REQUESTED",
                 "Seller group cancellation requested.", "/orders/" + orderId + "/seller-groups");
     }

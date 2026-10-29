@@ -1,4 +1,5 @@
 import { appStorage } from '../storage/storage';
+import { sessionFetch as fetch } from './sessionFetch';
 import { getBffCsrfToken } from './sessionService';
 import { resolvePublicBaseUrl } from './publicUrl';
 

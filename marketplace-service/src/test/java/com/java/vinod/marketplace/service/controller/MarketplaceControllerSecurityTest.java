@@ -98,6 +98,17 @@ class MarketplaceControllerSecurityTest {
         }
 
         @Bean
+        com.java.vinod.marketplace.service.service.MarketplaceCheckoutService marketplaceCheckoutService() {
+            return mock(com.java.vinod.marketplace.service.service.MarketplaceCheckoutService.class);
+        }
+
+        @Bean
+        MarketplaceCheckoutController marketplaceCheckoutController(
+                com.java.vinod.marketplace.service.service.MarketplaceCheckoutService checkoutService) {
+            return new MarketplaceCheckoutController(checkoutService);
+        }
+
+        @Bean
         MarketplaceAdminController marketplaceAdminController(MarketplaceService marketplaceService) {
             return new MarketplaceAdminController(marketplaceService);
         }
@@ -135,6 +146,38 @@ class MarketplaceControllerSecurityTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+    }
+
+    @Test
+    void consolidatedCartCheckoutRequiresAuthenticationAndForwardsIdempotencyKey() throws Exception {
+        var checkoutService = context.getBean(com.java.vinod.marketplace.service.service.MarketplaceCheckoutService.class);
+        String body = "{\"items\":[{\"cartItemId\":\"item-a\",\"quantity\":2,\"unitPrice\":19.99,\"currencyCode\":\"USD\"}]}";
+        mockMvc.perform(post("/api/v1/marketplace/cart/cart-1/checkout").header("Idempotency-Key", "checkout-key-1234567890")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/marketplace/checkouts/checkout-1")).andExpect(status().isUnauthorized());
+
+        var response = new com.java.vinod.marketplace.service.dto.MarketplaceCheckoutDtos.CheckoutResponse("checkout-1", "PAYMENT_PENDING",
+                "USD", new java.math.BigDecimal("39.98"), new java.math.BigDecimal("2.00"), new java.math.BigDecimal("39.98"),
+                new java.math.BigDecimal("37.98"), List.of());
+        when(checkoutService.checkoutCart(org.mockito.ArgumentMatchers.eq("cart-1"), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("checkout-key-1234567890"), org.mockito.ArgumentMatchers.any())).thenReturn(response);
+        when(checkoutService.checkout(org.mockito.ArgumentMatchers.eq("checkout-1"), org.mockito.ArgumentMatchers.any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/cart-1/checkout").with(jwt().jwt(token -> token.subject("buyer")))
+                        .header("Idempotency-Key", "checkout-key-1234567890")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.checkoutPublicId").value("checkout-1"))
+                .andExpect(jsonPath("$.customerTotalAmount").value(39.98))
+                .andExpect(jsonPath("$.providerAmount").value(37.98));
+        mockMvc.perform(get("/api/v1/marketplace/checkouts/checkout-1").with(jwt().jwt(token -> token.subject("buyer"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAYMENT_PENDING"));
+        mockMvc.perform(post("/api/v1/marketplace/cart/cart-1/checkout").with(jwt().jwt(token -> token.subject("buyer")))
+                        .header("Idempotency-Key", "checkout-key-1234567890")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"items\":[]}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

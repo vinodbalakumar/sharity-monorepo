@@ -17,12 +17,15 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 
 abstract class IntegrationTestSupport {
     private static final Path PUBLIC_KEY_PATH = createPublicKeyFile();
     private static final HttpServer TEST_SERVER = createTestServer();
+    protected static final AtomicInteger WALLET_STATUS = new AtomicInteger(200);
+    protected static final AtomicInteger WALLET_REQUESTS = new AtomicInteger();
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -35,14 +38,19 @@ abstract class IntegrationTestSupport {
         registry.add("app.services.authorization-provider-eligibility-url", () -> testServerBaseUrl() + "/auth");
         registry.add("app.services.wallet-internal-url", IntegrationTestSupport::testServerBaseUrl);
         registry.add("app.internal.service-token", () -> "test-token");
+        registry.add("app.outbox.dispatch-delay-ms", () -> "3600000");
     }
 
     @BeforeEach
     void resetDatabase() {
+        WALLET_STATUS.set(200);
+        WALLET_REQUESTS.set(0);
         jdbcTemplate.update("DELETE FROM dispute_event");
         jdbcTemplate.update("DELETE FROM dispute_evidence");
         jdbcTemplate.update("DELETE FROM dispute");
         jdbcTemplate.update("DELETE FROM refund_transaction");
+        jdbcTemplate.update("DELETE FROM checkout_payment_allocation");
+        jdbcTemplate.update("DELETE FROM checkout_payment");
         jdbcTemplate.update("DELETE FROM provider_payout");
         jdbcTemplate.update("DELETE FROM payment_transaction");
         jdbcTemplate.update("DELETE FROM payment_webhook_event");
@@ -85,7 +93,8 @@ abstract class IntegrationTestSupport {
     }
 
     private static void handleWalletEvent(HttpExchange exchange) throws IOException {
-        writeJsonResponse(exchange, 200, "{}".getBytes(StandardCharsets.UTF_8));
+        WALLET_REQUESTS.incrementAndGet();
+        writeJsonResponse(exchange, WALLET_STATUS.get(), "{}".getBytes(StandardCharsets.UTF_8));
     }
 
     private static void writeJsonResponse(HttpExchange exchange, int statusCode, byte[] payload) throws IOException {
@@ -107,7 +116,9 @@ abstract class IntegrationTestSupport {
             String pem = "-----BEGIN PUBLIC KEY-----\n"
                     + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8)).encodeToString(publicKey.getEncoded())
                     + "\n-----END PUBLIC KEY-----\n";
-            Path path = Files.createTempFile("payment-integration-jwt-public", ".pem");
+            Path directory = Path.of("target", "test-keys");
+            Files.createDirectories(directory);
+            Path path = Files.createTempFile(directory, "payment-integration-jwt-public", ".pem");
             Files.writeString(path, pem, StandardCharsets.UTF_8);
             path.toFile().deleteOnExit();
             return path;

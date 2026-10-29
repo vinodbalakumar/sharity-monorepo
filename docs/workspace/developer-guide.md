@@ -84,6 +84,42 @@ and Expo configuration are documented in its
 
 ## Running services
 
+### Standalone local internal-service authentication
+
+Before starting Authorization, Marketplace, Payment and Wallet with the `local`
+profile, run this once from the repository root on Windows:
+
+```powershell
+.\tools\Initialize-LocalServiceToken.ps1
+```
+
+The script generates a random 256-bit shared token in
+`%USERPROFILE%\.sharity\local-internal-service.properties`, restricts file access
+to the current Windows user, and never prints the token or stores it in Git.
+Running it again preserves the existing token. All four services import this
+file only in the `local` profile; restart all four after initial setup.
+An explicitly configured `APP_INTERNAL_SERVICE_TOKEN` takes precedence: use
+the same nonblank value in every service's IDE run configuration, or remove
+those overrides to use the generated file consistently. Do not mix the two.
+Command-line or external profile overrides of `app.internal.service-token`
+must also agree across all services.
+
+On other operating systems, supply the same securely generated
+`APP_INTERNAL_SERVICE_TOKEN` to all four processes. QA and production do not
+import the local file; continue supplying credentials through deployment
+configuration (`INTERNAL_SERVICE_TOKEN` for the production profiles).
+Marketplace, Payment and Wallet now refuse to start with a blank internal
+token instead of starting with unusable internal APIs.
+
+Repeated Payment `POST route=unmapped status=401` entries about five seconds
+apart can be Marketplace outbox retries, not a missing controller. A missing
+or mismatched `X-Internal-Service-Token` is rejected before MVC selects a route.
+Restore matching credentials and restart the services; queued outbox commands
+retry automatically. Do not delete outbox rows, disable authentication, or
+substitute a user's bearer token for the internal shared token. If 401s
+persist, inspect the caller's configuration and distinguish internal token
+failures from public API JWT validation failures.
+
 For standalone Spring Boot execution, set datasource, JWT/JWKS and any required
 integration settings before starting the service. Start with the service's
 README and `src/main/resources/application.properties`; deployment profiles

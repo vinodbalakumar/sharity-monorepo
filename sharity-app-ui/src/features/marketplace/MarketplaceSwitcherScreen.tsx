@@ -1,6 +1,6 @@
 import { InteriorShell } from "../../components/appShell";
 import type { AppRoute } from "../../types/navigation";
-import { StorefrontContent } from "./StorefrontContent";
+import { MarketplaceCatalog } from "./MarketplaceCatalog";
 export function MarketplaceSwitcherScreen({
   onNavigate,
   onOpenDigitalProduct,
@@ -14,8 +14,7 @@ export function MarketplaceSwitcherScreen({
       title="All products"
       onNavigate={onNavigate}
     >
-      <StorefrontContent
-        showHero={false}
+      <MarketplaceCatalog
         onNavigate={onNavigate}
         onOpenProduct={onOpenDigitalProduct}
       />

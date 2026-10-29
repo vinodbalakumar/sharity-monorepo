@@ -4,8 +4,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { InteriorShell } from '../../components/appShell';
 import { CommerceHeader, commerceMoney, commerceStyles as s, deliveryLabel, SummaryRow } from '../../components/commerce/CommerceLayout';
 import { AppButton } from '../../components/ui';
+import { ProductArtwork } from '../../components/marketplace/ProductArtwork';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-import { changeStoredCartItem, getStoredCart, removeStoredCartItem, selectPurchase, type StoredCart } from '../../services/commerceApi';
+import { changeStoredCartItem, getStoredCart, removeStoredCartItem, type StoredCart } from '../../services/commerceApi';
+import { checkoutConfirmed, physicalCartIssue, prepareCartCheckout, readCartCheckout, type CartCheckoutAttempt } from '../../services/physicalCartCheckout';
 import { colors } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
 
@@ -16,9 +18,16 @@ export function CartScreen({ onNavigate }: { onNavigate: (route: AppRoute) => vo
   const [cart, setCart] = useState<StoredCart | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [savedCheckout, setSavedCheckout] = useState<CartCheckoutAttempt | null>(null);
   const load = useCallback(async () => {
     setBusy(true); setError('');
-    try { setCart(await getStoredCart()); }
+    try {
+      const [current, saved] = await Promise.allSettled([getStoredCart(), readCartCheckout()]);
+      if (saved.status === 'fulfilled') setSavedCheckout(saved.value);
+      if (current.status === 'fulfilled') setCart(current.value);
+      else throw current.reason;
+      if (saved.status === 'rejected') throw saved.reason;
+    }
     catch (ex) { setError(ex instanceof Error ? ex.message : 'Unable to load your cart.'); }
     finally { setBusy(false); }
   }, []);
@@ -33,10 +42,20 @@ export function CartScreen({ onNavigate }: { onNavigate: (route: AppRoute) => vo
     } catch (ex) { setError(ex instanceof Error ? ex.message : 'Unable to update your cart.'); }
     finally { setBusy(false); }
   }
+  async function reviewCart() {
+    if (!cart || busy) return;
+    setBusy(true); setError('');
+    try { await prepareCartCheckout(cart); onNavigate('cartCheckout'); }
+    catch (ex) { setError(ex instanceof Error ? ex.message : 'Unable to prepare cart checkout.'); }
+    finally { setBusy(false); }
+  }
+  const resume = savedCheckout?.submitted && (!savedCheckout.checkout || !checkoutConfirmed(savedCheckout.checkout.status));
+  const issue = cart ? physicalCartIssue(cart) : '';
   const money = (value: number) => commerceMoney(value, cart?.currencyCode);
   return <InteriorShell title="Your cart" onNavigate={onNavigate}><View style={s.page} testID="commerce-cart">
     <CommerceHeader stage={1} title="Your cart" subtitle="Review your items and get ready for your next find." onBack={() => onNavigate('marketplaces')} />
     {error ? <View style={s.errorBox}><Text accessibilityRole="alert" style={s.error}>{error}</Text><AppButton variant="outline" disabled={busy} onPress={load}>Retry cart</AppButton></View> : null}
+    {resume ? <View style={s.notice}><Text style={s.value}>Your previous physical checkout is saved</Text><Text style={s.body}>Resolve its payment before starting another checkout. You can resume even if its cart has already been consumed.</Text><AppButton onPress={() => onNavigate('cartCheckout')}>Resume saved cart checkout</AppButton></View> : null}
     {!cart ? !error && <View style={[s.card, s.empty]}><ActivityIndicator color={colors.primary} /><Text style={s.body}>Loading your cart…</Text></View> : cart.items.length === 0 ? <View style={[s.card, s.empty]}>
       <View style={styles.emptyIcon}><Ionicons name="bag-handle-outline" size={40} color={colors.primary} /></View><Text style={s.heading}>Your cart is empty.</Text><Text style={[s.body, { textAlign: 'center' }]}>Discover your next find in the marketplace.</Text><AppButton onPress={() => onNavigate('marketplaces')}>Explore marketplace</AppButton>
     </View> : <View style={[s.layout, compact && s.mobileLayout]}>
@@ -44,7 +63,7 @@ export function CartScreen({ onNavigate }: { onNavigate: (route: AppRoute) => vo
         <View style={styles.sectionHeading}><Text style={s.heading}>Your items</Text><Text style={styles.count}>{cart.items.length} {cart.items.length === 1 ? 'listing' : 'listings'}</Text>{busy && <ActivityIndicator size="small" color={colors.primary} />}</View>
         {cart.items.map(item => <View style={[s.card, phone && s.mobileCard]} key={item.cartItemId}>
           <View style={styles.itemRow}>
-            <View style={[styles.artwork, phone && styles.artworkSmall]}><Ionicons name={item.deliveryType === 'SHIPPING' ? 'cube-outline' : 'gift-outline'} size={phone ? 28 : 38} color={colors.primary} /></View>
+            <ProductArtwork item={{ title: item.listingTitle, imageUrl: item.imageUrl }} style={[styles.artwork, phone && styles.artworkSmall]} compact />
             <View style={styles.itemDetails}><Text style={s.heading}>{item.listingTitle}</Text><Text style={s.small}>{deliveryLabel(item.deliveryType)}</Text><Text style={s.value}>{money(item.unitPrice)} <Text style={s.small}>/ item</Text></Text></View>
           </View>
           <View style={styles.controls}>
@@ -56,11 +75,10 @@ export function CartScreen({ onNavigate }: { onNavigate: (route: AppRoute) => vo
             <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.listingTitle}`} disabled={busy} onPress={() => change(item.cartItemId, 0)} style={styles.remove}><Ionicons name="trash-outline" size={16} color={colors.textSecondary} /><Text style={s.small}>Remove</Text></Pressable>
             <Text style={[s.heading, { marginLeft: 'auto' }]}>{money(item.lineTotal)}</Text>
           </View>
-          <View style={styles.purchaseRow}><Text style={[s.small, { flex: 1, minWidth: 120 }]}>{item.quantity !== 1 ? 'Set quantity to one to review this purchase.' : 'Review this listing and its latest price at checkout.'}</Text><AppButton disabled={busy || item.quantity !== 1} onPress={() => { selectPurchase(item.listingId); onNavigate('checkout'); }}>Review purchase</AppButton></View>
         </View>)}
       </View>
       <View style={[s.sidebar, compact && s.mobileSidebar]}>
-        <View style={[s.card, phone && s.mobileCard]} testID="cart-summary"><Text style={s.heading}>Cart summary</Text><SummaryRow label={`Items (${cart.totalItems})`} value={money(cart.subtotal)} /><SummaryRow label="Cart subtotal" value={money(cart.subtotal)} total /><Text style={s.small}>Shipping, fees and final availability are reviewed for each purchase.</Text><View style={s.notice}><Text style={s.value}>One listing at a time</Text><Text style={s.small}>Use “Review purchase” beside an item to continue. Other items stay in your cart.</Text></View><AppButton variant="outline" onPress={() => onNavigate('marketplaces')}>Continue shopping</AppButton></View>
+        <View style={[s.card, phone && s.mobileCard]} testID="cart-summary"><Text style={s.heading}>Cart summary</Text><SummaryRow label={`Items (${cart.totalItems})`} value={money(cart.subtotal)} /><SummaryRow label="Buyer total" value={money(cart.subtotal)} total /><Text style={s.small}>All physical items and quantities are included in one buyer payment. Separate listing orders remain visible for each seller. The 5% fee is deducted from sellers’ proceeds, not added to your total.</Text>{issue ? <Text style={s.warningText}>{issue}</Text> : null}{!resume && <AppButton disabled={busy || !!issue} loading={busy} onPress={reviewCart}>Review physical cart</AppButton>}<AppButton variant="outline" onPress={() => onNavigate('marketplaces')}>Continue shopping</AppButton></View>
         <View style={styles.help}><Ionicons name="help-circle-outline" size={20} color={colors.textSecondary} /><Text style={[s.small, { flex: 1 }]}>Need a hand with your order?</Text><Pressable accessibilityRole="button" onPress={() => onNavigate('support')} style={styles.support}><Text style={s.link}>Get help</Text></Pressable></View>
       </View>
     </View>}

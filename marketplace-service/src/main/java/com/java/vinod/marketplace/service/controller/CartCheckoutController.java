@@ -2,6 +2,7 @@ package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.CartCheckoutDtos;
 import com.java.vinod.marketplace.service.dto.BuyerCommerceFlowDtos;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Stateless mocked multi-seller Cart & Checkout API for STORY-035.
@@ -104,17 +106,12 @@ public class CartCheckoutController {
 
     @PostMapping("/api/cart/checkout")
     public BuyerCommerceFlowDtos.StartCheckoutResponse checkoutAllEligible() {
-        return new BuyerCommerceFlowDtos.StartCheckoutResponse(true, "checkout-058",
-                "/checkout/review", java.util.List.of("cart-item-057-a", "cart-item-057-b"),
-                java.util.List.of("store-digital-hub", "store-tech-deals"),
-                "Checkout started for eligible cart items.");
+        throw multiSellerCheckoutUnavailable();
     }
 
     @PostMapping("/api/cart/seller-groups/{sellerStoreId}/checkout")
     public BuyerCommerceFlowDtos.StartCheckoutResponse checkoutSellerGroup(@PathVariable String sellerStoreId) {
-        return new BuyerCommerceFlowDtos.StartCheckoutResponse(true, "checkout-058-" + sellerStoreId,
-                "/checkout/review", java.util.List.of("cart-item-057-a"), java.util.List.of(sellerStoreId),
-                "Checkout started for seller group.");
+        throw multiSellerCheckoutUnavailable();
     }
 
     @PostMapping("/api/cart/validate")
@@ -141,19 +138,17 @@ public class CartCheckoutController {
     @PostMapping("/api/checkout/session")
     public CartCheckoutDtos.CreateCheckoutSessionResponse createCheckoutSession(
             @RequestBody CartCheckoutDtos.CreateCheckoutSessionRequest request) {
-        return new CartCheckoutDtos.CreateCheckoutSessionResponse("checkout-session-1000",
-                request.acceptedDigitalTerms(), request.acceptedDigitalTerms(),
-                "PROVIDER_DECIDED_GROUPED_MARKETPLACE_AUTHORIZATION", new java.math.BigDecimal("282.48"),
-                "USD", "/checkout/payment-authorization/start",
-                request.acceptedDigitalTerms() ? "Checkout session created." : "Digital terms required.");
+        throw multiSellerCheckoutUnavailable();
     }
 
     @PostMapping("/api/checkout/payment-authorization/start")
     public CartCheckoutDtos.CreateCheckoutSessionResponse startPaymentAuthorization(
             @RequestBody(required = false) Object request) {
-        return new CartCheckoutDtos.CreateCheckoutSessionResponse("checkout-session-1000",
-                true, true, "PROVIDER_DECIDED_GROUPED_MARKETPLACE_AUTHORIZATION",
-                new java.math.BigDecimal("282.48"), "USD", "/payments/authorize",
-                "Payment authorization ready.");
+        throw multiSellerCheckoutUnavailable();
+    }
+
+    private ResponseStatusException multiSellerCheckoutUnavailable() {
+        return new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "Consolidated multi-seller checkout is not enabled. No order or payment was created.");
     }
 }

@@ -104,14 +104,13 @@ test('availability failure retains listing details and recovers with consent int
 test('cart review opens checkout and the agreement label enables confirmation', async ({ page }) => {
   await fixture(page);
   await page.goto('/app/cart');
-  await page.getByRole('button', { name: 'Review purchase' }).click();
-  await expect(page.getByTestId('checkout-summary')).toBeVisible();
-  const submit = page.getByRole('button', { name: 'Create demo order' });
+  await page.getByRole('button', { name: 'Review physical cart' }).click();
+  await expect(page.getByTestId('physical-checkout-summary')).toBeVisible();
+  const submit = page.getByRole('button', { name: 'Create demo cart checkout' });
   await expect(submit).toBeDisabled();
-  await expect(page.getByText('Accept the marketplace policies to enable your order.')).toBeVisible();
-  await page.getByRole('button', { name: 'Toggle marketplace policy agreement' }).click();
+  await page.getByRole('checkbox', { name: 'Accept physical cart policies' }).check();
   await expect(submit).toBeEnabled();
-  await page.getByRole('button', { name: 'Toggle marketplace policy agreement' }).click();
+  await page.getByRole('checkbox', { name: 'Accept physical cart policies' }).uncheck();
   await expect(submit).toBeDisabled();
 });
 
@@ -130,8 +129,8 @@ for (const width of [320, 390, 768, 1440]) test(`commerce layouts fit at ${width
   await expect(page.getByTestId('cart-summary')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({ path: info.outputPath(`cart-${width}.png`), fullPage: true });
-  await page.getByRole('button', { name: 'Review purchase' }).click();
-  await expect(page.getByTestId('checkout-summary')).toBeVisible();
+  await page.getByRole('button', { name: 'Review physical cart' }).click();
+  await expect(page.getByTestId('physical-checkout-summary')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({ path: info.outputPath(`checkout-${width}.png`), fullPage: true });
 });
@@ -141,9 +140,9 @@ test('cart quantity and removal reflect API state', async ({ page }) => {
   await expect(page.getByText('Steam gift card', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Increase quantity' }).click();
   await expect(page.getByLabel('Quantity', { exact: true })).toHaveText('2');
-  await expect(page.getByRole('button', { name: 'Review purchase' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Review physical cart' })).toBeEnabled();
   await page.getByRole('button', { name: 'Decrease quantity' }).click();
-  await expect(page.getByRole('button', { name: 'Review purchase' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Review physical cart' })).toBeEnabled();
   await page.getByRole('button', { name: 'Remove Steam gift card' }).click();
   await expect(page.getByText('Your cart is empty.')).toBeVisible();
 });
@@ -161,10 +160,10 @@ test('catalog filters preserve layout when resized and clear back to backend lis
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   }
-  const search = page.getByRole('textbox', { name: 'Search Digital discoveries' });
+  const search = page.getByLabel('Search marketplace', { exact: true });
   await search.fill('not found');
-  await expect(page.getByText('No matching listings')).toBeVisible();
-  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(page.getByText('No matching products')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear search and filters' }).click();
   await expect(page.getByTestId('catalog-product')).toHaveCount(1);
   expect(calls.some(path => path.endsWith('/listings'))).toBe(true);
 });

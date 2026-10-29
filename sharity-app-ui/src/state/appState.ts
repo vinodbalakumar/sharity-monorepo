@@ -33,6 +33,7 @@ export const appState$ = observable({
       maxPrice: 999,
       verifiedSellersOnly: false,
       categoryCode: '',
+      categoryCodes: [] as string[],
       verticalCode: '',
       deliveryType: ''
     },

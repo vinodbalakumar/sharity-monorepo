@@ -3,9 +3,9 @@ import { appStorage } from '../storage/storage';
 import { beginCartRead, hasCartOwner, publishCartCount } from '../state/cartBadge';
 
 const base = '/api/marketplace-service/api/v1';
-export type StoredCartItem = { cartItemId: string; listingId: string; listingTitle: string; quantity: number; unitPrice: number; lineTotal: number; deliveryType: string };
+export type StoredCartItem = { cartItemId: string; listingId: string; listingTitle: string; quantity: number; unitPrice: number; lineTotal: number; deliveryType: string; productType?: string; currencyCode?: string; imageUrl?: string | null };
 export type StoredCart = { cartId: string; totalItems: number; subtotal: number; discountAmount: number; taxAmount: number; total: number; currencyCode: string; items: StoredCartItem[] };
-export type PurchaseOrder = { publicId: string; listingPublicId: string; orderStatus: string; paymentStatus: string; fulfillmentStatus: string; payoutStatus: string; customerTotalAmount: number; currencyCode: string; createdAt: string };
+export type PurchaseOrder = { publicId: string; listingPublicId: string; orderStatus: string; paymentStatus: string; fulfillmentStatus: string; payoutStatus: string; customerTotalAmount: number; currencyCode: string; createdAt: string; quantity?: number };
 export async function getStoredCart() {
   const ticket = beginCartRead();
   try {

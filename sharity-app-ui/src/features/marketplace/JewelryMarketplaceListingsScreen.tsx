@@ -116,7 +116,7 @@ export function JewelryMarketplaceListingsScreen({ onNavigate, onOpenListing }: 
             action="Clear Filters"
             onAction={() => {
               appState$.marketplace.searchQuery.set('');
-              appState$.marketplace.filters.set({ minPrice: 0, maxPrice: 999, verifiedSellersOnly: false, categoryCode: '', verticalCode: '', deliveryType: '' });
+              appState$.marketplace.filters.set({ minPrice: 0, maxPrice: 999, verifiedSellersOnly: false, categoryCode: '', categoryCodes: [], verticalCode: '', deliveryType: '' });
             }}
           />
         ) : (
@@ -154,7 +154,7 @@ function SearchAndFilters({
   sortBy
 }: {
   searchQuery: string;
-  filtersState: { minPrice: number; maxPrice: number; verifiedSellersOnly: boolean; categoryCode: string; verticalCode: string; deliveryType: string };
+  filtersState: { minPrice: number; maxPrice: number; verifiedSellersOnly: boolean; categoryCode: string; categoryCodes: string[]; verticalCode: string; deliveryType: string };
   sortBy: string;
 }) {
   const [minPrice, setMinPrice] = useState('0');

@@ -1,4 +1,5 @@
 import { readPaymentFlowContext, writePaymentFlowContext } from '../../services/paymentFlowStorage';
+import { sessionFetch as fetch } from '../../services/sessionFetch';
 import { readApiErrorMessage } from '../../services/sessionService';
 import type { PaymentAuthorizationScreenResponse } from './paymentAuthorizationTypes';
 

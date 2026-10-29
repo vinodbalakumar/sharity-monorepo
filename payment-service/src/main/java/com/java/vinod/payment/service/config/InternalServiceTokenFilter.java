@@ -21,6 +21,11 @@ public class InternalServiceTokenFilter extends OncePerRequestFilter {
      * Creates the filter using the configured internal service token.
      */
     public InternalServiceTokenFilter(@Value("${app.internal.service-token}") String internalServiceToken) {
+        if (internalServiceToken == null || internalServiceToken.isBlank()) {
+            throw new IllegalArgumentException("app.internal.service-token must not be blank. "
+                    + "Set the same APP_INTERNAL_SERVICE_TOKEN in all core services; "
+                    + "for standalone local development, run tools\\Initialize-LocalServiceToken.ps1.");
+        }
         this.internalServiceToken = internalServiceToken;
     }
 
@@ -32,7 +37,7 @@ public class InternalServiceTokenFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         if (request.getRequestURI().contains("/internal/")) {
             String token = request.getHeader("X-Internal-Service-Token");
-            if (internalServiceToken == null || internalServiceToken.isBlank() || !internalServiceToken.equals(token)) {
+            if (!internalServiceToken.equals(token)) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Valid internal service token is required");
                 return;
             }

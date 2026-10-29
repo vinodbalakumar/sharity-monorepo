@@ -2,6 +2,27 @@
 
 ## Deployment ownership
 
+### Durable outbox retries
+
+Marketplace-to-Payment and Payment-to-Wallet delivery is scheduler-only, not
+repeated per-event after-commit callbacks. Each scheduler pass selects at most
+20 due rows; the default poll interval is 5 seconds. Each failure persists
+`attempt_count` and `next_attempt_at`, doubling the retry delay from 5 seconds
+to a 5-minute ceiling, with 80-100% jitter. Polling can add up to one interval.
+The schedule survives restarts and repeated queue requests do not reset it.
+Attempts continue indefinitely to avoid dropping financial events. Permanent
+configuration/payload errors still need operator correction; retries are not
+a substitute for fixing the downstream service.
+
+Deploy both services with their new Flyway migrations before relying on retry
+state. Inspect `id`, `event_id`, `processing_status`, `attempt_count` and
+`next_attempt_at` in `marketplace_event_outbox` / `payment_event_outbox`.
+After correcting a downstream problem, an operator may clear `next_attempt_at`
+on a specific `FAILED` row to make it due at the next poll. Do not delete rows,
+change event IDs or mark undelivered events processed. Database row locks prevent
+concurrent dispatch, but delivery remains at-least-once across crashes; receiver
+idempotency must stay enabled. HTTP connect/read timeouts are 3/10 seconds.
+
 `deployments/` contains Docker Compose definitions, Dockerfiles, Nginx routing,
 environment-specific Spring properties, helper scripts, image plans and
 deployment runbooks. The active GitHub Actions workflow definitions for this
@@ -108,6 +129,75 @@ a rollback image as described in the deployment scripts.
 - Use TLS and trusted certificate validation for cross-host service calls.
   Do not expose internal health/diagnostics endpoints or model providers
   directly to the public internet.
+
+## Consolidated checkout operations
+
+The durable physical cart flow uses Marketplace V58 and Payment V25, each with
+paired MySQL/PostgreSQL scripts. At implementation, the previous highest
+versions were marketplace MySQL V56/PostgreSQL V57 and payment MySQL
+V24/PostgreSQL V23. Gaps are intentional; never renumber applied migrations.
+Back up and review the complete pending migration list, including historical
+demo reset/seeds, before connecting either service to a persistent database.
+The new migrations add structures and preserve legacy single-listing records.
+
+Roll out payment-service and V25 first, then marketplace-service and V58, then
+the frontend. Preserve rollback images, but do not drop new checkout/ledger
+tables or remove consumed cart orders when rolling back application code.
+Keep `COMMERCE_DEMO_PURCHASES_ENABLED` false for real-money environments.
+Standalone `local` profiles enable simulated checkout in both Marketplace and
+Payment by default; QA and production do not. An explicit value overrides either
+default and must match across both services. Restart both after changing it.
+Demo purchases additionally require payment's demo transaction gate and an
+allowed demo gateway. No payout rail is selected; do not enable a transfer job
+or translate `ELIGIBLE_LEDGER_ONLY` into `PAID`.
+
+Inspect these records read-only during reconciliation:
+
+```sql
+-- Marketplace database: parent totals and its individual listing orders.
+SELECT public_id, checkout_status, currency_code, customer_total_amount,
+       platform_fee_amount, provider_amount FROM marketplace_checkout;
+SELECT public_id, checkout_id, quantity, customer_total_amount,
+       platform_fee_amount, provider_expected_amount, payment_status,
+       payout_status FROM order_header WHERE checkout_id IS NOT NULL;
+SELECT event_id, aggregate_public_id, event_type, processing_status
+  FROM marketplace_event_outbox
+ WHERE event_type LIKE 'payment-checkout-%';
+
+-- Payment database: one buyer charge, reconciled ledger, no seller transfers.
+SELECT checkout_public_id, checkout_status, customer_charge_amount,
+       platform_fee_amount, provider_payable_amount FROM checkout_payment;
+SELECT checkout_payment_id, SUM(customer_charge_amount) AS buyer_total,
+       SUM(platform_fee_amount) AS fees, SUM(provider_payable_amount) AS sellers
+  FROM checkout_payment_allocation GROUP BY checkout_payment_id;
+SELECT marketplace_order_public_id, allocation_status, hold_reason
+  FROM checkout_payment_allocation;
+```
+
+`PENDING`/`FAILED` marketplace outbox commands are retried by the existing
+dispatcher. Restore payment connectivity/configuration and allow the same
+command to retry; never manually create a legacy payment for each child.
+Payment `CAPTURE_PENDING` means the gateway result is unresolved: retry with
+the same checkout and payload/idempotency key, not a new cart purchase.
+An owner refresh returns pending while creation is still queued; dependency
+outages or malformed responses surface as errors, not payment success.
+
+Acceptance and dispute commands wait for aggregate creation, then update only
+the targeted ledger allocation. Unsupported partial or whole consolidated
+refunds/cancellations return 409 without altering money or inventory; route
+them to support rather than marking them successful. Reserved stock is retained
+while capture is ambiguous. There is no automated reservation expiry or failed
+checkout compensation: investigate the gateway outcome and ledger before any
+manual correction. A real refund, cancellation, reservation-release workflow
+and selected payout rail require a separate reviewed implementation.
+
+No external processor transactions or purchases are required to validate this
+change. Local frontend checks use existing npm typecheck/Playwright runners.
+On this Windows workstation Maven was absent from PATH and its configured
+Nexus was inaccessible; local Java validation instead reused cached dependency
+jars with JDK 21/javac and JUnit. Those checks do not execute vendor migrations:
+run reviewed Flyway migrations against disposable MySQL and PostgreSQL
+databases in CI before deployment.
 - Treat date-stamped deployment and verification documents as evidence for
   their specific run only. Confirm current container image digests, database
   state, environment and external routing before declaring a rollout successful.

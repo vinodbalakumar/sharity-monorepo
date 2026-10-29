@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "@legendapp/state/react";
-import { useContext, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { PageScrollContext } from '../marketplace/ScrollPagination';
 import { MemberSessionContext } from "./MemberSessionContext";
 import { SignOutButton } from "./SignOutButton";
 import { PublicSiteFooter } from '../publicSite/PublicSiteFooter';
@@ -52,12 +53,22 @@ export function InteriorShell({
   title,
 }: Props) {
   const { isMobile, isCompactPhone } = useResponsiveLayout();
+  const scrollListeners = useRef(new Set<() => void>());
+  const scrollOffset = useRef(0);
+  const pageScroll = useRef<ScrollView>(null);
+  const subscribeToScroll = useCallback((listener: () => void) => {
+    scrollListeners.current.add(listener);
+    return () => { scrollListeners.current.delete(listener); };
+  }, []);
   const member = useContext(MemberSessionContext);
   const [sessionAuthenticated, setAuthenticated] = useState(false);
   const authenticated = member?.authenticated ?? sessionAuthenticated;
   const [isAdmin, setIsAdmin] = useState(false);
   const cartCount = useSelector(appState$.cart.count);
   const query = useSelector(appState$.marketplace.searchQuery);
+  useEffect(() => {
+    pageScroll.current?.scrollTo({ y: 0, animated: false });
+  }, [query]);
   useEffect(() => {
     let active = true;
     const refresh = () => { void getBrowserSessionSummary().then((session) => {
@@ -214,11 +225,21 @@ export function InteriorShell({
       <View style={styles.main}>
         {scrollable ? (
           <ScrollView
+            ref={pageScroll}
             testID="page-scroll"
+            onScroll={event => {
+              const nextOffset = event.nativeEvent.contentOffset.y;
+              const movingDown = nextOffset > scrollOffset.current;
+              scrollOffset.current = nextOffset;
+              if (movingDown) scrollListeners.current.forEach(listener => listener());
+            }}
+            scrollEventThrottle={100}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={styles.scrollContent}
           >
             <View style={[styles.page, styles.pagePadding, isMobile && styles.pagePaddingMobile]} accessibilityLabel={subtitle ?? title}>
-              {children}
+              <PageScrollContext.Provider value={subscribeToScroll}>{children}</PageScrollContext.Provider>
             </View>
             <PublicSiteFooter />
           </ScrollView>

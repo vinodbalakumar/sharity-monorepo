@@ -20,7 +20,7 @@ the applications.
 | `platform-ai-service` | AI chat/listing assistance and diagnostics features | Spring Boot, Java 21, Spring AI | Port `8086` by default; optional and configuration-dependent |
 | `tesla-dashboard-services` | Authenticated Tesla Fleet integration | Spring Boot, Java 21 | `/tesla-dashboard-services/api`; optional, disabled by default in Compose |
 | `deployments` | Compose, Dockerfiles, Nginx, environment profiles, scripts and workflow templates | Docker Compose, Nginx, PowerShell/shell/Node/Python | Reverse proxy and deployment boundary |
-| `contracts` | Intended home for shared API specifications and compatibility fixtures | Documentation/artifacts | Currently contains a README only |
+| `contracts` | Shared API contracts and compatibility fixtures | Documentation/artifacts | Includes the physical cart checkout contract; controller DTOs remain authoritative |
 
 ## Request and data flow
 
@@ -63,6 +63,43 @@ AI is an optional dependency, not an authority for identity, commerce, payment,
 or wallet state. The AI integration is separately configured; behavior and
 availability depend on the selected deployment profile. Tesla is optional and
 must not be treated as part of the core storefront.
+
+## Consolidated physical checkout
+
+The [checkout API contract](../../contracts/physical-cart-checkout.md) defines
+one buyer payment for a same-currency physical cart, independent of how many
+sellers own its listings. Digital instant-delivery purchases still use the
+single-listing Buy Now path.
+
+Marketplace V58 adds `marketplace_checkout`, scoped buyer idempotency keys and
+quantity-aware child `order_header` references. A transaction locks the cart,
+its lines and sorted listings, validates the buyer's full quantity/price/currency
+snapshot, reserves stock, consumes the cart and persists one outbox command.
+Changed prices require buyer review; retries with the original key and snapshot
+return the same checkout even after consumption.
+
+Payment V25 adds `checkout_payment` and `checkout_payment_allocation`. A checkout
+has one `PaymentOrder`, one capture and one ledger allocation per child order,
+but no `ProviderPayout`. Allocation buyer amounts sum exactly to the charge;
+each fee is 5% rounded half-up to cents and deducted from that line's seller
+proceeds. Parent fees are sums of line fees, not a second rounding calculation.
+The payment service persists capture intent before invoking its gateway using
+a stable checkout-derived idempotency key. Marketplace's retryable outbox
+survives payment-service outages without creating per-listing charges.
+
+Acceptance updates only the corresponding allocation to `ELIGIBLE_LEDGER_ONLY`.
+A dispute records a hold on that allocation, without refunding or affecting
+other sellers' accounting. All consolidated refund/cancel paths reject with
+409 before mutation because safe partial reversal is not implemented. Legacy
+single-listing acceptance/payout behavior is unchanged. Wallet receives
+idempotent payment and pending-earning projections, not transfer instructions.
+
+The owner-only parent refresh validates the entire payment snapshot before
+updating marketplace status. A not-yet-dispatched capture remains pending;
+unavailable or inconsistent payment responses fail explicitly. Local dispute
+holds cannot be overwritten by a stale payment projection.
+Neither implemented gateway adapters nor ledger eligibility establish a live
+payout rail. Live seller transfers remain disabled for this flow.
 
 ## Public paths and service API references
 

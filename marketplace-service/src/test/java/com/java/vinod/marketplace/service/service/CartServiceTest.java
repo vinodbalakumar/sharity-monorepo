@@ -36,6 +36,9 @@ class CartServiceTest {
     @Mock
     private ListingRepository listingRepository;
 
+    @Mock
+    private AssetStorageService assetStorageService;
+
     @InjectMocks
     private CartService cartService;
 
@@ -44,7 +47,7 @@ class CartServiceTest {
         Cart cart = cart("cart-1");
         Listing listing = listing("listing-digital", "DIGITAL", "INSTANT");
 
-        when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart));
+        when(cartRepository.findByCartIdForUpdate("cart-1")).thenReturn(Optional.of(cart));
         when(listingRepository.findByPublicId("listing-digital")).thenReturn(Optional.of(listing));
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
@@ -70,7 +73,7 @@ class CartServiceTest {
     }
 
     @Test void excessiveQuantityIsRejectedBeforeWriting() {
-        when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart("cart-1")));
+        when(cartRepository.findByCartIdForUpdate("cart-1")).thenReturn(Optional.of(cart("cart-1")));
         when(listingRepository.findByPublicId("listing-physical")).thenReturn(Optional.of(listing("listing-physical", "PHYSICAL", "SHIPPING_REQUIRED")));
         assertThrows(ResponseStatusException.class, () -> cartService.addToCart("cart-1", CartDtos.AddToCartRequest.builder().listingId("listing-physical").quantity(100).build()));
         org.mockito.Mockito.verifyNoInteractions(cartItemRepository);
@@ -85,8 +88,9 @@ class CartServiceTest {
         listing.setSellerDisplayName(sellerName);
         CartItem savedItem = cartItem(cart, listing, 2);
 
-        when(cartRepository.findByCartId("cart-1")).thenReturn(Optional.of(cart));
+        when(cartRepository.findByCartIdForUpdate("cart-1")).thenReturn(Optional.of(cart));
         when(listingRepository.findByPublicId("listing-physical")).thenReturn(Optional.of(listing));
+        when(assetStorageService.publicListingImageUrl(null)).thenReturn(null);
         when(cartItemRepository.findByCartCartIdAndListingId("cart-1", "listing-physical")).thenReturn(Optional.empty());
         when(cartItemRepository.save(any(CartItem.class))).thenReturn(savedItem);
         when(cartItemRepository.findByCartCartId("cart-1")).thenReturn(List.of(savedItem));
@@ -104,6 +108,56 @@ class CartServiceTest {
         org.mockito.Mockito.verify(cartItemRepository).save(inserted.capture());
         assertEquals(sellerName == null || sellerName.isBlank() ? "Marketplace seller" : sellerName,
                 inserted.getValue().getProviderName());
+    }
+
+    @Test
+    void quantityUpdateLocksCartBeforeReadingItsItems() {
+        Cart cart = cart("cart-1");
+        Listing listing = listing("listing-physical", "PHYSICAL", "SHIPPING");
+        CartItem item = cartItem(cart, listing, 1);
+        when(cartRepository.findByCartIdForUpdate("cart-1")).thenReturn(Optional.of(cart));
+        when(cartItemRepository.findByCartItemId("cart-item-1")).thenReturn(Optional.of(item));
+        when(cartItemRepository.save(item)).thenReturn(item);
+        when(cartItemRepository.findByCartCartId("cart-1")).thenReturn(List.of(item));
+        when(listingRepository.findByPublicId(listing.getPublicId())).thenReturn(Optional.of(listing));
+
+        assertEquals(3, cartService.updateQuantity("cart-1", "cart-item-1", 3).getQuantity());
+
+        var locks = org.mockito.Mockito.inOrder(cartRepository, cartItemRepository);
+        locks.verify(cartRepository).findByCartIdForUpdate("cart-1");
+        locks.verify(cartItemRepository).findByCartItemId("cart-item-1");
+        assertEquals(3, cart.getTotalItems());
+    }
+
+    @Test
+    void removalLocksCartBeforeReadingItsItems() {
+        Cart cart = cart("cart-1");
+        CartItem item = cartItem(cart, listing("listing-physical", "PHYSICAL", "SHIPPING"), 1);
+        when(cartRepository.findByCartIdForUpdate("cart-1")).thenReturn(Optional.of(cart));
+        when(cartItemRepository.findByCartItemId("cart-item-1")).thenReturn(Optional.of(item));
+        when(cartItemRepository.findByCartCartId("cart-1")).thenReturn(List.of());
+
+        cartService.removeFromCart("cart-1", "cart-item-1");
+
+        var locks = org.mockito.Mockito.inOrder(cartRepository, cartItemRepository);
+        locks.verify(cartRepository).findByCartIdForUpdate("cart-1");
+        locks.verify(cartItemRepository).findByCartItemId("cart-item-1");
+        org.mockito.Mockito.verify(cartItemRepository).delete(item);
+        assertEquals(0, cart.getTotalItems());
+    }
+
+    @Test
+    void clearingLocksCartBeforeReadingItsItems() {
+        Cart cart = cart("cart-1");
+        when(cartRepository.findByCartIdForUpdate("cart-1")).thenReturn(Optional.of(cart));
+        when(cartItemRepository.findByCartCartId("cart-1")).thenReturn(List.of());
+        when(cartRepository.save(cart)).thenReturn(cart);
+
+        cartService.clearCart("cart-1");
+
+        var locks = org.mockito.Mockito.inOrder(cartRepository, cartItemRepository);
+        locks.verify(cartRepository).findByCartIdForUpdate("cart-1");
+        locks.verify(cartItemRepository).findByCartCartId("cart-1");
     }
 
     private static Cart cart(String cartId) {

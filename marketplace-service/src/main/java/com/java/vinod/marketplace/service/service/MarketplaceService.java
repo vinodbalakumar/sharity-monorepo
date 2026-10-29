@@ -9,6 +9,7 @@ import com.java.vinod.marketplace.service.entity.Listing;
 import com.java.vinod.marketplace.service.entity.ListingStatusMaster;
 import com.java.vinod.marketplace.service.entity.MarketplaceCategory;
 import com.java.vinod.marketplace.service.entity.MarketplaceVertical;
+import com.java.vinod.marketplace.service.entity.MarketplaceCheckout;
 import com.java.vinod.marketplace.service.entity.SellerProfile;
 import com.java.vinod.marketplace.service.entity.OrderHeader;
 import com.java.vinod.marketplace.service.repository.DeliveryTypeMasterRepository;
@@ -31,6 +32,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -584,8 +586,13 @@ public class MarketplaceService {
 
     @Transactional
     public MarketplaceDtos.OrderResponse refreshPurchase(String orderPublicId, Jwt jwt) {
+        orderHeaderRepository.lockCheckoutByOrderPublicId(orderPublicId);
         OrderHeader order = findOrder(orderPublicId);
         ensureCustomer(order, jwt);
+        if (order.isConsolidatedCheckoutChild()) {
+            syncCheckoutPaymentState(order.getCheckout());
+            return toOrderResponse(order);
+        }
         syncPaymentState(order);
         if ("CAPTURED".equalsIgnoreCase(order.getPaymentStatus()) && "PAYMENT_PENDING".equals(order.getOrderStatus())) order.setOrderStatus("PURCHASED");
         return toOrderResponse(order);
@@ -596,6 +603,7 @@ public class MarketplaceService {
      */
     @Transactional
     public MarketplaceDtos.MessageResponse deliver(String orderPublicId, MarketplaceDtos.DeliveryRequest request, Jwt jwt) {
+        orderHeaderRepository.lockCheckoutByOrderPublicId(orderPublicId);
         OrderHeader order = findOrder(orderPublicId);
         ensureMarketplaceProviderEligible(order.getProviderAccountPublicId());
         if (!order.getProviderOwnerUserPublicId().equals(userPublicId(jwt))) {
@@ -626,6 +634,8 @@ public class MarketplaceService {
      */
     @Transactional
     public MarketplaceDtos.MessageResponse accept(String orderPublicId, Jwt jwt) {
+        // Serialize local acceptance/disputes with aggregate refresh before loading any child state.
+        orderHeaderRepository.lockCheckoutByOrderPublicId(orderPublicId);
         OrderHeader order = findOrder(orderPublicId);
         ensureCustomer(order, jwt);
         if (disputeCaseRepository.existsByOrder_IdAndResolvedAtIsNull(order.getId())) {
@@ -647,6 +657,13 @@ public class MarketplaceService {
         order.setCustomerAcceptedAt(now);
         order.setCompletedAt(now);
         order.setUpdatedAt(now);
+        if (order.isConsolidatedCheckoutChild()) {
+            // Stock was reserved at checkout; other buyers may still hold the same multi-quantity listing.
+            marketplaceEventOutboxService.queueCheckoutAllocationPayoutEligible(order);
+            log.info("Marketplace delivery accepted: orderPublicId={}, checkoutPublicId={}, customerPublicId={}, payoutStatus={}",
+                    order.getPublicId(), order.getCheckout().getPublicId(), userPublicId(jwt), order.getPayoutStatus());
+            return new MarketplaceDtos.MessageResponse("Delivery accepted and payout eligibility requested");
+        }
         order.getListing().setListingStatus("SOLD");
         order.getListing().setUpdatedAt(now);
         markPayoutEligible(order);
@@ -660,6 +677,7 @@ public class MarketplaceService {
      */
     @Transactional
     public MarketplaceDtos.MessageResponse reportProblem(String orderPublicId, MarketplaceDtos.ProblemRequest request, Jwt jwt) {
+        orderHeaderRepository.lockCheckoutByOrderPublicId(orderPublicId);
         OrderHeader order = findOrder(orderPublicId);
         ensureCustomer(order, jwt);
         if (disputeCaseRepository.existsByOrder_IdAndResolvedAtIsNull(order.getId())) {
@@ -678,6 +696,19 @@ public class MarketplaceService {
         order.setDisputeOpenedAt(now);
         order.setPayoutStatus("BLOCKED_BY_DISPUTE");
         order.setUpdatedAt(now);
+        if (order.isConsolidatedCheckoutChild()) {
+            // Partial refunds of an aggregate checkout payment are not supported: hold this allocation's payout
+            // through the dispute only and leave any refund to support review.
+            String paymentReason = disputeReason(request);
+            // The complete report stays in DisputeCase; the payment ledger has a bounded reason column.
+            if (paymentReason.length() > 255) {
+                paymentReason = paymentReason.substring(0, 255);
+            }
+            marketplaceEventOutboxService.queueCheckoutAllocationDispute(order, paymentReason);
+            log.warn("Marketplace dispute opened: orderPublicId={}, checkoutPublicId={}, customerPublicId={}, disputeReasonCode={}, payoutStatus={}",
+                    order.getPublicId(), order.getCheckout().getPublicId(), userPublicId(jwt), request.disputeReasonCode(), order.getPayoutStatus());
+            return new MarketplaceDtos.MessageResponse("Problem reported. Seller payout is on hold while support reviews this order.");
+        }
         requestDispute(order, request);
         requestRefund(order, request);
         log.warn("Marketplace dispute opened: orderPublicId={}, customerPublicId={}, disputeReasonCode={}, payoutStatus={}",
@@ -1485,7 +1516,7 @@ public class MarketplaceService {
     private MarketplaceDtos.OrderResponse toOrderResponse(OrderHeader order) {
         return new MarketplaceDtos.OrderResponse(order.getPublicId(), order.getListing().getPublicId(), order.getOrderStatus(),
                 order.getPaymentStatus(), order.getFulfillmentStatus(), order.getPayoutStatus(),
-                order.getCustomerTotalAmount(), order.getTransactionCurrencyCode(), order.getCreatedAt());
+                order.getCustomerTotalAmount(), order.getTransactionCurrencyCode(), order.getCreatedAt(), order.getQuantity());
     }
 
     private MarketplaceDtos.AdminListingResponse toAdminListingResponse(Listing listing) {
@@ -1519,9 +1550,133 @@ public class MarketplaceService {
      * Marks the payment order as disputed before the refund request completes so payment state remains aligned.
      */
     private void requestDispute(OrderHeader order, MarketplaceDtos.ProblemRequest request) {
-        String reason = request.disputeReasonCode()
+        marketplaceEventOutboxService.queueDisputeRequest(order, disputeReason(request));
+    }
+
+    private String disputeReason(MarketplaceDtos.ProblemRequest request) {
+        return request.disputeReasonCode()
                 + (request.description() == null || request.description().isBlank() ? "" : ": " + request.description());
-        marketplaceEventOutboxService.queueDisputeRequest(order, reason);
+    }
+
+    /**
+     * Consolidated checkout children are paid by one aggregate payment keyed by the checkout public id.
+     */
+    @Transactional
+    public void syncCheckoutPaymentState(MarketplaceCheckout checkout) {
+        String checkoutPublicId = checkout.getPublicId();
+        CheckoutPaymentState state;
+        try {
+            state = restClient.get()
+                    .uri(paymentInternalUrl + "/payments/checkouts/" + checkoutPublicId)
+                    .header("X-Internal-Service-Token", internalServiceToken)
+                    .retrieve()
+                    .body(CheckoutPaymentState.class);
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().value() == 404
+                    && "PAYMENT_PENDING".equals(checkout.getCheckoutStatus())
+                    && marketplaceEventOutboxService.isCheckoutPaymentCreatePending(checkoutPublicId)) {
+                return;
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unable to refresh payment state right now", exception);
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unable to refresh payment state right now", exception);
+        }
+        applyCheckoutPaymentState(checkout, state);
+    }
+
+    void applyCheckoutPaymentState(OrderHeader order, CheckoutPaymentState state) {
+        applyCheckoutPaymentState(order.getCheckout(), state);
+    }
+
+    private void applyCheckoutPaymentState(MarketplaceCheckout checkout, CheckoutPaymentState state) {
+        List<OrderHeader> siblings = orderHeaderRepository.findByCheckout_IdOrderByIdAsc(checkout.getId());
+        String paymentStatus = state == null ? "" : normalizedPaymentStatus(state.paymentStatus());
+        if (state == null || !checkout.getPublicId().equals(state.checkoutPublicId())
+                || !Set.of("PENDING", "CAPTURE_PENDING", "AUTHORIZED", "CAPTURED", "FAILED", "CANCELLED", "CANCELED", "EXPIRED")
+                .contains(paymentStatus) || state.allocations() == null || siblings.isEmpty()
+                || state.allocations().size() != siblings.size()) {
+            throw invalidCheckoutPaymentState();
+        }
+        validateOptionalIdentity(state.customerUserPublicId(), checkout.getCustomerUserPublicId());
+        validateOptionalIdentity(state.currencyCode(), checkout.getCurrencyCode());
+        validateOptionalMoney(state.amount(), checkout.getCustomerTotalAmount());
+        validateOptionalMoney(state.platformFeeAmount(), checkout.getPlatformFeeAmount());
+        validateOptionalMoney(state.providerPayableAmount(), checkout.getProviderAmount());
+        Map<String, OrderHeader> children = new HashMap<>();
+        for (OrderHeader child : siblings) {
+            children.put(child.getPublicId(), child);
+        }
+        boolean captured = "CAPTURED".equals(paymentStatus);
+        Map<String, String> payoutByOrder = new HashMap<>();
+        for (CheckoutAllocationState allocation : state.allocations()) {
+            if (allocation == null) {
+                throw invalidCheckoutPaymentState();
+            }
+            OrderHeader child = children.get(allocation.marketplaceOrderPublicId());
+            String status = normalizedPaymentStatus(allocation.allocationStatus());
+            if (child == null || payoutByOrder.containsKey(allocation.marketplaceOrderPublicId())
+                    || !Set.of("PENDING", "PENDING_CAPTURE", "PAYMENT_PENDING", "HELD", "DISPUTE_HOLD", "BLOCKED_BY_DISPUTE",
+                    "ELIGIBLE", "ELIGIBLE_LEDGER_ONLY").contains(status)) {
+                throw invalidCheckoutPaymentState();
+            }
+            boolean allocationCaptured = !Set.of("PENDING", "PENDING_CAPTURE", "PAYMENT_PENDING").contains(status);
+            if (captured != allocationCaptured) {
+                throw invalidCheckoutPaymentState();
+            }
+            validateOptionalIdentity(allocation.checkoutPublicId(), checkout.getPublicId());
+            validateOptionalIdentity(allocation.providerAccountPublicId(), child.getProviderAccountPublicId());
+            validateOptionalIdentity(allocation.currencyCode(), child.getTransactionCurrencyCode());
+            validateOptionalMoney(allocation.amount(), child.getCustomerTotalAmount());
+            validateOptionalMoney(allocation.platformFeeAmount(), child.getPlatformFeeAmount());
+            validateOptionalMoney(allocation.providerPayableAmount(), child.getProviderExpectedAmount());
+            payoutByOrder.put(child.getPublicId(), "DISPUTE_HOLD".equals(status) ? "BLOCKED_BY_DISPUTE" : status);
+        }
+        if (!"CAPTURED".equals(paymentStatus)
+                && siblings.stream().anyMatch(child -> "CAPTURED".equals(child.getPaymentStatus()))) {
+            throw invalidCheckoutPaymentState();
+        }
+        // Validate the entire snapshot before changing any managed entity.
+        LocalDateTime now = LocalDateTime.now();
+        for (OrderHeader child : siblings) {
+            child.setPaymentStatus(paymentStatus);
+            String payout = payoutByOrder.get(child.getPublicId());
+            if (!"BLOCKED_BY_DISPUTE".equals(child.getPayoutStatus())
+                    && !("ELIGIBLE_REQUESTED".equals(child.getPayoutStatus())
+                    && Set.of("PENDING", "PENDING_CAPTURE", "PAYMENT_PENDING", "HELD").contains(payout))) {
+                child.setPayoutStatus(payout);
+            }
+            if (captured && "PAYMENT_PENDING".equals(child.getOrderStatus())) {
+                child.setOrderStatus("PURCHASED");
+            }
+            child.setUpdatedAt(now);
+        }
+        if (captured) {
+            boolean held = siblings.stream().anyMatch(child -> "BLOCKED_BY_DISPUTE".equals(child.getPayoutStatus()));
+            checkout.setCheckoutStatus(held ? "DISPUTE_HOLD" : "PAID");
+        } else if (Set.of("FAILED", "CANCELLED", "CANCELED", "EXPIRED").contains(paymentStatus)) {
+            checkout.setCheckoutStatus("PAYMENT_FAILED");
+        }
+        checkout.setUpdatedAt(now);
+    }
+
+    private static String normalizedPaymentStatus(String status) {
+        return status == null ? "" : status.trim().toUpperCase(java.util.Locale.ROOT);
+    }
+
+    private static void validateOptionalIdentity(String actual, String expected) {
+        if (actual != null && !actual.equals(expected)) {
+            throw invalidCheckoutPaymentState();
+        }
+    }
+
+    private static void validateOptionalMoney(BigDecimal actual, BigDecimal expected) {
+        if (actual != null && (expected == null || actual.compareTo(expected) != 0)) {
+            throw invalidCheckoutPaymentState();
+        }
+    }
+
+    private static ResponseStatusException invalidCheckoutPaymentState() {
+        return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid checkout payment state");
     }
 
     private void syncPaymentState(OrderHeader order) {
@@ -1580,6 +1735,25 @@ public class MarketplaceService {
     private record PaymentOrderState(String publicId, String marketplaceOrderPublicId, String paymentStatus,
                                      String payoutEligibilityStatus, BigDecimal customerChargeAmount,
                                      BigDecimal platformFeeAmount, BigDecimal providerPayableAmount, LocalDateTime createdAt) {
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    record CheckoutPaymentState(String checkoutPublicId, String paymentStatus, List<CheckoutAllocationState> allocations,
+                                String customerUserPublicId, String currencyCode, BigDecimal amount,
+                                BigDecimal platformFeeAmount, BigDecimal providerPayableAmount) {
+        CheckoutPaymentState(String checkoutPublicId, String paymentStatus, List<CheckoutAllocationState> allocations) {
+            this(checkoutPublicId, paymentStatus, allocations, null, null, null, null, null);
+        }
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    record CheckoutAllocationState(String marketplaceOrderPublicId,
+                                   @com.fasterxml.jackson.annotation.JsonAlias("payoutEligibilityStatus") String allocationStatus,
+                                   String checkoutPublicId, String providerAccountPublicId, String currencyCode,
+                                   BigDecimal amount, BigDecimal platformFeeAmount, BigDecimal providerPayableAmount) {
+        CheckoutAllocationState(String marketplaceOrderPublicId, String allocationStatus) {
+            this(marketplaceOrderPublicId, allocationStatus, null, null, null, null, null, null);
+        }
     }
 
     private record ProviderEligibilityResponse(boolean eligible, String providerPublicId, String moduleCode,

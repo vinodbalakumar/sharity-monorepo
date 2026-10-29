@@ -2,8 +2,9 @@ import { test, expect, type Page } from '@playwright/test';
 const id = 'a165e6a3-21ee-4360-b675-4f0e694ccfb3';
 const listing = { publicId: 'owned-listing', title: 'Sharity digital gift card', description: 'Digital gift card', priceAmount: 21.99, currencyCode: 'USD', categoryCode: 'GIFT_CARDS', verticalCode: 'MARKETPLACE', productType: 'DIGITAL', deliveryType: 'CODE', sellerDisplayName: 'Gift store', imageUrl: null, stockQuantity: 1, listingStatus: 'ACTIVE', publicReviews: [], createdAt: '2026-10-26T12:00:00Z' };
 const pending = { publicId: id, listingPublicId: listing.publicId, orderStatus: 'PAYMENT_PENDING', paymentStatus: 'PENDING', fulfillmentStatus: 'PENDING_DELIVERY', payoutStatus: 'PAYMENT_PENDING', customerTotalAmount: 21.99, currencyCode: 'USD', createdAt: '2026-10-26T12:00:00Z' };
-async function fixture(page: Page, options: { stayPending?: boolean; failRefresh?: boolean; missing?: boolean; physical?: boolean } = {}) {
-  let current = { ...pending };
+async function fixture(page: Page, options: { stayPending?: boolean; failRefresh?: boolean; missing?: boolean; physical?: boolean; quantity?: number } = {}) {
+  const savedOrder = options.quantity ? { ...pending, quantity: options.quantity } : pending;
+  let current = { ...savedOrder };
   const refreshes: string[] = [];
   const orderPosts: string[] = [];
   await page.route('**/*', async route => {
@@ -25,7 +26,7 @@ async function fixture(page: Page, options: { stayPending?: boolean; failRefresh
       expect(request.headers()['x-csrf-token']).toBe('test-csrf');
       refreshes.push(path);
       if (options.failRefresh) return send({ message: 'SQL password=do-not-display' }, 503);
-      if (!options.stayPending) current = { ...pending, paymentStatus: 'CAPTURED', orderStatus: 'PURCHASED' };
+      if (!options.stayPending) current = { ...savedOrder, paymentStatus: 'CAPTURED', orderStatus: 'PURCHASED' };
       return send(current);
     }
     if (path.endsWith('/orders/purchases')) return send([current]);
@@ -47,6 +48,15 @@ for (const route of ['details', 'tracking', 'receipt']) test(`${route} reconcile
   await expect(page.getByText('Payment: Confirmed', { exact: true })).toBeVisible();
   await expect(page.getByText('Your payment was successful', { exact: false })).toHaveCount(0);
   expect(refreshes).toHaveLength(1);
+  expect(orderPosts).toHaveLength(0);
+});
+
+for (const route of ['details', 'tracking', 'receipt']) test(`${route} preserves physical cart order quantities`, async ({ page }) => {
+  const { orderPosts } = await fixture(page, { physical: true, quantity: 3 });
+  await page.goto(`/app/orders/${route}?orderId=${id}`);
+  await expect(page.getByTestId(`purchase-${route}`)).toBeVisible();
+  await expect(page.getByText('Quantity: 3', { exact: true })).toBeVisible();
+  await expect(page.getByText('Quantity: 1', { exact: true })).toHaveCount(0);
   expect(orderPosts).toHaveLength(0);
 });
 

@@ -1,6 +1,7 @@
 package com.java.vinod.marketplace.service.config;
 
 import java.util.Map;
+import com.java.vinod.marketplace.service.service.MarketplaceCheckoutService.CheckoutConflictException;
 import org.slf4j.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -35,6 +36,10 @@ public class SafeFailureAdvice {
         String message = status >= 500 ? "This service is temporarily unavailable. Please try again shortly."
                 : status == 404 ? "The requested item could not be found."
                 : status == 403 ? "You do not have permission to perform this action." : "Please check your request and try again.";
+        if (ex instanceof CheckoutConflictException conflict) {
+            message = conflict.getReason();
+            log.warn("checkout_conflict correlationId={} reason={}", id, message);
+        }
         return ResponseEntity.status(status).body(Map.of("code", code, "message", message, "correlationId", id));
     }
 }

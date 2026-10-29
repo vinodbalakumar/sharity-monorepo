@@ -16,6 +16,7 @@ import { ForgotPasswordScreen, ResetPasswordScreen } from './features/auth/Passw
 import { VerifyEmailScreen } from './features/auth/VerifyEmailScreen';
 import { CartScreen } from './features/cart/CommerceCartScreen';
 import { CheckoutScreen } from './features/checkout/CommerceCheckoutScreen';
+import { PhysicalCartCheckoutScreen } from './features/checkout/PhysicalCartCheckoutScreen';
 import { DigitalProductDetailsScreen } from './features/digital/DigitalProductDetailsScreen';
 import { SplashScreen } from './features/splash/SplashScreen';
 import { DigitalMarketplaceListingsScreen, ElectronicsMarketplaceHomeScreen, JewelryMarketplaceListingsScreen } from './features/marketplace/CommerceCatalogScreen';
@@ -49,7 +50,7 @@ import { SupportScreen } from './features/support/SupportScreen';
 import { WalletScreen } from './features/wallet/WalletScreen';
 import { WelcomeScreen } from './features/welcome/WelcomeScreen';
 import { getVisitorContext, type VisitorContextResponse } from './services/publicContentApi';
-import { checkSession, clearBrowserSessionArtifacts, clearLogoutOverride, hasLogoutOverride } from './services/sessionService';
+import { checkSession, clearBrowserSessionArtifacts, clearLogoutOverride, hasLogoutOverride, isSessionExpired, onSessionExpired, sessionExpiredMessage } from './services/sessionService';
 import { appState$ } from './state/appState';
 import { MemberSessionContext } from './components/appShell/MemberSessionContext';
 import { IconFontGate } from './components/IconFontGate';
@@ -135,6 +136,8 @@ function routeSnapshotFromLocation(pathname: string, search: string, historyStat
       return { route: 'cart' };
     case '/app/checkout':
       return { route: 'checkout' };
+    case '/app/cart-checkout':
+      return { route: 'cartCheckout' };
     case '/app/library':
       return { route: 'library' };
     case '/app/library/reveal':
@@ -239,6 +242,8 @@ function snapshotToPath(snapshot: RouteSnapshot): string {
       return '/app/cart';
     case 'checkout':
       return '/app/checkout';
+    case 'cartCheckout':
+      return '/app/cart-checkout';
     case 'library':
       return '/app/library';
     case 'codeReveal':
@@ -340,7 +345,7 @@ function ReadyApp() {
     setRouteState('welcome');
     if (Platform.OS === 'web') window.history.replaceState({route:'welcome'}, '', '/app/');
   }
-  const [guestNotice, setGuestNotice] = useState('');
+  const [guestNotice, setGuestNotice] = useState(isSessionExpired() ? sessionExpiredMessage : '');
   const [digitalProductId, setDigitalProductId] = useState<string | null>(null);
   const [electronicsProductId, setElectronicsProductId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -353,6 +358,22 @@ function ReadyApp() {
   const [isTakingLonger, setIsTakingLonger] = useState(false);
   const [visitorContext, setVisitorContext] = useState<VisitorContextResponse | null>(null);
   const [publicContentSlug, setPublicContentSlug] = useState('terms');
+
+  useEffect(() => onSessionExpired(() => {
+    setAuthenticated(false);
+    clearLoginReturn();
+    setGuestNotice(sessionExpiredMessage);
+    setDigitalProductId(null);
+    setElectronicsProductId(null);
+    setOrderId(null);
+    setReceiptId(null);
+    setRefundRequestId(null);
+    setDisputeId(null);
+    setSecureAccessId(null);
+    setAuthToken(null);
+    setRouteState('welcome');
+    if (Platform.OS === 'web') window.history.replaceState({ route: 'welcome' }, '', '/app/');
+  }), []);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -513,7 +534,7 @@ function ReadyApp() {
       const nextRoute=targetSnapshot.route;
       if (!verifiedAuth.current && locationSnapshot && !isPublicRoute(locationSnapshot.route)) {
         rememberLoginReturn(locationSnapshot);
-        if (locationSnapshot.route !== 'home') setGuestNotice('Sign in to access your account, orders and saved items. You can keep browsing without an account.');
+        if (locationSnapshot.route !== 'home' && !isSessionExpired()) setGuestNotice('Sign in to access your account, orders and saved items. You can keep browsing without an account.');
       }
       if (verifiedAuth.current && loginSuccessReturn) clearLoginReturn();
 
@@ -534,10 +555,12 @@ function ReadyApp() {
 
         applyRouteSnapshot(targetSnapshot);
 
-        if (logoutOverride && (loginSuccessReturn || session.status === 'authenticated')) {
-          void clearLogoutOverride();
+        if (isSessionExpired()) {
+          setAuthenticated(false);
+          setGuestNotice(sessionExpiredMessage);
+          setRouteState('welcome');
+          return;
         }
-
         setRouteState(nextRoute);
 
         if (Platform.OS === 'web') {
@@ -818,6 +841,7 @@ function ReadyApp() {
           ) : null}
           {route === 'cart' ? <CartScreen onNavigate={setRoute} /> : null}
           {route === 'checkout' ? <CheckoutScreen onNavigate={setRoute} onOpenOrder={(id) => { setOrderId(id); setRoute('orderDetails'); }} /> : null}
+          {route === 'cartCheckout' ? <PhysicalCartCheckoutScreen onNavigate={setRoute} onOpenOrder={(id) => { setOrderId(id); setRoute('orderDetails'); }} /> : null}
           {route === 'library' ? (
             <BuyerLibraryScreen
               onNavigate={setRoute}

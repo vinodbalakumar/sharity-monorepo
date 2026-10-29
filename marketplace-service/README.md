@@ -4,7 +4,24 @@ Flyway V55 corrects physical inventory with digital delivery methods to `SHIPPIN
 
 Cart snapshots use `Marketplace seller` if an imported listing has no seller display name. Cart adds are not retried within a failed persistence transaction.
 
-Deploy and live-cart verification helpers are maintained in `../deployments/scripts/sharity/`. The live check uses environment-supplied credentials and removes only its newly added cart item. Checkout remains a separate per-listing flow.
+Deploy and live-cart verification helpers are maintained in `../deployments/scripts/sharity/`. The live check uses environment-supplied credentials and removes only its newly added cart item. Physical carts now have a durable consolidated checkout; digital Buy Now and legacy single-listing checkout remain separate.
+
+## Consolidated physical checkout (2026-10-28)
+
+Apply forward-only V58 on either database dialect before using this feature.
+The authenticated cart checkout persists a parent and quantity-aware child orders,
+reserves inventory, consumes the cart and queues one aggregate payment command
+in the same transaction. The existing 5% fee is deducted from each child item's
+proceeds, not added to the buyer total. Child acceptance marks only its payment
+allocation ledger eligible; it never requests a provider transfer.
+
+See the [buyer/internal API contract](../contracts/physical-cart-checkout.md),
+[architecture](../docs/workspace/architecture.md#consolidated-physical-checkout),
+and [operator safeguards](../docs/workspace/operations.md#consolidated-checkout-operations).
+Unsupported consolidated refunds and cancellations return 409 before mutation.
+The older stateless `/api/cart/checkout` and checkout-session mock routes remain
+unavailable; they are not aliases for the authenticated durable endpoint.
+Real payments remain disabled by existing purchase and gateway safety gates.
 
 Deployment environment profiles are maintained in `../deployments/config/marketplace-service/`; use `SPRING_CONFIG_ADDITIONAL_LOCATION` when starting outside Compose. Dockerfiles and server configuration are maintained in `../deployments`.
 
@@ -17,6 +34,23 @@ Apply Flyway V54 on MySQL/PostgreSQL before the new idempotent purchase path. Ca
 See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Marketplace Service
+
+## Outbox retry policy
+
+Marketplace queues commands durably without calling Payment on the request thread.
+The scheduler selects up to 20 due events every 5 seconds. Failures persist an
+attempt count and next-attempt timestamp: exponential delays of 5, 10, 20, 40,
+80, 160, then 300 seconds, with 80-100% jitter and a hard 300-second ceiling.
+The polling interval rounds actual delivery up to the next scheduler pass.
+Retries continue until acknowledged; commands are not discarded after an attempt
+limit. Re-queueing an existing event does not overwrite its payload or reset backoff.
+Per-event database locks and a due-time recheck prevent concurrent dispatch;
+delivery remains at-least-once, so receivers must retain idempotency checks.
+HTTP connect/read timeouts are 3/10 seconds.
+
+Configure `app.outbox.retry-initial-delay-ms`, `app.outbox.retry-max-delay-ms`,
+and `app.outbox.dispatch-delay-ms` to tune delivery. Flyway V59 adds retry state
+and its due-event index for both PostgreSQL and MySQL. Restart Marketplace to apply.
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).

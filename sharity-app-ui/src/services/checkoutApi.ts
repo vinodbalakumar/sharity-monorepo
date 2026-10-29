@@ -1,5 +1,6 @@
 // Real checkout API service pointing to backend endpoints
 // Replaces local checkoutMockApi.ts
+import { sessionFetch as fetch } from './sessionFetch';
 
 const bffBaseUrl = process.env.EXPO_PUBLIC_BFF_BASE_URL ?? '/bff';
 const marketplaceCheckoutBaseUrl = `${bffBaseUrl}/api/marketplace-service`;

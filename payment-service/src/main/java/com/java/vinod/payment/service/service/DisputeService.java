@@ -149,13 +149,20 @@ public class DisputeService {
             BigDecimal refundAmount = request.getRefundAmount() != null ?
                 request.getRefundAmount() : dispute.getClaimedAmount();
 
+            BigDecimal previousRefundedAmount = dispute.getRefundedAmount();
             dispute.setRefundedAmount(refundAmount);
 
             String refundableOrderId = dispute.getPaymentId() != null && !dispute.getPaymentId().isBlank()
                 ? dispute.getPaymentId()
                 : dispute.getOrderId();
 
-            if (paymentOrderRepository.findByMarketplaceOrderPublicId(refundableOrderId).isPresent()) {
+            if (paymentService.isConsolidatedCheckoutReference(refundableOrderId)) {
+                log.warn("Refund skipped for dispute {} because {} belongs to a consolidated checkout",
+                    dispute.getDisputeId(), refundableOrderId);
+                dispute.setRefundedAmount(previousRefundedAmount);
+                recordEvent(dispute, "REFUND_FAILED",
+                    "Refund not supported for consolidated checkout payments; ledger left unchanged", "SYSTEM", "ADMIN_ONLY");
+            } else if (paymentOrderRepository.findByMarketplaceOrderPublicId(refundableOrderId).isPresent()) {
                 try {
                     PaymentDtos.RefundRequest refundRequest = new PaymentDtos.RefundRequest("Dispute resolved in customer favor");
                     paymentService.refund(refundableOrderId, refundRequest, null);

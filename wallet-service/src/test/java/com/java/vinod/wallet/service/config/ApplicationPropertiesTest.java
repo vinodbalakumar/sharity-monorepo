@@ -1,6 +1,7 @@
 package com.java.vinod.wallet.service.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
@@ -9,6 +10,8 @@ import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ApplicationPropertiesTest {
+    @TempDir
+    Path home;
+
     @Test
     void propertyKeysAreUniqueAcrossDocuments() throws Exception {
         String contents = new ClassPathResource("application.properties").getContentAsString(StandardCharsets.UTF_8);
@@ -50,7 +56,24 @@ class ApplicationPropertiesTest {
         assertThat(environment.getProperty("app.internal.service-token")).isEmpty();
         assertThat(environment.getProperty("app.web.allowed-origin"))
                 .isEqualTo("http://localhost:9173,http://localhost:9174");
-        assertThat(environment.containsProperty("spring.config.import")).isFalse();
+        assertThat(environment.getProperty("spring.config.import"))
+                .startsWith("optional:file:").endsWith("/.sharity/local-internal-service.properties");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"local", "qa", "prod"})
+    void sharedTokenFileIsOnlyImportedLocally(String profile) throws Exception {
+        Files.createDirectory(home.resolve(".sharity"));
+        Files.writeString(home.resolve(".sharity/local-internal-service.properties"),
+                "app.internal.service-token=${APP_INTERNAL_SERVICE_TOKEN:test-only-shared-token}\n");
+
+        assertThat(environment(Map.of("spring.profiles.active", profile)).getProperty("app.internal.service-token"))
+                .isEqualTo(profile.equals("local") ? "test-only-shared-token" : null);
+        if (profile.equals("local")) {
+            assertThat(environment(Map.of("spring.profiles.active", profile,
+                    "APP_INTERNAL_SERVICE_TOKEN", "test-only-override")).getProperty("app.internal.service-token"))
+                    .isEqualTo("test-only-override");
+        }
     }
 
     @Test
@@ -122,6 +145,8 @@ class ApplicationPropertiesTest {
         StandardEnvironment environment = new StandardEnvironment();
         environment.getPropertySources().remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);
         environment.getPropertySources().remove(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME);
+        environment.getPropertySources().addFirst(new MapPropertySource("test-home",
+                Map.of("user.home", home.toString())));
         environment.getPropertySources().addFirst(new MapPropertySource("test-overrides", overrides));
         ConfigDataEnvironmentPostProcessor.applyTo(environment);
         return environment;

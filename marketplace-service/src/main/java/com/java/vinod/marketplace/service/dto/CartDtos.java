@@ -39,6 +39,7 @@ public class CartDtos {
         private Double unitPrice;
         private Double lineTotal;
         private String deliveryType;
+        private String imageUrl;
     }
 
     @Data

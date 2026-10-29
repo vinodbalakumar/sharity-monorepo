@@ -6,8 +6,18 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 class InternalServiceTokenFilterTest {
+    @Test
+    void rejectsMissingConfigurationAtStartup() {
+        for (String token : new String[] {null, "", " \t "}) {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> new InternalServiceTokenFilter(token))
+                    .withMessageContaining("app.internal.service-token must not be blank");
+        }
+    }
+
     @Test
     void rejectsInternalRequestWithoutToken() throws Exception {
         InternalServiceTokenFilter filter = new InternalServiceTokenFilter("secret");

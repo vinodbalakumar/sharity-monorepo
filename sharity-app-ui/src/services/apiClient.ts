@@ -1,11 +1,11 @@
 import { appStorage } from '../storage/storage';
-import { getBffCsrfToken } from './sessionService';
+import { AuthenticationRequiredError, getBffCsrfToken } from './sessionService';
+import { sessionFetch as fetch } from './sessionFetch';
 import { resolvePublicBaseUrl } from './publicUrl';
 
 const base = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const messages: Record<number, string> = {
   400: 'Please check the information you entered and try again.',
-  401: 'Please sign in to continue.',
   403: 'You do not have permission to perform this action.',
   404: 'The requested item could not be found.',
   409: 'This item has changed. Refresh and review it before continuing.',
@@ -13,8 +13,8 @@ const messages: Record<number, string> = {
   429: 'Too many requests. Please wait a moment and try again.',
 };
 export class ApiError extends Error {
-  constructor(public status: number, public reference?: string) {
-    super(`${messages[status] ?? 'This service is temporarily unavailable. Please try again shortly.'}${reference ? ` Reference: ${reference}` : ''}`);
+  constructor(public status: number, public reference?: string, message?: string) {
+    super(`${message ?? messages[status] ?? 'This service is temporarily unavailable. Please try again shortly.'}${reference ? ` Reference: ${reference}` : ''}`);
     this.name = 'ApiError';
   }
 }
@@ -34,13 +34,14 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     });
     if (!response.ok) {
       const reference = response.headers.get('X-Correlation-ID');
-      throw new ApiError(response.status, reference && /^[A-Za-z0-9_-]{1,64}$/.test(reference) ? reference : undefined);
+      const safeReference = reference && /^[A-Za-z0-9_-]{1,64}$/.test(reference) ? reference : undefined;
+      throw new ApiError(response.status, safeReference);
     }
     if (response.status === 204) return undefined as T;
     const text = await response.text();
     return (text ? JSON.parse(text) : undefined) as T;
   } catch (error) {
-    if (error instanceof ApiError) throw error;
+    if (error instanceof ApiError || error instanceof AuthenticationRequiredError) throw error;
     throw new Error('Unable to connect. Check your connection and try again. If you were making a payment, check your orders before trying again.');
   } finally { clearTimeout(timeout); }
 }

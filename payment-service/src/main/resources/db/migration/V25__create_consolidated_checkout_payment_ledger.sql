@@ -1,0 +1,62 @@
+-- Consolidated multi-seller checkout: one buyer charge with an internal allocation ledger.
+-- Allocations are ledger-only (no provider transfers). Legacy single-listing orders keep order_kind SINGLE_LISTING.
+
+ALTER TABLE payment_order ADD COLUMN order_kind VARCHAR(40) NOT NULL DEFAULT 'SINGLE_LISTING';
+
+CREATE TABLE checkout_payment (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    public_id CHAR(36) NOT NULL,
+    checkout_public_id CHAR(36) NOT NULL,
+    payment_order_id BIGINT NOT NULL,
+    customer_user_public_id CHAR(36) NOT NULL,
+    currency_code VARCHAR(3) NOT NULL,
+    customer_charge_amount DECIMAL(12,2) NOT NULL,
+    platform_fee_amount DECIMAL(12,2) NOT NULL,
+    provider_payable_amount DECIMAL(12,2) NOT NULL,
+    allocation_count INT NOT NULL,
+    gateway_mode VARCHAR(50) NOT NULL,
+    gateway_idempotency_key CHAR(36) NOT NULL,
+    request_fingerprint CHAR(64) NOT NULL,
+    checkout_status VARCHAR(40) NOT NULL,
+    provider_payment_reference VARCHAR(255) NULL,
+    captured_at DATETIME(6) NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_checkout_payment_public_id UNIQUE (public_id),
+    CONSTRAINT uk_checkout_payment_checkout UNIQUE (checkout_public_id),
+    CONSTRAINT uk_checkout_payment_order UNIQUE (payment_order_id),
+    CONSTRAINT uk_checkout_payment_gateway_key UNIQUE (gateway_idempotency_key),
+    CONSTRAINT fk_checkout_payment_order FOREIGN KEY (payment_order_id) REFERENCES payment_order (id),
+    CONSTRAINT ck_checkout_payment_reconciled CHECK (customer_charge_amount = platform_fee_amount + provider_payable_amount),
+    CONSTRAINT ck_checkout_payment_amounts CHECK (customer_charge_amount > 0 AND platform_fee_amount >= 0 AND provider_payable_amount > 0),
+    CONSTRAINT ck_checkout_payment_allocations CHECK (allocation_count > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE checkout_payment_allocation (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    public_id CHAR(36) NOT NULL,
+    checkout_payment_id BIGINT NOT NULL,
+    line_number INT NOT NULL,
+    marketplace_order_public_id CHAR(36) NOT NULL,
+    provider_account_public_id CHAR(36) NOT NULL,
+    provider_country_code VARCHAR(2) NOT NULL,
+    currency_code VARCHAR(3) NOT NULL,
+    customer_charge_amount DECIMAL(12,2) NOT NULL,
+    platform_fee_amount DECIMAL(12,2) NOT NULL,
+    provider_payable_amount DECIMAL(12,2) NOT NULL,
+    allocation_status VARCHAR(40) NOT NULL,
+    hold_reason VARCHAR(255) NULL,
+    dispute_reason VARCHAR(255) NULL,
+    eligible_at DATETIME(6) NULL,
+    disputed_at DATETIME(6) NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_checkout_allocation_public_id UNIQUE (public_id),
+    CONSTRAINT uk_checkout_allocation_marketplace_order UNIQUE (marketplace_order_public_id),
+    CONSTRAINT uk_checkout_allocation_line UNIQUE (checkout_payment_id, line_number),
+    CONSTRAINT fk_checkout_allocation_payment FOREIGN KEY (checkout_payment_id) REFERENCES checkout_payment (id),
+    CONSTRAINT ck_checkout_allocation_reconciled CHECK (customer_charge_amount = platform_fee_amount + provider_payable_amount),
+    CONSTRAINT ck_checkout_allocation_amounts CHECK (customer_charge_amount > 0 AND platform_fee_amount >= 0 AND provider_payable_amount > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

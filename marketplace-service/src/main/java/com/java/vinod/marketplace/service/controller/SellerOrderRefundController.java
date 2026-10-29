@@ -1,6 +1,7 @@
 package com.java.vinod.marketplace.service.controller;
 
 import com.java.vinod.marketplace.service.dto.SellerOrderRefundDtos;
+import com.java.vinod.marketplace.service.service.MarketplaceCheckoutService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +12,12 @@ import java.util.List;
 
 @RestController
 public class SellerOrderRefundController {
+    private final MarketplaceCheckoutService marketplaceCheckoutService;
+
+    public SellerOrderRefundController(MarketplaceCheckoutService marketplaceCheckoutService) {
+        this.marketplaceCheckoutService = marketplaceCheckoutService;
+    }
+
     @GetMapping("/api/orders/{parentOrderId}/refund-summary")
     public SellerOrderRefundDtos.ParentOrderRefundSummaryResponse summary(@PathVariable String parentOrderId) { return SellerOrderRefundDtos.summary(); }
     @GetMapping("/api/orders/{parentOrderId}/seller-orders/{sellerOrderId}/refund-eligibility")
@@ -28,7 +35,12 @@ public class SellerOrderRefundController {
     @PostMapping("/api/refunds/evidence")
     public SellerOrderRefundDtos.RefundEvidenceItem evidence(@RequestBody(required = false) Object request) { return SellerOrderRefundDtos.evidence(); }
     @PostMapping("/api/refunds")
-    public SellerOrderRefundDtos.SubmitRefundResponse submit(@RequestBody(required = false) SellerOrderRefundDtos.SubmitRefundRequest request) { return SellerOrderRefundDtos.submit(); }
+    public SellerOrderRefundDtos.SubmitRefundResponse submit(@RequestBody(required = false) SellerOrderRefundDtos.SubmitRefundRequest request) {
+        if (request != null) {
+            marketplaceCheckoutService.rejectConsolidatedRefundOrCancel(request.parentOrderId(), request.sellerOrderId());
+        }
+        return SellerOrderRefundDtos.submit();
+    }
     @GetMapping("/api/refunds/{refundRequestId}")
     public SellerOrderRefundDtos.SubmitRefundResponse refund(@PathVariable String refundRequestId) { return SellerOrderRefundDtos.submit(); }
     @GetMapping("/api/refunds/{refundRequestId}/timeline")

@@ -5,6 +5,8 @@ import com.java.vinod.payment.service.entity.PaymentOrder;
 import com.java.vinod.payment.service.entity.ProviderPayout;
 import com.java.vinod.payment.service.entity.RefundTransaction;
 import com.java.vinod.payment.service.gateway.PaymentGatewayRegistry;
+import com.java.vinod.payment.service.repository.CheckoutPaymentAllocationRepository;
+import com.java.vinod.payment.service.repository.CheckoutPaymentRepository;
 import com.java.vinod.payment.service.repository.PaymentOrderRepository;
 import com.java.vinod.payment.service.repository.PaymentTransactionRepository;
 import com.java.vinod.payment.service.repository.PaymentWebhookEventRepository;
@@ -60,7 +62,8 @@ class PaymentServiceLifecycleTest {
         paymentService = new TestablePaymentService(paymentOrderRepository, paymentTransactionRepository,
                 providerPayoutRepository, refundTransactionRepository, paymentWebhookEventRepository,
                 paymentEventOutboxService, paymentGatewayRegistry, "mock", "secret", "http://authorization",
-                "http://wallet", "internal-token");
+                "http://wallet", "internal-token", Mockito.mock(CheckoutPaymentRepository.class),
+                Mockito.mock(CheckoutPaymentAllocationRepository.class));
     }
 
     /**
@@ -228,11 +231,13 @@ class PaymentServiceLifecycleTest {
                                        String stripeWebhookSecret,
                                        String authorizationProviderEligibilityUrl,
                                        String walletInternalUrl,
-                                       String internalServiceToken) {
+                                       String internalServiceToken,
+                                       CheckoutPaymentRepository checkoutPaymentRepository,
+                                       CheckoutPaymentAllocationRepository checkoutPaymentAllocationRepository) {
             super(paymentOrderRepository, paymentTransactionRepository, providerPayoutRepository,
                     refundTransactionRepository, paymentWebhookEventRepository, paymentEventOutboxService, paymentGatewayRegistry,
                     gatewayMode, stripeWebhookSecret, authorizationProviderEligibilityUrl,
-                    walletInternalUrl, internalServiceToken);
+                    walletInternalUrl, internalServiceToken, checkoutPaymentRepository, checkoutPaymentAllocationRepository);
         }
 
         @Override

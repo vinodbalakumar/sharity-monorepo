@@ -1,4 +1,5 @@
 import { resolvePublicBaseUrl } from './publicUrl';
+import { sessionFetch as fetch } from './sessionFetch';
 
 const walletBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_WALLET_BASE_URL, '/bff/api/wallet-service/api/v1/wallet');
 

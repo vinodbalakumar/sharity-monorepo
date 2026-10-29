@@ -9,6 +9,8 @@ import com.java.vinod.payment.service.entity.PaymentWebhookEvent;
 import com.java.vinod.payment.service.entity.ProviderPayout;
 import com.java.vinod.payment.service.entity.RefundTransaction;
 import com.java.vinod.payment.service.gateway.PaymentGatewayRegistry;
+import com.java.vinod.payment.service.repository.CheckoutPaymentAllocationRepository;
+import com.java.vinod.payment.service.repository.CheckoutPaymentRepository;
 import com.java.vinod.payment.service.repository.PaymentOrderRepository;
 import com.java.vinod.payment.service.repository.PaymentTransactionRepository;
 import com.java.vinod.payment.service.repository.PaymentWebhookEventRepository;
@@ -53,6 +55,8 @@ public class PaymentService {
     private final String walletInternalUrl;
     private final String internalServiceToken;
     private final String stripeWebhookSecret;
+    private final CheckoutPaymentRepository checkoutPaymentRepository;
+    private final CheckoutPaymentAllocationRepository checkoutPaymentAllocationRepository;
 
     /**
      * Creates the payment service with repositories and downstream wallet configuration.
@@ -68,7 +72,9 @@ public class PaymentService {
                           @Value("${app.payment.stripe.webhook-secret:}") String stripeWebhookSecret,
                           @Value("${app.services.authorization-provider-eligibility-url}") String authorizationProviderEligibilityUrl,
                           @Value("${app.services.wallet-internal-url}") String walletInternalUrl,
-                          @Value("${app.internal.service-token}") String internalServiceToken) {
+                          @Value("${app.internal.service-token}") String internalServiceToken,
+                          CheckoutPaymentRepository checkoutPaymentRepository,
+                          CheckoutPaymentAllocationRepository checkoutPaymentAllocationRepository) {
         this.paymentOrderRepository = paymentOrderRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.providerPayoutRepository = providerPayoutRepository;
@@ -82,6 +88,8 @@ public class PaymentService {
         this.authorizationProviderEligibilityUrl = authorizationProviderEligibilityUrl;
         this.walletInternalUrl = walletInternalUrl;
         this.internalServiceToken = internalServiceToken;
+        this.checkoutPaymentRepository = checkoutPaymentRepository;
+        this.checkoutPaymentAllocationRepository = checkoutPaymentAllocationRepository;
     }
 
     /**
@@ -100,6 +108,7 @@ public class PaymentService {
      */
     @Transactional
     public PaymentDtos.PaymentOrderResponse createPaymentOrder(PaymentDtos.CheckoutRequest request, String fallbackCustomerPublicId) {
+        rejectConsolidatedCheckout(request.marketplaceOrderPublicId(), "single-listing checkout");
         return paymentOrderRepository.findByMarketplaceOrderPublicId(request.marketplaceOrderPublicId())
                 .map(this::toOrderResponse)
                 .orElseGet(() -> {
@@ -180,6 +189,7 @@ public class PaymentService {
      */
     @Transactional
     public PaymentDtos.MessageResponse markPayoutEligible(String marketplaceOrderPublicId) {
+        rejectConsolidatedCheckout(marketplaceOrderPublicId, "payout release");
         PaymentOrder order = findOrder(marketplaceOrderPublicId);
         ensurePaymentLifecycleAllowsPayout(order);
         ProviderEligibilityResponse eligibility = providerEligibility(order.getProviderAccountPublicId());
@@ -214,6 +224,7 @@ public class PaymentService {
      */
     @Transactional
     public PaymentDtos.MessageResponse cancel(String marketplaceOrderPublicId, PaymentDtos.LifecycleRequest request, Jwt jwt) {
+        rejectConsolidatedCheckout(marketplaceOrderPublicId, "cancellation");
         PaymentOrder order = findOrder(marketplaceOrderPublicId);
         if ("CANCELLED".equals(order.getPaymentStatus())) {
             return new PaymentDtos.MessageResponse("Cancellation already completed");
@@ -229,6 +240,7 @@ public class PaymentService {
      */
     @Transactional
     public PaymentDtos.MessageResponse dispute(String marketplaceOrderPublicId, PaymentDtos.LifecycleRequest request, Jwt jwt) {
+        rejectConsolidatedCheckout(marketplaceOrderPublicId, "dispute");
         PaymentOrder order = findOrder(marketplaceOrderPublicId);
         if ("DISPUTED".equals(order.getPaymentStatus())) {
             return new PaymentDtos.MessageResponse("Dispute already opened");
@@ -258,6 +270,7 @@ public class PaymentService {
      */
     @Transactional
     public PaymentDtos.MessageResponse refund(String marketplaceOrderPublicId, PaymentDtos.RefundRequest request, Jwt jwt) {
+        rejectConsolidatedCheckout(marketplaceOrderPublicId, "refund");
         PaymentOrder order = findOrder(marketplaceOrderPublicId);
         if ("REFUNDED".equals(order.getPaymentStatus())) {
             return new PaymentDtos.MessageResponse("Refund already completed");
@@ -458,8 +471,34 @@ public class PaymentService {
         providerPayoutRepository.save(payout);
     }
 
-    private PaymentOrder findOrder(String marketplaceOrderPublicId) {
-        return paymentOrderRepository.findByMarketplaceOrderPublicId(marketplaceOrderPublicId)
+    /**
+     * Returns true when the id is a consolidated checkout or one of its allocated marketplace orders.
+     */
+    @Transactional(readOnly = true)
+    public boolean isConsolidatedCheckoutReference(String marketplaceOrderPublicId) {
+        if (marketplaceOrderPublicId == null || marketplaceOrderPublicId.isBlank()) {
+            return false;
+        }
+        return checkoutPaymentRepository.existsByCheckoutPublicId(marketplaceOrderPublicId)
+                || checkoutPaymentAllocationRepository.existsByMarketplaceOrderPublicId(marketplaceOrderPublicId)
+                || paymentOrderRepository.findByMarketplaceOrderPublicId(marketplaceOrderPublicId)
+                .map(PaymentOrder::isConsolidatedCheckout)
+                .orElse(false);
+    }
+
+    /**
+     * Rejects single-listing payment operations on consolidated checkout parents or children before any mutation.
+     */
+    private void rejectConsolidatedCheckout(String marketplaceOrderPublicId, String operation) {
+        if (isConsolidatedCheckoutReference(marketplaceOrderPublicId)) {
+            log.warn("Legacy payment {} rejected for consolidated checkout reference: marketplaceOrderPublicId={}",
+                    operation, marketplaceOrderPublicId);
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Consolidated checkout payments do not support single-listing " + operation);
+        }
+    }
+
+    private PaymentOrder findOrder(String marketplaceOrderPublicId) {        return paymentOrderRepository.findByMarketplaceOrderPublicId(marketplaceOrderPublicId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment order not found"));
     }
 

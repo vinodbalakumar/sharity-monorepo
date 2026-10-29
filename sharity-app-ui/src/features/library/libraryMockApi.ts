@@ -1,4 +1,5 @@
 import { AuthenticationRequiredError, readApiErrorMessage } from '../../services/sessionService';
+import { sessionFetch as fetch } from '../../services/sessionFetch';
 import { resolveMockImageUrl } from '../../utils/mockImages';
 import type {
   DownloadFilesResponse,

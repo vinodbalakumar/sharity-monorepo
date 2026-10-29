@@ -19,6 +19,8 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,6 +31,7 @@ public class CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ListingRepository listingRepository;
+    private final AssetStorageService assetStorageService;
 
     @Transactional(readOnly = true)
     public void requireOwner(String cartId, String customerId) {
@@ -65,7 +68,7 @@ public class CartService {
 
     @Transactional
     public CartDtos.CartItemResponse addToCart(String cartId, CartDtos.AddToCartRequest request) {
-        Cart cart = cartRepository.findByCartId(cartId)
+        Cart cart = cartRepository.findByCartIdForUpdate(cartId)
             .orElseThrow(() -> new RuntimeException("Cart not found: " + cartId));
 
         Listing listing = listingRepository.findByPublicId(request.getListingId())
@@ -116,7 +119,7 @@ public class CartService {
     @Transactional
     @Retryable("database-retry")
     public void removeFromCart(String cartId, String cartItemId) {
-        Cart cart = cartRepository.findByCartId(cartId)
+        Cart cart = cartRepository.findByCartIdForUpdate(cartId)
             .orElseThrow(() -> new RuntimeException("Cart not found: " + cartId));
 
         CartItem item = cartItemRepository.findByCartItemId(cartItemId)
@@ -135,10 +138,12 @@ public class CartService {
     @Transactional
     @Retryable("database-retry")
     public CartDtos.CartItemResponse updateQuantity(String cartId, String cartItemId, int newQuantity) {
+        Cart cart = cartRepository.findByCartIdForUpdate(cartId)
+            .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Cart not found"));
         CartItem item = cartItemRepository.findByCartItemId(cartItemId)
             .orElseThrow(() -> new RuntimeException("Cart item not found: " + cartItemId));
 
-        if (!item.getCart().getCartId().equals(cartId)) {
+        if (!item.getCart().getId().equals(cart.getId())) {
             throw new RuntimeException("Cart item does not belong to this cart");
         }
 
@@ -148,7 +153,7 @@ public class CartService {
     @Transactional
     @Retryable("database-retry")
     public CartDtos.CartResponse clearCart(String cartId) {
-        Cart cart = cartRepository.findByCartId(cartId)
+        Cart cart = cartRepository.findByCartIdForUpdate(cartId)
             .orElseThrow(() -> new RuntimeException("Cart not found: " + cartId));
 
         List<CartItem> items = cartItemRepository.findByCartCartId(cartId);
@@ -212,6 +217,12 @@ public class CartService {
 
     private CartDtos.CartResponse mapToCartResponse(Cart cart) {
         List<CartItem> items = cartItemRepository.findByCartCartId(cart.getCartId());
+        List<Listing> listings = listingRepository.findByPublicIdIn(items.stream().map(CartItem::getListingId).toList());
+        Map<String, String> imageUrls = new HashMap<>();
+        for (Listing listing : listings) {
+            String imageUrl = assetStorageService.publicListingImageUrl(listing.getImageKey());
+            if (imageUrl != null) imageUrls.put(listing.getPublicId(), imageUrl);
+        }
         return CartDtos.CartResponse.builder()
             .cartId(cart.getCartId())
             .totalItems(cart.getTotalItems())
@@ -220,7 +231,7 @@ public class CartService {
             .taxAmount(cart.getTaxAmount().doubleValue())
             .total(cart.getTotal().doubleValue())
             .currencyCode(cart.getCurrencyCode())
-            .items(items.stream().map(this::mapToCartItemResponse).toList())
+            .items(items.stream().map(item -> mapToCartItemResponse(item, imageUrls.get(item.getListingId()))).toList())
             .build();
     }
 
@@ -234,6 +245,13 @@ public class CartService {
     }
 
     private CartDtos.CartItemResponse mapToCartItemResponse(CartItem item) {
+        String imageUrl = listingRepository.findByPublicId(item.getListingId())
+                .map(listing -> assetStorageService.publicListingImageUrl(listing.getImageKey()))
+                .orElse(null);
+        return mapToCartItemResponse(item, imageUrl);
+    }
+
+    private CartDtos.CartItemResponse mapToCartItemResponse(CartItem item, String imageUrl) {
         return CartDtos.CartItemResponse.builder()
             .cartItemId(item.getCartItemId())
             .listingId(item.getListingId())
@@ -242,6 +260,7 @@ public class CartService {
             .unitPrice(item.getUnitPrice().doubleValue())
             .lineTotal(item.getLineTotal().doubleValue())
             .deliveryType(item.getDeliveryType())
+            .imageUrl(imageUrl)
             .build();
     }
 }

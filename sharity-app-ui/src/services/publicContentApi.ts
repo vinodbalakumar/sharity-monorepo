@@ -1,4 +1,5 @@
 import { resolvePublicBaseUrl } from './publicUrl';
+import { sessionFetch as fetch } from './sessionFetch';
 
 export type VisitorContextResponse = {
   availablePolicyCodes: string[];

@@ -23,11 +23,11 @@ export async function getPoliciesDashboard(): Promise<PoliciesDashboardResponse>
       blocked: true,
       missingPolicyCount: 3,
       reacceptRequiredCount: 2,
-      userSafeMessage: 'Required policies need acceptance before checkout, listing, or payouts.',
+      userSafeMessage: 'Review required policies before checkout or listing. Live payouts remain disabled regardless of policy acceptance.',
       blockedActions: [
         { actionCode: 'CREATE_LISTING', actionLabel: 'Create listing blocked', blocked: true, requiredPolicyIds: ['policy-seller-terms'], userSafeMessage: 'Accept Seller Terms v3.0 to continue.', route: '/seller/policies' },
         { actionCode: 'DIGITAL_CHECKOUT', actionLabel: 'Digital checkout blocked', blocked: true, requiredPolicyIds: ['policy-digital'], userSafeMessage: 'Accept digital product terms before checkout.', route: '/policies/required' },
-        { actionCode: 'SELLER_PAYOUT', actionLabel: 'Seller payout blocked', blocked: true, requiredPolicyIds: ['policy-payout'], userSafeMessage: 'Accept payout policy before payouts can be released.', route: '/seller/policies/required' }
+        { actionCode: 'SELLER_PAYOUT', actionLabel: 'Seller payout blocked', blocked: true, requiredPolicyIds: ['policy-payout'], userSafeMessage: 'Live payouts are disabled. Accepting a policy does not enable or promise payout release.', route: '/seller/policies/required' }
       ]
     },
     acceptanceHistorySummary: [

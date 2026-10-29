@@ -156,7 +156,14 @@ public final class MarketplaceDtos {
 
     public record OrderResponse(String publicId, String listingPublicId, String orderStatus,
                                 String paymentStatus, String fulfillmentStatus, String payoutStatus,
-                                BigDecimal customerTotalAmount, String currencyCode, LocalDateTime createdAt) {
+                                BigDecimal customerTotalAmount, String currencyCode, LocalDateTime createdAt,
+                                int quantity) {
+        public OrderResponse(String publicId, String listingPublicId, String orderStatus,
+                             String paymentStatus, String fulfillmentStatus, String payoutStatus,
+                             BigDecimal customerTotalAmount, String currencyCode, LocalDateTime createdAt) {
+            this(publicId, listingPublicId, orderStatus, paymentStatus, fulfillmentStatus, payoutStatus,
+                    customerTotalAmount, currencyCode, createdAt, 1);
+        }
     }
 
     public record DeliveryRequest(@NotBlank String deliveryMethod, String deliveryReference, String providerNotes) {

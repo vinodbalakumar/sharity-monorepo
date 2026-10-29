@@ -18,6 +18,7 @@ export type AppRoute =
   | 'electronicsProduct'
   | 'cart'
   | 'checkout'
+  | 'cartCheckout'
   | 'library'
   | 'orders'
   | 'orderDetails'

@@ -1,18 +1,8 @@
 import { getBffCsrfToken, readApiErrorMessage } from './sessionService';
+import { sessionFetch as fetch } from './sessionFetch';
 import { resolvePublicBaseUrl } from './publicUrl';
 
-const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const userBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_AUTH_USER_BASE_URL, '/bff/api/authorization-server/api/v1');
-
-type BffSessionResponse = {
-  authenticated?: boolean;
-  publicId?: string;
-  email?: string;
-  name?: string;
-  phone?: string | null;
-  roles?: string[];
-  applications?: string[];
-};
 
 export type CurrentUserProfile = {
   firstName?: string | null;
@@ -67,58 +57,11 @@ export type UpdateUserProfileRequest = {
   privacySetting?: string | null;
 };
 
-async function fetchBffSession(): Promise<BffSessionResponse | null> {
-  try {
-    const response = await fetch(`${bffBaseUrl}/session`, {
-      credentials: 'include'
-    });
-    if (!response.ok) {
-      return null;
-    }
-    return await response.json() as BffSessionResponse;
-  } catch {
-    return null;
-  }
-}
-
-async function hasActiveBffSession(): Promise<boolean> {
-  const session = await fetchBffSession();
-  return session?.authenticated === true;
-}
-
-function sessionFallbackUser(session: BffSessionResponse): CurrentUser | null {
-  if (session.authenticated !== true || !session.publicId || !session.email) {
-    return null;
-  }
-
-  return {
-    publicId: session.publicId,
-    email: session.email,
-    username: session.name ?? session.email,
-    status: 'ACTIVE',
-    profileCompletionStatus: 'UNKNOWN',
-    emailVerified: true,
-    profile: {
-      phoneNumber: session.phone ?? null
-    },
-    roles: session.roles ?? [],
-    apps: session.applications ?? []
-  };
-}
-
 async function fetchUserApi(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${userBaseUrl}${path}`, {
     credentials: 'include',
     ...init
   });
-}
-
-async function readUserApiErrorMessage(response: Response, fallbackPrefix: string): Promise<string> {
-  if (response.status === 401 && await hasActiveBffSession()) {
-    return 'Profile service is unavailable right now.';
-  }
-
-  return readApiErrorMessage(response, fallbackPrefix);
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -163,31 +106,11 @@ export function updateCurrentUserProfile(request: UpdateUserProfileRequest): Pro
 }
 
 export function getCurrentUserSessions(): Promise<UserSession[]> {
-  return fetchUserApi('/users/me/sessions').then(async (response) => {
-    if (response.ok) {
-      return readJsonResponse<UserSession[]>(response, 'Unable to load account data');
-    }
-
-    if (response.status === 401 && await hasActiveBffSession()) {
-      return [];
-    }
-
-    throw new Error(await readUserApiErrorMessage(response, 'Unable to load account data'));
-  });
+  return getJson<UserSession[]>('/users/me/sessions');
 }
 
 export function getCurrentUserSocialLinks(): Promise<SocialLink[]> {
-  return fetchUserApi('/users/me/social-links').then(async (response) => {
-    if (response.ok) {
-      return readJsonResponse<SocialLink[]>(response, 'Unable to load account data');
-    }
-
-    if (response.status === 401 && await hasActiveBffSession()) {
-      return [];
-    }
-
-    throw new Error(await readUserApiErrorMessage(response, 'Unable to load account data'));
-  });
+  return getJson<SocialLink[]>('/users/me/social-links');
 }
 
 export function revokeCurrentUserSession(sessionId: number): Promise<{ message?: string }> {
@@ -250,10 +173,5 @@ export async function uploadCurrentUserProfileImage(file: Blob & { name?: string
 }
 
 async function readErrorMessage(response: Response) {
-  try {
-    const body = await response.json();
-    return body.message ?? body.error ?? `Request failed (${response.status})`;
-  } catch {
-    return `Request failed (${response.status})`;
-  }
+  return readApiErrorMessage(response);
 }

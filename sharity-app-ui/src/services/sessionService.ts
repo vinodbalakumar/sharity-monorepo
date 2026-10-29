@@ -6,6 +6,17 @@ import { resolvePublicBaseUrl } from './publicUrl';
 const sessionTimeoutMs = 5000;
 const bffBaseUrl = resolvePublicBaseUrl(process.env.EXPO_PUBLIC_BFF_BASE_URL, '/bff');
 const logoutOverrideKey = 'sharity_logout_override';
+const sessionExpiredKey = 'sharity_session_expired';
+export const sessionExpiredMessage = 'Your session has expired. You have been signed out. Please sign in again.';
+const expiryListeners = new Set<() => void>();
+let expirationHandled = false;
+export function isSessionExpired(): boolean {
+  return expirationHandled || appStorage.getString(sessionExpiredKey) === '1';
+}
+export function onSessionExpired(listener: () => void): () => void {
+  expiryListeners.add(listener);
+  return () => { expiryListeners.delete(listener); };
+}
 async function sessionHeaders(): Promise<Record<string, string>> {
   const token = await appStorage.getItem('access_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -19,6 +30,7 @@ export async function checkSession(): Promise<SessionCheckResult> {
     const timeout = setTimeout(() => controller.abort(), sessionTimeoutMs);
     try {
       const response = await fetch(`${bffBaseUrl}/session`, { credentials: 'include', signal: controller.signal, headers: await sessionHeaders() });
+      if (response.status === 401) await expireBrowserSession();
       if (response.status >= 500 || response.status === 429) continue;
       if (!response.ok) return { status: 'anonymous' };
       const body = (await response.json()) as { authenticated?: unknown };
@@ -41,6 +53,7 @@ export async function getBrowserSessionSummary(): Promise<BrowserSessionSummary 
     });
 
     if (!response.ok) {
+      if (response.status === 401) await expireBrowserSession();
       return null;
     }
 
@@ -50,7 +63,7 @@ export async function getBrowserSessionSummary(): Promise<BrowserSessionSummary 
   } finally { clearTimeout(timeout); }
 }
 
-export async function logoutBrowserSession(): Promise<void> {
+async function revokeBrowserSession(): Promise<void> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -70,15 +83,37 @@ export async function logoutBrowserSession(): Promise<void> {
       body: body ? JSON.stringify(body) : undefined
     });
     if (!response.ok) throw new Error('Unable to sign out. Please try again.');
-    await appStorage.setItem(logoutOverrideKey, '1');
-    // Clear all tokens and authentication state
-    await clearAllAuthTokens();
   } finally {
     clearTimeout(timeout);
   }
 }
 
+export async function logoutBrowserSession(): Promise<void> {
+  await revokeBrowserSession();
+  await appStorage.setItem(logoutOverrideKey, '1');
+  await clearAllAuthTokens();
+}
+
+export async function expireBrowserSession(): Promise<void> {
+  if (expirationHandled) return;
+  expirationHandled = true;
+  appStorage.setString(sessionExpiredKey, '1');
+  appStorage.setString(logoutOverrideKey, '1');
+  // Start revocation before clearing tokens, but never wait for the server to update the UI.
+  const serverLogout = revokeBrowserSession().catch((error: unknown) => {
+    console.warn(
+      '[auth] Server logout could not complete after the session expired.',
+      error instanceof Error ? error.message : 'Unknown logout error',
+    );
+  });
+  await clearAllAuthTokens();
+  expiryListeners.forEach(listener => listener());
+  void serverLogout;
+}
+
 export async function clearLogoutOverride(): Promise<void> {
+  expirationHandled = false;
+  appStorage.remove(sessionExpiredKey);
   await appStorage.removeItem(logoutOverrideKey);
 }
 

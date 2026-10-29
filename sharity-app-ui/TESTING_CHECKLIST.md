@@ -1,5 +1,22 @@
 # Feature Testing Checklist
 
+## Session expiry and scrolling catalogs
+
+- Feature APIs use `services/sessionFetch.ts`: a 401 clears local authentication and notifies `App.tsx` to show the signed-out storefront immediately. Server logout is best-effort; 403, 429 and 5xx must not sign users out.
+- Home, guest Home and all marketplace verticals share `components/marketplace/ScrollPagination.tsx`. Scroll near the next batch to append 24 cards, or use the accessible Load more products button. Search, filters and sorting reset the visible batch.
+- Pagination currently batches the fetched catalog in the UI; it does not add a backend pagination contract.
+- [ ] Confirm the expiry message remains visible after reload and private routes remain inaccessible through browser Back.
+- [ ] Confirm scrolling appends cards without duplicates on mobile and desktop, and changing filters resets the batch.
+- Automated coverage: `tests/e2e/marketplace-catalog.spec.ts` and the chat failure cases in `tests/e2e/chat.spec.ts`.
+
+## Physical cart checkout recovery
+
+- [ ] A price-change POST `409` resolves through authenticated `GET /api/v1/marketplace/cart/{cartId}/checkout-attempt` with the original `Idempotency-Key`. A `200 {"checkout":null}` instructs the buyer to return to cart and review refreshed prices; only a changed snapshot gets a new key.
+- [ ] A rejection whose locked resolution returns an existing checkout recovers that checkout without another POST or charge.
+- [ ] A failed resolution, network timeout, or ambiguous server error preserves the submitted key and snapshot. Only explicit POST `4xx` or `503` responses trigger resolution; no checkout is cleared based on a status alone.
+- [ ] After a definitive absence, reloading checkout still requires returning to cart for review. An unchanged reviewed snapshot retries with its original key.
+- Automated coverage: `npm run typecheck`, `npm run build:e2e -- --incremental`, and `npx playwright test physical-cart-checkout.spec.ts`.
+
 **Date:** June 7, 2026  
 **Focus:** Verify bug fixes work correctly  
 
@@ -128,6 +145,15 @@ npm run build:web
 
 ### Verify No Red Errors
 - No TypeScript errors in console
+
+## 7. Marketplace multi-select filters
+
+- [ ] Select two categories and verify listings from either category remain visible
+- [ ] Clear categories with "All categories" and verify the full catalog returns
+- [ ] Select two delivery methods and verify listings from either method remain visible
+- [ ] Clear delivery methods with "All delivery methods"
+- [ ] Combine multiple shopping preferences and verify the results satisfy every selected preference
+- [ ] Clear all filters and verify the complete catalog returns
 - No React warnings about missing dependencies
 - No network 404 errors for APIs
 - No CSS warnings

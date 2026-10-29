@@ -11,13 +11,13 @@ import {
 } from "react-native";
 import { ActivityIndicator, Chip } from "react-native-paper";
 import { ListingCard } from "../../components/marketplace/ListingCard";
+import { ScrollPagination, useScrollPagination } from "../../components/marketplace/ScrollPagination";
 import { formatListingPrice, compareListingPrice, listingLabel } from "../../utils/listingPresentation";
 import { StorefrontHero } from "./StorefrontHero";
 import { AppButton } from "../../components/ui";
 import {
   getStorefrontSections,
   getMarketplaceListing,
-  getMarketplaceHome,
   getMarketplaceListings,
 } from "../../services/marketplaceApi";
 import { appState$ } from "../../state/appState";
@@ -168,17 +168,19 @@ export function StorefrontContent({
   const [items, setItems] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const category = useSelector(appState$.marketplace.filters.categoryCode);
-  const setCategory = (value: string) => appState$.marketplace.filters.categoryCode.set(value);
+  const selectedCategories = useSelector(appState$.marketplace.filters.categoryCodes);
+  const toggleCategory = (value: string) => {
+    appState$.marketplace.filters.categoryCodes.set(current =>
+      current.includes(value) ? current.filter(category => category !== value) : [...current, value],
+    );
+  };
   const [sort, setSort] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const current = await getMarketplaceListings().catch(
-        async () => (await getMarketplaceHome()).featuredListings,
-      );
+      const current = await getMarketplaceListings();
       if (!Array.isArray(current)) throw new Error("Invalid catalog");
       setItems(current);
     } catch {
@@ -215,7 +217,7 @@ export function StorefrontContent({
       items
         .filter(
           (item) =>
-            (!category || item.categoryCode === category) &&
+            (!selectedCategories.length || selectedCategories.includes(item.categoryCode)) &&
             `${item.title} ${item.description ?? ""} ${item.categoryCode} ${item.sellerDisplayName ?? ""}`
               .toLowerCase()
               .includes(query.trim().toLowerCase()),
@@ -227,13 +229,14 @@ export function StorefrontContent({
               ? compareListingPrice(b, a)
               : 0,
         ),
-    [items, query, category, sort],
+    [items, query, selectedCategories, sort],
   );
-  const collections = query.trim() || category || loading || error ? [] : (sections || [])
+  const collections = query.trim() || selectedCategories.length > 0 || loading || error ? [] : (sections || [])
     .filter(s => s.code !== 'ALL_PRODUCTS')
     .map(section => ({ section, products: sectionProducts(section, [...items, ...discoveryItems], scope || '__unavailable__', now) }))
     .filter(collection => collection.products.length > 0);
   const catalogEnabled = sections !== null && (sections.find(s => s.code === 'ALL_PRODUCTS')?.enabled ?? true);
+  const { visible: paginatedItems, hasMore, loadMore } = useScrollPagination(visible);
   const renderCollection = ({ section, products }: { section: StorefrontSection; products: MarketplaceListing[] }) => (
     <View key={section.code} testID={`storefront-${section.code.toLowerCase()}`} style={styles.products}>
       <View style={styles.sectionHeader}>
@@ -269,7 +272,7 @@ export function StorefrontContent({
             accessibilityRole="button"
             onPress={() => {
               appState$.marketplace.searchQuery.set("");
-              appState$.marketplace.filters.categoryCode.set("");
+              appState$.marketplace.filters.categoryCodes.set([]);
               onNavigate(item.route);
             }}
             style={[styles.categoryItem, compact && { minHeight: 68 }]}
@@ -283,7 +286,7 @@ export function StorefrontContent({
       </View>
       {showHero && !error && <StorefrontHero items={items} onNavigate={onNavigate} onOpenProduct={onOpenProduct} landing={landing} onCreateAccount={onCreateAccount}/>}
       {collections.filter(({ section }) => section.code !== 'RECENTLY_VIEWED').map(renderCollection)}
-      {catalogEnabled && (loading || error || visible.length > 0 || !!query || !!category) && <View testID="storefront-all_products" style={styles.products}>
+      {catalogEnabled && (loading || error || visible.length > 0 || !!query || selectedCategories.length > 0) && <View testID="storefront-all_products" style={styles.products}>
         <View style={[styles.sectionHeader,compact && {alignItems:"center"}]}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text accessibilityRole="header" style={[styles.sectionTitle, compact && { fontSize: 20, lineHeight: 26 }]}>
@@ -300,21 +303,21 @@ export function StorefrontContent({
           </AppButton>
         </View>
         <View testID="catalog-filters" style={styles.filters}>
-          <Chip selected={!category} style={!category ? styles.filterSelected : styles.filter}
-            textStyle={!category ? styles.filterTextSelected : styles.filterText} onPress={() => setCategory("")}>
+          <Chip selected={!selectedCategories.length} style={!selectedCategories.length ? styles.filterSelected : styles.filter}
+            textStyle={!selectedCategories.length ? styles.filterTextSelected : styles.filterText} onPress={() => appState$.marketplace.filters.categoryCodes.set([])}>
             All categories
           </Chip>
           {compact && <AppButton size="small" variant="outline" onPress={() => setShowFilters(value => !value)}>
-            {showFilters ? "Hide categories" : category ? listingLabel(category) : "Show categories"}
+            {showFilters ? "Hide categories" : selectedCategories.length ? `${selectedCategories.length} selected` : "Show categories"}
           </AppButton>}
           {(!compact || showFilters) && [...new Set(items.map((item) => item.categoryCode).filter(Boolean))]
             .map((code) => (
               <Chip
                 key={code}
-                selected={category === code}
-                style={category === code ? styles.filterSelected : styles.filter}
-                textStyle={category === code ? styles.filterTextSelected : styles.filterText}
-                onPress={() => setCategory(category === code ? "" : code)}
+                selected={selectedCategories.includes(code)}
+                style={selectedCategories.includes(code) ? styles.filterSelected : styles.filter}
+                textStyle={selectedCategories.includes(code) ? styles.filterTextSelected : styles.filterText}
+                onPress={() => toggleCategory(code)}
               >
                 {listingLabel(code)}
               </Chip>
@@ -337,12 +340,13 @@ export function StorefrontContent({
           </View>
         ) : (
           <>
-            <View style={styles.grid}>
-              {visible.map((item) => (
+            <View testID="home-product-grid" style={styles.grid}>
+              {paginatedItems.map((item) => (
                 <ListingCard key={item.publicId} item={item} onPress={() => onOpenProduct(item.publicId)}
                   style={{ width: compact ? "47%" : width < 1100 ? "31.5%" : "23.5%" }} />
               ))}
             </View>
+            <ScrollPagination testID="home-pagination" count={paginatedItems.length} hasMore={hasMore} loadMore={loadMore} />
             {!visible.length && (
               <View style={styles.empty}>
                 <Ionicons
@@ -363,7 +367,7 @@ export function StorefrontContent({
                     variant="outline"
                     onPress={() => {
                       appState$.marketplace.searchQuery.set("");
-                      setCategory("");
+                      appState$.marketplace.filters.categoryCodes.set([]);
                     }}
                   >
                     Clear search

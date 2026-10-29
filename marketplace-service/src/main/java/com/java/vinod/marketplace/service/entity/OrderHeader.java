@@ -74,4 +74,18 @@ public class OrderHeader {
     private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    /** Parent consolidated checkout; null for legacy single-item orders. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "checkout_id")
+    private MarketplaceCheckout checkout;
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity = 1;
+    @Column(name = "unit_price_amount", precision = 12, scale = 2)
+    private BigDecimal unitPriceAmount;
+    @Column(name = "cart_item_public_id", length = 50)
+    private String cartItemPublicId;
+
+    public boolean isConsolidatedCheckoutChild() {
+        return checkout != null;
+    }
 }

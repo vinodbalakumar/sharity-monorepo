@@ -13,7 +13,7 @@ import { appState$ } from '../../state/appState';
 import type { AppRoute } from '../../types/navigation';
 import { getCart, applyCouponToCart, validateCart, proceedToCheckout } from '../../services/cartApi';
 import type { CartItem, CartResponse, CartSellerGroup, CartValidationIssue, CheckoutPreviewResponse } from './cartCheckoutTypes';
-import { getTotalCartValue, getCartItemCount, canCheckout, requiresSellerAcceptance, hasDigitalProducts, hasPhysicalProducts, calculateSavings } from '../../utils/cartUtils';
+import { getCartItemCount, requiresSellerAcceptance, hasDigitalProducts, hasPhysicalProducts, calculateSavings } from '../../utils/cartUtils';
 
 type Props = { onNavigate: (route: AppRoute) => void };
 const blurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
@@ -95,7 +95,6 @@ export function CartScreen({ onNavigate }: Props) {
     );
   }
 
-  const isReadyForCheckout = canCheckout(cart);
   const needsSellerAcceptance = requiresSellerAcceptance(cart);
   const hasBothProductTypes = hasDigitalProducts(cart) && hasPhysicalProducts(cart);
   const savings = calculateSavings(cart);
@@ -108,7 +107,7 @@ export function CartScreen({ onNavigate }: Props) {
           <PremiumCard p="$4" bg="$blue3" borderColor="$blue10" borderWidth={1}>
             <XStack ai="center" gap="$2">
               <Ionicons name="information-circle" size={20} color="blue" />
-              <Paragraph color="$blue10">Your cart contains both digital and physical items. Digital items will be delivered instantly after payment authorization.</Paragraph>
+              <Paragraph color="$blue10">Instant digital purchases remain single-item. Physical cart items use a separate item review; this cart does not combine items into one order.</Paragraph>
             </XStack>
           </PremiumCard>
         ) : null}
@@ -146,14 +145,19 @@ export function CartScreen({ onNavigate }: Props) {
               <PaymentNotice />
               {preview ? <CheckoutPreview preview={preview} /> : null}
               <PricingSummary cart={cart} />
+              <PremiumCard p="$4" bg="$orange3" borderColor="$orange10" borderWidth={1}>
+                <YStack gap="$2">
+                  <Text color="$orange10" fontWeight="700">Consolidated checkout is not available</Text>
+                  <Paragraph color="$orange10">No order or payment is created from this cart preview. Review physical listings individually; instant digital purchases remain single-item.</Paragraph>
+                </YStack>
+              </PremiumCard>
               {message ? <PremiumCard p="$4"><Paragraph color="$blue10">{message}</Paragraph></PremiumCard> : null}
               <AppButton
-                disabled={!isReadyForCheckout}
+                disabled
                 icon={<Ionicons name="lock-closed-outline" size={18} />}
                 variant="primary"
-                onPress={() => isReadyForCheckout ? onNavigate('checkout') : setMessage(needsSellerAcceptance ? 'Waiting for seller acceptance.' : 'Please resolve validation issues before proceeding.')}
               >
-                Proceed to Checkout
+                Checkout unavailable
               </AppButton>
             </YStack>
           </XStack>
@@ -227,7 +231,7 @@ function DigitalTermsPanel({ accepted, summary, onAccept }: { accepted: boolean;
 }
 
 function PaymentNotice() {
-  return <PremiumCard p="$5"><YStack gap="$2"><Badge label="Authorize-first payment" tone="warning" /><Paragraph color="$gray10">Your payment may be authorized first. Some seller orders may require seller acceptance before final capture.</Paragraph></YStack></PremiumCard>;
+  return <PremiumCard p="$5"><YStack gap="$2"><Badge label="Cart preview only" tone="warning" /><Paragraph color="$gray10">This cart preview does not create an order or authorize payment. Use the single-item purchase review for supported purchases.</Paragraph></YStack></PremiumCard>;
 }
 
 function CheckoutPreview({ preview }: { preview: CheckoutPreviewResponse }) {

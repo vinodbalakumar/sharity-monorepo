@@ -103,7 +103,12 @@ test('missing token usage is unavailable rather than zero', async ({ page }) => 
 });
 for (const failure of [401, 503, 429]) test(`chat failure ${failure} shows a safe recoverable error`, async ({ page }) => {
   await fixture(page, failure); await open(page); await page.getByRole('button', { name: 'Who founded Sharity?', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText(failure === 401 ? 'session changed' : failure === 429 ? 'busy' : 'temporarily unavailable');
+  await expect(page.getByRole('alert')).toContainText(failure === 401 ? 'Your session has expired.' : failure === 429 ? 'busy' : 'temporarily unavailable');
+  if (failure === 401) {
+    await expect(page).toHaveURL(/\/app\/$/);
+    await expect(page.getByLabel('Message Sharity AI')).toHaveCount(0);
+    return;
+  }
   await expect(page.getByText('database password=do-not-display')).toHaveCount(0); await expect(page.getByLabel('Message Sharity AI')).toBeEnabled();
   await expect(page.getByTestId('response-time')).toHaveCount(0);
 });

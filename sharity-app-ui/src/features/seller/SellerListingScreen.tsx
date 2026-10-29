@@ -10,6 +10,7 @@ import { AppLoadingIndicator, AppTextInput } from '../../components/ui';
 import { colors, radii, spacing } from '../../theme';
 import type { AppRoute } from '../../types/navigation';
 import { getBffCsrfToken } from '../../services/sessionService';
+import { sessionFetch as fetch } from '../../services/sessionFetch';
 import { createProviderAccount, enrollProviderModule, getMyModules, getMyProviderAccounts, getMyCapabilities, type ProviderAccount } from '../../services/platformAuthorizationApi';
 import { getCurrentUser, type CurrentUser } from '../../services/userApi';
 import { apiRequest } from '../../services/apiClient';
