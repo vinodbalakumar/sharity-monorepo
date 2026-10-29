@@ -21,7 +21,7 @@ The Tesla dashboard receives the Sharity JWT session through browser `postMessag
 ## Local Development
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
@@ -50,20 +50,20 @@ http://localhost:8080/sharity-admin/
 Do not deploy from this folder. Deployment files live in:
 
 ```text
-C:\Users\HP\projects\springbootrestdemo\deployments
+../deployments
 ```
 
 Deploy only this UI:
 
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\deployments
+cd ..\deployments
 docker compose up -d --build sharity-admin-portal
 ```
 
 Deploy all services:
 
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\deployments
+cd ..\deployments
 docker compose up -d --build
 ```
 
@@ -77,6 +77,19 @@ docker compose up -d --build
 - App access assignment
 - Audit logs
 - Service launcher for Tesla dashboard
+
+## Storefront configuration and API compatibility
+
+Recently viewed remains configurable, but the storefront renders it as the final
+content child after All products, the help CTA and other curated product sections,
+before the site footer, regardless of its configured position. Other curated
+sections keep their ordering. Enablement,
+filtering, privacy preferences and Clear history behavior remain unchanged.
+
+The unused `adminService.marketplaceDispute` and
+`adminService.paymentGatewayPolicy` wrappers were removed. Their backend APIs
+are intentionally retained because external consumers are unknown; this cleanup
+does not deprecate those APIs. Backup archives are retained.
 
 ## Project Structure
 

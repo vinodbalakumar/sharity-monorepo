@@ -2,6 +2,7 @@ package com.java.vinod.authorization.server.service;
 
 import com.java.vinod.authorization.server.dto.auth.AuthDtos;
 import com.java.vinod.authorization.server.entity.AppUser;
+import com.java.vinod.authorization.server.security.JwtKeySupport;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,21 +37,26 @@ public class JwtService {
     private final Duration accessTokenExpiration;
 
     public JwtService(@Value("${app.jwt.private-key-base64}") String privateKeyBase64,
-                      @Value("${app.jwt.public-key-base64}") String publicKeyBase64,
+                      @Value("${app.jwt.public-key-base64:}") String publicKeyBase64,
                       @Value("${app.jwt.private-key-path}") String privateKeyPath,
-                      @Value("${app.jwt.public-key-path}") String publicKeyPath,
+                      @Value("${app.jwt.public-key-path:}") String publicKeyPath,
                       @Value("${app.jwt.issuer}") String issuer,
                       @Value("${app.jwt.audience}") String audience,
                       @Value("${app.jwt.audiences:}") String configuredAudiences,
                       @Value("${app.jwt.access-token-expiration}") Duration accessTokenExpiration) {
         String privatePem = loadPem(privateKeyBase64, privateKeyPath, "JWT_PRIVATE_KEY_BASE64", "JWT_PRIVATE_KEY_PATH");
-        String publicPem = loadPem(publicKeyBase64, publicKeyPath, "JWT_PUBLIC_KEY_BASE64", "JWT_PUBLIC_KEY_PATH");
-        this.privateKey = parsePrivateKey(privatePem);
-        this.publicKey = parsePublicKey(publicPem);
+                this.privateKey = parsePrivateKey(privatePem);
+                this.publicKey = hasKey(publicKeyBase64, publicKeyPath)
+                    ? parsePublicKey(loadPem(publicKeyBase64, publicKeyPath, "JWT_PUBLIC_KEY_BASE64", "JWT_PUBLIC_KEY_PATH"))
+                    : JwtKeySupport.derivePublicKey(this.privateKey);
         this.issuer = issuer;
         this.audience = audience;
         this.audiences = resolveAudiences(audience, configuredAudiences);
         this.accessTokenExpiration = accessTokenExpiration;
+    }
+
+    private boolean hasKey(String base64Pem, String keyPath) {
+        return (base64Pem != null && !base64Pem.isBlank()) || (keyPath != null && !keyPath.isBlank());
     }
 
     public String createAccessToken(AppUser user, AuthDtos.UserSummary userSummary) {

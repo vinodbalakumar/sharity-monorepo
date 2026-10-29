@@ -1,24 +1,49 @@
-Physical delivery and cart correction: [release notes](docs/releases/2026-10-26-physical-delivery-cart.md).
+# Deployment workspace
 
-Profile cancellation and catalog copy: [release notes](docs/releases/2026-10-26-profile-cancel-catalog.md).
+This directory is the monorepo's deployment and operations area. It is not a
+separate application repository.
 
-# Sharity deployment repository
+## Contents
 
-Docker Compose, Dockerfiles and Nginx configuration live here. The running local project is `sharity-local`; its origin is exposed by the existing tunnel at https://vinodbalakumar.com. Pushing a feature branch does not deploy it.
+- `docker-compose*.yml`: local, QA, host-specific, AI, simple and production
+  stack variants.
+- `dockerfiles/`: service build definitions used by Compose and image workflows.
+- `nginx/`: reverse-proxy routes and TLS/diagnostics configuration.
+- `config/`: external Spring profiles mounted by selected deployment variants.
+- `scripts/`: deployment, health-check, rollback and QA target helpers.
+- `docs/`: deployment, environment, AI, QA and release documentation.
 
-- [2026-10-26 coordinated release and component commits](docs/releases/2026-10-26-core-ai-ui.md)
-- [2026-10-26 login redirect and session repair](docs/releases/2026-10-26-login-repair.md)
-- [Signed-in navigation and redesigned account settings](docs/releases/2026-10-26-member-account.md)
-- [Storefront navigation and highlighted shopping footer](docs/releases/2026-10-26-storefront-navigation-footer.md)
-- [Current Mac Ollama provider and centralized configuration](docs/MAC_OLLAMA.md)
-- [Repository ownership, output folders and package files](docs/sharity/WORKSPACE_LAYOUT.md)
-- [Local core/AI deployment](docs/local-ai-deployment.md)
-- [Shared deployment and verification tools](scripts/sharity/README.md)
-- [AI operating guide](docs/sharity/SHARITY_AI.md)
-- [Operations and commerce guide](docs/sharity/OPERATIONS.md)
+For current safe usage start with the
+[workspace operations guide](../docs/workspace/operations.md) and
+[deployment runbook](docs/deployment.md). Compose files depend on environment
+values, external databases and in some cases private key/configuration mounts.
+Review the resolved Compose configuration before use; these files are not
+universal secure defaults.
 
-Each application has its own Git repository and `.gitignore`. The new AI repository is https://github.com/vinodbalakumar/platform-ai-service. Current changes are published on `feature/sharity-production-responsive`. Keep real `.env` files, private keys, runtime snapshots and generated logs out of Git. `operations.env.example` is a template only.
+## Compose and environment safety
 
-Core Sharity and AI are enabled locally; Tesla stays disabled by owner request. Live payments, device OAuth verification and existing Expo security advisories remain release gates. The local deployment guides do not certify full production readiness.
+The unqualified `docker-compose.yml` contains legacy workstation paths and
+local fallbacks. Select a topology-specific Compose file/overlay deliberately.
+Local private inputs referenced by the files (for example database environment
+files and AI settings) are not committed. `.env.example` is a variable
+template, not a deployment credential store; replace all placeholders using a
+secret manager or ignored local configuration. Never reuse example secrets in
+shared environments.
 
-Local checkout: `C:/Users/HP/projects/springbootrestdemo/deployments`. Compose build contexts use sibling component directories; the admin checkout is `../sharity-admin-portal`. Existing Windows compatibility junctions at the previous paths preserve running bind mounts and external launch settings.
+The QA Compose templates expect an externally managed MySQL endpoint; they do
+not provision independent QA databases. See [Windows QA database
+guidance](docs/windows-qa-database.md) and the
+[replication runbook](docs/mysql-replication-runbook.md).
+
+## Workflows
+
+The monorepo's active workflows are in the root
+[`.github/workflows/`](../.github/workflows/) directory. Workflow files under
+`deployments/.github/workflows/` are retained deployment templates and do not
+run automatically for the root repository. Root CI verifies affected
+components; the image publishing workflow publishes an image but does not
+deploy it.
+
+Use [the script guide](scripts/sharity/README.md) to understand state-changing
+helpers and their prerequisites. Reports under `docs/releases/` and
+`docs/sharity/production/` are dated evidence, not live deployment health.

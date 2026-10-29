@@ -4,16 +4,17 @@ Deployment environment profiles are maintained in `../deployments/config/payment
 
 This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Payment Service
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
 > Run `mvn -B -ntp verify`; CI also reviews dependency changes.
-> A passing build does not establish production readiness. See the workspace
-> `outputs/production-verification.md` and shared docs
-> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+> A passing build does not establish production readiness. See the current
+> [developer guide](../docs/workspace/developer-guide.md),
+> [operations guide](../docs/workspace/operations.md), and dated
+> [migration validation record](../docs/migration/VALIDATION.md).
 >
 > AI does not authorize, capture, refund or release funds. Provider approval/credentials, signature-verified webhooks, reconciliation and real sandbox-to-live validation remain release gates.
 
@@ -21,6 +22,18 @@ See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for curre
 V3 payment backend foundation.
 
 ## Current Scope
+
+Standalone `local` defaults: HTTP port `9095`, PostgreSQL
+`jdbc:postgresql://localhost:5432/payment_db`, username `postgres`, and
+`db/migration-postgresql` migrations. Create the database and supply
+`PAYMENT_DB_PASSWORD`; override the connection using `PAYMENT_DB_URL` and
+`PAYMENT_DB_USERNAME`.
+
+Set `APP_JWT_PUBLIC_KEY_BASE64` to Base64 of the authorization server's public
+key PEM, never its private key. Base64 takes priority over the optional
+`JWT_PUBLIC_KEY_PATH` file fallback. Issuer and audience validation remain enabled.
+These local defaults do not require external deployment profiles; explicitly
+loading an external profile can override them.
 
 - JWT resource-server security using the authorization-server public key.
 - MySQL/Flyway schema for payment orders, transactions, provider payouts, refunds, webhooks, and outbox.
@@ -35,7 +48,8 @@ V3 payment backend foundation.
 - Payment capture sends both customer payment activity and provider pending earning events to Wallet Service.
 - Stripe webhook endpoint placeholder with idempotency table prepared.
 - Internal service calls use `X-Internal-Service-Token`.
-- Docker deployment through the central `C:\Users\HP\projects\deployments` stack.
+- Docker deployment is managed from the repository's sibling `../deployments/`
+  directory; see the current [deployment runbook](../deployments/docs/deployment.md).
 
 ## V3 Flow Notes
 

@@ -4,7 +4,7 @@ Source-reference badges and source update dates are no longer displayed below ch
 
 The shared shopping shell has a full-width dark footer with visible Shop, About, Help and Policies groups. Mobile links remain expanded. Footer routes preserve browser history; shopping links clear old search/category filters. `SiteNavigationContext` shares the existing guarded route manager with shopping and public-information screens. The homepage uses a compact mobile banner, desktop collection panels, real catalog imagery and a highlighted search field. No runtime UI dependency was added.
 
-After exporting the web build, run `npx playwright test tests/e2e/storefront-footer.spec.ts` for footer layout, destinations, Back and filter-reset checks in Chromium, Firefox and WebKit. Deployment and live verification are in the [storefront footer release](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/releases/2026-10-26-storefront-navigation-footer.md).
+After exporting the web build, run `npx playwright test tests/e2e/storefront-footer.spec.ts` for footer layout, destinations, Back and filter-reset checks in Chromium, Firefox and WebKit. Deployment and live verification are in the [storefront footer release](../deployments/docs/releases/2026-10-26-storefront-navigation-footer.md).
 
 ## Signed-in navigation and account settings (2026-10-26)
 
@@ -12,17 +12,25 @@ Signed-in screens expose a labeled **Sign out** button in the shared header, inc
 
 `/app/profile` separates Personal details, Privacy, and Security & devices. The persistent action bar always exposes Cancel alongside Save changes. Cancel discards the draft and returns to Home without a profile write. Save actions track unsaved edits, dates are submitted in ISO format, profile photos can be cancelled without leaving a stuck upload, and optional device-service failures do not hide the profile. Current-browser sign-out is distinct from revoking saved device sessions. Existing legacy privacy values are preserved until deliberately changed.
 
-Run `npx playwright test tests/e2e/member-account.spec.ts` after exporting the web build for focused account checks. The suite uses synthetic data and covers 320/390/768/1440-pixel layouts, fonts, save/discard/error behavior and header logout. See the [account experience and deployment record](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/releases/2026-10-26-member-account.md). Browser-engine checks and native exports do not certify physical devices or implement native OAuth.
+Run `npx playwright test tests/e2e/member-account.spec.ts` after exporting the web build for focused account checks. The suite uses synthetic data and covers 320/390/768/1440-pixel layouts, fonts, save/discard/error behavior and header logout. See the [account experience and deployment record](../deployments/docs/releases/2026-10-26-member-account.md). Browser-engine checks and native exports do not certify physical devices or implement native OAuth.
 
 ## Storefront refresh (2026-10-26)
 
 The landing page, customer home and all-products catalog share `StorefrontContent`; category catalogs and product details use the same shell, colors and system fonts. React Native Paper is already installed and now provides the root theme, shared buttons, search and filter chips. No runtime UI dependency was added.
 
+`IconFontGate` loads Ionicons and MaterialCommunityIcons before mounting the app. A font-load failure shows an explicit error and Retry; on web, Retry reloads the page rather than swallowing the failure.
+
+Listing API `imageUrl` values are direct public storage/CDN URLs, resolved from existing image keys by the backend. The UI uses those URLs directly; the legacy listing-image endpoint remains available for compatibility.
+
+Recently viewed is the final storefront content child: after All products, the help CTA and every other curated product section, before the site footer, regardless of its administrator-configured position. Other curated sections keep their ordering. Existing enablement, filtering, privacy preferences and Clear history behavior still apply.
+
+Active checkout and catalog routes use `CommerceCheckoutScreen` and `CommerceCatalogScreen`. The unused legacy `src/features/checkout/CheckoutScreen.tsx`, `src/features/payment/PaymentSuccessScreen.tsx` and `src/features/electronics/ElectronicsMarketplaceHomeScreen.tsx` were removed; a payment-status route still does not imply payment success. Backup archives are retained.
+
 Guests can browse `/app/`, `/app/marketplaces`, category catalogs and `/app/products/:id` without being sent to sign-in. Account routes require a verified BFF session. Only explicit sign-in opens OAuth. A validated, same-origin route intent is kept in session storage for at most 15 minutes; a `login=success` query alone never authenticates anyone. Back and refresh preserve public product routes. Native sign-in still requires a proper device OAuth flow; web login must not be simulated as native authentication.
 
 Missing/failed images use a clear fallback. Product cards show the listing image without demo badges; seeded inventory is identified as Sample item on the product details page. The catalog uses All products without a promotional subtitle or demo banner. Catalog failures expose Retry and empty results do not invent products. Live payments remain disabled.
 
-Run `npm run typecheck`, `npm run lint`, `npm run build:e2e`, then `npx playwright test`. The browser suite covers guest routing, real route IDs, sign-in/Back contracts, responsive fonts and layout, commerce errors, access control and chat metrics in Chromium, Firefox and WebKit. Mocked browser contracts are separate from `node tests/deployed-storefront-smoke.cjs`, which checks the actual public deployment without signing in or purchasing. See [the release record](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/production/STOREFRONT_REFRESH.md).
+Run `npm run typecheck`, `npm run lint`, `npm run build:e2e`, then `npx playwright test`. The browser suite covers guest routing, real route IDs, sign-in/Back contracts, responsive fonts and layout, commerce errors, access control and chat metrics in Chromium, Firefox and WebKit. Mocked browser contracts are separate from `node tests/deployed-storefront-smoke.cjs`, which checks a configured deployment without signing in or purchasing. See [the release record](../deployments/docs/sharity/production/STOREFRONT_REFRESH.md).
 
 ## Sharity AI chat (2026-10-25)
 
@@ -35,13 +43,14 @@ tokens. **Chat info** shows totals for the current conversation, including repea
 sent to the model. Approved factual answers use zero model tokens. Missing/older usage is
 marked unavailable. Device times remain local to the current page session; stored server timing
 and token counts survive reopening a chat.
-Read [the workspace operating guide](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/SHARITY_AI.md) for local configuration and production limits.
+Read [the AI operating guide](../deployments/docs/sharity/SHARITY_AI.md) for configuration and deployment limits.
 Run `npx playwright test tests/e2e/chat.spec.ts` after `npm run build:e2e`.
 
 The verified Expo web export is deployed to the local Docker origin behind the existing
 public tunnel. Native Android/iOS exports are build artifacts, not installed-device releases.
-Run `node tests/deployed-chat-smoke.cjs https://vinodbalakumar.com` for a real deployed-service
-smoke check. See workspace `outputs/local-deployment-report.md` for results and remaining gates.
+Run `node tests/deployed-chat-smoke.cjs <base-url>` for a real deployed-service
+smoke check against an explicitly authorized test environment. Deployment
+results are environment-specific and generated output is local-only.
 Run `node tests/deployed-chat-concurrency.cjs https://vinodbalakumar.com` to check two independent
 real-model browser sessions, factual answers during inference, conversation isolation and deletion.
 
@@ -49,7 +58,7 @@ real-model browser sessions, factual answers during inference, conversation isol
 
 The active storefront/catalog/cart/checkout routes now use the classic marketplace design and backend-owned records. Administrator diagnostics are at `/app/admin/diagnostics`; AI writing assistance is optional in the seller form. Purchase review never treats a redirect as payment success. Live checkout is not certified; development simulation is explicitly labelled and requires the backend demo switch. Run `npm run typecheck`, `npm run lint`, `npm run build:e2e`, and `npm run test:e2e`; native exports still require installed-device QA.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Sharity App
 
@@ -106,15 +115,33 @@ Clean story-by-story Expo React Native TypeScript rebuild.
 ## Commands
 
 ```powershell
-npm install
+npm ci
 npm run typecheck
 npm run lint
 npm run build:web
-cd C:\Users\HP\projects\deployments
+Push-Location ..\deployments
 docker compose up -d --build sharity-app
+Pop-Location
 ```
 
-Run the app only through Docker. Do not start a separate Expo dev server for local review.
+For local Spring services, run `npm start` (or `npm run web` to open the browser).
+Expo serves the UI on `http://localhost:9174/app/` and automatically loads
+`.env.development`: session/login and protected APIs use the BFF on port `9090`,
+registration and password recovery use the authorization server on port `9093`,
+and the public catalog uses the BFF marketplace proxy (forwarded to port `9094`).
+Start those backend services separately with their local profiles. The BFF's
+default OAuth callback and UI redirect already match these ports.
+For cross-origin registration requests, configure the authorization server with
+`SHARITY_WEB_ALLOWED_ORIGIN=http://localhost:9174` before starting it, or use
+the bundled local-profile defaults for ports 9173 and 9174. Restart the
+authorization server after changing the allowed origins.
+
+Use the ignored `.env.development.local` for workstation overrides, then restart
+Expo after URL changes. Physical devices need reachable LAN hosts instead of
+`localhost`, with corresponding backend CORS and OAuth redirect configuration.
+These development defaults are not loaded by production exports. For the Docker
+gateway instead, override all public URLs to its origin (normally
+`http://localhost:8080`), retaining the endpoint paths above.
 
 ## Current Story
 

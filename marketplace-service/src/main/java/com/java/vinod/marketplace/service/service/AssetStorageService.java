@@ -2,9 +2,11 @@ package com.java.vinod.marketplace.service.service;
 
 import com.java.vinod.marketplace.service.dto.AssetDtos;
 import com.java.vinod.marketplace.service.entity.Asset;
+import com.java.vinod.marketplace.service.entity.AssetStorageProvider;
 import com.java.vinod.marketplace.service.entity.AssetUploadEvent;
 import com.java.vinod.marketplace.service.entity.Listing;
 import com.java.vinod.marketplace.service.repository.AssetRepository;
+import com.java.vinod.marketplace.service.repository.AssetStorageProviderRepository;
 import com.java.vinod.marketplace.service.repository.AssetUploadEventRepository;
 import com.java.vinod.marketplace.service.repository.ListingRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +25,14 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -38,7 +47,10 @@ public class AssetStorageService {
 
     private final AssetRepository assetRepository;
     private final AssetUploadEventRepository assetUploadEventRepository;
+    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+
     private final ListingRepository listingRepository;
+    private final AssetStorageProviderRepository assetStorageProviderRepository;
     private final String providerCode;
     private final String bucketName;
     private final String endpointUrl;
@@ -51,6 +63,7 @@ public class AssetStorageService {
     public AssetStorageService(AssetRepository assetRepository,
                                AssetUploadEventRepository assetUploadEventRepository,
                                ListingRepository listingRepository,
+                               AssetStorageProviderRepository assetStorageProviderRepository,
                                @Value("${app.assets.provider-code}") String providerCode,
                                @Value("${app.assets.bucket-name}") String bucketName,
                                @Value("${app.assets.endpoint-url}") String endpointUrl,
@@ -62,6 +75,7 @@ public class AssetStorageService {
         this.assetRepository = assetRepository;
         this.assetUploadEventRepository = assetUploadEventRepository;
         this.listingRepository = listingRepository;
+        this.assetStorageProviderRepository = assetStorageProviderRepository;
         this.providerCode = providerCode;
         this.bucketName = bucketName;
         this.endpointUrl = endpointUrl;
@@ -189,34 +203,65 @@ public class AssetStorageService {
 
     // Only the public image attached to a visible listing can reach this method.
     // Never accept a bucket, object key or remote URL from an HTTP request.
+    // Public images are read anonymously from the bucket's public URL, so no storage credentials are needed.
     public ListingImage readListingImage(String imageKey) {
-        validateStorageConfigured();
+        String base = readPublicBaseUrl();
         String key = imageKey == null ? "" : imageKey.trim();
-        String base = publicBaseUrl.replaceAll("/+$", "") + "/";
-        if (key.startsWith(base)) key = key.substring(base.length());
+        if (key.startsWith(base + "/")) key = key.substring(base.length() + 1);
         if (!(key.startsWith("listings/") || key.matches("sellers/[^/]+/listings/[^/]+/.+"))
                 || key.contains("..") || key.contains("\\") || key.contains("%")) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
         }
         long limit = Math.min(maxFileSizeBytes, 5 * 1024 * 1024);
-        try (S3Client client = s3Client();
-             var stream = client.getObject(software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
-                     .bucket(bucketName).key(key).build())) {
-            String type = stream.response().contentType();
-            if (!Set.of("image/jpeg", "image/png", "image/webp", "image/avif").contains(type)
-                    || stream.response().contentLength() == null || stream.response().contentLength() > limit) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+        try {
+            HttpResponse<InputStream> response = HTTP.send(HttpRequest.newBuilder(URI.create(base + "/" + encodePath(key)))
+                    .timeout(Duration.ofSeconds(10)).GET().build(), HttpResponse.BodyHandlers.ofInputStream());
+            try (InputStream body = response.body()) {
+                if (response.statusCode() != 200) {
+                    if (response.statusCode() == 404 || response.statusCode() == 403) {
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+                    }
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Listing image temporarily unavailable");
+                }
+                String type = response.headers().firstValue("Content-Type").orElse("")
+                        .split(";")[0].trim().toLowerCase(Locale.ROOT);
+                if (!Set.of("image/jpeg", "image/png", "image/webp", "image/avif").contains(type)) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+                }
+                byte[] bytes = body.readNBytes((int) limit + 1);
+                if (bytes.length == 0 || bytes.length > limit) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
+                }
+                return new ListingImage(bytes, type);
             }
-            byte[] bytes = stream.readNBytes((int) limit + 1);
-            if (bytes.length == 0 || bytes.length > limit) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
-            }
-            return new ListingImage(bytes, type);
-        } catch (software.amazon.awssdk.services.s3.model.NoSuchKeyException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Listing image unavailable");
-        } catch (software.amazon.awssdk.core.exception.SdkException | IOException ex) {
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Listing image temporarily unavailable", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Listing image temporarily unavailable", ex);
         }
+    }
+
+    // Prefer the active provider row in the DB; fall back to app.assets.public-base-url.
+    private String readPublicBaseUrl() {
+        String base = assetStorageProviderRepository.findByProviderCodeAndActiveTrue(providerCode)
+                .or(assetStorageProviderRepository::findFirstByActiveTrueOrderByUpdatedAtDesc)
+                .map(AssetStorageProvider::getPublicBaseUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .orElse(publicBaseUrl);
+        if (base == null || !(base.startsWith("https://") || base.startsWith("http://"))) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Asset public URL is not configured");
+        }
+        return base.trim().replaceAll("/+$", "");
+    }
+
+    private static String encodePath(String key) {
+        StringBuilder path = new StringBuilder();
+        for (String segment : key.split("/")) {
+            if (!path.isEmpty()) path.append('/');
+            path.append(URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20"));
+        }
+        return path.toString();
     }
 
     private S3Client s3Client() {

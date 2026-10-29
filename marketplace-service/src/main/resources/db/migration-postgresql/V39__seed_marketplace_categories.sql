@@ -5,8 +5,13 @@
 DELETE FROM category_master
 WHERE vertical_code IN ('MARKETPLACE', 'JEWELLERY');
 
--- Reset sequence if needed
-ALTER SEQUENCE category_master_id_seq RESTART WITH 1;
+-- Move the identity sequence past every surviving row. Other verticals keep their
+-- existing ids, so restarting at 1 would collide with them (e.g. id 7).
+SELECT setval(
+    pg_get_serial_sequence('category_master', 'id'),
+    COALESCE((SELECT MAX(id) FROM category_master), 0) + 1,
+    false
+);
 
 -- ============================================
 -- DIGITAL MARKETPLACE CATEGORIES (16 total)

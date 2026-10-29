@@ -1,12 +1,16 @@
-Deployment environment profiles are maintained in `../deployments/config/authorization-server/`; use `SPRING_CONFIG_ADDITIONAL_LOCATION` when starting outside Compose. Dockerfiles and server configuration are maintained in `../deployments`.
+# Authorization Server
+
+Spring Boot authorization service for Sharity and connected service modules.
+
+Deployment environment profiles are maintained in `../deployments/config/authorization-server/`; set `SPRING_CONFIG_ADDITIONAL_LOCATION` explicitly when you need these profiles outside Compose. Selecting `local` alone does not load files from that directory. Dockerfiles and server configuration are maintained in `../deployments`.
+
+For database setup, IntelliJ configuration, migration safety, and startup troubleshooting, see the [database operations runbook](docs/database-operations.md).
 
 ## Operations and commerce follow-up (2026-10-25)
 
 This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
 
 See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
-
-# Authorization Server
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
@@ -17,8 +21,6 @@ See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for curre
 >
 > Identity and token issuance remain deterministic. Verify deployed OAuth redirects, mail delivery, issuer/audience and provider eligibility before release.
 
-
-Spring Boot authorization service for Sharity and connected service modules.
 
 ## Tech Stack
 
@@ -110,65 +112,131 @@ Seeded V3 modules:
 
 ## Local Run
 
-Default local profiles:
+Run commands in this section from the `authorization-server` directory. Install
+Java 21 or a compatible newer JDK and Maven, create the database, and grant the
+application user permission to apply schema migrations before starting.
 
-```text
-Profiles: local,mysql
-Database: auth
-MySQL host: localhost
-MySQL port: 3306
-Datasource env vars: AUTH_DB_URL, AUTH_DB_USERNAME, AUTH_DB_PASSWORD
-JWT private key: C:/Users/HP/projects/certs/jwt-private.pem
-JWT public key: C:/Users/HP/projects/certs/jwt-public.pem
-```
+### Environment variables
 
-Run locally:
+These settings describe the shared `src\main\resources\application.properties`
+configuration. External profile files or higher-priority Spring properties can
+override them.
+
+| Variable | Shared default / purpose |
+| --- | --- |
+| `SPRING_PROFILES_ACTIVE` | `local` |
+| `AUTH_DB_URL` | `jdbc:postgresql://localhost:5432/sauth` |
+| `AUTH_DB_USERNAME` | `postgres` |
+| `AUTH_DB_PASSWORD` | Supply your database password securely; do not rely on source defaults |
+| `SERVER_PORT` | `9093` (HTTP port, not the database port) |
+| `SERVER_SERVLET_CONTEXT_PATH` | `/authorization-server/api` |
+| `SPRING_CONFIG_ADDITIONAL_LOCATION` | Optional external configuration directory; see the runbook |
+
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and
+`SPRING_DATASOURCE_PASSWORD` override the corresponding Spring datasource
+properties. Avoid conflicting values between these and `AUTH_DB_*`.
+`DB_HOST`, `DB_PORT`, and `DB_NAME` alone do not configure the shared datasource.
+
+### Local browser origins and BFF sign-in
+
+The bundled local-profile `app.web.allowed-origin` defaults to
+`http://localhost:9173,http://localhost:9174`, configurable with
+`SHARITY_WEB_ALLOWED_ORIGIN`. This supports standalone local startup without
+the external deployment profile. Origins contain no `/app/` path. Keep these
+loopback defaults local-only: `application.properties` activates the default in
+a `local` profile document. The shared property and Java fallback are empty,
+with no wildcard. Production must explicitly configure its trusted origins.
+
+The local browser flow uses this service at
+`http://localhost:9093/authorization-server/api`, the BFF callback at
+`http://localhost:9090/login/oauth2/code/sharity-web-bff`, and the frontend at
+`http://localhost:9174/app/`. See the [BFF local-run guide](../platform-web-bff/README.md#local-run)
+for redirect settings and fresh sign-in (`force=true` / `prompt=login`).
+
+If registration-options returns 403 with no `Access-Control-Allow-Origin`,
+check the active profile and effective allowed origins. Standalone startup
+without external local configuration previously used the old Java CORS fallback
+`http://localhost:3000`. Restart the authorization process after applying the
+local-profile correction or changing its origin override; a BFF restart alone
+cannot reload authorization-server configuration.
+
+After the user restarted authorization, live credentialed registration-options
+requests from the configured UI origin returned HTTP 200; an untrusted origin
+returned 403. An actual Chromium fetch also returned 200. This is local CORS
+verification, not production deployment or end-to-end account registration.
+
+### Start with PostgreSQL or MySQL
+
+In PowerShell, set the URL and username for your database. For PostgreSQL:
 
 ```powershell
-mvn spring-boot:run -Dspring-boot.run.profiles=local,mysql
+$env:AUTH_DB_URL = 'jdbc:postgresql://localhost:5432/sauth'
+$env:AUTH_DB_USERNAME = 'postgres'
 ```
 
-Run locally with PostgreSQL:
+For MySQL, use these instead:
 
 ```powershell
-mvn spring-boot:run -Dspring-boot.run.profiles=local,postgresql
+$env:AUTH_DB_URL = 'jdbc:mysql://localhost:3306/auth'
+$env:AUTH_DB_USERNAME = 'auth_app'
 ```
+
+For either vendor, supply `AUTH_DB_PASSWORD` through a secure environment or
+secret configuration, then run:
+
+```powershell
+mvn -B -ntp clean compile
+if ($LASTEXITCODE -eq 0) {
+    mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+}
+```
+
+Port `5431` is supported only if PostgreSQL actually listens there (or a container
+publishes that host port); set `AUTH_DB_URL` accordingly. Changing the application
+URL does not start PostgreSQL or change its listening port.
+
+Flyway automatically chooses MySQL or PostgreSQL scripts based on the connected
+database, not the profile name. **Review the demo-data reset migrations before
+pointing a fresh startup at a database containing real users.** See
+[database migrations and recovery](docs/database-operations.md) for IntelliJ
+steps, migration locations, and troubleshooting.
 
 Local URL:
 
 ```text
-http://localhost:8083/authorization-server/api
+http://localhost:9093/authorization-server/api
 ```
 
 Swagger:
 
 ```text
-http://localhost:8083/authorization-server/api/swagger-ui/index.html
+http://localhost:9093/authorization-server/api/swagger-ui/index.html
 ```
 
 ## Docker Deployment
 
 Deployment files are not stored in this service folder. They are centralized in:
 
-```text
-C:\Users\HP\projects\springbootrestdemo\deployments
-```
+[the sibling deployments directory](../deployments).
 
 Deploy this service only:
 
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\deployments
+Set-Location ..\deployments
 docker compose up -d --build authorization-server
 ```
 
 Deploy all services:
 
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\deployments
+Set-Location ..\deployments
 docker compose up -d --build
 ```
 
-The container runs on internal port `8080`. Only the Nginx container publishes host port `8080`.
+Container ports and datasource overrides depend on the selected Compose files.
+Use the [deployment documentation](../deployments/docs/deployment.md) for the
+target environment; do not assume the standalone HTTP or database defaults apply
+inside a container. In a container, `localhost` refers to that container, not the host.
 
 Public route through Nginx:
 
@@ -204,11 +272,10 @@ Environment variables:
 
 ```text
 JWT_PRIVATE_KEY_PATH=/keys/jwt-private.pem
-JWT_PUBLIC_KEY_PATH=/keys/jwt-public.pem
 JWT_AUDIENCE=auth-clients
 ```
 
-The private key is used only by this service to sign JWTs.
+The private RSA key is used only by this service to sign JWTs. Its matching public key is derived automatically; `JWT_PUBLIC_KEY_PATH` or `JWT_PUBLIC_KEY_BASE64` may be supplied as an override. The key can also be provided as Base64-encoded PEM through `JWT_PRIVATE_KEY_BASE64`.
 
 ## Important APIs
 
@@ -292,39 +359,22 @@ This is intentionally simple for local V3. Later phases should move internal cal
 
 ## Database
 
-The service supports both MySQL and PostgreSQL.
+The service supports MySQL 8 and PostgreSQL 15+. `FlywayConfig` reads JDBC metadata
+and selects exactly one migration location, overriding `spring.flyway.locations`
+even when that property comes from an external profile.
 
-Default MySQL local settings:
+| Connected database | Migration source directory |
+| --- | --- |
+| MySQL | `src\main\resources\db\migration` |
+| PostgreSQL | `src\main\resources\db\migration-postgresql` |
 
-```text
-SPRING_PROFILES_ACTIVE=local,mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=auth
-```
+Keep migration versions and behavior aligned across both vendors. Do not edit
+already-applied migrations or files under `target\classes`; add a new unused
+version in each vendor directory. Flyway manages schema changes; Hibernate uses
+`ddl-auto=validate`, not automatic schema creation.
 
-PostgreSQL local settings:
-
-```text
-SPRING_PROFILES_ACTIVE=local,postgresql
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=auth
-```
-
-Flyway manages schema migrations from:
-
-```text
-src/main/resources/db/migration
-```
-
-PostgreSQL-specific Flyway migrations live in:
-
-```text
-src/main/resources/db/migration-postgresql
-```
-
-Do not edit old applied migrations. Add a new migration such as `V7__description.sql`.
+See the [database operations runbook](docs/database-operations.md) for migration
+safety, existing-database recovery, and isolated regression commands.
 
 ## Useful Commands
 

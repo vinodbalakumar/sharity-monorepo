@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
@@ -88,7 +89,7 @@ public class QueryTimingDataSourceConfig {
                         new Class<?>[]{Connection.class},
                         new TimingConnectionHandler(delegate, connection, slowQueryLoggingEnabled, slowQueryThresholdMs));
             }
-            return method.invoke(delegate, args);
+            return invokeDelegate(method, delegate, args);
         }
     }
 
@@ -110,20 +111,20 @@ public class QueryTimingDataSourceConfig {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             String name = method.getName();
             if ("prepareStatement".equals(name) && args != null && args.length > 0 && args[0] instanceof String sql) {
-                PreparedStatement statement = (PreparedStatement) method.invoke(delegate, args);
+                PreparedStatement statement = (PreparedStatement) invokeDelegate(method, delegate, args);
                 return Proxy.newProxyInstance(
                         statement.getClass().getClassLoader(),
                         new Class<?>[]{PreparedStatement.class},
                         new TimingPreparedStatementHandler(delegateDataSource, statement, sql, slowQueryLoggingEnabled, slowQueryThresholdMs));
             }
             if ("createStatement".equals(name)) {
-                Statement statement = (Statement) method.invoke(delegate, args);
+                Statement statement = (Statement) invokeDelegate(method, delegate, args);
                 return Proxy.newProxyInstance(
                         statement.getClass().getClassLoader(),
                         new Class<?>[]{Statement.class},
                         new TimingStatementHandler(delegateDataSource, statement, slowQueryLoggingEnabled, slowQueryThresholdMs));
             }
-            return method.invoke(delegate, args);
+            return invokeDelegate(method, delegate, args);
         }
     }
 
@@ -150,7 +151,7 @@ public class QueryTimingDataSourceConfig {
                         : safeSql(delegate.toString());
                 long startedAt = System.nanoTime();
                 try {
-                    return method.invoke(delegate, args);
+                    return invokeDelegate(method, delegate, args);
                 } finally {
                     long elapsedMs = toMillis(System.nanoTime() - startedAt);
                     if (slowQueryLoggingEnabled && elapsedMs >= slowQueryThresholdMs) {
@@ -159,7 +160,7 @@ public class QueryTimingDataSourceConfig {
                     }
                 }
             }
-            return method.invoke(delegate, args);
+            return invokeDelegate(method, delegate, args);
         }
     }
 
@@ -185,20 +186,20 @@ public class QueryTimingDataSourceConfig {
             String name = method.getName();
             if ("setNull".equals(name) && args != null && args.length >= 2 && args[0] instanceof Integer index) {
                 parameters.put(index, null);
-                return method.invoke(delegate, args);
+                return invokeDelegate(method, delegate, args);
             }
             if (name.startsWith("set") && args != null && args.length >= 2 && args[0] instanceof Integer index) {
                 parameters.put(index, normalizeParameter(args[1]));
-                return method.invoke(delegate, args);
+                return invokeDelegate(method, delegate, args);
             }
             if ("clearParameters".equals(name)) {
                 parameters.clear();
-                return method.invoke(delegate, args);
+                return invokeDelegate(method, delegate, args);
             }
             if (name.startsWith("execute")) {
                 long startedAt = System.nanoTime();
                 try {
-                    return method.invoke(delegate, args);
+                    return invokeDelegate(method, delegate, args);
                 } finally {
                     long elapsedMs = toMillis(System.nanoTime() - startedAt);
                     if (slowQueryLoggingEnabled && elapsedMs >= slowQueryThresholdMs) {
@@ -208,10 +209,22 @@ public class QueryTimingDataSourceConfig {
                     }
                 }
             }
-            return method.invoke(delegate, args);
+            return invokeDelegate(method, delegate, args);
         }
     }
 
+    /**
+     * Reflective calls wrap driver failures in InvocationTargetException; rethrow the original
+     * SQLException so the proxy does not surface it as an UndeclaredThrowableException.
+     */
+    private static Object invokeDelegate(Method method, Object delegate, Object[] args) throws Throwable {
+        try {
+            return method.invoke(delegate, args);
+        } catch (InvocationTargetException exception) {
+            Throwable cause = exception.getCause();
+            throw cause != null ? cause : exception;
+        }
+    }
     private static long toMillis(long nanos) {
         return nanos / 1_000_000L;
     }

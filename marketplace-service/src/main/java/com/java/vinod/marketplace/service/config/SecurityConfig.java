@@ -4,8 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -181,10 +179,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(@Value("${app.jwt.public-key-path}") String publicKeyPath,
+    JwtDecoder jwtDecoder(@Value("${app.jwt.public-key-base64:}") String publicKeyBase64,
+                          @Value("${app.jwt.public-key-path:}") String publicKeyPath,
                           @Value("${app.jwt.issuer}") String issuer,
                           @Value("${app.jwt.audience}") String audience) throws Exception {
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey(readPublicKey(publicKeyPath)).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey(readPublicKey(publicKeyBase64, publicKeyPath)).build();
         OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience().contains(audience)
                 ? OAuth2TokenValidatorResult.success()
                 : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Token audience is not allowed", null));
@@ -192,13 +191,34 @@ public class SecurityConfig {
         return decoder;
     }
 
-    private RSAPublicKey readPublicKey(String publicKeyPath) throws Exception {
-        Resource resource = new FileSystemResource(publicKeyPath);
-        String pem = Files.readString(Path.of(resource.getURI()), StandardCharsets.UTF_8)
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s", "");
-        byte[] decoded = Base64.getDecoder().decode(pem);
-        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
+    private RSAPublicKey readPublicKey(String publicKeyBase64, String publicKeyPath) {
+        String pem;
+        String source;
+        if (publicKeyBase64 != null && !publicKeyBase64.isBlank()) {
+            source = "app.jwt.public-key-base64";
+            try {
+                pem = new String(Base64.getDecoder().decode(publicKeyBase64), StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalStateException(source + " must be Base64-encoded public key PEM", exception);
+            }
+        } else if (publicKeyPath != null && !publicKeyPath.isBlank()) {
+            source = "app.jwt.public-key-path";
+            try {
+                pem = Files.readString(Path.of(publicKeyPath), StandardCharsets.UTF_8);
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to read JWT public key from " + source, exception);
+            }
+        } else {
+            throw new IllegalStateException("app.jwt.public-key-base64 or app.jwt.public-key-path must be configured");
+        }
+        try {
+            String body = pem.replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replaceAll("\\s", "");
+            byte[] decoded = Base64.getDecoder().decode(body);
+            return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
+        } catch (Exception exception) {
+            throw new IllegalStateException("JWT public key from " + source + " must be an RSA PUBLIC KEY PEM (X.509)", exception);
+        }
     }
 }

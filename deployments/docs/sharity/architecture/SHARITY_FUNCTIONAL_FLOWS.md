@@ -1,6 +1,6 @@
 # Sharity functional flows and data boundaries
 
-Updated 2026-10-26. Workspace: `C:/Users/HP/projects/springbootrestdemo`.
+Updated 2026-10-28. Applies to the current workspace.
 
 ## Browse, sign in and purchase
 
@@ -37,37 +37,48 @@ sequenceDiagram
     participant UI as Expo browser or native app
     participant BFF as Web BFF
     participant API as Marketplace service
-    participant DB as Listing database
-    participant S3 as Configured object storage
+    participant CDN as Public storage or CDN
     UI->>BFF: Public catalog request
     BFF->>API: Read listings
-    API-->>BFF: Listing-specific image paths
+    API->>API: Resolve existing image keys to public URLs
+    API-->>BFF: Listings with direct imageUrl
     BFF-->>UI: Catalog response
-    UI->>BFF: GET listing public ID / image
-    BFF->>API: Anonymous image request
-    API->>DB: Verify listing visibility and current image key
-    alt Public listing and allowed image key
-        alt Cached image younger than five minutes
-            API-->>BFF: Raster image and public cache headers
-            BFF-->>UI: Image response
-        else Cache miss
-            API->>S3: Authenticated read of configured bucket/key
-            S3-->>API: Bounded image bytes
-            API-->>BFF: Image bytes; credentials stay on server
-            BFF-->>UI: Image response
-        end
-    else Missing, unpublished or disallowed key
-        API-->>BFF: Safe unavailable response
-        BFF-->>UI: Image unavailable
+    UI->>CDN: GET imageUrl directly
+    alt Image available
+        CDN-->>UI: Image response
+    else Missing or failed image
         UI->>UI: Accessible image fallback; listing still opens
     end
 ```
 
-Listing photographs have a separate rate-limit budget so a grid cannot exhaust the transactional API allowance. The existing edge request limit remains enabled.
+The existing image-key resolver supplies public storage/CDN URLs; ordinary
+catalog image loads no longer pass through the BFF/service image endpoint.
+Storage credentials stay server-side. Public storage/CDN reachability and its
+cache/invalidation policy govern direct delivery.
 
-The public R2 URL failed access checks while authenticated reads of all 24 existing listing objects succeeded. The previous UI also suppressed images whenever `demoSeed` was true. Real catalog photographs are now displayed, with a separate Demo label. Original product descriptions, prices, demo flags and storage objects are preserved.
+The legacy listing-image endpoint is retained for compatibility; its
+listing-visibility/key checks, bounded reads and cache are not the direct URL
+delivery path. Product cards show listing photographs without demo badges;
+details identify seeded inventory as Sample item. Original product descriptions,
+prices, demo flags and storage objects are preserved.
 
-Image delivery accepts listing IDs, not user-supplied URLs or storage keys. Only `listings/` and seller listing-image paths in the configured bucket are eligible. Unpublished listing details also return not found. Draft listing images, private profile/document paths, traversal, foreign hosts and SVG are excluded. Reads have time and size limits. In-memory caching is bounded to 64 entries and 16 MiB, with a five-minute lifetime; visibility is checked on each origin request. Browser caches may retain a previously public image for up to five minutes after unpublishing. Use a private origin/CDN invalidation policy for immediate revocation requirements.
+## Storefront composition and compatibility
+
+Recently viewed is the final content child after All products, the help CTA and
+all other curated product sections, before the site footer, regardless of admin
+position. Other curated sections keep their ordering. Existing enablement,
+filtering, privacy preferences and Clear history are preserved. Existing
+storefront section tests pass for this ordering change.
+
+`IconFontGate` loads Ionicons and MaterialCommunityIcons before app mounting and
+shows an explicit failure with Retry (a web page reload). Active catalog and
+checkout routes use `CommerceCatalogScreen` and `CommerceCheckoutScreen`. The
+unused legacy checkout, payment-success and electronics-home screens were
+removed; backup archives remain.
+
+Unused admin `marketplaceDispute` and `paymentGatewayPolicy` wrappers were
+removed, not their backend APIs. External consumers are unknown, so backend
+compatibility is deliberately preserved.
 
 ## Accounts and operational failures
 

@@ -52,6 +52,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
         "app.security.allowed-origin=https://vinodbalakumar.com",
         "app.oauth2.client-id=sharity-web-bff",
         "app.oauth2.client-secret=test-secret",
+        "spring.security.oauth2.client.registration.sharity-web-bff.client-id=sharity-web-bff",
         "spring.security.oauth2.client.registration.sharity-web-bff.client-secret=test-secret",
         "app.oauth2.redirect-uri=https://vinodbalakumar.com/login/oauth2/code/sharity-web-bff",
         "app.oauth2.authorization-server-public-base-url=https://vinodbalakumar.com/authorization-server/api",
@@ -84,6 +85,16 @@ class BffControllerTest {
         mockMvc.perform(get("/bff/login"))
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", "/oauth2/authorization/sharity-web-bff"));
+    }
+
+    @Test
+    void explicitSignInPreservesForceAndRequestsCredentials() throws Exception {
+        mockMvc.perform(get("/bff/login").param("force", "true"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "/oauth2/authorization/sharity-web-bff?force=true"));
+        mockMvc.perform(get("/oauth2/authorization/sharity-web-bff").param("force", "true"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", containsString("prompt=login")));
     }
     @Test void publicChatRetainsCsrfProtection() throws Exception {
         mockMvc.perform(post("/bff/ai/chat").contentType("application/json").content("{\"message\":\"hello\"}"))
@@ -225,6 +236,7 @@ class BffControllerTest {
     void authorizationStartUsesConfiguredPublicDomainEvenWhenRequestHostIsLocalhost() throws Exception {
         mockMvc.perform(get("/oauth2/authorization/sharity-web-bff")
                         .header("Host", "localhost")
+                        .header("Origin", "http://localhost:8081")
                         .header("X-Forwarded-Host", "localhost"))
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", containsString("https://vinodbalakumar.com/authorization-server/api/oauth2/authorize")))

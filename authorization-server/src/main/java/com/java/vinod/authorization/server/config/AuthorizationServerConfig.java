@@ -1,6 +1,7 @@
 package com.java.vinod.authorization.server.config;
 
 import com.java.vinod.authorization.server.security.AuthenticatedUser;
+import com.java.vinod.authorization.server.security.JwtKeySupport;
 import com.java.vinod.authorization.server.repository.AppUserRepository;
 import com.java.vinod.authorization.server.repository.UserCredentialRepository;
 import com.java.vinod.authorization.server.service.UserMapper;
@@ -337,8 +338,8 @@ public class AuthorizationServerConfig {
     @Bean
     public JWKSource<SecurityContext> jwkSource(@Value("${app.jwt.private-key-base64}") String privateKeyBase64,
                                                 @Value("${app.jwt.private-key-path}") String privateKeyPath,
-                                                @Value("${app.jwt.public-key-base64}") String publicKeyBase64,
-                                                @Value("${app.jwt.public-key-path}") String publicKeyPath,
+                                                @Value("${app.jwt.public-key-base64:}") String publicKeyBase64,
+                                                @Value("${app.jwt.public-key-path:}") String publicKeyPath,
                                                 @Value("${app.jwt.issuer}") String issuer,
                                                 @Value("${app.jwt.audience}") String audience) {
         RSAKey rsaKey = rsaJwk(privateKeyBase64, privateKeyPath, publicKeyBase64, publicKeyPath, issuer, audience);
@@ -502,7 +503,10 @@ public class AuthorizationServerConfig {
                           String issuer,
                           String audience) {
         PrivateKey privateKey = parsePrivateKey(loadPem(privateKeyBase64, privateKeyPath, "JWT_PRIVATE_KEY_BASE64", "JWT_PRIVATE_KEY_PATH"));
-        PublicKey publicKey = parsePublicKey(loadPem(publicKeyBase64, publicKeyPath, "JWT_PUBLIC_KEY_BASE64", "JWT_PUBLIC_KEY_PATH"));
+                PublicKey publicKey = (publicKeyBase64 != null && !publicKeyBase64.isBlank())
+                    || (publicKeyPath != null && !publicKeyPath.isBlank())
+                    ? parsePublicKey(loadPem(publicKeyBase64, publicKeyPath, "JWT_PUBLIC_KEY_BASE64", "JWT_PUBLIC_KEY_PATH"))
+                    : JwtKeySupport.derivePublicKey(privateKey);
         return new RSAKey.Builder((RSAPublicKey) publicKey)
                 .privateKey((RSAPrivateKey) privateKey)
                 .keyID(UUID.nameUUIDFromBytes((issuer + audience).getBytes(StandardCharsets.UTF_8)).toString())

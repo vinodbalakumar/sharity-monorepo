@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "@legendapp/state/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -47,6 +48,79 @@ const categories: {
   { title: "Sharity AI", route: "chat", icon: "sparkles-outline" },
 ];
 export const listingPrice = formatListingPrice;
+function CollectionProducts({
+  products,
+  compact,
+  onOpenProduct,
+}: {
+  products: MarketplaceListing[];
+  compact: boolean;
+  onOpenProduct: (id: string) => void;
+}) {
+  const scroll = useRef<ScrollView>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const maxOffset = Math.max(0, contentWidth - viewportWidth);
+  const canScrollLeft = offset > 1;
+  const canScrollRight = offset < maxOffset - 1;
+  useEffect(() => {
+    if (offset > maxOffset) {
+      scroll.current?.scrollTo({ x: maxOffset, animated: false });
+      setOffset(maxOffset);
+    }
+  }, [maxOffset, offset]);
+  const scrollBy = (direction: -1 | 1) => {
+    const nextOffset = Math.max(0, Math.min(maxOffset, offset + direction * Math.max(viewportWidth * 0.8, 200)));
+    scroll.current?.scrollTo({ x: nextOffset, animated: true });
+    setOffset(nextOffset);
+  };
+  const cardWidth = compact ? 200 : 230;
+
+  return (
+    <View style={styles.carousel} onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}>
+      <ScrollView
+        ref={scroll}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.carouselContent}
+        onContentSizeChange={width => setContentWidth(width)}
+        onScroll={event => setOffset(event.nativeEvent.contentOffset.x)}
+        scrollEventThrottle={16}
+      >
+        {products.map(item => (
+          <ListingCard
+            key={item.publicId}
+            item={item}
+            testID="discovery-product"
+            onPress={() => onOpenProduct(item.publicId)}
+            style={{ width: cardWidth }}
+          />
+        ))}
+      </ScrollView>
+      {maxOffset > 1 && <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Scroll products left"
+        accessibilityState={{ disabled: !canScrollLeft }}
+        disabled={!canScrollLeft}
+        onPress={() => scrollBy(-1)}
+        style={({ pressed }) => [styles.carouselArrow, styles.carouselArrowLeft, !canScrollLeft && styles.carouselArrowDisabled, pressed && styles.carouselArrowPressed]}
+      >
+        <Ionicons name="chevron-back" size={22} color={canScrollLeft ? colors.primary : colors.textMuted} />
+      </Pressable>}
+      {maxOffset > 1 && <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Scroll products right"
+        accessibilityState={{ disabled: !canScrollRight }}
+        disabled={!canScrollRight}
+        onPress={() => scrollBy(1)}
+        style={({ pressed }) => [styles.carouselArrow, styles.carouselArrowRight, !canScrollRight && styles.carouselArrowDisabled, pressed && styles.carouselArrowPressed]}
+      >
+        <Ionicons name="chevron-forward" size={22} color={canScrollRight ? colors.primary : colors.textMuted} />
+      </Pressable>}
+    </View>
+  );
+}
 export function StorefrontContent({
   onNavigate,
   onOpenProduct,
@@ -160,6 +234,21 @@ export function StorefrontContent({
     .map(section => ({ section, products: sectionProducts(section, [...items, ...discoveryItems], scope || '__unavailable__', now) }))
     .filter(collection => collection.products.length > 0);
   const catalogEnabled = sections !== null && (sections.find(s => s.code === 'ALL_PRODUCTS')?.enabled ?? true);
+  const renderCollection = ({ section, products }: { section: StorefrontSection; products: MarketplaceListing[] }) => (
+    <View key={section.code} testID={`storefront-${section.code.toLowerCase()}`} style={styles.products}>
+      <View style={styles.sectionHeader}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{section.title}</Text>
+          <Text style={styles.body}>{descriptions[section.code]}</Text>
+          {section.code === 'FLASH_DEALS' && !!section.endsAt && <Text style={styles.body}>Ends {new Date(section.endsAt).toLocaleString()}</Text>}
+        </View>
+        {section.code === 'RECENTLY_VIEWED' && <AppButton variant="outline" size="small" onPress={() => { if (scope) clearRecentViews(scope); setHistoryVersion(v => v + 1); }}>Clear history</AppButton>}
+      </View>
+      {['TRENDING', 'BEST_SELLING', 'RECOMMENDED_DEALS', 'RECENTLY_VIEWED'].includes(section.code)
+        ? <CollectionProducts products={products} compact={compact} onOpenProduct={onOpenProduct} />
+        : <View style={styles.grid}>{products.map(item => <ListingCard key={item.publicId} item={item} testID="discovery-product" onPress={() => onOpenProduct(item.publicId)} style={{ width: compact ? '47%' : width < 1100 ? '31.5%' : '23.5%' }} />)}</View>}
+    </View>
+  );
   return (
     <View
       style={styles.stack}
@@ -193,24 +282,14 @@ export function StorefrontContent({
         ))}
       </View>
       {showHero && !error && <StorefrontHero items={items} onNavigate={onNavigate} onOpenProduct={onOpenProduct} landing={landing} onCreateAccount={onCreateAccount}/>}
-      {collections.map(({ section, products }) => <View key={section.code} testID={`storefront-${section.code.toLowerCase()}`} style={styles.products}>
-        <View style={styles.sectionHeader}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>{section.title}</Text>
-            <Text style={styles.body}>{descriptions[section.code]}</Text>
-            {section.code === 'FLASH_DEALS' && section.endsAt && <Text style={styles.body}>Ends {new Date(section.endsAt).toLocaleString()}</Text>}
-          </View>
-          {section.code === 'RECENTLY_VIEWED' && <AppButton variant="outline" size="small" onPress={() => { if (scope) clearRecentViews(scope); setHistoryVersion(v => v + 1); }}>Clear history</AppButton>}
-        </View>
-        <View style={styles.grid}>{products.map(item => <ListingCard key={item.publicId} item={item} testID="discovery-product" onPress={() => onOpenProduct(item.publicId)} style={{ width: compact ? '47%' : width < 1100 ? '31.5%' : '23.5%' }} />)}</View>
-      </View>)}
-      {catalogEnabled && (loading || error || visible.length > 0 || !!query || !!category) && <View style={styles.products}>
+      {collections.filter(({ section }) => section.code !== 'RECENTLY_VIEWED').map(renderCollection)}
+      {catalogEnabled && (loading || error || visible.length > 0 || !!query || !!category) && <View testID="storefront-all_products" style={styles.products}>
         <View style={[styles.sectionHeader,compact && {alignItems:"center"}]}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text accessibilityRole="header" style={[styles.sectionTitle, compact && { fontSize: 20, lineHeight: 26 }]}>
               {query ? "Search results" : "All products"}
             </Text>
-            {query && <Text style={styles.body}>{visible.length} matching listings</Text>}
+            {!!query && <Text style={styles.body}>{visible.length} matching listings</Text>}
           </View>
           <AppButton
             size={compact ? "small" : "medium"}
@@ -221,7 +300,8 @@ export function StorefrontContent({
           </AppButton>
         </View>
         <View testID="catalog-filters" style={styles.filters}>
-          <Chip selected={!category} onPress={() => setCategory("")}>
+          <Chip selected={!category} style={!category ? styles.filterSelected : styles.filter}
+            textStyle={!category ? styles.filterTextSelected : styles.filterText} onPress={() => setCategory("")}>
             All categories
           </Chip>
           {compact && <AppButton size="small" variant="outline" onPress={() => setShowFilters(value => !value)}>
@@ -232,6 +312,8 @@ export function StorefrontContent({
               <Chip
                 key={code}
                 selected={category === code}
+                style={category === code ? styles.filterSelected : styles.filter}
+                textStyle={category === code ? styles.filterTextSelected : styles.filterText}
                 onPress={() => setCategory(category === code ? "" : code)}
               >
                 {listingLabel(code)}
@@ -241,7 +323,7 @@ export function StorefrontContent({
         {loading ? (
           <View style={styles.empty}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.body}>Loading productsÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦</Text>
+            <Text style={styles.body}>Loading products...</Text>
           </View>
         ) : error ? (
           <View style={styles.empty}>
@@ -293,7 +375,8 @@ export function StorefrontContent({
         )}
       </View>
       }
-      <View style={styles.help}>
+      {collections.filter(({ section }) => section.code === 'RECENTLY_VIEWED').map(renderCollection)}
+      <View testID="storefront-help" style={styles.help}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.sectionTitle}>A question before you choose?</Text>
           <Text style={styles.body}>
@@ -313,7 +396,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     flexDirection: "row",
     paddingVertical: 14,
     paddingHorizontal: 4,
@@ -347,7 +430,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 16,
     gap: 18,
   },
@@ -371,12 +454,39 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filter: { backgroundColor: colors.surfaceHover, borderWidth: 1, borderColor: colors.border },
+  filterSelected: { backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.primary },
+  filterText: { color: colors.textSecondary },
+  filterTextSelected: { color: colors.primaryDark, fontWeight: "600" },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "flex-start",
     gap: 14,
   },
+  carousel: { position: "relative", minWidth: 0 },
+  carouselContent: { gap: 14, paddingHorizontal: 2, paddingVertical: 6 },
+  carouselArrow: {
+    position: "absolute",
+    top: "45%",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 3,
+    shadowColor: colors.textPrimary,
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  carouselArrowLeft: { left: 8 },
+  carouselArrowRight: { right: 8 },
+  carouselArrowDisabled: { backgroundColor: colors.disabledBg },
+  carouselArrowPressed: { backgroundColor: colors.primaryLight },
   productCard: {
     minWidth: 0,
     borderRadius: 8,
@@ -423,8 +533,8 @@ const styles = StyleSheet.create({
   },
   help: {
     padding: 22,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
+    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",

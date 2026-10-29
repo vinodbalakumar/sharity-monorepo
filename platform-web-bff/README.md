@@ -6,24 +6,25 @@ The narrowly allowlisted `/bff/ai/*` proxy supports public guest chat and privat
 history. Mutations retain session CSRF protection. Native bearer tokens validate issuer/audience;
 channel identities come from verified principals or server sessions, never browser JSON/headers.
 Set a matching `CHAT_BFF_TOKEN` in this BFF and `platform-ai-service`; it must never be public.
-Non-loopback AI backend addresses require HTTPS. See [SHARITY_AI.md](https://github.com/vinodbalakumar/deployments/blob/feature/sharity-production-responsive/docs/sharity/SHARITY_AI.md).
+Non-loopback AI backend addresses require HTTPS. See the [AI operating guide](../deployments/docs/sharity/SHARITY_AI.md).
 
 ## Operations and commerce follow-up (2026-10-25)
 
 This service now emits structured request metadata with validated `X-Correlation-ID` references and service-operation observations. Optional bounded diagnostic delivery uses `DIAGNOSTICS_ENABLED`, `DIAGNOSTICS_URL`, and a private `DIAGNOSTICS_TOKEN` (minimum 32 characters). OpenTelemetry export is off unless `OTEL_EXPORT_ENABLED=true`. AI explanations run centrally and do not block customer requests.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Platform Web BFF
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
 > Run `mvn -B -ntp verify`; CI also reviews dependency changes.
-> A passing build does not establish production readiness. See the workspace
-> `outputs/production-verification.md` and shared docs
-> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+> A passing build does not establish production readiness. See the current
+> [developer guide](../docs/workspace/developer-guide.md),
+> [operations guide](../docs/workspace/operations.md), and dated
+> [migration validation record](../docs/migration/VALIDATION.md).
 >
-> Browser tokens remain server-side. Validate login/logout, callback URLs, session cookie attributes and CSRF on the deployed domain. The optional AI service is not yet included in proxy routing.
+> Browser tokens remain server-side. Validate login/logout, callback URLs, session cookie attributes and CSRF on the deployed domain. The BFF contains a narrowly allowlisted `/bff/ai/*` proxy; enabling it requires deployment-specific backend configuration and a private shared token.
 
 
 Secure browser-session backend-for-frontend for the `sharity-app` React Native Web app.
@@ -41,6 +42,7 @@ The Sharity browser app must not store production access tokens or refresh token
 | `/bff/session` | `GET` | Return safe session summary only | Authenticated session cookie |
 | `/bff/logout` | `POST` | Invalidate the browser session | Authenticated session cookie |
 | `/bff/api/**` | Any | Proxy authenticated calls to backend services | Authenticated session cookie |
+| `/bff/ai/**` | Allowlisted methods | Chat and public AI content proxy | Guest or authenticated session, depending on route |
 
 ## Security Model
 
@@ -72,21 +74,65 @@ The Sharity browser app must not store production access tokens or refresh token
 
 ## Local Run
 
+The default `local` profile now includes standalone settings without requiring
+the external deployment profile directory:
+
+| Setting | Local default |
+| --- | --- |
+| HTTP address | `http://localhost:9090` |
+| PostgreSQL URL | `jdbc:postgresql://localhost:5432/bff` |
+| Database username | `postgres` |
+| Flyway scripts | `classpath:db/migration-postgresql` |
+| Authorization server | `http://localhost:9093/authorization-server/api` |
+| Browser redirect | `http://localhost:9174/app/` |
+| Secure session cookie | `false` for local HTTP only |
+
+Create the `bff` database first and supply `BFF_DB_PASSWORD` securely. Override
+the connection with `BFF_DB_URL` and `BFF_DB_USERNAME`, or Spring's
+`SPRING_DATASOURCE_*` variables. The BFF uses its own database by default rather
+than the authorization server's `sauth` database.
+
+The local-only OAuth client secret fallback is `change-me-local-only`, matching
+the authorization server's shared local default. When overriding
+`SHARITY_WEB_BFF_CLIENT_SECRET`, supply the same value to both services.
+Never use this local fallback in a deployed environment.
+
+For standalone local sign-in, keep the three browser-facing URLs distinct:
+the UI is on port `9174`, authorization is on `9093`, and the OAuth callback
+is `http://localhost:9090/login/oauth2/code/sharity-web-bff`. The BFF preserves
+these configured local endpoints instead of rewriting them onto the UI origin.
+`GET /bff/login?force=true` requests a fresh credential prompt through OAuth
+`prompt=login`. Public deployments continue to use their configured public domain;
+browser `Origin` headers do not select OAuth destinations.
+
+The external local profile optionally imports a private properties file selected
+by `BACKEND_LOCAL_CONFIG` (default `./.env.backend-local.properties`, relative to
+the process working directory). It no longer requires a machine-specific file.
+QA and production profile files are unchanged; local datasource and secret
+fallbacks apply only when the `local` profile is active. Do not combine `local`
+with QA or production profiles.
+
+From the repository root:
+
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\platform-web-bff
+Push-Location platform-web-bff
 mvn spring-boot:run
+Pop-Location
 ```
 
 ## Local Test
 
+From the repository root:
+
 ```powershell
-cd C:\Users\HP\projects\springbootrestdemo\platform-web-bff
+Push-Location platform-web-bff
 mvn test
+Pop-Location
 ```
 
 ## Docker And Nginx Expectations
 
-- The service is deployed by `C:\Users\HP\projects\springbootrestdemo\deployments\docker-compose.yml`
+- Deployment definitions are in the sibling `../deployments/` directory; see its runbook.
 - Nginx routes `/bff/` to the BFF container
 - Nginx also proxies `/oauth2/authorization/sharity-web-bff` and `/login/oauth2/code/sharity-web-bff`
 - The Sharity React Native Web app still loads from `/app/`

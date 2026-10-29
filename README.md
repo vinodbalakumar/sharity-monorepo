@@ -66,6 +66,41 @@ Verified PowerShell rollout scripts remain under `deployments/scripts/sharity/`.
 
 The current public site continues running from the original workspace. This migration does not change its containers, databases, private configuration, tunnel, or routing.
 
+## JWT signing keys
+
+Sharity uses a matching RSA key pair to sign and verify JWT login tokens. The authorization server signs tokens with `jwt-private.pem`; backend services verify those signatures with `jwt-public.pem`. Keep the private key secret and never commit it to Git.
+
+The choice comes from `authorization-server/src/main/java/com/java/vinod/authorization/server/service/JwtService.java`, which signs tokens using **RS256** (RSA with SHA-256). The key loader accepts a PKCS#8 private key and an X.509 SubjectPublicKeyInfo public key in PEM format. These files are signing keys, not HTTPS certificates.
+
+With OpenSSL installed, run the following in PowerShell to generate a new 3072-bit RSA key pair. Use a new directory and stop if it already exists, so existing keys are not overwritten:
+
+```powershell
+$jwtKeyDirectory = 'C:\Users\HP\projects\certs-new'
+New-Item -ItemType Directory -Path $jwtKeyDirectory -ErrorAction Stop | Out-Null
+Push-Location -LiteralPath $jwtKeyDirectory
+try {
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out jwt-private.pem
+    if ($LASTEXITCODE -ne 0) { throw 'JWT private key generation failed.' }
+    openssl pkey -in jwt-private.pem -pubout -out jwt-public.pem
+    if ($LASTEXITCODE -ne 0) { throw 'JWT public key extraction failed.' }
+} finally {
+    Pop-Location
+}
+```
+
+The first command generates the private key from cryptographic randomness; the second derives its matching public key. No domain name, email, password, or `SHARITY_WEB_BFF_CLIENT_SECRET` is used. The BFF client secret is a separate credential. See the [OpenSSL command examples](https://wiki.openssl.org/index.php/Command_Line_Utilities) for the generation and public-key extraction syntax.
+
+The generated PEM headers are:
+
+```text
+jwt-private.pem: -----BEGIN PRIVATE KEY-----
+jwt-public.pem:  -----BEGIN PUBLIC KEY-----
+```
+
+The main `deployments/docker-compose.yml` currently mounts `C:/Users/HP/projects/certs` as `/keys` inside the relevant containers. The authorization server reads `/keys/jwt-private.pem` and `/keys/jwt-public.pem`; services using file-based verification read `/keys/jwt-public.pem`. The commands above only prepare new files in `certs-new`; they do not install or activate them. Restrict private-key access to the account running the service. The generated private key is unencrypted because the current loader does not support a key passphrase.
+
+Replacing deployed keys requires a coordinated update of the signing service and verifiers. Existing tokens signed with the old private key will fail verification once services stop trusting the old public key, so plan key rotation and any required sign-in before changing the active files.
+
 ## History and migration
 
 All original repositories remain intact. This separate repository imports 300 source commits, including workspace architecture documents, with authors, dates, messages and merge history preserved. Paths were prefixed and historical credential literals were redacted in imported copies, so commit IDs differ. Original-to-imported mappings and source revisions are in [the migration record](docs/migration/README.md).

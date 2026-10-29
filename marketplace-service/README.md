@@ -14,16 +14,17 @@ This service now emits structured request metadata with validated `X-Correlation
 
 Apply Flyway V54 on MySQL/PostgreSQL before the new idempotent purchase path. Carts enforce user ownership. New orders start pending; payment refresh checks downstream state. `COMMERCE_DEMO_PURCHASES_ENABLED` is false by default and must never stand in for live payment approval.
 
-See workspace `OPERATIONS.md` and `outputs/operations-verification.md` for current setup, evidence and release limitations. Earlier readiness statements below are historical.
+See the [current workspace operations guide](../docs/workspace/operations.md) for deployment safeguards and operating guidance. Generated `outputs/` verification reports referenced by older notes are local-only and are not included in this repository.
 
 # Marketplace Service
 
 > October 25, 2026 development update: `feature/sharity-production-responsive`.
 > Java 21; Spring Boot patch is defined in `pom.xml` (4.0.9, locally verified).
 > Run `mvn -B -ntp verify`; CI also reviews dependency changes.
-> A passing build does not establish production readiness. See the workspace
-> `outputs/production-verification.md` and shared docs
-> `production/2026-10-25_READINESS_REVIEW.md` for exact evidence and blockers.
+> A passing build does not establish production readiness. See the current
+> [developer guide](../docs/workspace/developer-guide.md),
+> [operations guide](../docs/workspace/operations.md), and dated
+> [migration validation record](../docs/migration/VALIDATION.md).
 >
 > JWT resource-server validation is enabled. Anonymous access is limited to explicit public routes; unmatched routes require authentication. Rate-limit exhaustion returns JSON 429. Catalog image tests configure the storage-provider fixture explicitly.
 
@@ -39,7 +40,20 @@ V3 marketplace backend foundation.
 - Customer acceptance requests payout eligibility from Payment Service.
 - Provider listing, sales, and delivery actions validate MARKETPLACE provider eligibility with authorization-server.
 - Internal service calls use `X-Internal-Service-Token`.
-- Docker deployment through the central `C:\Users\HP\projects\deployments` stack.
+- Docker deployment is managed from the repository's sibling `../deployments/`
+directory; see the current [deployment runbook](../deployments/docs/deployment.md).
+
+## Catalog image delivery and compatibility
+
+Listing responses emit a direct public storage/CDN `imageUrl` using the existing
+image-key resolver. The storefront consumes that URL directly rather than
+requesting every image through the BFF/service. Ensure the configured public
+storage/CDN origin is reachable by browsers; do not expose storage credentials.
+The existing listing-image endpoint remains available for compatible callers.
+
+Removal of unused admin UI `marketplaceDispute` and `paymentGatewayPolicy`
+wrappers is not a backend API removal. Existing backend APIs are deliberately
+retained because external consumers have not been ruled out.
 
 ## V3 Flow Notes
 
@@ -54,8 +68,20 @@ Broad business-flow automated tests are the next implementation step.
 ## Local URL
 
 ```text
-http://localhost:8080/marketplace-service/swagger-ui/index.html
+http://localhost:9094/marketplace-service/swagger-ui/index.html
 ```
+
+## JWT public key configuration
+
+Set `APP_JWT_PUBLIC_KEY_BASE64` (or `app.jwt.public-key-base64`) to the Base64
+encoding of the authorization server's complete RSA `PUBLIC KEY` PEM text,
+including its header and footer. This matches the authorization server's
+Base64-encoded PEM format; do not supply a certificate or private key.
+When Base64 is blank, `app.jwt.public-key-path` remains supported (locally via
+`JWT_PUBLIC_KEY_PATH`). There is no default local key file. Nonblank Base64
+takes priority over the path, and invalid Base64/key material fails startup
+without falling back. Configure the matching issuer and `MARKETPLACE_API`
+audience as before.
 
 ## Database
 
@@ -69,19 +95,56 @@ Datasource env vars:
 - `MARKETPLACE_DB_USERNAME`
 - `MARKETPLACE_DB_PASSWORD`
 
-Local database selection is still profile-based for migration scripts:
+The shared datasource configuration is in
+[`src/main/resources/application.properties`](src/main/resources/application.properties).
+Environment-specific profiles are maintained under
+[`../deployments/config/marketplace-service/`](../deployments/config/marketplace-service/);
+they are not loaded automatically by a standalone Spring Boot launch. Set the
+datasource variables for a disposable database before starting the service.
+Review the selected Flyway migrations before connecting to an existing
+database; some historical migrations reset or seed demo marketplace data.
 
-- `local,mysql` uses [src/main/resources/application-mysql.yml](c:/data/apps/marketplace-service/src/main/resources/application-mysql.yml)
-- `local,postgresql` uses [src/main/resources/application-postgresql.yml](c:/data/apps/marketplace-service/src/main/resources/application-postgresql.yml)
+### Local Best selling and Trending demo data
 
-Examples:
+For the local MySQL `marketplace_db` used by the Docker stack,
+[`scripts/seed-local-storefront-sales-mysql.sql`](scripts/seed-local-storefront-sales-mysql.sql)
+selects 24 visible, in-stock demo products across categories and creates one
+synthetic completed/captured order per product. Connect explicitly to
+`127.0.0.1` with the MySQL 8 client in batch mode without `--force`. Independently
+verify the local server hostname, then set `@confirm_local_demo=1` and
+`@local_demo_hostname` to that hostname in the same session before sourcing
+the script. It checks the database name, hostname, candidate count, and order
+identities before committing. Never run it on production data.
 
-```text
-mvn spring-boot:run -Dspring-boot.run.profiles=local,mysql
-mvn spring-boot:run -Dspring-boot.run.profiles=local,postgresql
+Re-running refreshes those same demo orders without duplicating them. No real
+payments, inventory changes, or outbox events are generated. Trending uses the
+last seven days; Best selling uses all confirmed orders. The API returns up to
+12 products per section and the current UI shows up to eight. Refresh the
+storefront after seeding; no rebuild is required.
+
+For the disposable PostgreSQL `test1` database on localhost only, run the
+explicit seed from the repository root (use `psql` on PATH or its installed
+absolute path):
+
+```powershell
+psql -h localhost -U postgres -d test1 -W -v confirm_local_demo=true -f .\marketplace-service\scripts\seed-local-storefront-sales.sql
 ```
 
-The shared settings stay in [src/main/resources/application.yml](c:/data/apps/marketplace-service/src/main/resources/application.yml).
+The script selects eight existing, visible, in-stock `demo_seed` listings,
+preferring already-ranked products and then category variety. It adds one
+synthetic completed/captured order per selected product so the normal sales
+ranking populates both sections; the UI displays up to eight products.
+These are demo accounting records, not real payments or purchases.
+They use the reserved buyer `00000000-0000-4000-8000-00000000d008` and
+`local-storefront-demo:` purchase request keys. Inventory, existing real orders,
+payment services, and outbox events are untouched.
+
+This is not a Flyway migration and never runs at startup. It requires explicit
+confirmation and rejects non-loopback connections or databases other than
+`test1`. Re-running refreshes only the matching seed orders' timestamps without
+duplicating them; Trending naturally ages out after seven days unless refreshed.
+Refresh the storefront after running it; no application rebuild is needed.
+Never use this seed against production data.
 
 ## Slow Query Diagnostics
 

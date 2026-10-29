@@ -1117,11 +1117,6 @@ public class MarketplaceService {
     private String listingImageUrl(Listing listing) {
         String key = listing.getImageKey();
         if (key == null || key.isBlank()) return null;
-        String base = resolveAssetPublicBaseUrl();
-        if (key.startsWith("listings/") || key.startsWith("sellers/")
-                || (base != null && key.startsWith(base.replaceAll("/+$", "") + "/"))) {
-            return "/marketplace-service/api/v1/marketplace/listings/" + listing.getPublicId() + "/image";
-        }
         return resolveImageUrl(key, null);
     }
 

@@ -27,7 +27,7 @@ class ListingImageServiceTest {
         verifyNoInteractions(storage);
     }
     @Test void arbitraryUrlsPrivateDocumentsAndTraversalCannotBeRead() {
-        var storage = new AssetStorageService(mock(AssetRepository.class),mock(AssetUploadEventRepository.class),mock(ListingRepository.class),
+        var storage = new AssetStorageService(mock(AssetRepository.class),mock(AssetUploadEventRepository.class),        mock(ListingRepository.class),mock(AssetStorageProviderRepository.class),
                 "R2","bucket","https://storage.example","https://images.example","auto","test-id","test-secret",5242880);
         for (String key : new String[]{"https://internal.example/key", "profiles/private.jpg", "listings/../private.jpg", "listings/%2e%2e/private.jpg", "credentials/key.pem"}) {
             assertThatThrownBy(() -> storage.readListingImage(key)).isInstanceOf(ResponseStatusException.class);
