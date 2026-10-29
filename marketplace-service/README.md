@@ -106,6 +106,22 @@ database; some historical migrations reset or seed demo marketplace data.
 
 ### Local Best selling and Trending demo data
 
+For the local MySQL `marketplace_db` used by the Docker stack,
+[`scripts/seed-local-storefront-sales-mysql.sql`](scripts/seed-local-storefront-sales-mysql.sql)
+selects 24 visible, in-stock demo products across categories and creates one
+synthetic completed/captured order per product. Connect explicitly to
+`127.0.0.1` with the MySQL 8 client in batch mode without `--force`. Independently
+verify the local server hostname, then set `@confirm_local_demo=1` and
+`@local_demo_hostname` to that hostname in the same session before sourcing
+the script. It checks the database name, hostname, candidate count, and order
+identities before committing. Never run it on production data.
+
+Re-running refreshes those same demo orders without duplicating them. No real
+payments, inventory changes, or outbox events are generated. Trending uses the
+last seven days; Best selling uses all confirmed orders. The API returns up to
+12 products per section and the current UI shows up to eight. Refresh the
+storefront after seeding; no rebuild is required.
+
 For the disposable PostgreSQL `test1` database on localhost only, run the
 explicit seed from the repository root (use `psql` on PATH or its installed
 absolute path):
